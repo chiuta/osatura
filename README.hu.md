@@ -32,6 +32,16 @@ A projektet alakító alapelvek:
 >
 > Mielőtt bármire ráépítenél, olvasd el a [docs/LIMITATIONS.md](docs/i18n/hu/LIMITATIONS.md) fájlt (78 számozott korlát súlyossággal és kerülőmegoldással).
 
+## Érettség: hol érdemes kezdeni
+
+Az OSATURA sokkal több funkciót tartalmaz, mint amit egy ember ellenőrizni tud. A táblázat azt mutatja, hová fordítja a szerző először az erőfeszítést. **Ez szándék, nem minőségi garancia: a szerzőn kívül még egyetlen animátor sem használta semmijét** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+
+| Szint | Mi | Mit jelent |
+|---|---|---|
+| Mag | Projektformátum, csontok, IK, skinning, kulcsok és könnyítés, renderelés, exportálás GIF, PNG, SVG, Lottie és HTML formátumba, az `osatura` parancssor, a stúdió alapjai | Először ezt javítja, ezt fedik a legtöbb tesztek, itt kezdd ([útmutató](docs/TUTORIAL_SVG.md)) |
+| Támogatott | Deformerek, fizika, állapotgépek, SVG- és OpenRaster-import, a C-könyvtár, a WebAssembly-modul | A tesztekben működik; kevesebb szem van rajta |
+| Kísérleti | Mocap-retargetelés, ajakszinkron és beszéd, arcfelismerés, élő bemenet, együttműködés, verziókezelés, méretcélú export, részletességi szintek, GPU-s renderelés | Számíts érdességekre és változásokra; még ne építs rá |
+
 ## Letöltés
 
 Az előre elkészített archívumok – miután a tulajdonos közzétette a vázlat kiadást – a projekt [Releases oldalán](https://github.com/chiuta/osatura/releases) találhatók:

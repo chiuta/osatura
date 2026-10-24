@@ -32,6 +32,16 @@ Principiile proiectului:
 >
 > Citește [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 de limite numerotate, cu gravitate și soluție ocolitoare) înainte să te bazezi pe ceva.
 
+## Maturitate: de unde să începi
+
+OSATURA are mult mai multe funcții decât poate valida o singură persoană. Tabelul arată unde pune autorul efortul mai întâi. **Este o intenție, nu o garanție de calitate: niciun animator în afară de autor nu a folosit încă nimic din el** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+
+| Nivel | Ce | Ce înseamnă |
+|---|---|---|
+| Nucleu | Formatul proiectului, oase, IK, skinning, chei și easing, randare, export în GIF, PNG, SVG, Lottie și HTML, linia de comandă `osatura`, noțiunile de bază din studio | Se repară primul, are cele mai multe teste, începe de aici ([tutorial](docs/TUTORIAL_SVG.md)) |
+| Susținut | Deformatoare, fizică, mașini de stări, import SVG și OpenRaster, biblioteca C, modulul WebAssembly | Funcționează în teste; mai puțini ochi pe el |
+| Experimental | Retargeting de mocap, sincronizare labială și vorbire, detectarea fețelor, intrare live, colaborare, control al versiunilor, export la dimensiune țintă, niveluri de detaliu, randare pe GPU | Așteaptă-te la asperități și schimbări; nu construi încă pe el |
+
 ## Descărcare
 
 Arhivele precompilate, după ce proprietarul publică lansarea ciornă, se găsesc pe [pagina Releases](https://github.com/chiuta/osatura/releases) a proiectului:
