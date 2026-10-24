@@ -10,6 +10,8 @@
 
 *What it makes: the built-in walking person, exported with `osatura demo-person` and `osatura export` (the whole project is one JSON file). Try it in two minutes: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
 
+**[Code signing policy](CODE_SIGNING_POLICY.md)** · [Privacy](PRIVACY.md) · [Download](#download)
+
 ## Summary and philosophy
 
 OSATURA lets you build a character or a scene from vector shapes and images, rig it with bones and constraints, animate it with keys, clips and physics, and send it out as GIF, video, Lottie, glTF, a self-contained HTML player or an interactive runtime. It is made of small, deterministic pieces: the same project and the same seed give the same pixels, every tool reads and writes a documented JSON project, and every command works from a terminal, so animation can be scripted, reviewed, diffed and tested like source code.
@@ -46,7 +48,7 @@ OSATURA has far more features than one person can validate. This table says wher
 
 ## Download
 
-Prebuilt archives, once the owner has published the draft release, are on the project's [Releases page](https://github.com/chiuta/osatura/releases):
+Prebuilt archives, once the owner has published the draft release, are on the project's [Releases page](https://github.com/chiuta/osatura/releases). **[Code signing policy](CODE_SIGNING_POLICY.md)** · [Privacy](PRIVACY.md) (the programs send nothing over the network unless you ask them to) · [Uninstall](docs/UNINSTALL.md) · [Verify a download](docs/VERIFY_DOWNLOADS.md)
 
 | Archive | Contents |
 |---|---|
@@ -55,8 +57,9 @@ Prebuilt archives, once the owner has published the draft release, are on the pr
 | `osatura-linux-x86_64.tar.gz` | `osatura`, C library and header, licences, notices (no window app: use `osatura studio` and a browser) |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (run only in headless Chromium, see [docs/WASM.md](docs/WASM.md)) |
 | `SHA256SUMS.txt` | check every download against it |
+| `*.sigstore.json` | Sigstore signature of each file ([docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md)) |
 
-* **Windows:** double-click `osatura.exe` to create `Documents\OSATURA\first-rig.json` (the walking-person demo: head with ear, hands with fingers, feet with toes) and open the studio in your browser, or double-click `osatura-studio.exe` for a window of its own. Both programs are unsigned: choose *More info* then *Run anyway* in SmartScreen. See [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
+* **Windows:** double-click `osatura.exe` to create `Documents\OSATURA\first-rig.json` (the walking-person demo: head with ear, hands with fingers, feet with toes) and open the studio in your browser, or double-click `osatura-studio.exe` for a window of its own. Both programs are not Authenticode-signed yet ([Code signing policy](CODE_SIGNING_POLICY.md)): choose *More info* then *Run anyway* in SmartScreen. Nothing is installed: to remove OSATURA delete the folder and the files in [docs/UNINSTALL.md](docs/UNINSTALL.md). See [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
 * **macOS:** approve the program in *System Settings > Privacy & Security* the first time.
 * **Source:** each archive names the commit it was built from; the AGPL parts are served with their source offer (`osatura --version`, `/source`).
 
@@ -153,6 +156,7 @@ Start at [docs/INDEX.md](docs/INDEX.md) (all documents, audiences, reading paths
 | [docs/CI.md](docs/CI.md) | animation CI |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | build, test, conventions, release |
 | [docs/SECURITY.md](docs/SECURITY.md) | threat model and hardening |
+| [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [PRIVACY.md](PRIVACY.md) · [docs/UNINSTALL.md](docs/UNINSTALL.md) | code signing policy, privacy, uninstalling |
 | [docs/LIMITATIONS.md](docs/LIMITATIONS.md) | known limits |
 | [docs/PATENT_NOTES.md](docs/PATENT_NOTES.md), [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md), [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) | patents, dependency licences |
 | [CHANGELOG.md](CHANGELOG.md), [ROADMAP.md](ROADMAP.md), [FEATURES.md](FEATURES.md) | history, plan and detailed status, feature matrix |

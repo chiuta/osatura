@@ -18,3 +18,6 @@ tao = "0.37"
 wry = "0.57"
 # Native "Save as" dialog and message box for exports from the window (download handler of the web view).
 rfd = { version = "0.17", default-features = false }
+
+[target."cfg(windows)".build-dependencies]
+winresource = { version = "0.1.34", default-features = false }  # Windows file metadata (product name, version) for code signing; MIT

@@ -1104,6 +1104,7 @@ fn double_click_launcher() -> ExitCode {
     }
     let project = dir.join("first-rig.json").to_string_lossy().into_owned();
     if !std::path::Path::new(&project).exists() {
+        println!("Creating your first project: {project}\n(OSATURA installs nothing; to remove it, delete that folder and see docs/UNINSTALL.md)");
         if let Err(e) = run(&["demo-person".to_string(), project.clone()]) {
             wait_for_enter(&format!("{e}\nPress Enter to close."));
             return ExitCode::FAILURE;
