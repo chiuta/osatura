@@ -23,6 +23,8 @@ const arg = (n, d) => { const i = process.argv.indexOf(n); return i >= 0 ? proce
 const BIN = path.resolve(arg('--bin', 'osatura'));
 const TPL = path.resolve(arg('--template', path.join(ROOT, 'site', 'index.template.html')));
 const WORK = fs.mkdtempSync(path.join(os.tmpdir(), 'person-'));
+const gunzipSrc = (() => { const l = fs.readFileSync(path.join(HERE, 'lib', 'gunzip.js'), 'utf8').split('\n'); let i = 0; while (l[i].startsWith('//')) i++; return l.slice(i).join('\n').trim(); })();
+const injectGunzip = (text) => text.replace(/\/\*gunzip:begin\*\/[\s\S]*?\/\*gunzip:end\*\//, () => '/*gunzip:begin*/\n' + gunzipSrc + '\n/*gunzip:end*/');
 const cleanup = () => fs.rmSync(WORK, {recursive: true, force: true});
 
 try {
@@ -46,7 +48,7 @@ try {
   const data = {version: 2, generator: 'scripts/build-person-demo.mjs', engine, width: full.width, height: full.height, fps: full.fps, frames: full.frames, steps};
 
   // ---- injectare în șablon ----
-  let tpl = fs.readFileSync(TPL, 'utf8');
+  let tpl = injectGunzip(fs.readFileSync(TPL, 'utf8'));
   const json = JSON.stringify(data).replace(/</g, '\\u003c');
   const dRe = /(<script type="application\/json" id="demo-data">)[\s\S]*?(<\/script>)/;
   if (!dRe.test(tpl)) throw new Error('nu găsesc #demo-data în șablon');
