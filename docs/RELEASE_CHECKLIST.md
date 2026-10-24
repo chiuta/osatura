@@ -42,7 +42,8 @@
 ## 6. Release artefacts
 
 - [x] The release binaries are built on GitHub-hosted runners (`release.yml`) and `SHA256SUMS.txt` is generated in the draft. **Open:** review the draft `v0.1.0-alpha.3`, tick "pre-release", publish it, and tag the commit (the tag is created with the release).
-- [ ] Decide on code signing (Windows Authenticode certificate, Apple Developer ID and notarisation); until then the downloads are flagged as unsigned (L-74).
+- [x] Provenance signing: Sigstore keyless signatures and GitHub build-provenance attestations for every release file (job `sign` in `release.yml`, verified in CI).
+- [ ] Decide on OS code signing (Windows Authenticode, e.g. SignPath Foundation for OSS; Apple Developer ID and notarisation); until then SmartScreen and Gatekeeper warn (L-74).
 - [ ] Attach the corresponding source for the AGPL parts (the tag itself is enough; keep it available as long as you distribute binaries).
 - [x] `docs/THIRD_PARTY_NOTICES.md` is regenerated (24 Oct 2026) and each archive carries it; regenerate again with `scripts/licence-audit.sh` before every later release.
 - [ ] Crates.io / npm / package registries: check the names are free and the licence fields match `LICENSING.md`.
