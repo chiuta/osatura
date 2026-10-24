@@ -32,6 +32,16 @@ Principles that shape the project:
 >
 > Read [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 numbered limits with severity and workaround) before you depend on anything.
 
+## Maturity: where to start
+
+OSATURA has far more features than one person can validate. This table says where the author puts the effort first. **It is an intention, not a quality guarantee: no animator other than the author has used any of it yet** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+
+| Tier | What | What it means |
+|---|---|---|
+| Core | Project format, bones, IK, skinning, keys and easing, rendering, export to GIF, PNG, SVG, Lottie and HTML, the `osatura` command line, the studio basics | Fixed first, covered by the most tests, start here ([tutorial](docs/TUTORIAL_SVG.md)) |
+| Supported | Deformers, physics, state machines, SVG and OpenRaster import, the C library, the WebAssembly module | Works in tests; fewer eyes on it |
+| Experimental | Mocap retargeting, lip-sync and speech, face detection, live input, collaboration, version control, size-targeted export, level of detail, GPU rendering | Expect rough edges and changes; do not build on it yet |
+
 ## Download
 
 Prebuilt archives, once the owner has published the draft release, are on the project's [Releases page](https://github.com/chiuta/osatura/releases):

@@ -1,12 +1,24 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Ratchet for `.unwrap()` in production code. Counts the lines that call `.unwrap()` in the library and CLI sources, before the
-//! first `#[cfg(test)]` of each file and not in test, fuzz or demo modules. The number may only go down: after removing an
+//! first `#[cfg(test)] mod` of each file and not in test, fuzz or demo modules. The number may only go down: after removing an
 //! `unwrap`, lower BUDGET; a new `unwrap` fails this test (use `?`, `ok_or_else`, `total_cmp` or `expect` with the invariant).
 //! Sorting floats with `partial_cmp(..).unwrap()` is never acceptable: a NaN from imported data would panic (use `total_cmp`).
 use std::{fs, path::{Path, PathBuf}};
 
-const BUDGET: usize = 58;
+const BUDGET: usize = 69;
+
+/// Text before the first `#[cfg(test)] mod ...` (a `#[cfg(test)]` on a single item, such as a `thread_local!`, does not end production code).
+fn split_before_test_module(s: &str) -> &str {
+    let mut at = s.len();
+    let mut from = 0;
+    while let Some(i) = s[from..].find("#[cfg(test)]") {
+        let i = from + i;
+        if s[i + "#[cfg(test)]".len()..].trim_start().starts_with("mod ") { at = i; break; }
+        from = i + 1;
+    }
+    &s[..at]
+}
 
 fn rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
     for e in fs::read_dir(dir).unwrap() {
@@ -26,9 +38,9 @@ fn production_unwraps_do_not_grow_and_no_float_sort_can_panic() {
     let (mut n, mut nan_sorts) = (0usize, vec![]);
     for f in files {
         let name = f.file_name().unwrap().to_string_lossy().to_string();
-        if name.ends_with("_tests.rs") || name == "fuzz.rs" || name == "demo.rs" { continue; }
+        if name.ends_with("_tests.rs") || name == "tests.rs" || name == "fuzz.rs" || name == "demo.rs" { continue; }
         let s = fs::read_to_string(&f).unwrap();
-        let body = s.split("#[cfg(test)]").next().unwrap();
+        let body = split_before_test_module(&s);
         for (i, l) in body.lines().enumerate() {
             let t = l.trim_start();
             if t.starts_with("//") { continue; }
