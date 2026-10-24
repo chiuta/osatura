@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Commands part 6 of the dispatcher in `main.rs` (arms kept in their original order, so the first matching arm still wins): comp, event, snapshot, explain, spring-fit, compare, mcp, fx, layer-normal, onion, trail, proxy-bench, studio.
-#![allow(unused_imports)]
 use super::*;
 
 /// `Some(result)` when one of this part's arms matched the command line, `None` to try the next part.

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Commands part 5 of the dispatcher in `main.rs` (arms kept in their original order, so the first matching arm still wins): mocap-info, mocap-match, mocap-retarget, machine, machine-sim, bind, bind-eval, container, scroll, layout-preview, pick, select-box, timeline, keyedit, render-gpu, collab-sim, vcs, fuzz, fuzz-grid, ci, export-fit, size-report, lod, lod-pick, face-train, face-eval, face-detect, face-track, face-synth, collab-token, color-space, reparent, comp.
-#![allow(unused_imports)]
 use super::*;
 
 /// `Some(result)` when one of this part's arms matched the command line, `None` to try the next part.

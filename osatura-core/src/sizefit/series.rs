@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Time-series reduction shared by Lottie tracks (part of `sizefit`; see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 // Time series reduction shared by Lottie tracks (step decimation, key reduction, deduplication)

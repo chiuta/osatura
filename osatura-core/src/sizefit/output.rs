@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! HTML player and project JSON outputs: number rounding, path simplification, frame dedup (part of `sizefit`; see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 // HTML player: number rounding in the SVG text, path simplification, frame dedup

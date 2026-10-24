@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Ratchet for `.unwrap()` in production code. Counts the lines that call `.unwrap()` in the library and CLI sources, before the
-//! first `#[cfg(test)] mod` of each file and not in test, fuzz or demo modules. The number may only go down: after removing an
+//! first `#[cfg(test)] mod` of each file and not in test, fuzz or demo modules. The number is exact and may only go down: after removing an
 //! `unwrap`, lower BUDGET; a new `unwrap` fails this test (use `?`, `ok_or_else`, `total_cmp` or `expect` with the invariant).
 //! Sorting floats with `partial_cmp(..).unwrap()` is never acceptable: a NaN from imported data would panic (use `total_cmp`).
 use std::{fs, path::{Path, PathBuf}};
 
-const BUDGET: usize = 69;
+const BUDGET: usize = 72;
 
 /// Text before the first `#[cfg(test)] mod ...` (a `#[cfg(test)]` on a single item, such as a `thread_local!`, does not end production code).
 fn split_before_test_module(s: &str) -> &str {
@@ -18,6 +18,12 @@ fn split_before_test_module(s: &str) -> &str {
         from = i + 1;
     }
     &s[..at]
+}
+
+/// The part of a line before a trailing `//` comment (a `//` inside a string literal also cuts, which can only under-count a line that
+/// has an unwrap after a URL-like string: keep such lines simple).
+fn code_part(l: &str) -> &str {
+    l.find("//").map_or(l, |i| &l[..i])
 }
 
 fn rs_files(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -38,17 +44,17 @@ fn production_unwraps_do_not_grow_and_no_float_sort_can_panic() {
     let (mut n, mut nan_sorts) = (0usize, vec![]);
     for f in files {
         let name = f.file_name().unwrap().to_string_lossy().to_string();
-        if name.ends_with("_tests.rs") || name == "tests.rs" || name == "fuzz.rs" || f.components().any(|c| c.as_os_str() == "fuzz") || name == "demo.rs" { continue; }
+        if name.ends_with("_tests.rs") || name == "tests.rs" || name == "fuzz.rs" || f.strip_prefix(&root).unwrap().components().any(|c| c.as_os_str() == "fuzz") || name == "demo.rs" { continue; }
         let s = fs::read_to_string(&f).unwrap();
         let body = split_before_test_module(&s);
         for (i, l) in body.lines().enumerate() {
             let t = l.trim_start();
             if t.starts_with("//") { continue; }
-            if l.contains(".unwrap()") { n += 1; }
-            if l.contains("partial_cmp") && l.contains(".unwrap()") { nan_sorts.push(format!("{}:{}", f.display(), i + 1)); }
+            n += code_part(l).matches(".unwrap()").count();
+            if l.contains("partial_cmp") && code_part(l).contains(".unwrap()") { nan_sorts.push(format!("{}:{}", f.display(), i + 1)); }
         }
     }
     assert!(nan_sorts.is_empty(), "partial_cmp(..).unwrap() panics on NaN; use total_cmp: {nan_sorts:?}");
     assert!(n <= BUDGET, "production .unwrap() count is {n}, budget {BUDGET}: do not add new ones");
-    assert!(n >= BUDGET - 5, "production .unwrap() count fell to {n}: lower BUDGET in this test to {n}");
+    assert!(n == BUDGET, "production .unwrap() count fell to {n}: lower BUDGET in this test to {n} (the budget is exact, so removed unwraps cannot be added back)");
 }

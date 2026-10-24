@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Part of `engine` (see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 // ---------------------------------------------------------------------------------------------
@@ -41,7 +40,7 @@ pub struct Engine {
     pub(super) pslot_init: Vec<f32>,
     /// Resolved mesh locks and glues (`links.rs`); `None` when the project has none.
     pub(super) links: Option<crate::links::Resolved>,
-    /// Container layout per node: `[dx, dy, kx, ky]` (`containers.rs`); empty when unused.
+    /// Container layout per node: `[dx, dy, kx, ky]` (`containers/`); empty when unused.
     pub(super) layout: Vec<Option<[f32; 4]>>,
 }
 

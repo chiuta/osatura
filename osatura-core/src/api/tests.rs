@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Tests of `api`.
-#![allow(unused_imports)]
 
 use super::*;
 
@@ -682,6 +681,14 @@ fn vcs_branch_list_delete_status_diff_show_gc_fsck() {
 fn api_surface_snapshot() {
     // the facade is split over several files: read them in module order (mod.rs head, then the parts)
     let src = [include_str!("mod.rs"), include_str!("facade.rs"), include_str!("vcs.rs"), include_str!("ci_write.rs")].join("\n");
+    // a new part file must be added to the list above, or its public items would be missing from the snapshot
+    let mut declared: Vec<&str> = include_str!("mod.rs")
+        .lines()
+        .filter_map(|l| l.strip_prefix("mod ").and_then(|r| r.strip_suffix(';')))
+        .filter(|m| *m != "tests")
+        .collect();
+    declared.sort_unstable();
+    assert_eq!(declared, ["ci_write", "facade", "vcs"], "api/mod.rs declares a part that the surface snapshot does not read");
     let mut items: Vec<String> = Vec::new();
     let mut ctx = String::new();
     let mut in_enum = false;

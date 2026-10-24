@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Command-line parsing: positional arguments, flags, `--key value` options, per-command option checks and usage lookup.
-#![allow(unused_imports)]
 use super::*;
 
 /// Positional arguments, bare flags, and `--key value` options.
@@ -395,3 +394,12 @@ pub(crate) fn check_flags(a: &Args, raw: &[String]) -> Result<(), String> {
     Ok(())
 }
 
+
+/// A layer name made from an SVG `id` for `import-svg --split`: a layer name may not contain `/` or `::` (the engine refuses the
+/// whole project), so those and control characters become `_`; the result is trimmed, at most 100 characters, and `shape` when empty.
+pub(crate) fn split_layer_name(id: &str) -> String {
+    let cleaned: String = id.trim().replace("::", "_").chars().map(|c| if c == '/' || c.is_control() { '_' } else { c }).collect();
+    let name: String = cleaned.trim().chars().take(100).collect();
+    let name = name.trim().to_string();
+    if name.is_empty() { "shape".to_string() } else { name }
+}

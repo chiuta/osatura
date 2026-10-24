@@ -28,7 +28,7 @@ Principles that shape the project:
 >
 > | Verified | Not verified |
 > |---|---|
-> | **Local (Linux x86-64, 24 Oct 2026):** 1338 tests of `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` plus 19 doc-tests pass (the GPU crate needs an adapter and the window crate a desktop; before this the count including the GPU crate was 1368). **On GitHub Actions (24 Oct 2026, toolchain 1.97.0):** the test suite and `clippy -D warnings` pass on Linux, macOS (arm64) and Windows; `cargo deny` and `reuse lint` pass; the WebAssembly module builds for `wasm32-unknown-unknown` and the wrapper's test passes against the real module under Node 20; the release binaries pass a smoke test (`--version`, `demo`, `check`, `render`) and `osatura-studio --selftest` runs on Windows and macOS. Four headless-Chromium smoke tests of the studio pass; the CLI, the Rust facade and the C ABI (also under ASan/UBSan) were run with the examples in the docs | **No person has used the executables on a real Windows or macOS desktop**: the Windows double-click launcher and the `osatura-studio` window app (WebView2 / WKWebView) were only compiled and self-tested in CI; the binaries are **not code-signed** (SmartScreen "Unknown publisher", macOS Gatekeeper); the Linux binary was built on an Ubuntu runner only; **the WebAssembly module has never been run in a browser** and its speed and memory are unmeasured; the studio was never used by a person in production, nor in a browser other than Chromium; no real GPU (only a software adapter), webcam, photograph or motion-capture file was ever used; no security audit, lawyer review or patent search |
+> | **Local (Linux x86-64, 24 Oct 2026):** 1343 tests of `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` plus 19 doc-tests pass (the GPU crate needs an adapter and the window crate a desktop; before this the count including the GPU crate was 1368). **On GitHub Actions (24 Oct 2026, toolchain 1.97.0):** the test suite and `clippy -D warnings` pass on Linux, macOS (arm64) and Windows; `cargo deny` and `reuse lint` pass; the WebAssembly module builds for `wasm32-unknown-unknown` and the wrapper's test passes against the real module under Node 20; the release binaries pass a smoke test (`--version`, `demo`, `check`, `render`) and `osatura-studio --selftest` runs on Windows and macOS. Five headless-Chromium smoke tests of the studio pass locally (CI does not run them); the CLI, the Rust facade and the C ABI (also under ASan/UBSan) were run with the examples in the docs | **No person has used the executables on a real Windows or macOS desktop**: the Windows double-click launcher and the `osatura-studio` window app (WebView2 / WKWebView) were only compiled and self-tested in CI; the binaries are **not code-signed** (SmartScreen "Unknown publisher", macOS Gatekeeper); the Linux binary was built on an Ubuntu runner only; **the WebAssembly module was run only in headless Chromium** (Firefox and Safari were not tried; about 73 ms per 640x480 frame without a GPU); the studio was never used by a person in production, nor in a browser other than Chromium; no real GPU (only a software adapter), webcam, photograph or motion-capture file was ever used; no security audit, lawyer review or patent search |
 >
 > Read [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 numbered limits with severity and workaround) before you depend on anything.
 
@@ -51,7 +51,7 @@ Prebuilt archives, once the owner has published the draft release, are on the pr
 | `osatura-windows-x86_64.zip` | `osatura.exe` (command line + studio server), `osatura-studio.exe` (window app), C library and header, licences, third-party notices |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (Apple-silicon only), C library and header, licences, notices |
 | `osatura-linux-x86_64.tar.gz` | `osatura`, C library and header, licences, notices (no window app: use `osatura studio` and a browser) |
-| `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (unverified in browsers, see [docs/WASM.md](docs/WASM.md)) |
+| `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (run only in headless Chromium, see [docs/WASM.md](docs/WASM.md)) |
 | `SHA256SUMS.txt` | check every download against it |
 
 * **Windows:** double-click `osatura.exe` to create `Documents\OSATURA\first-rig.json` (the walking-person demo: head with ear, hands with fingers, feet with toes) and open the studio in your browser, or double-click `osatura-studio.exe` for a window of its own. Both programs are unsigned: choose *More info* then *Run anyway* in SmartScreen. See [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
@@ -69,7 +69,7 @@ Details and exact options: [docs/CLI_REFERENCE.md](docs/CLI_REFERENCE.md); what 
 * **Output.** SVG, PNG, PNG sequences and sprite sheets, GIF, APNG, MP4/WebM (through ffmpeg), self-contained HTML player, Lottie and dotLottie, glTF 2.0 binary, OpenEXR/16-bit PNG, OCA; size-targeted export (`export-fit`). Import: SVG, OpenRaster, Lottie, BVH, PNG/GIF/APNG sequences.
 * **Quality tooling.** `check`, `lint`, semantic `diff`, pose fuzzing with heat maps, animation CI with perceptual diff and golden frames ([docs/CI.md](docs/CI.md)), version control with semantic merge (`vcs`), safety checks for flashing and motion.
 * **Studio.** Browser editor served by the CLI: canvas gizmos, timeline, dope sheet and graph editor, overlays, command palette and shortcuts, undo/redo, real-time multi-user editing with an optional token and a persistent log ([docs/STUDIO.md](docs/STUDIO.md)).
-* **Libraries.** Stable Rust facade ([docs/API.md](docs/API.md)), C ABI ([docs/C_ABI.md](docs/C_ABI.md)), WebAssembly module and JavaScript wrapper (built and tested under Node in CI, not yet run in a browser; [docs/WASM.md](docs/WASM.md)), optional wgpu renderer.
+* **Libraries.** Stable Rust facade ([docs/API.md](docs/API.md)), C ABI ([docs/C_ABI.md](docs/C_ABI.md)), WebAssembly module and JavaScript wrapper (built and tested under Node in CI, run only in headless Chromium; [docs/WASM.md](docs/WASM.md)), optional wgpu renderer.
 
 ## Quick start
 
@@ -147,7 +147,7 @@ Start at [docs/INDEX.md](docs/INDEX.md) (all documents, audiences, reading paths
 | [docs/FAQ.md](docs/FAQ.md) | common questions |
 | [docs/API.md](docs/API.md) | Rust facade 1.4 |
 | [docs/C_ABI.md](docs/C_ABI.md) | C interface |
-| [docs/WASM.md](docs/WASM.md) | WebAssembly (built in CI, not run in a browser) |
+| [docs/WASM.md](docs/WASM.md) | WebAssembly (built in CI, run in headless Chromium only) |
 | [docs/CI.md](docs/CI.md) | animation CI |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | build, test, conventions, release |
 | [docs/SECURITY.md](docs/SECURITY.md) | threat model and hardening |

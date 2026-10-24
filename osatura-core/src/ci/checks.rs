@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Part of `ci` (see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 pub(super) fn svg_frame(e: &Engine, name: &str, f: u32, store: &mut GoldenStore, o: &RunOptions) -> Result<FrameResult, String> {

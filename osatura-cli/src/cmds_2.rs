@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Commands part 2 of the dispatcher in `main.rs` (arms kept in their original order, so the first matching arm still wins): retarget, stats, diff, golden, lint, contracts, loop-solve, coach, timecode, keys, marker, idle, follow, import-svg, import-bvh, lipsync-text, speech-motion, mouth, tag, autorig, slider, view-swap, align, distribute, trim, shot, camera-seq.
-#![allow(unused_imports)]
 use super::*;
 
 /// `Some(result)` when one of this part's arms matched the command line, `None` to try the next part.
@@ -277,7 +276,7 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                     .paths
                     .iter()
                     .map(|path| {
-                        let base = if path.name.is_empty() { "shape".to_string() } else { path.name.clone() };
+                        let base = split_layer_name(&path.name);
                         let mut n = base.clone();
                         let mut k = 2;
                         while !seen.insert(n.clone()) {

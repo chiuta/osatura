@@ -363,7 +363,7 @@ engine with explicit limits. The threat model and the hardening measures are in 
 
 Multi-user editing is built in three layers, all deterministic and testable without a network.
 
-**collab.rs, the replica.** A CRDT over the project's JSON. An object key is a last-writer-wins
+**collab/, the replica.** A CRDT over the project's JSON. An object key is a last-writer-wins
 register. An array is an RGA (replicated growable array, Roh et al. 2011) with tombstones, and removal
 wins over concurrent edits. Ordering uses Lamport clocks (Lamport 1978) and vector clocks (Fidge,
 Mattern). Changes travel as an `Envelope { replica, seq, lamport, deps, ops }`. Delivery is causal
@@ -477,7 +477,7 @@ Example: a new per-layer number.
 
 ### 12.3 Add an exporter
 
-1. Put the writer in `osatura-core` (for example next to `export.rs`, `gltf.rs` or
+1. Put the writer in `osatura-core` (for example next to `export.rs`, `gltf/` or
    `lottie_export.rs`). It takes an `Engine` or `Project`, evaluates frames through
    `evaluate_checked`, and must not read private state.
 2. Decide and document what it cannot represent. Emit warnings, not guesses, for dropped features.

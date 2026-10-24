@@ -15,7 +15,7 @@ sha256sum -c --ignore-missing SHA256SUMS.txt
 **macOS:**
 
 ```
-shasum -a 256 -c SHA256SUMS.txt 2>&1 | grep -v 'No such file'
+shasum -a 256 -c SHA256SUMS.txt 2>&1 | grep ': OK$'
 ```
 
 **Windows (PowerShell):**

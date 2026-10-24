@@ -1504,7 +1504,7 @@ $ osatura sound add small.json x.json x nosuch.wav              # a missing file
 
 Usage line: `osatura import-svg <file.svg> <out.json> [--split]  SVG subset -> one vector layer, or one layer per shape named by its id (warnings for the rest)`
 
-Creates a new project (24 fps, 24 frames; size from the `viewBox` or `width`/`height`, else 512x512) with **one vector layer `svg`** holding the shapes of an SVG subset: `path` (all commands), `rect` (rounded corners ignored), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` with `transform`, and solid `fill`/`stroke`/`stroke-width`. Everything else is skipped with a `warning:` line **on stdout**: `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. A gradient paint (`fill="url(#g)"`) falls back to grey. Limits: 8 MB of SVG, 200,000 anchors, a cap on elements.
+Creates a new project (24 fps, 24 frames; size from the `viewBox` or `width`/`height`, else 512x512) with **one vector layer `svg`** holding the shapes of an SVG subset: `path` (all commands), `rect` (rounded corners ignored), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` with `transform`, and solid `fill`/`stroke`/`stroke-width`. Everything else is skipped with a `warning:` line **on stdout** (when the element is outside `<defs>`; a `<filter>`, `<clipPath>`, `<mask>` or `<pattern>` inside `<defs>` and the `filter`, `clip-path` and `mask` attributes are ignored without a warning): `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. A gradient paint (`fill="url(#g)"`) falls back to grey. Limits: 8 MB of SVG, 200,000 anchors, a cap on elements.
 
 ```
 $ osatura import-svg s.svg svg.json
@@ -1516,7 +1516,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-With `--split` every shape becomes **its own layer**, named after the shape's `id` (shapes without an id are named `shape`; a repeated name gets ` 2`, ` 3`...), in file order. That is the form to use when the drawing is going to be rigged part by part; see [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+With `--split` every shape becomes **its own layer**, named after the shape's `id` in file order. A shape without an id is named after its tag and position (`rect1`, `circle6`), a repeated id gets `_1`, `_2`..., and characters a layer name may not contain (`/`, `::`, control characters) become `_`; names are cut to 100 characters. That is the form to use when the drawing is going to be rigged part by part; see [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split

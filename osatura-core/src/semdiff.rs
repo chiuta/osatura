@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
-//! Semantic diff and three-way merge of project documents (I-01, the engine behind `vcs.rs`).
+//! Semantic diff and three-way merge of project documents (I-01, the engine behind `vcs/`).
 //!
 //! Pure functions on `serde_json::Value`; no files, no clock. Own design from textbook ideas:
 //! * three-way merge of sequences: S. Khanna, K. Kunal, B. C. Pierce, "A formal investigation of
@@ -8,7 +8,7 @@
 //! * longest common subsequence by dynamic programming with common prefix/suffix trimming (the
 //!   Hunt-McIlroy 1977 / Myers 1986 problem; plain O(n*m) table here, capped);
 //! * tree diff by stable identities instead of positions (the same notion of identity as
-//!   `collab.rs`: an object is the same object when `id`, `name` or `target`+`prop` match).
+//!   `collab/`: an object is the same object when `id`, `name` or `target`+`prop` match).
 //!
 //! # Model
 //! A project is a JSON tree. Arrays whose elements all carry an identity are *keyed arrays*: an

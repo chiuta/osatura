@@ -13,7 +13,7 @@ Contents: [Environment](#1-environment) - [Build and test commands](#2-build-and
 | Rust (stable, edition 2021 workspace) | everything | developed with rustc 1.97.0; `Cargo.lock` is committed, builds are `--locked`-friendly |
 | A C compiler (`cc`) | the C ABI example/test (optional) | see [C_ABI.md](C_ABI.md) |
 | `ffmpeg` / `ffprobe` on `PATH` | video export, audio decoding of mp3/ogg, `dof-export` to .mp4/.webm, `soundtrack` | **never bundled or required for building**; commands that need it say so and fail without a success message |
-| Node.js >= 18 and `playwright-core` + Chromium | the four studio smoke tests; the WASM wrapper test | defaults: `/opt/npm-tools/node_modules/playwright-core`, `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`; override with `PLAYWRIGHT_CORE`, `CHROME` |
+| Node.js >= 18 and `playwright-core` + Chromium | the five studio smoke tests; the WASM wrapper test | defaults: `/opt/npm-tools/node_modules/playwright-core`, `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`; override with `PLAYWRIGHT_CORE`, `CHROME` |
 | `cargo-deny` | licence/ban/source policy | `scripts/licence-audit.sh` runs it when installed (`--no-deny` skips) |
 | `python3` | `scripts/licence-audit.sh` generates docs with an inline script | runs with `python3 -I` |
 | A Vulkan or GL adapter | only for real-GPU numbers from `osatura-gpu` | tests fall back to a software adapter; see section 2 |
@@ -36,7 +36,7 @@ Repository-level files: `ROADMAP.md` (section 9 is the dated feature and review 
 
 ```sh
 cargo build                                  # default members: core, cli, capi, wasm (gpu is opt-in)
-cargo test --workspace                       # run: 1338 tests + 19 doc-tests without gpu and gui (section 3)
+cargo test --workspace                       # run: 1343 tests + 19 doc-tests without gpu and gui (section 3)
 cargo test -p osatura-core                  # one crate (the engine and the facade tests)
 cargo test -p osatura-core api::            # a module or a name filter
 cargo test -p osatura-cli --test e2e        # one integration test file
@@ -67,7 +67,7 @@ Counts from `ROADMAP.md` section 9 and from a full `cargo test --workspace --off
 |---|---:|---:|---|
 | `osatura-core` unit (`src/lib.rs`) | 1167 | 349 s | every module; includes `api::tests::api_surface_snapshot` |
 | `osatura-core/tests/prelude_surface.rs` | 6 | 0.7 s | the facade from outside the crate (`#[non_exhaustive]`, error mapping, a representative subset of calls) |
-| `osatura-cli` unit (`src/main.rs`, studio, collab, http) | 80 | 42 s | option parsing, USAGE vs parser, HTTP server, policy, collab log |
+| `osatura-cli` unit (`src/usage_tests.rs`, `src/args.rs`, studio, collab, http) | 80 | 42 s | option parsing, USAGE vs parser, HTTP server, policy, collab log |
 | `tests/e2e.rs` | 2 | 214 s | the whole pipeline through the real binary (about 19 s in an idle debug build and 40 s in release according to the ROADMAP; here the machine was loaded) |
 | `tests/fixes.rs`, `tests/wave4.rs`, `tests/robust.rs` | 7, 15, 10 | 19 s, 1.2 s, 1.2 s | regressions of the review waves and hostile-input tests |
 | `tests/doc_mismatch.rs` | 20 | 1.8 s | doc/behaviour regressions: atomic outputs, strict options, the `--json`/`--quiet`/`--allow-empty` acceptance matrix, `golden` scale rules |
@@ -81,11 +81,11 @@ Counts from `ROADMAP.md` section 9 and from a full `cargo test --workspace --off
 | `osatura-gpu` unit + `tests/parity.rs` | 18 + 13 | 0.2 s + 6.5 s | GPU vs CPU parity (software adapter when no GPU) |
 | Doc-tests (`osatura-core`) | 19 | 171 s (each compiles a program) | the facade examples (`api/`, `lib.rs`); `osatura-capi`, `osatura-wasm` have none |
 
-Total: 1338 tests in the unit and integration binaries and 19 doc-tests, counted on 24 Oct 2026 with `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` (the 1368 of the next sentence also included the GPU crate's tests; recounted from a full `cargo test --workspace` run on 22 Oct 2026 after wave 7, the per-suite timings above are from an earlier run), plus 19 doc-tests; the whole `cargo test --workspace --offline` took 836 s on the shared machine.
+Total: 1343 tests in the unit and integration binaries and 19 doc-tests, counted on 24 Oct 2026 with `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` (the 1368 of the next sentence also included the GPU crate's tests; recounted from a full `cargo test --workspace` run on 22 Oct 2026 after wave 7, the per-suite timings above are from an earlier run), plus 19 doc-tests; the whole `cargo test --workspace --offline` took 836 s on the shared machine.
 
 Suites outside `cargo test`:
 
-* **Studio smoke tests (Chromium).** Five Node scripts drive the real studio in headless Chromium with `playwright-core`: `studio_ui_smoke.js` (128 checks), `studio_collab_smoke.js` (60, two pages on one machine), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35) and `studio_demo_smoke.js` (12: the guided demo loads all 13 steps, never writes, restores the project byte for byte and recovers a closed tab); all five passed on 24 Oct 2026 (counts as printed by the scripts). They are **not** run by `cargo test` and not part of CI by default. Run:
+* **Studio smoke tests (Chromium).** Five Node scripts drive the real studio in headless Chromium with `playwright-core`: `studio_ui_smoke.js` (128 checks), `studio_collab_smoke.js` (60, two pages on one machine), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35) and `studio_demo_smoke.js` (25: the guided demo loads all 13 steps, never writes, restores the project byte for byte and recovers a closed tab); all five passed on 24 Oct 2026 (counts as printed by the scripts). They are **not** run by `cargo test` and not part of CI by default. Run:
 
   ```sh
   cargo build -p osatura-cli
@@ -108,7 +108,7 @@ Adding tests: put engine tests next to the code (`#[cfg(test)]`), CLI behaviour 
 * **Atomic writes.** Write results with `fsutil::write_atomic` (temporary file in the same directory, `fsync`, rename; refuses symbolic links unless `--follow-symlinks`; falls back to an in-place `fsync`ed overwrite, documented as not atomic, when the directory is not writable). Never `std::fs::write` a user's file directly. Temporary directories come from `fsutil` (mode 0700, files 0600). Random bytes come from `fsutil::random_bytes` (`/dev/urandom`).
 * **Assets go through `assets::resolve`.** Relative image, normal-map and sound paths resolve against the process-wide asset directory (`assets::default_dir`, set from the input project's folder); absolute paths and `..` are refused unless `--allow-external-assets`; image files are capped at 64 MB and audio at 256 MB. Commands that write a derived project validate against the *input* project's directory and rewrite or warn about relative asset paths (`write_json`).
 * **Deterministic randomness.** Any random behaviour (fuzzing, noise, jitter, simulation) uses the engine's own seeded generator with a `--seed` option and is bit-reproducible. No `rand` crate, no system time as a seed.
-* **Println and closed pipes.** The CLI shadows `println!`/`print!` with macros that exit quietly on a closed pipe (`osatura ... | head` must not panic). Keep using them in `main.rs`.
+* **Println and closed pipes.** The CLI shadows `println!`/`print!` with macros that exit quietly on a closed pipe (`osatura ... | head` must not panic). Keep using them in modules declared after the macros in `main.rs`.
 * **Errors tell what to do.** Messages say what was wrong, which value, and the allowed range or the fix (the facade tests assert on this style).
 <!-- REUSE-IgnoreStart -->
 * **SPDX headers.** Every `.rs`, `.js`, `.mjs` and `.sh` file starts with `SPDX-License-Identifier:` equal to its crate's licence (MPL-2.0 for core/capi/wasm/gpu/scripts, AGPL-3.0-or-later for the CLI) and a copyright line; Markdown docs carry the CC-BY-4.0 header comment, as this file does. Other files (JSON, images, the license texts) are covered by `REUSE.toml`; when you add a new path pattern, add it there. `cargo test -p osatura-cli --test spdx_audit` fails otherwise.
@@ -119,7 +119,7 @@ Adding tests: put engine tests next to the code (`#[cfg(test)]`), CLI behaviour 
 ## 5. Checklist for a new module or command
 
 1. **Module** in `osatura-core/src/<name>.rs`, registered in `lib.rs`; SPDX header; unit tests (valid, boundary, hostile inputs, determinism); no panics.
-2. **CLI command** in `osatura-cli/src/main.rs`: a `USAGE` entry (exact spelling of every option), the dispatch arm, and the option tables: every value-taking option must be listed in `VALUE_OPTS`; flags that take no value in a command's `CMD_OPTS` entry where the global table would be wrong (for example `ci --prune` is a flag, `export-oca --layers` and `autotrace --png` take values, `keyedit --free` is a flag). The USAGE-versus-parser unit tests fail if the text and the parser disagree. Support the global flags (`--json`, `--quiet`, `--allow-empty`, `--allow-external-assets`, `--follow-symlinks`, `--max-input-bytes`), `<command> --help` and `--key=value`.
+2. **CLI command**: a `USAGE` entry (exact spelling of every option) in `osatura-cli/src/usage.rs`, the dispatch arm in one of `osatura-cli/src/cmds_1.rs` to `cmds_6.rs` (or in `main.rs` for `ui`), and the option tables in `osatura-cli/src/args.rs`: every value-taking option must be listed in `VALUE_OPTS`; flags that take no value in a command's `CMD_OPTS` entry where the global table would be wrong (for example `ci --prune` is a flag, `export-oca --layers` and `autotrace --png` take values, `keyedit --free` is a flag). The USAGE-versus-parser unit tests fail if the text and the parser disagree. Support the global flags (`--json`, `--quiet`, `--allow-empty`, `--allow-external-assets`, `--follow-symlinks`, `--max-input-bytes`), `<command> --help` and `--key=value`.
 3. **Writing output** only with `fsutil::write_atomic` or `write_json`; commands that produce nothing exit non-zero unless `--allow-empty`.
 4. **Documentation**: the command in [CLI_REFERENCE.md](CLI_REFERENCE.md) if you add one, a guide mention where relevant, and the entry in `ROADMAP.md` section 9 (what was added, what is *not* done: that list feeds [LIMITATIONS.md](LIMITATIONS.md)).
 5. **CLEANROOM.md row**: for every new algorithm record the public source it was implemented from (textbook, standard, paper) and the independent derivation; no row, no merge.

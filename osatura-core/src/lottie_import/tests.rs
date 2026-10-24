@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Tests of `lottie_import`.
-#![allow(unused_imports)]
 
 #[test]
 fn files_with_millions_of_values_are_refused_up_front() {
