@@ -22,6 +22,8 @@ const ROOT = path.resolve(HERE, '..');
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : d; };
 const BIN = path.resolve(arg('--bin', 'osatura'));
 const STUDIO = path.resolve(arg('--studio', path.join(ROOT, 'osatura-cli', 'src', 'studio.html')));
+const gunzipSrc = (() => { const l = fs.readFileSync(path.join(HERE, 'lib', 'gunzip.js'), 'utf8').split('\n'); let i = 0; while (l[i].startsWith('//')) i++; return l.slice(i).join('\n').trim(); })();
+const injectGunzip = (text) => text.replace(/\/\*gunzip:begin\*\/[\s\S]*?\/\*gunzip:end\*\//, () => '/*gunzip:begin*/\n' + gunzipSrc + '\n/*gunzip:end*/');
 const WORK = fs.mkdtempSync(path.join(os.tmpdir(), 'person-'));
 let built;
 try { built = personStages({bin: BIN, work: WORK}); } catch (e) { fs.rmSync(WORK, {recursive: true, force: true}); throw e; }
@@ -46,9 +48,9 @@ const panelAt = s.indexOf('<div id="sgp"'); must(panelAt > 0, '<div id="sgp"');
 s = s.slice(0, panelAt) + '<!--demo:panel-->\n' + td('tour.html') + '<!--/demo:panel-->\n' + s.slice(panelAt);
 // proiectele se stochează gzip+base64 (decomprimate în browser la „Start the demo”)
 fs.rmSync(WORK, {recursive: true, force: true});
-const packed = {engine, projectName: built.full.name, steps: steps.map((st) => { const {project, ...r} = st; return st.same ? r : {...r, zp: zlib.gzipSync(Buffer.from(project), {level: 9}).toString('base64')}; })};
+const packed = {engine, projectName: built.full.name, steps: steps.map((st) => { const {project, ...r} = st; return st.same ? r : {...r, zp: zlib.gzipSync(Buffer.from(JSON.stringify(project)), {level: 9}).toString('base64')}; })};
 const data = JSON.stringify(packed).replace(/</g, '\\u003c');
-const tourJs = td('tour.js').replace(/^\/\/ SPDX.*\n\/\/ Copyright.*\n/, '').replace('/*DM_TEXT*/{}', JSON.stringify(dmText)).replace(/`/g, '');
+const tourJs = injectGunzip(td('tour.js')).replace(/^\/\/ SPDX.*\n\/\/ Copyright.*\n/, '').replace('/*DM_TEXT*/{}', JSON.stringify(dmText)).replace(/`/g, '');
 const bodyEnd = s.lastIndexOf('</body>'); must(bodyEnd > 0, '</body>');
 s = s.slice(0, bodyEnd) + '<!--demo:script-->\n<script type="application/json" id="demo-tour">' + data + '</script>\n<script>\n' + tourJs + '</script>\n<!--/demo:script-->\n' + s.slice(bodyEnd);
 const btn = '<button id="sgbtn"';

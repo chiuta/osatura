@@ -7,8 +7,9 @@ const DM_KEY='osatura.demo';
 function dmMark(on,orig){ try{ if(on){ localStorage.setItem(DM_KEY,'1'); if(orig!==undefined){ try{ localStorage.setItem(DM_KEY+'.orig',JSON.stringify(orig)); }catch(e){ localStorage.removeItem(DM_KEY+'.orig'); } } } else { localStorage.removeItem(DM_KEY); localStorage.removeItem(DM_KEY+'.orig'); localStorage.removeItem(DM_KEY+'.step'); } }catch(e){} }
 function dmStored(k){ try{ return localStorage.getItem(DM_KEY+k); }catch(e){ return null; } }
 function dmData(){ if(!DM.data)DM.data=JSON.parse($('demo-tour').textContent); return DM.data; }
-async function dmGunzip(b){ const u=Uint8Array.from(atob(b),c=>c.charCodeAt(0)); return await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text(); }
-async function dmLoad(){ const D=dmData(); if(D.ready)return; for(const s of D.steps){ if(s.zp){ s.project=await dmGunzip(s.zp); delete s.zp; } } for(const s of D.steps){ if(s.same)s.project=D.steps.find(x=>x.id===s.same).project; } D.ready=true; }
+/*gunzip:begin*/
+/*gunzip:end*/
+async function dmLoad(){ const D=dmData(); if(D.ready)return; for(const s of D.steps){ if(s.zp){ s.project=await gunzipJson(s.zp); delete s.zp; } } for(const s of D.steps){ if(s.same)s.project=D.steps.find(x=>x.id===s.same).project; } D.ready=true; }
 function dmOpen(on){ const b=$('dmp'); const open=on===undefined?b.style.display!=='block':on; b.style.display=open?'block':'none'; if(open&&DM.active)dmFill(); if(open)setTimeout(()=>{ const t=$('dm-run').style.display==='block'?$('dm-next'):$('dm-start'); if(t&&!t.disabled)t.focus(); },0); }
 function dmSet(value){ return api('/api/op',{op:'set',path:'',value}); }
 async function dmApply(value){ const r=await dmSet(value); if(r&&r.ok===false){ toast((r.errors||['could not load the project']).join('; '),true); return false; }
