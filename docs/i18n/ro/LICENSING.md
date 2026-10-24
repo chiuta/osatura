@@ -1,5 +1,7 @@
 # OSATURA — licențiere (DECIS: Varianta A, aplicată la 22 oct. 2026; vezi LICENSE și LICENSES/)
 
+**Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
+
 **Stare:** Varianta A de mai jos a fost aleasă și aplicată: MPL-2.0 pentru biblioteci (core, capi, wasm, gpu), AGPL-3.0-or-later pentru `osatura-cli` (CLI + studio) și `osatura-gui` (studioul într-o fereastră nativă), CC-BY-4.0 pentru documentație și pentru resursele și modelele sintetice, politica de mărci în TRADEMARK.md, DCO în CONTRIBUTING.md, anteturi SPDX în toate fișierele .rs/.js/.mjs/.sh și REUSE.toml pentru restul, oferta de cod sursă conform secțiunii 13 din AGPL (`/source`, `--source-url`), câmpurile `license` din Cargo completate. Acțiuni rămase proprietarului: verificarea de către un avocat, căutarea mărcii (EUIPO/OSIM), verificarea brevetelor (docs/PATENT_NOTES.md), un CLA dacă se dorește licențiere duală, includerea notificărilor despre terți în lansările binare.
 
 

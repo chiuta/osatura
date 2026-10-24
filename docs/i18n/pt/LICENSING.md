@@ -1,5 +1,7 @@
 # OSATURA — licenciamento (DECIDIDO: Variante A, aplicada em 22 de out. de 2026; veja LICENSE e LICENSES/)
 
+**Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
+
 **Situação:** a Variante A abaixo foi escolhida e aplicada: MPL-2.0 para as bibliotecas (core, capi, wasm, gpu), AGPL-3.0-or-later para `osatura-cli` (CLI + studio) e `osatura-gui` (o estúdio em uma janela nativa), CC-BY-4.0 para a documentação e para os assets e modelos sintéticos, política de marca em TRADEMARK.md, DCO em CONTRIBUTING.md, cabeçalhos SPDX em todos os arquivos .rs/.js/.mjs/.sh e REUSE.toml para os demais, oferta de código-fonte da seção 13 da AGPL (`/source`, `--source-url`), campos `license` do Cargo definidos. Ações restantes do proprietário: revisão por um advogado, busca de marca (EUIPO/OSIM), triagem de patentes (docs/PATENT_NOTES.md), um CLA caso se queira licenciamento duplo, incluir os avisos de terceiros nas versões binárias.
 
 

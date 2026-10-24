@@ -1,5 +1,7 @@
 # OSATURA — licencelés (ELDÖNTVE: A változat, alkalmazva 2026. okt. 22-én; lásd LICENSE és LICENSES/)
 
+**Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
+
 **Állapot:** Az alábbi A változatot választottuk és alkalmaztuk: MPL-2.0 a könyvtárakra (core, capi, wasm, gpu), AGPL-3.0-or-later az `osatura-cli`-re (CLI + studio) és az `osatura-gui`-ra (a studio natív ablakban), CC-BY-4.0 a dokumentációra és a szintetikus asset-ekre/modellekre, védjegyszabályzat a TRADEMARK.md-ben, DCO a CONTRIBUTING.md-ben, SPDX-fejlécek minden .rs/.js/.mjs/.sh fájlban és REUSE.toml a többihez, AGPL 13. szakasz szerinti forrásajánlat (`/source`, `--source-url`), a Cargo `license` mezők beállítva. Hátralévő tulajdonosi teendők: jogi felülvizsgálat, védjegykeresés (EUIPO/OSIM), szabadalmi átvilágítás (docs/PATENT_NOTES.md), CLA, ha kettős licencelést szeretnénk, harmadik felek értesítéseinek mellékelése a bináris kiadásokhoz.
 
 
