@@ -79,7 +79,7 @@ Contagens de `ROADMAP.md` seção 9 e de uma execução completa de `cargo test 
 | `osatura-capi/tests/abi.rs` | 7 | 1.1 s | a ABI C pelo lado Rust (smoke test em C: `osatura-capi/tests/smoke.c`, compilado manualmente, veja [C_ABI.md](C_ABI.md)) |
 | `osatura-wasm` unit | 8 | 1.6 s | as funções da ABI no host |
 | `osatura-gpu` unit + `tests/parity.rs` | 18 + 13 | 0.2 s + 6.5 s | paridade GPU vs CPU (adaptador de software quando não há GPU) |
-| Doc-tests (`osatura-core`) | 19 | 171 s (cada um compila um programa) | os exemplos da fachada (`api.rs`, `lib.rs`); `osatura-capi`, `osatura-wasm` não têm nenhum |
+| Doc-tests (`osatura-core`) | 19 | 171 s (cada um compila um programa) | os exemplos da fachada (`api/`, `lib.rs`); `osatura-capi`, `osatura-wasm` não têm nenhum |
 
 Total: 1338 testes nos binários de unidade e de integração e 19 doc-tests, contados em 24 Oct 2026 com `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` (os 1368 da frase seguinte incluíam também os testes do crate de GPU; recontado a partir de uma execução completa de `cargo test --workspace` em 22 Oct 2026, após a onda 7; os tempos por suíte acima vêm de uma execução anterior), mais 19 doc-tests; o `cargo test --workspace --offline` completo levou 836 s na máquina compartilhada.
 
@@ -102,7 +102,7 @@ Adicionando testes: coloque os testes do motor junto ao código (`#[cfg(test)]`)
 
 ## 4. Convenções de código
 
-* **Nada de panics na entrada.** Tudo o que lê um projeto, um arquivo, um argumento ou um byte de rede retorna um erro. Indexação, fatiamento, `unwrap` e estouro aritmético sobre valores não confiáveis são bugs. A fachada (`api.rs`) também captura panics e retorna `ApiError::Internal` (somente onde o alvo faz unwinding), mas essa é a última linha de defesa, não um princípio de projeto.
+* **Nada de panics na entrada.** Tudo o que lê um projeto, um arquivo, um argumento ou um byte de rede retorna um erro. Indexação, fatiamento, `unwrap` e estouro aritmético sobre valores não confiáveis são bugs. A fachada (`api/`) também captura panics e retorna `ApiError::Internal` (somente onde o alvo faz unwinding), mas essa é a última linha de defesa, não um princípio de projeto.
 * **Política de valores finitos.** Números vindos de arquivos e argumentos são verificados quanto a NaN e infinito e quanto a magnitudes razoáveis (os intervalos da fachada estão em [API.md](API.md): magnitudes até 1e7, fps em (0, 1000], quadros 1..=200000, stage até 32768, 4096 ossos, lado de renderização até 16384 px). Rejeite, não limite (clamp), a menos que a função esteja documentada como limitadora (os quadros são limitados à linha do tempo).
 * **Verifique os tamanhos antes de alocar.** Buffers de pixels, tamanhos de malha e contagens de amostras são calculados com aritmética verificada e recusados antes de `vec![..]`.
 * **Gravações atômicas.** Grave os resultados com `fsutil::write_atomic` (arquivo temporário no mesmo diretório, `fsync`, renomeação; recusa links simbólicos, a menos que `--follow-symlinks`; recorre a uma sobrescrita in-place com `fsync`, documentada como não atômica, quando o diretório não é gravável). Nunca use `std::fs::write` diretamente em um arquivo do usuário. Os diretórios temporários vêm de `fsutil` (modo 0700, arquivos 0600). Os bytes aleatórios vêm de `fsutil::random_bytes` (`/dev/urandom`).
@@ -114,7 +114,7 @@ Adicionando testes: coloque os testes do motor junto ao código (`#[cfg(test)]`)
 * **Cabeçalhos SPDX.** Todo arquivo `.rs`, `.js`, `.mjs` e `.sh` começa com `SPDX-License-Identifier:` igual à licença do seu crate (MPL-2.0 para core/capi/wasm/gpu/scripts, AGPL-3.0-or-later para a CLI) e uma linha de copyright; os documentos Markdown trazem o comentário de cabeçalho CC-BY-4.0, como este arquivo. Os demais arquivos (JSON, imagens, os textos de licença) são cobertos por `REUSE.toml`; ao adicionar um novo padrão de caminho, inclua-o ali. Caso contrário, `cargo test -p osatura-cli --test spdx_audit` falha.
 <!-- REUSE-IgnoreEnd -->
 * **Dependências.** Poucas, em Rust puro, com licença permissiva. Um novo crate exige uma verificação em `deny.toml` (`scripts/licence-audit.sh`), uma linha em `docs/THIRD_PARTY.md` (regenerado) e uma justificativa na entrada do ROADMAP. `osatura-core` é compilado sem features padrão por capi, wasm, gpu e pela CLI, portanto qualquer coisa pesada fica atrás de uma feature.
-* **Fachada primeiro.** Toda nova capacidade do motor visível ao usuário que outras linguagens devam alcançar vai em `osatura-core/src/api.rs` com uma linha de snapshot, um doc-test e um teste de unidade; as camadas C e wasm apenas encapsulam a fachada.
+* **Fachada primeiro.** Toda nova capacidade do motor visível ao usuário que outras linguagens devam alcançar vai em `osatura-core/src/api/` com uma linha de snapshot, um doc-test e um teste de unidade; as camadas C e wasm apenas encapsulam a fachada.
 
 ## 5. Checklist para um novo módulo ou comando
 
@@ -123,7 +123,7 @@ Adicionando testes: coloque os testes do motor junto ao código (`#[cfg(test)]`)
 3. **Gravar a saída** somente com `fsutil::write_atomic` ou `write_json`; os comandos que não produzem nada terminam com código diferente de zero, a menos que `--allow-empty`.
 4. **Documentação**: o comando em [CLI_REFERENCE.md](CLI_REFERENCE.md), se você adicionar um, uma menção em um guia onde for relevante, e a entrada em `ROADMAP.md` seção 9 (o que foi adicionado, o que *não* foi feito: essa lista alimenta [LIMITATIONS.md](LIMITATIONS.md)).
 5. **Linha em CLEANROOM.md**: para cada novo algoritmo, registre a fonte pública a partir da qual foi implementado (livro-texto, norma, artigo) e a derivação independente; sem linha, sem merge.
-6. **Reaprovar a superfície da fachada** se `api.rs` mudou: execute `OSATURA_BLESS=1 cargo test -p osatura-core api::`, revise o diff de `osatura-core/src/api_surface.txt` (uma linha removida ou alterada é uma mudança incompatível e exige uma versão major da fachada; uma linha adicionada é uma minor) e depois execute os testes novamente sem a variável. Atualize [API.md](API.md) e os wrappers C/WASM e seus headers, se devem expô-la.
+6. **Reaprovar a superfície da fachada** se `api/` mudou: execute `OSATURA_BLESS=1 cargo test -p osatura-core api::`, revise o diff de `osatura-core/src/api_surface.txt` (uma linha removida ou alterada é uma mudança incompatível e exige uma versão major da fachada; uma linha adicionada é uma minor) e depois execute os testes novamente sem a variável. Atualize [API.md](API.md) e os wrappers C/WASM e seus headers, se devem expô-la.
 7. **End-to-end**: adicione o comando ao pipeline e2e se ele pertencer ao caminho de produção; adicione uma verificação smoke aos scripts do studio se ele tiver interface.
 8. **Execute**: `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `scripts/licence-audit.sh` (quando dependências ou cabeçalhos mudaram).
 

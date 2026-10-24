@@ -79,7 +79,7 @@ Numerele provin din `ROADMAP.md` secțiunea 9 și dintr-o rulare completă `carg
 | `osatura-capi/tests/abi.rs` | 7 | 1.1 s | C ABI prin partea Rust (test smoke în C: `osatura-capi/tests/smoke.c`, compilat manual, vezi [C_ABI.md](C_ABI.md)) |
 | `osatura-wasm` unit | 8 | 1.6 s | funcțiile ABI pe gazdă |
 | `osatura-gpu` unit + `tests/parity.rs` | 18 + 13 | 0.2 s + 6.5 s | paritate GPU față de CPU (adaptor software când nu există GPU) |
-| Doc-tests (`osatura-core`) | 19 | 171 s (fiecare compilează un program) | exemplele fațadei (`api.rs`, `lib.rs`); `osatura-capi`, `osatura-wasm` nu au |
+| Doc-tests (`osatura-core`) | 19 | 171 s (fiecare compilează un program) | exemplele fațadei (`api/`, `lib.rs`); `osatura-capi`, `osatura-wasm` nu au |
 
 Total: 1338 de teste în binarele de unit și de integrare și 19 doc-tests, numărate pe 24 oct. 2026 cu `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` (cele 1368 din propoziția următoare includeau și testele crate-ului GPU; renumărat dintr-o rulare completă `cargo test --workspace` din 22 oct. 2026 după valul 7, duratele pe suite de mai sus provin dintr-o rulare anterioară), plus 19 doc-tests; întregul `cargo test --workspace --offline` a durat 836 s pe mașina partajată.
 
@@ -102,7 +102,7 @@ Adăugarea de teste: pune testele motorului lângă cod (`#[cfg(test)]`), testel
 
 ## 4. Convenții de cod
 
-* **Fără panici la intrare.** Tot ce citește un proiect, un fișier, un argument sau un octet din rețea returnează o eroare. Indexarea, tăierea (slicing), `unwrap` și depășirea aritmetică pe valori nesigure sunt bug-uri. Fațada (`api.rs`) prinde în plus panicile și returnează `ApiError::Internal` (doar unde ținta face unwinding), dar aceasta este ultima linie de apărare, nu o proiectare.
+* **Fără panici la intrare.** Tot ce citește un proiect, un fișier, un argument sau un octet din rețea returnează o eroare. Indexarea, tăierea (slicing), `unwrap` și depășirea aritmetică pe valori nesigure sunt bug-uri. Fațada (`api/`) prinde în plus panicile și returnează `ApiError::Internal` (doar unde ținta face unwinding), dar aceasta este ultima linie de apărare, nu o proiectare.
 * **Politica valorilor finite.** Numerele din fișiere și din argumente sunt verificate pentru NaN și infinit și pentru ordine de mărime rezonabile (intervalele fațadei sunt în [API.md](API.md): magnitudini până la 1e7, fps în (0, 1000], cadre 1..=200000, scenă până la 32768, 4096 de oase, latura de randare până la 16384 px). Respinge, nu limita (clamp), cu excepția cazului în care funcția este documentată ca limitând (cadrele sunt limitate la timeline).
 * **Verifică dimensiunile înainte de alocare.** Buffer-ele de pixeli, dimensiunile mesh-urilor și numărul de eșantioane se calculează cu aritmetică verificată și se refuză înainte de `vec![..]`.
 * **Scrieri atomice.** Scrie rezultatele cu `fsutil::write_atomic` (fișier temporar în același director, `fsync`, redenumire; refuză legăturile simbolice, cu excepția cazului în care se dă `--follow-symlinks`; revine la o suprascriere pe loc cu `fsync`, documentată ca neatomică, când directorul nu poate fi scris). Nu scrie niciodată direct cu `std::fs::write` un fișier al utilizatorului. Directoarele temporare vin din `fsutil` (mod 0700, fișiere 0600). Octeții aleatori vin din `fsutil::random_bytes` (`/dev/urandom`).
@@ -114,7 +114,7 @@ Adăugarea de teste: pune testele motorului lângă cod (`#[cfg(test)]`), testel
 * **Anteturi SPDX.** Fiecare fișier `.rs`, `.js`, `.mjs` și `.sh` începe cu `SPDX-License-Identifier:` egal cu licența crate-ului său (MPL-2.0 pentru core/capi/wasm/gpu/scripts, AGPL-3.0-or-later pentru CLI) și o linie de copyright; documentele Markdown poartă comentariul-antet CC-BY-4.0, ca acest fișier. Celelalte fișiere (JSON, imagini, textele de licență) sunt acoperite de `REUSE.toml`; când adaugi un tipar nou de cale, adaugă-l acolo. Altfel `cargo test -p osatura-cli --test spdx_audit` eșuează.
 <!-- REUSE-IgnoreEnd -->
 * **Dependențe.** Puține, Rust pur, licență permisivă. Un crate nou cere o verificare `deny.toml` (`scripts/licence-audit.sh`), o linie în `docs/THIRD_PARTY.md` (regenerat) și o justificare în intrarea din ROADMAP. `osatura-core` este construit fără features implicite de capi, wasm, gpu și CLI, așa că tot ce este greu trece în spatele unui feature.
-* **Fațada mai întâi.** O capabilitate nouă a motorului, vizibilă utilizatorului, la care ar trebui să ajungă și alte limbaje, intră în `osatura-core/src/api.rs` cu o linie de snapshot, un doc-test și un test unitar; straturile C și wasm învelesc doar fațada.
+* **Fațada mai întâi.** O capabilitate nouă a motorului, vizibilă utilizatorului, la care ar trebui să ajungă și alte limbaje, intră în `osatura-core/src/api/` cu o linie de snapshot, un doc-test și un test unitar; straturile C și wasm învelesc doar fațada.
 
 ## 5. Listă de verificare pentru un modul sau o comandă nouă
 
@@ -123,7 +123,7 @@ Adăugarea de teste: pune testele motorului lângă cod (`#[cfg(test)]`), testel
 3. **Scrierea ieșirii** doar cu `fsutil::write_atomic` sau `write_json`; comenzile care nu produc nimic se încheie cu cod diferit de zero, cu excepția cazului în care se dă `--allow-empty`.
 4. **Documentație**: comanda în [CLI_REFERENCE.md](CLI_REFERENCE.md) dacă adaugi una, o mențiune într-un ghid acolo unde e relevant și intrarea din `ROADMAP.md` secțiunea 9 (ce a fost adăugat, ce *nu* s-a făcut: lista aceea alimentează [LIMITATIONS.md](LIMITATIONS.md)).
 5. **Rândul din CLEANROOM.md**: pentru fiecare algoritm nou consemnează sursa publică după care a fost implementat (manual, standard, articol) și derivarea independentă; fără rând, fără merge.
-6. **Reaprobarea suprafeței fațadei** dacă `api.rs` s-a schimbat: rulează `OSATURA_BLESS=1 cargo test -p osatura-core api::`, revizuiește diff-ul fișierului `osatura-core/src/api_surface.txt` (o linie eliminată sau modificată este o schimbare incompatibilă și cere o versiune majoră a fațadei; o linie adăugată este una minoră), apoi rulează din nou testele fără variabilă. Actualizează [API.md](API.md), precum și wrapperele C/WASM și antetele lor, dacă ar trebui să o expună.
+6. **Reaprobarea suprafeței fațadei** dacă `api/` s-a schimbat: rulează `OSATURA_BLESS=1 cargo test -p osatura-core api::`, revizuiește diff-ul fișierului `osatura-core/src/api_surface.txt` (o linie eliminată sau modificată este o schimbare incompatibilă și cere o versiune majoră a fațadei; o linie adăugată este una minoră), apoi rulează din nou testele fără variabilă. Actualizează [API.md](API.md), precum și wrapperele C/WASM și antetele lor, dacă ar trebui să o expună.
 7. **End-to-end**: adaugă comanda în pipeline-ul e2e dacă aparține căii de producție; adaugă o verificare smoke în scripturile studioului dacă are UI.
 8. **Rulare**: `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `scripts/licence-audit.sh` (când s-au schimbat dependențele sau antetele).
 

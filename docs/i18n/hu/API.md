@@ -37,12 +37,12 @@ A `default-features = false` elhagyja a Rhai szkriptmotort (lásd [Feature flag-
 
 ## Stabilitási szabályzat
 
-1. **A surface-fájl.** Az `osatura-core/src/api_surface.txt` felsorolja az `src/api.rs` minden nyilvános elemét (típusok, mezők, variánsok, konstansok és metódus-szignatúrák, soronként egyet). Az `api::tests::api_surface_snapshot` egységteszt újraépíti ezt a listát az `api.rs`-ből, és elbukik, ha eltér a beléptetett fájltól. A surface minden változtatása ezért mindkét fájl tudatos, átnézett módosítása.
+1. **A surface-fájl.** Az `osatura-core/src/api_surface.txt` felsorolja az `src/api/` minden nyilvános elemét (típusok, mezők, variánsok, konstansok és metódus-szignatúrák, soronként egyet). Az `api::tests::api_surface_snapshot` egységteszt újraépíti ezt a listát az `api/`-ből, és elbukik, ha eltér a beléptetett fájltól. A surface minden változtatása ezért mindkét fájl tudatos, átnézett módosítása.
 2. **A prelude-teszt.** Az `osatura-core/tests/prelude_surface.rs` *külső* crate-ként fordul. A facade neveit kizárólag az `osatura_core::prelude`-on keresztül importálja, és egy reprezentatív részhalmazt hív meg (betöltés, renderelés, szerkesztés, exportálás, `Player`, az eszközök, a verziókezelő és CI burkolók, hibás bemenet kezelése). Ha egy általa használt név már nem exportálódik újra a prelude-ből, vagy egy szignatúra olyan módon változik, amelyet ezek a hívások észrevesznek, a teszt nem fordul le. Az `API_VERSION == "1.4.0"` értéket is ellenőrzi, így a verziólépés itt is tudatos módosítás. Nem sorol fel minden prelude-nevet, ezért egy név hozzáadása az újraexport-listához továbbra is kézi lépés.
-3. **Az ellenőrzés korlátai.** A pillanatkép az `api.rs` egysoros szignatúráinak szövegbeli átvizsgálása, nem fordítószintű diff, mint a `cargo-public-api`: azt a szemantikai változást, amely megtartja a szignatúra szövegét (például ugyanarra a bemenetre más hiba), nem veszi észre, a többsoros szignatúrát pedig elmulasztaná (a fájl ezért tartja egy sorban a szignatúrákat). A prelude újraexport-listáját (`lib.rs`) a külső teszt ellenőrzi, nem a pillanatkép.
+3. **Az ellenőrzés korlátai.** A pillanatkép az `api/` egysoros szignatúráinak szövegbeli átvizsgálása, nem fordítószintű diff, mint a `cargo-public-api`: azt a szemantikai változást, amely megtartja a szignatúra szövegét (például ugyanarra a bemenetre más hiba), nem veszi észre, a többsoros szignatúrát pedig elmulasztaná (a fájl ezért tartja egy sorban a szignatúrákat). A prelude újraexport-listáját (`lib.rs`) a külső teszt ellenőrzi, nem a pillanatkép.
 4. **A rejtett nem jelent támogatottat.** A `#[doc(hidden)] pub` modulok a workspace-en belüli fogyasztóknak léteznek. Az ígéreten kívül esnek, még ha le is fordulnak nálad.
 5. **Hogyan változtasd a facade-et** (karbantartóknak; szintén a [DEVELOPMENT.md](DEVELOPMENT.md) fájlban):
-   * szerkeszd az `api.rs` fájlt (egysoros szignatúrák, doc comment, doc-teszt az új önálló függvényekhez, egységtesztek);
+   * szerkeszd az `api/` fájlt (egysoros szignatúrák, doc comment, doc-teszt az új önálló függvényekhez, egységtesztek);
    * add hozzá az új nyilvános neveket a `lib.rs`-beli `prelude` újraexport-listához és a `tests/prelude_surface.rs` fájlhoz;
    * emeld az `API_VERSION` értékét (és az `API_VERSION_MAJOR` értékét, ha törő a változás) az alábbi szabályok szerint, valamint a `prelude_surface.rs`-ben ellenőrzött verziót;
    * a surface-fájlt tudatosan generáld újra: `OSATURA_BLESS=1 cargo test -p osatura-core api::`, majd nézd át az `api_surface.txt` diffjét;
@@ -540,7 +540,7 @@ pub fn tools() -> Result<(), ApiError> {
 
 ### Hogyan ellenőrizzük a példákat
 
-A fenti kód az a kód, amely lefutott: ez a fájl a mintaforrásokból készül, amelyeket `cargo`-val lefordítottunk az `osatura-core` ellen, és végrehajtottunk (a használt projektfájlok az `osatura demo`, a `take-record`, a `clip add` és a `machine add` kimenetei, valamint egy konténert és egy scroll-régiót tartalmazó projekt). Az `api.rs` doc-tesztjei (`cargo test --doc -p osatura-core`: 19 doc-teszt, ebből 18 az `api.rs` facade-függvényein és a crate szintű példa a `lib.rs`-ben; debug buildben kb. 170 s, mert mindegyik egy programot fordít) magát a repository-ban lévő verziókezelő és CI burkolókat fedik le.
+A fenti kód az a kód, amely lefutott: ez a fájl a mintaforrásokból készül, amelyeket `cargo`-val lefordítottunk az `osatura-core` ellen, és végrehajtottunk (a használt projektfájlok az `osatura demo`, a `take-record`, a `clip add` és a `machine add` kimenetei, valamint egy konténert és egy scroll-régiót tartalmazó projekt). Az `api/` doc-tesztjei (`cargo test --doc -p osatura-core`: 19 doc-teszt, ebből 18 az `api/` facade-függvényein és a crate szintű példa a `lib.rs`-ben; debug buildben kb. 170 s, mert mindegyik egy programot fordít) magát a repository-ban lévő verziókezelő és CI burkolókat fedik le.
 
 ## Más nyelvek
 

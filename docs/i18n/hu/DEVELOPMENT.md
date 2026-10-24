@@ -79,7 +79,7 @@ A számok a `ROADMAP.md` 9. szakaszából és egy teljes `cargo test --workspace
 | `osatura-capi/tests/abi.rs` | 7 | 1.1 s | a C ABI a Rust oldalról (C smoke teszt: `osatura-capi/tests/smoke.c`, kézzel fordítva, lásd [C_ABI.md](C_ABI.md)) |
 | `osatura-wasm` unit | 8 | 1.6 s | az ABI-függvények a gazdagépen |
 | `osatura-gpu` unit + `tests/parity.rs` | 18 + 13 | 0.2 s + 6.5 s | GPU és CPU paritása (szoftveres adapter, ha nincs GPU) |
-| Doc-tesztek (`osatura-core`) | 19 | 171 s (mindegyik egy programot fordít) | a homlokzat példái (`api.rs`, `lib.rs`); az `osatura-capi` és az `osatura-wasm` crate-nek nincs |
+| Doc-tesztek (`osatura-core`) | 19 | 171 s (mindegyik egy programot fordít) | a homlokzat példái (`api/`, `lib.rs`); az `osatura-capi` és az `osatura-wasm` crate-nek nincs |
 
 Összesen: 1338 teszt a unit- és integrációs binárisokban és 19 doc-teszt, 2026. október 24-én megszámolva a `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` paranccsal (a következő mondat 1368-as száma a GPU crate tesztjeit is tartalmazta; a 7. hullám után, 2026. október 22-én egy teljes `cargo test --workspace` futásból újraszámolva, a fenti csomagonkénti időmérések egy korábbi futásból származnak), plusz 19 doc-teszt; a teljes `cargo test --workspace --offline` 836 s-ig tartott a megosztott gépen.
 
@@ -102,7 +102,7 @@ Tesztek hozzáadása: a motor tesztjeit a kód mellé tedd (`#[cfg(test)]`), a C
 
 ## 4. Kódolási konvenciók
 
-* **Bemenetre nincs pánik.** Bármi, ami projektet, fájlt, argumentumot vagy hálózati bájtot olvas, hibát ad vissza. Az indexelés, szeletelés, `unwrap` és az aritmetikai túlcsordulás nem megbízható értékeken hibának számít. A homlokzat (`api.rs`) ezen felül elkapja a pánikokat, és `ApiError::Internal` hibát ad vissza (csak ott, ahol a cél támogatja az unwindingot), de ez az utolsó védvonal, nem tervezési elv.
+* **Bemenetre nincs pánik.** Bármi, ami projektet, fájlt, argumentumot vagy hálózati bájtot olvas, hibát ad vissza. Az indexelés, szeletelés, `unwrap` és az aritmetikai túlcsordulás nem megbízható értékeken hibának számít. A homlokzat (`api/`) ezen felül elkapja a pánikokat, és `ApiError::Internal` hibát ad vissza (csak ott, ahol a cél támogatja az unwindingot), de ez az utolsó védvonal, nem tervezési elv.
 * **Véges értékek szabálya.** A fájlokból és argumentumokból érkező számokat NaN-ra és végtelenre, valamint ésszerű nagyságrendre ellenőrizzük (a homlokzat tartományai az [API.md](API.md) fájlban vannak: nagyságrend legfeljebb 1e7, fps a (0, 1000] tartományban, képkockák 1..=200000, színpad legfeljebb 32768, 4096 csont, renderoldal legfeljebb 16384 px). Utasíts el, ne vágj le, hacsak a függvény dokumentáltan nem vág (a képkockákat az idővonalhoz vágjuk).
 * **Foglalás előtt ellenőrizd a méreteket.** A pixelpuffereket, hálóméreteket és mintaszámokat ellenőrzött aritmetikával számoljuk, és a `vec![..]` előtt elutasítjuk.
 * **Atomi írás.** Az eredményeket a `fsutil::write_atomic` függvénnyel írd (ideiglenes fájl ugyanabban a könyvtárban, `fsync`, átnevezés; szimbolikus linket csak `--follow-symlinks` esetén fogad el; ha a könyvtár nem írható, helyben, `fsync`-kel felülír, ami dokumentáltan nem atomi). A felhasználó fájlját soha ne írd közvetlenül `std::fs::write`-tal. Az ideiglenes könyvtárakat az `fsutil` adja (0700-as mód, a fájlok 0600-asak). A véletlen bájtokat az `fsutil::random_bytes` adja (`/dev/urandom`).
@@ -114,7 +114,7 @@ Tesztek hozzáadása: a motor tesztjeit a kód mellé tedd (`#[cfg(test)]`), a C
 * **SPDX fejlécek.** Minden `.rs`, `.js`, `.mjs` és `.sh` fájl `SPDX-License-Identifier:` sorral kezdődik, amely megegyezik a crate licencével (MPL-2.0 a core/capi/wasm/gpu/scripts esetén, AGPL-3.0-or-later a CLI-nél), és egy szerzői jogi sorral; a Markdown dokumentumok CC-BY-4.0 fejléc-megjegyzést viselnek, ahogy ez a fájl is. A többi fájlt (JSON, képek, a licencszövegek) a `REUSE.toml` fedi; új útvonalmintánál oda is vedd fel. Ellenkező esetben a `cargo test -p osatura-cli --test spdx_audit` elbukik.
 <!-- REUSE-IgnoreEnd -->
 * **Függőségek.** Kevés, tiszta Rust, megengedő licenc. Egy új crate-hez `deny.toml`-ellenőrzés (`scripts/licence-audit.sh`), egy sor a `docs/THIRD_PARTY.md` fájlban (újragenerálva) és indoklás kell a ROADMAP-bejegyzésben. Az `osatura-core`-t a capi, a wasm, a gpu és a CLI alapértelmezett feature-ök nélkül építi, ezért minden nehéz dolog feature mögé kerül.
-* **Először a homlokzat.** Az új, felhasználó számára látható motorképesség, amelyet más nyelveknek is el kell érniük, az `osatura-core/src/api.rs` fájlba kerül egy pillanatkép-sorral, egy doc-teszttel és egy unit-teszttel; a C és a wasm réteg csak a homlokzatot burkolja.
+* **Először a homlokzat.** Az új, felhasználó számára látható motorképesség, amelyet más nyelveknek is el kell érniük, az `osatura-core/src/api/` fájlba kerül egy pillanatkép-sorral, egy doc-teszttel és egy unit-teszttel; a C és a wasm réteg csak a homlokzatot burkolja.
 
 ## 5. Ellenőrzőlista új modulhoz vagy parancshoz
 
@@ -123,7 +123,7 @@ Tesztek hozzáadása: a motor tesztjeit a kód mellé tedd (`#[cfg(test)]`), a C
 3. **A kimenet írása** csak a `fsutil::write_atomic` vagy a `write_json` segítségével; a semmit sem előállító parancsok nem nulla kóddal lépnek ki, hacsak nincs `--allow-empty`.
 4. **Dokumentáció**: a parancs a [CLI_REFERENCE.md](CLI_REFERENCE.md) fájlban, ha újat adsz hozzá, egy említés az útmutatókban, ahol releváns, és a bejegyzés a `ROADMAP.md` 9. szakaszában (mi került be, mi *nincs* kész: ez a lista táplálja a [LIMITATIONS.md](LIMITATIONS.md) fájlt).
 5. **CLEANROOM.md sor**: minden új algoritmushoz rögzítsd a nyilvános forrást, amelyből megvalósították (tankönyv, szabvány, tanulmány), és a független levezetést; sor nélkül nincs merge.
-6. **A homlokzati felület újra elfogadtatása**, ha az `api.rs` változott: futtasd az `OSATURA_BLESS=1 cargo test -p osatura-core api::` parancsot, nézd át az `osatura-core/src/api_surface.txt` diffjét (egy eltávolított vagy módosított sor törést jelent, és a homlokzat új főverzióját igényli; egy hozzáadott sor alverzió), majd futtasd újra a teszteket a változó nélkül. Frissítsd az [API.md](API.md) fájlt, valamint a C/WASM burkolókat és fejléceiket, ha ki kell tenniük.
+6. **A homlokzati felület újra elfogadtatása**, ha az `api/` változott: futtasd az `OSATURA_BLESS=1 cargo test -p osatura-core api::` parancsot, nézd át az `osatura-core/src/api_surface.txt` diffjét (egy eltávolított vagy módosított sor törést jelent, és a homlokzat új főverzióját igényli; egy hozzáadott sor alverzió), majd futtasd újra a teszteket a változó nélkül. Frissítsd az [API.md](API.md) fájlt, valamint a C/WASM burkolókat és fejléceiket, ha ki kell tenniük.
 7. **End-to-end**: add hozzá a parancsot az e2e pipeline-hoz, ha a gyártási úthoz tartozik; adj hozzá smoke-ellenőrzést a stúdió-szkriptekhez, ha van UI-ja.
 8. **Futtasd**: `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `scripts/licence-audit.sh` (ha függőségek vagy fejlécek változtak).
 
