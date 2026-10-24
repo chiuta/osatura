@@ -37,12 +37,12 @@ osatura-core = { path = "../osatura/osatura-core", default-features = false }
 
 ## Stability policy
 
-1. **The surface file.** `osatura-core/src/api_surface.txt` lists every public item of `src/api.rs` (types, fields, variants, constants and method signatures, one per line). The unit test `api::tests::api_surface_snapshot` rebuilds that list from `api.rs` and fails when it differs from the checked-in file. Every change of the surface is therefore a deliberate, reviewed edit of both files.
+1. **The surface file.** `osatura-core/src/api_surface.txt` lists every public item of `src/api/` (types, fields, variants, constants and method signatures, one per line). The unit test `api::tests::api_surface_snapshot` rebuilds that list from `api/` and fails when it differs from the checked-in file. Every change of the surface is therefore a deliberate, reviewed edit of both files.
 2. **The prelude test.** `osatura-core/tests/prelude_surface.rs` is compiled as an *external* crate. It imports facade names through `osatura_core::prelude` only and calls a representative subset (load, render, edit, export, `Player`, the tools, the version-control and CI wrappers, bad-input handling). If a name it uses stops being re-exported from the prelude, or a signature changes in a way those calls notice, that test stops compiling. It also asserts `API_VERSION == "1.4.0"`, so a version bump is a conscious edit there as well. It does not enumerate every prelude name, so adding a name to the re-export list remains a manual step.
-3. **Limits of the check.** The snapshot is a text scan of single-line signatures in `api.rs`, not a compiler-level diff such as `cargo-public-api`: a semantic change that keeps the signature text (for example a different error for the same input) is not caught, and a multi-line signature would be missed (the file keeps signatures on one line for that reason). The prelude re-export list (`lib.rs`) is checked by the external test, not by the snapshot.
+3. **Limits of the check.** The snapshot is a text scan of single-line signatures in `api/`, not a compiler-level diff such as `cargo-public-api`: a semantic change that keeps the signature text (for example a different error for the same input) is not caught, and a multi-line signature would be missed (the file keeps signatures on one line for that reason). The prelude re-export list (`lib.rs`) is checked by the external test, not by the snapshot.
 4. **Hidden does not mean supported.** `#[doc(hidden)] pub` modules exist for in-workspace consumers. They are outside the promise even though they compile for you.
 5. **How to change the facade** (maintainers; also in [DEVELOPMENT.md](DEVELOPMENT.md)):
-   * edit `api.rs` (one-line signatures, doc comment, a doc-test for new free functions, unit tests);
+   * edit `api/` (one-line signatures, doc comment, a doc-test for new free functions, unit tests);
    * add new public names to the `prelude` re-export list in `lib.rs`, and to `tests/prelude_surface.rs`;
    * bump `API_VERSION` (and `API_VERSION_MAJOR` if breaking) according to the rules below, and the version asserted in `prelude_surface.rs`;
    * regenerate the surface file deliberately: `OSATURA_BLESS=1 cargo test -p osatura-core api::` and review the diff of `api_surface.txt`;
@@ -540,7 +540,7 @@ pub fn tools() -> Result<(), ApiError> {
 
 ### How the examples are checked
 
-The code above is the code that ran: this file is generated from the sample sources, which were compiled with `cargo` against `osatura-core` and executed (the project files used are the output of `osatura demo`, `take-record`, `clip add` and `machine add`, plus a project with a container and a scroll region). The doc-tests in `api.rs` (`cargo test --doc -p osatura-core`: 19 doc-tests, 18 on facade functions in `api.rs` and the crate-level example in `lib.rs`; about 170 s in a debug build because each one compiles a program) cover the version-control and CI wrappers in the repository itself.
+The code above is the code that ran: this file is generated from the sample sources, which were compiled with `cargo` against `osatura-core` and executed (the project files used are the output of `osatura demo`, `take-record`, `clip add` and `machine add`, plus a project with a container and a scroll region). The doc-tests in `api/` (`cargo test --doc -p osatura-core`: 19 doc-tests, 18 on facade functions in `api/` and the crate-level example in `lib.rs`; about 170 s in a debug build because each one compiles a program) cover the version-control and CI wrappers in the repository itself.
 
 ## Other languages
 

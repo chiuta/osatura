@@ -38,7 +38,7 @@ fn production_unwraps_do_not_grow_and_no_float_sort_can_panic() {
     let (mut n, mut nan_sorts) = (0usize, vec![]);
     for f in files {
         let name = f.file_name().unwrap().to_string_lossy().to_string();
-        if name.ends_with("_tests.rs") || name == "tests.rs" || name == "fuzz.rs" || name == "demo.rs" { continue; }
+        if name.ends_with("_tests.rs") || name == "tests.rs" || name == "fuzz.rs" || f.components().any(|c| c.as_os_str() == "fuzz") || name == "demo.rs" { continue; }
         let s = fs::read_to_string(&f).unwrap();
         let body = split_before_test_module(&s);
         for (i, l) in body.lines().enumerate() {

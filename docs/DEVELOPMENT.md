@@ -79,7 +79,7 @@ Counts from `ROADMAP.md` section 9 and from a full `cargo test --workspace --off
 | `osatura-capi/tests/abi.rs` | 7 | 1.1 s | the C ABI through the Rust side (C smoke test: `osatura-capi/tests/smoke.c`, compiled by hand, see [C_ABI.md](C_ABI.md)) |
 | `osatura-wasm` unit | 8 | 1.6 s | the ABI functions on the host |
 | `osatura-gpu` unit + `tests/parity.rs` | 18 + 13 | 0.2 s + 6.5 s | GPU vs CPU parity (software adapter when no GPU) |
-| Doc-tests (`osatura-core`) | 19 | 171 s (each compiles a program) | the facade examples (`api.rs`, `lib.rs`); `osatura-capi`, `osatura-wasm` have none |
+| Doc-tests (`osatura-core`) | 19 | 171 s (each compiles a program) | the facade examples (`api/`, `lib.rs`); `osatura-capi`, `osatura-wasm` have none |
 
 Total: 1338 tests in the unit and integration binaries and 19 doc-tests, counted on 24 Oct 2026 with `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` (the 1368 of the next sentence also included the GPU crate's tests; recounted from a full `cargo test --workspace` run on 22 Oct 2026 after wave 7, the per-suite timings above are from an earlier run), plus 19 doc-tests; the whole `cargo test --workspace --offline` took 836 s on the shared machine.
 
@@ -102,7 +102,7 @@ Adding tests: put engine tests next to the code (`#[cfg(test)]`), CLI behaviour 
 
 ## 4. Coding conventions
 
-* **No panics on input.** Anything that reads a project, a file, an argument or a network byte returns an error. Indexing, slicing, `unwrap` and arithmetic overflow on untrusted values are bugs. The facade (`api.rs`) additionally catches panics and returns `ApiError::Internal` (only where the target unwinds), but that is the last line of defence, not a design.
+* **No panics on input.** Anything that reads a project, a file, an argument or a network byte returns an error. Indexing, slicing, `unwrap` and arithmetic overflow on untrusted values are bugs. The facade (`api/`) additionally catches panics and returns `ApiError::Internal` (only where the target unwinds), but that is the last line of defence, not a design.
 * **Finite-value policy.** Numbers from files and arguments are checked for NaN and infinity, and for sane magnitudes (the facade's ranges are in [API.md](API.md): magnitudes up to 1e7, fps in (0, 1000], frames 1..=200000, stage up to 32768, 4096 bones, render side up to 16384 px). Reject, do not clamp, unless the function is documented to clamp (frames are clamped to the timeline).
 * **Check sizes before allocating.** Pixel buffers, mesh sizes and sample counts are computed with checked arithmetic and refused before `vec![..]`.
 * **Atomic writes.** Write results with `fsutil::write_atomic` (temporary file in the same directory, `fsync`, rename; refuses symbolic links unless `--follow-symlinks`; falls back to an in-place `fsync`ed overwrite, documented as not atomic, when the directory is not writable). Never `std::fs::write` a user's file directly. Temporary directories come from `fsutil` (mode 0700, files 0600). Random bytes come from `fsutil::random_bytes` (`/dev/urandom`).
@@ -114,7 +114,7 @@ Adding tests: put engine tests next to the code (`#[cfg(test)]`), CLI behaviour 
 * **SPDX headers.** Every `.rs`, `.js`, `.mjs` and `.sh` file starts with `SPDX-License-Identifier:` equal to its crate's licence (MPL-2.0 for core/capi/wasm/gpu/scripts, AGPL-3.0-or-later for the CLI) and a copyright line; Markdown docs carry the CC-BY-4.0 header comment, as this file does. Other files (JSON, images, the license texts) are covered by `REUSE.toml`; when you add a new path pattern, add it there. `cargo test -p osatura-cli --test spdx_audit` fails otherwise.
 <!-- REUSE-IgnoreEnd -->
 * **Dependencies.** Few, pure Rust, permissive licence. A new crate needs a `deny.toml` check (`scripts/licence-audit.sh`), a line in `docs/THIRD_PARTY.md` (regenerated) and a justification in the ROADMAP entry. `osatura-core` is built without default features by capi, wasm, gpu and the CLI, so anything heavy goes behind a feature.
-* **Facade first.** New user-visible engine capability that other languages should reach goes into `osatura-core/src/api.rs` with a snapshot line, a doc-test and a unit test; the C and wasm layers wrap the facade only.
+* **Facade first.** New user-visible engine capability that other languages should reach goes into `osatura-core/src/api/` with a snapshot line, a doc-test and a unit test; the C and wasm layers wrap the facade only.
 
 ## 5. Checklist for a new module or command
 
@@ -123,7 +123,7 @@ Adding tests: put engine tests next to the code (`#[cfg(test)]`), CLI behaviour 
 3. **Writing output** only with `fsutil::write_atomic` or `write_json`; commands that produce nothing exit non-zero unless `--allow-empty`.
 4. **Documentation**: the command in [CLI_REFERENCE.md](CLI_REFERENCE.md) if you add one, a guide mention where relevant, and the entry in `ROADMAP.md` section 9 (what was added, what is *not* done: that list feeds [LIMITATIONS.md](LIMITATIONS.md)).
 5. **CLEANROOM.md row**: for every new algorithm record the public source it was implemented from (textbook, standard, paper) and the independent derivation; no row, no merge.
-6. **Facade surface re-bless** if `api.rs` changed: run `OSATURA_BLESS=1 cargo test -p osatura-core api::`, review the diff of `osatura-core/src/api_surface.txt` (a removed or changed line is a breaking change and needs a major version of the facade; an added line is a minor), then run the tests again without the variable. Update [API.md](API.md), and the C/WASM wrappers and their headers if they should expose it.
+6. **Facade surface re-bless** if `api/` changed: run `OSATURA_BLESS=1 cargo test -p osatura-core api::`, review the diff of `osatura-core/src/api_surface.txt` (a removed or changed line is a breaking change and needs a major version of the facade; an added line is a minor), then run the tests again without the variable. Update [API.md](API.md), and the C/WASM wrappers and their headers if they should expose it.
 7. **End-to-end**: add the command to the e2e pipeline if it belongs to the production path; add a smoke check to the studio scripts if it has UI.
 8. **Run**: `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `scripts/licence-audit.sh` (when dependencies or headers changed).
 
