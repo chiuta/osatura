@@ -47,7 +47,7 @@ jobs:
         run: |
           v=""
           if [ "$GITHUB_REF_TYPE" = "tag" ]; then v="${GITHUB_REF_NAME#v}"
-          else v=$(printf '%s' "$MSG" | grep -o '\[release v[0-9][^]]*\]' | head -1 | sed 's/\[release v\(.*\)\]/\1/'); fi
+          else v=$(printf '%s' "$MSG" | grep -o '\[release v[0-9][^]]*\]' | head -1 | sed 's/\[release v\(.*\)\]/\1/' || true); fi
           [ -n "$v" ] || v="$(grep -m1 '^version' osatura-cli/Cargo.toml | cut -d'"' -f2)-dev.${GITHUB_SHA::7}"
           echo "release version: $v"
           echo "OSATURA_VERSION=$v" >> "$GITHUB_ENV"
