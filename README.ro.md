@@ -2,13 +2,9 @@
 <!-- Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio) -->
 # OSATURA
 
-**Languages:** [English](README.md) · [Română](README.ro.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Magyar](README.hu.md) · [Italiano](README.it.md) · [Português](README.pt.md)
+**Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
 
 **Un motor de rigging și animație vectorială 2D scris în Rust: oase, cinematică inversă (IK), skinning, deformatoare, un runtime cu mașini de stări, o trusă de instrumente în linia de comandă, un studio în browser și biblioteci integrabile, într-un singur workspace.** Versiunea engleză: [README.md](README.md). Documentația din `docs/` este în limba engleză.
-
-![Un personaj văzut din lateral (cap, ureche, coadă, trunchi, brațe cu degete, picioare, labe) merge pe loc pe un sol care se derulează; ieșirea reală a comenzii osatura export pe proiectul demo încorporat](docs/img/walk.gif)
-
-*Ce produce: omulețul care merge, inclus în aplicație, exportat cu `osatura demo-person` și `osatura export` (tot proiectul este un singur fișier JSON). Încearcă în două minute: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
 
 ## Rezumat și filozofie
 
@@ -33,16 +29,6 @@ Principiile proiectului:
 > | **Local (Linux x86-64, 24 oct. 2026):** 1343 de teste din `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` plus 19 doc-teste trec (crate-ul GPU are nevoie de un adaptor, iar crate-ul ferestrei de un desktop; înainte de aceasta, numărul incluzând crate-ul GPU era 1368). **Pe GitHub Actions (24 oct. 2026, toolchain 1.97.0):** suita de teste și `clippy -D warnings` trec pe Linux, macOS (arm64) și Windows; `cargo deny` și `reuse lint` trec; modulul WebAssembly se construiește pentru `wasm32-unknown-unknown`, iar testul wrapper-ului trece față de modulul real sub Node 20; binarele de lansare trec un test de fum (`--version`, `demo`, `check`, `render`), iar `osatura-studio --selftest` rulează pe Windows și macOS. Cinci teste de fum ale studioului în Chromium fără interfață trec; CLI-ul, fațada Rust și ABI-ul C (inclusiv sub ASan/UBSan) au fost rulate cu exemplele din documentație | **Nicio persoană nu a folosit executabilele pe un desktop real Windows sau macOS**: lansatorul Windows prin dublu clic și aplicația cu fereastră `osatura-studio` (WebView2 / WKWebView) au fost doar compilate și autotestate în CI; binarele **nu sunt semnate cu cod** (SmartScreen „Unknown publisher”, macOS Gatekeeper); binarul Linux a fost construit doar pe un runner Ubuntu; **modulul WebAssembly a fost rulat doar în Chromium fără interfață** (Firefox și Safari nu au fost încercate; aproximativ 73 ms per cadru 640x480 fără GPU); studioul nu a fost folosit de o persoană în producție și nici într-un alt browser decât Chromium; nu s-a folosit niciodată un GPU real (doar un adaptor software), o cameră web, o fotografie sau un fișier de captură de mișcare; fără audit de securitate, revizuire juridică sau căutare de brevete |
 >
 > Citește [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 de limite numerotate, cu gravitate și soluție ocolitoare) înainte să te bazezi pe ceva.
-
-## Maturitate: de unde să începi
-
-OSATURA are mult mai multe funcții decât poate valida o singură persoană. Tabelul arată unde pune autorul efortul mai întâi. **Este o intenție, nu o garanție de calitate: niciun animator în afară de autor nu a folosit încă nimic din el** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
-
-| Nivel | Ce | Ce înseamnă |
-|---|---|---|
-| Nucleu | Formatul proiectului, oase, IK, skinning, chei și easing, randare, export în GIF, PNG, SVG, Lottie și HTML, linia de comandă `osatura`, noțiunile de bază din studio | Se repară primul, are cele mai multe teste, începe de aici ([tutorial](docs/TUTORIAL_SVG.md)) |
-| Susținut | Deformatoare, fizică, mașini de stări, import SVG și OpenRaster, biblioteca C, modulul WebAssembly | Funcționează în teste; mai puțini ochi pe el |
-| Experimental | Retargeting de mocap, sincronizare labială și vorbire, detectarea fețelor, intrare live, colaborare, control al versiunilor, export la dimensiune țintă, niveluri de detaliu, randare pe GPU | Așteaptă-te la asperități și schimbări; nu construi încă pe el |
 
 ## Descărcare
 

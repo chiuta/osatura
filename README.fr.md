@@ -2,7 +2,7 @@
 <!-- Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio) -->
 # OSATURA
 
-**Languages:** [English](README.md) · [Română](README.ro.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Magyar](README.hu.md) · [Italiano](README.it.md) · [Português](README.pt.md)
+**Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
 
 **Un moteur de rigging et d'animation vectoriels 2D en Rust : os, IK, skinning, déformateurs, un runtime de machines à états, une boîte à outils en ligne de commande, un studio dans le navigateur et des bibliothèques intégrables, réunis dans un seul workspace.** Version roumaine : [README.ro.md](README.ro.md).
 
