@@ -358,7 +358,7 @@ en bac à sable avec des limites explicites. Le modèle de menaces et les mesure
 
 L'édition multi-utilisateur est construite en trois couches, toutes déterministes et testables sans réseau.
 
-**collab.rs, la réplique.** Un CRDT sur le JSON du projet. Une clé d'objet est un registre last-writer-wins.
+**collab/, la réplique.** Un CRDT sur le JSON du projet. Une clé d'objet est un registre last-writer-wins.
 Un tableau est un RGA (replicated growable array, Roh et al. 2011) avec des tombstones, et la suppression
 l'emporte sur les modifications concurrentes. L'ordonnancement utilise des horloges de Lamport (Lamport 1978) et des horloges vectorielles (Fidge,
 Mattern). Les changements circulent sous forme d'`Envelope { replica, seq, lamport, deps, ops }`. La livraison est causale
@@ -472,7 +472,7 @@ Exemple : un nouveau nombre par calque.
 
 ### 12.3 Ajouter un exporteur
 
-1. Placez le writer dans `osatura-core` (par exemple à côté de `export.rs`, `gltf.rs` ou
+1. Placez le writer dans `osatura-core` (par exemple à côté de `export.rs`, `gltf/` ou
    `lottie_export.rs`). Il prend un `Engine` ou un `Project`, évalue les images via
    `evaluate_checked` et ne doit pas lire d'état privé.
 2. Décidez et documentez ce qu'il ne peut pas représenter. Émettez des avertissements, et non des suppositions, pour les fonctionnalités abandonnées.

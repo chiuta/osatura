@@ -28,7 +28,7 @@ Principiile proiectului:
 >
 > | Verificat | Neverificat |
 > |---|---|
-> | **Local (Linux x86-64, 24 oct. 2026):** 1343 de teste din `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` plus 19 doc-teste trec (crate-ul GPU are nevoie de un adaptor, iar crate-ul ferestrei de un desktop; înainte de aceasta, numărul incluzând crate-ul GPU era 1368). **Pe GitHub Actions (24 oct. 2026, toolchain 1.97.0):** suita de teste și `clippy -D warnings` trec pe Linux, macOS (arm64) și Windows; `cargo deny` și `reuse lint` trec; modulul WebAssembly se construiește pentru `wasm32-unknown-unknown`, iar testul wrapper-ului trece față de modulul real sub Node 20; binarele de lansare trec un test de fum (`--version`, `demo`, `check`, `render`), iar `osatura-studio --selftest` rulează pe Windows și macOS. Patru teste de fum ale studioului în Chromium fără interfață trec; CLI-ul, fațada Rust și ABI-ul C (inclusiv sub ASan/UBSan) au fost rulate cu exemplele din documentație | **Nicio persoană nu a folosit executabilele pe un desktop real Windows sau macOS**: lansatorul Windows prin dublu clic și aplicația cu fereastră `osatura-studio` (WebView2 / WKWebView) au fost doar compilate și autotestate în CI; binarele **nu sunt semnate cu cod** (SmartScreen „Unknown publisher”, macOS Gatekeeper); binarul Linux a fost construit doar pe un runner Ubuntu; **modulul WebAssembly nu a fost niciodată rulat într-un browser**, iar viteza și memoria lui nu sunt măsurate; studioul nu a fost folosit de o persoană în producție și nici într-un alt browser decât Chromium; nu s-a folosit niciodată un GPU real (doar un adaptor software), o cameră web, o fotografie sau un fișier de captură de mișcare; fără audit de securitate, revizuire juridică sau căutare de brevete |
+> | **Local (Linux x86-64, 24 oct. 2026):** 1343 de teste din `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` plus 19 doc-teste trec (crate-ul GPU are nevoie de un adaptor, iar crate-ul ferestrei de un desktop; înainte de aceasta, numărul incluzând crate-ul GPU era 1368). **Pe GitHub Actions (24 oct. 2026, toolchain 1.97.0):** suita de teste și `clippy -D warnings` trec pe Linux, macOS (arm64) și Windows; `cargo deny` și `reuse lint` trec; modulul WebAssembly se construiește pentru `wasm32-unknown-unknown`, iar testul wrapper-ului trece față de modulul real sub Node 20; binarele de lansare trec un test de fum (`--version`, `demo`, `check`, `render`), iar `osatura-studio --selftest` rulează pe Windows și macOS. Cinci teste de fum ale studioului în Chromium fără interfață trec; CLI-ul, fațada Rust și ABI-ul C (inclusiv sub ASan/UBSan) au fost rulate cu exemplele din documentație | **Nicio persoană nu a folosit executabilele pe un desktop real Windows sau macOS**: lansatorul Windows prin dublu clic și aplicația cu fereastră `osatura-studio` (WebView2 / WKWebView) au fost doar compilate și autotestate în CI; binarele **nu sunt semnate cu cod** (SmartScreen „Unknown publisher”, macOS Gatekeeper); binarul Linux a fost construit doar pe un runner Ubuntu; **modulul WebAssembly a fost rulat doar în Chromium fără interfață** (Firefox și Safari nu au fost încercate; aproximativ 73 ms per cadru 640x480 fără GPU); studioul nu a fost folosit de o persoană în producție și nici într-un alt browser decât Chromium; nu s-a folosit niciodată un GPU real (doar un adaptor software), o cameră web, o fotografie sau un fișier de captură de mișcare; fără audit de securitate, revizuire juridică sau căutare de brevete |
 >
 > Citește [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 de limite numerotate, cu gravitate și soluție ocolitoare) înainte să te bazezi pe ceva.
 
@@ -51,7 +51,7 @@ Arhivele precompilate, după ce proprietarul publică lansarea ciornă, se găse
 | `osatura-windows-x86_64.zip` | `osatura.exe` (linia de comandă + serverul studioului), `osatura-studio.exe` (aplicația cu fereastră), biblioteca C și header-ul, licențe, notificări despre terți |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (doar Apple silicon), biblioteca C și header-ul, licențe, notificări |
 | `osatura-linux-x86_64.tar.gz` | `osatura`, biblioteca C și header-ul, licențe, notificări (fără aplicație cu fereastră: folosește `osatura studio` și un browser) |
-| `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (neverificat în browsere, vezi [docs/WASM.md](docs/WASM.md)) |
+| `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (rulat doar în Chromium fără interfață, vezi [docs/WASM.md](docs/WASM.md)) |
 | `SHA256SUMS.txt` | verifică fiecare descărcare față de el |
 
 * **Windows:** fă dublu clic pe `osatura.exe` pentru a crea `Documents\OSATURA\first-rig.json` și a deschide studioul în browser, sau dublu clic pe `osatura-studio.exe` pentru o fereastră proprie. Ambele programe sunt nesemnate: alege *More info*, apoi *Run anyway* în SmartScreen. Vezi [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
@@ -69,7 +69,7 @@ Detalii și opțiunile exacte: [docs/CLI_REFERENCE.md](docs/CLI_REFERENCE.md); c
 * **Ieșire.** SVG, PNG, secvențe PNG și sprite sheet, GIF, APNG, MP4/WebM (prin ffmpeg), player HTML autonom, Lottie și dotLottie, glTF 2.0 binar, OpenEXR/PNG pe 16 biți, OCA; export cu țintă de dimensiune (`export-fit`). Import: SVG, OpenRaster, Lottie, BVH, secvențe PNG/GIF/APNG.
 * **Instrumente de calitate.** `check`, `lint`, `diff` semantic, fuzzing de poze cu hărți termice, CI de animație cu diferență perceptuală și cadre de referință ([docs/CI.md](docs/CI.md)), control de versiuni cu îmbinare semantică (`vcs`), verificări de siguranță pentru străluciri și mișcare.
 * **Studio.** Editor în browser servit de CLI: gizmo-uri pe canvas, cronologie, dope sheet și editor de grafice, suprapuneri, paletă de comenzi și scurtături, undo/redo, editare multiutilizator în timp real cu token opțional și jurnal persistent ([docs/STUDIO.md](docs/STUDIO.md)).
-* **Biblioteci.** Fațadă Rust stabilă ([docs/API.md](docs/API.md)), ABI C ([docs/C_ABI.md](docs/C_ABI.md)), modul WebAssembly și învelitoare JavaScript (construit și testat sub Node în CI, încă nerulat într-un browser; [docs/WASM.md](docs/WASM.md)), randor wgpu opțional.
+* **Biblioteci.** Fațadă Rust stabilă ([docs/API.md](docs/API.md)), ABI C ([docs/C_ABI.md](docs/C_ABI.md)), modul WebAssembly și învelitoare JavaScript (construit și testat sub Node în CI, rulat doar în Chromium fără interfață; [docs/WASM.md](docs/WASM.md)), randor wgpu opțional.
 
 ## Pornire rapidă
 
@@ -147,7 +147,7 @@ cargo test -p osatura-cli --test spdx_audit
 | [docs/FAQ.md](docs/FAQ.md) | întrebări frecvente |
 | [docs/API.md](docs/API.md) | fațada Rust 1.4 |
 | [docs/C_ABI.md](docs/C_ABI.md) | interfața C |
-| [docs/WASM.md](docs/WASM.md) | WebAssembly (construit în CI, nerulat într-un browser) |
+| [docs/WASM.md](docs/WASM.md) | WebAssembly (construit în CI, rulat doar în Chromium fără interfață) |
 | [docs/CI.md](docs/CI.md) | CI de animație |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | construire, teste, convenții, lansare |
 | [docs/SECURITY.md](docs/SECURITY.md) | model de amenințări și întărire |

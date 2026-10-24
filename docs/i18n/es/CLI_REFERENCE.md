@@ -1504,7 +1504,7 @@ $ osatura sound add small.json x.json x nosuch.wav              # a missing file
 
 Línea de uso: `osatura import-svg <file.svg> <out.json> [--split]  SVG subset -> one vector layer, or one layer per shape named by its id (warnings for the rest)`
 
-Crea un proyecto nuevo (24 fps, 24 fotogramas; tamaño tomado de `viewBox` o de `width`/`height`, y 512x512 en su defecto) con **una capa vectorial `svg`** que contiene las formas de un subconjunto de SVG: `path` (todos los comandos), `rect` (las esquinas redondeadas se ignoran), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` con `transform`, y `fill`/`stroke`/`stroke-width` sólidos. Todo lo demás se omite con una línea `warning:` **en stdout**: `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. Un relleno de degradado (`fill="url(#g)"`) se sustituye por gris. Límites: 8 MB de SVG, 200 000 anclas y un tope de elementos.
+Crea un proyecto nuevo (24 fps, 24 fotogramas; tamaño tomado de `viewBox` o de `width`/`height`, y 512x512 en su defecto) con **una capa vectorial `svg`** que contiene las formas de un subconjunto de SVG: `path` (todos los comandos), `rect` (las esquinas redondeadas se ignoran), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` con `transform`, y `fill`/`stroke`/`stroke-width` sólidos. Todo lo demás se omite con una línea `warning:` **en stdout** (cuando el elemento está fuera de `<defs>`; un `<filter>`, `<clipPath>`, `<mask>` o `<pattern>` dentro de `<defs>` y los atributos `filter`, `clip-path` y `mask` se ignoran sin aviso): `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. Un relleno de degradado (`fill="url(#g)"`) se sustituye por gris. Límites: 8 MB de SVG, 200 000 anclas y un tope de elementos.
 
 ```
 $ osatura import-svg s.svg svg.json
@@ -1516,7 +1516,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-Con `--split` cada forma se convierte en **su propia capa**, con el nombre del `id` de la forma (las formas sin id se llaman `shape`; un nombre repetido recibe ` 2`, ` 3`...), en el orden del archivo. Es la forma que conviene usar cuando el dibujo se va a preparar con huesos parte por parte; véase [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+Con `--split` cada forma se convierte en **su propia capa**, con el nombre del `id` de la forma, en el orden del archivo. Una forma sin id recibe el nombre de su etiqueta y su posición (`rect1`, `circle6`), un id repetido recibe `_1`, `_2`..., y los caracteres que un nombre de capa no puede contener (`/`, `::`, caracteres de control) se convierten en `_`; los nombres se cortan a 100 caracteres. Es la forma que conviene usar cuando el dibujo se va a preparar con huesos parte por parte; véase [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split

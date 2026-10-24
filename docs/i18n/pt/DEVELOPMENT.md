@@ -13,7 +13,7 @@ Conteúdo: [Ambiente](#1-ambiente) - [Comandos de build e teste](#2-comandos-de-
 | Rust (stable, workspace edition 2021) | tudo | desenvolvido com rustc 1.97.0; `Cargo.lock` está versionado, os builds são compatíveis com `--locked` |
 | Um compilador C (`cc`) | o exemplo/teste da ABI C (opcional) | veja [C_ABI.md](C_ABI.md) |
 | `ffmpeg` / `ffprobe` no `PATH` | exportação de vídeo, decodificação de áudio mp3/ogg, `dof-export` para .mp4/.webm, `soundtrack` | **nunca é incluído nem necessário para compilar**; os comandos que dependem dele avisam e falham sem mensagem de sucesso |
-| Node.js >= 18 e `playwright-core` + Chromium | os quatro smoke tests do studio; o teste do wrapper WASM | padrões: `/opt/npm-tools/node_modules/playwright-core`, `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`; substitua com `PLAYWRIGHT_CORE`, `CHROME` |
+| Node.js >= 18 e `playwright-core` + Chromium | os cinco smoke tests do studio; o teste do wrapper WASM | padrões: `/opt/npm-tools/node_modules/playwright-core`, `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`; substitua com `PLAYWRIGHT_CORE`, `CHROME` |
 | `cargo-deny` | política de licenças/proibições/fontes | `scripts/licence-audit.sh` o executa quando instalado (`--no-deny` o ignora) |
 | `python3` | `scripts/licence-audit.sh` gera a documentação com um script inline | executa com `python3 -I` |
 | Um adaptador Vulkan ou GL | apenas para números em GPU real de `osatura-gpu` | os testes recorrem a um adaptador de software; veja a seção 2 |
@@ -36,7 +36,7 @@ Arquivos de nível de repositório: `ROADMAP.md` (a seção 9 é o registro data
 
 ```sh
 cargo build                                  # default members: core, cli, capi, wasm (gpu is opt-in)
-cargo test --workspace                       # run: 1338 tests + 19 doc-tests without gpu and gui (section 3)
+cargo test --workspace                       # run: 1343 tests + 19 doc-tests without gpu and gui (section 3)
 cargo test -p osatura-core                  # one crate (the engine and the facade tests)
 cargo test -p osatura-core api::            # a module or a name filter
 cargo test -p osatura-cli --test e2e        # one integration test file
@@ -67,7 +67,7 @@ Contagens de `ROADMAP.md` seção 9 e de uma execução completa de `cargo test 
 |---|---:|---:|---|
 | `osatura-core` unit (`src/lib.rs`) | 1167 | 349 s | todos os módulos; inclui `api::tests::api_surface_snapshot` |
 | `osatura-core/tests/prelude_surface.rs` | 6 | 0.7 s | a fachada vista de fora do crate (`#[non_exhaustive]`, mapeamento de erros, um subconjunto representativo de chamadas) |
-| `osatura-cli` unit (`src/main.rs`, studio, collab, http) | 80 | 42 s | análise de opções, USAGE vs parser, servidor HTTP, política, log de colaboração |
+| `osatura-cli` unit (`src/usage_tests.rs`, `src/args.rs`, studio, collab, http) | 80 | 42 s | análise de opções, USAGE vs parser, servidor HTTP, política, log de colaboração |
 | `tests/e2e.rs` | 2 | 214 s | todo o pipeline pelo binário real (cerca de 19 s em um build debug ocioso e 40 s em release segundo o ROADMAP; aqui a máquina estava carregada) |
 | `tests/fixes.rs`, `tests/wave4.rs`, `tests/robust.rs` | 7, 15, 10 | 19 s, 1.2 s, 1.2 s | regressões das ondas de revisão e testes com entradas hostis |
 | `tests/doc_mismatch.rs` | 20 | 1.8 s | regressões entre documentação e comportamento: saídas atômicas, opções estritas, a matriz de aceitação de `--json`/`--quiet`/`--allow-empty`, regras de escala de `golden` |
@@ -81,11 +81,11 @@ Contagens de `ROADMAP.md` seção 9 e de uma execução completa de `cargo test 
 | `osatura-gpu` unit + `tests/parity.rs` | 18 + 13 | 0.2 s + 6.5 s | paridade GPU vs CPU (adaptador de software quando não há GPU) |
 | Doc-tests (`osatura-core`) | 19 | 171 s (cada um compila um programa) | os exemplos da fachada (`api/`, `lib.rs`); `osatura-capi`, `osatura-wasm` não têm nenhum |
 
-Total: 1338 testes nos binários de unidade e de integração e 19 doc-tests, contados em 24 Oct 2026 com `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` (os 1368 da frase seguinte incluíam também os testes do crate de GPU; recontado a partir de uma execução completa de `cargo test --workspace` em 22 Oct 2026, após a onda 7; os tempos por suíte acima vêm de uma execução anterior), mais 19 doc-tests; o `cargo test --workspace --offline` completo levou 836 s na máquina compartilhada.
+Total: 1343 testes nos binários de unidade e de integração e 19 doc-tests, contados em 24 Oct 2026 com `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` (os 1368 da frase seguinte incluíam também os testes do crate de GPU; recontado a partir de uma execução completa de `cargo test --workspace` em 22 Oct 2026, após a onda 7; os tempos por suíte acima vêm de uma execução anterior), mais 19 doc-tests; o `cargo test --workspace --offline` completo levou 836 s na máquina compartilhada.
 
 Suítes fora do `cargo test`:
 
-* **Smoke tests do studio (Chromium).** Cinco scripts Node controlam o studio real em Chromium headless com `playwright-core`: `studio_ui_smoke.js` (128 verificações), `studio_collab_smoke.js` (60, duas páginas em uma máquina), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35) e `studio_demo_smoke.js` (12: a demonstração guiada carrega os 13 passos, nunca grava, restaura o projeto byte a byte e recupera uma aba fechada); os cinco passaram em 24 out 2026 (contagens conforme impressas pelos scripts). Eles **não** são executados por `cargo test` e não fazem parte do CI por padrão. Execução:
+* **Smoke tests do studio (Chromium).** Cinco scripts Node controlam o studio real em Chromium headless com `playwright-core`: `studio_ui_smoke.js` (128 verificações), `studio_collab_smoke.js` (60, duas páginas em uma máquina), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35) e `studio_demo_smoke.js` (25: a demonstração guiada carrega os 13 passos, nunca grava, restaura o projeto byte a byte e recupera uma aba fechada); os cinco passaram em 24 out 2026 (contagens conforme impressas pelos scripts). Eles **não** são executados por `cargo test` e não fazem parte do CI por padrão. Execução:
 
   ```sh
   cargo build -p osatura-cli
@@ -108,7 +108,7 @@ Adicionando testes: coloque os testes do motor junto ao código (`#[cfg(test)]`)
 * **Gravações atômicas.** Grave os resultados com `fsutil::write_atomic` (arquivo temporário no mesmo diretório, `fsync`, renomeação; recusa links simbólicos, a menos que `--follow-symlinks`; recorre a uma sobrescrita in-place com `fsync`, documentada como não atômica, quando o diretório não é gravável). Nunca use `std::fs::write` diretamente em um arquivo do usuário. Os diretórios temporários vêm de `fsutil` (modo 0700, arquivos 0600). Os bytes aleatórios vêm de `fsutil::random_bytes` (`/dev/urandom`).
 * **Os assets passam por `assets::resolve`.** Caminhos relativos de imagens, normal maps e sons são resolvidos em relação ao diretório de assets do processo (`assets::default_dir`, definido a partir da pasta do projeto de entrada); caminhos absolutos e `..` são recusados, a menos que `--allow-external-assets`; arquivos de imagem são limitados a 64 MB e os de áudio a 256 MB. Os comandos que gravam um projeto derivado validam em relação ao diretório do projeto de *entrada* e reescrevem ou avisam sobre caminhos relativos de assets (`write_json`).
 * **Aleatoriedade determinística.** Todo comportamento aleatório (fuzzing, ruído, jitter, simulação) usa o gerador com seed do próprio motor, com uma opção `--seed`, e é reproduzível bit a bit. Nada de crate `rand`, nada de hora do sistema como seed.
-* **Println e pipes fechados.** A CLI sobrepõe `println!`/`print!` com macros que saem silenciosamente em um pipe fechado (`osatura ... | head` não pode dar panic). Continue usando-as em `main.rs`.
+* **Println e pipes fechados.** A CLI sobrepõe `println!`/`print!` com macros que saem silenciosamente em um pipe fechado (`osatura ... | head` não pode dar panic). Continue usando-as em módulos declarados depois das macros em `main.rs`.
 * **Os erros dizem o que fazer.** As mensagens informam o que estava errado, qual valor, e o intervalo permitido ou a correção (os testes da fachada verificam esse estilo).
 <!-- REUSE-IgnoreStart -->
 * **Cabeçalhos SPDX.** Todo arquivo `.rs`, `.js`, `.mjs` e `.sh` começa com `SPDX-License-Identifier:` igual à licença do seu crate (MPL-2.0 para core/capi/wasm/gpu/scripts, AGPL-3.0-or-later para a CLI) e uma linha de copyright; os documentos Markdown trazem o comentário de cabeçalho CC-BY-4.0, como este arquivo. Os demais arquivos (JSON, imagens, os textos de licença) são cobertos por `REUSE.toml`; ao adicionar um novo padrão de caminho, inclua-o ali. Caso contrário, `cargo test -p osatura-cli --test spdx_audit` falha.
@@ -119,7 +119,7 @@ Adicionando testes: coloque os testes do motor junto ao código (`#[cfg(test)]`)
 ## 5. Checklist para um novo módulo ou comando
 
 1. **Módulo** em `osatura-core/src/<name>.rs`, registrado em `lib.rs`; cabeçalho SPDX; testes de unidade (válidos, limites, entradas hostis, determinismo); sem panics.
-2. **Comando da CLI** em `osatura-cli/src/main.rs`: uma entrada em `USAGE` (grafia exata de cada opção), o braço do dispatch e as tabelas de opções: toda opção que recebe valor deve constar em `VALUE_OPTS`; as flags que não recebem valor, na entrada `CMD_OPTS` do comando onde a tabela global estaria errada (por exemplo, `ci --prune` é uma flag, `export-oca --layers` e `autotrace --png` recebem valores, `keyedit --free` é uma flag). Os testes de unidade USAGE-versus-parser falham se o texto e o parser divergirem. Suporte as flags globais (`--json`, `--quiet`, `--allow-empty`, `--allow-external-assets`, `--follow-symlinks`, `--max-input-bytes`), `<command> --help` e `--key=value`.
+2. **Comando da CLI**: uma entrada em `USAGE` (grafia exata de cada opção) em `osatura-cli/src/usage.rs`, o braço do dispatch em um de `osatura-cli/src/cmds_1.rs` a `cmds_6.rs` (ou em `main.rs` para `ui`) e as tabelas de opções em `osatura-cli/src/args.rs`: toda opção que recebe valor deve constar em `VALUE_OPTS`; as flags que não recebem valor, na entrada `CMD_OPTS` do comando onde a tabela global estaria errada (por exemplo, `ci --prune` é uma flag, `export-oca --layers` e `autotrace --png` recebem valores, `keyedit --free` é uma flag). Os testes de unidade USAGE-versus-parser falham se o texto e o parser divergirem. Suporte as flags globais (`--json`, `--quiet`, `--allow-empty`, `--allow-external-assets`, `--follow-symlinks`, `--max-input-bytes`), `<command> --help` e `--key=value`.
 3. **Gravar a saída** somente com `fsutil::write_atomic` ou `write_json`; os comandos que não produzem nada terminam com código diferente de zero, a menos que `--allow-empty`.
 4. **Documentação**: o comando em [CLI_REFERENCE.md](CLI_REFERENCE.md), se você adicionar um, uma menção em um guia onde for relevante, e a entrada em `ROADMAP.md` seção 9 (o que foi adicionado, o que *não* foi feito: essa lista alimenta [LIMITATIONS.md](LIMITATIONS.md)).
 5. **Linha em CLEANROOM.md**: para cada novo algoritmo, registre a fonte pública a partir da qual foi implementado (livro-texto, norma, artigo) e a derivação independente; sem linha, sem merge.
@@ -143,7 +143,7 @@ O projeto é uma implementação independente. Em resumo (o texto vinculante é 
 Os primeiros builds são preparados como o pré-lançamento em rascunho `v0.1.0-alpha.3` (todos os crates continuam em 0.1.0; os rótulos de versão "v0.5/v0.6/v0.7" no README, FEATURES e ROADMAP são níveis de funcionalidade, não versões de crates; veja [CHANGELOG.md](CHANGELOG.md)). Para gerar um:
 
 1. **Versão.** Decida a versão de cada crate. A fachada tem sua própria versão (`API_VERSION`, atualmente 1.4.0: major na remoção ou alteração de uma linha da superfície, minor na adição) e `OSATURA_ABI_VERSION` / `arm_abi_version()` (ambos 1) mudam somente em uma mudança incompatível da ABI C ou wasm. Alinhe as versões em `Cargo.toml`, a saída de `osatura --version`, a caixa de status do README e o CHANGELOG.
-2. **Gates verdes.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, os quatro smoke tests em Chromium, `scripts/e2e.sh` (release), `cargo test -p osatura-gpu` se o código de GPU mudou.
+2. **Gates verdes.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, os cinco smoke tests em Chromium, `scripts/e2e.sh` (release), `cargo test -p osatura-gpu` se o código de GPU mudou.
 3. **Avisos de terceiros.** Execute `scripts/licence-audit.sh`: ele regenera `docs/THIRD_PARTY.md` (inventário) e `docs/THIRD_PARTY_NOTICES.md` (textos de licença de tudo o que é distribuído), confere as linhas SPDX e executa `cargo deny`. Faça commit dos arquivos regenerados. Uma distribuição binária deve incluir o pacote de avisos junto ao binário.
 4. **Arquivos de licença.** `LICENSE`, `LICENSES/` (textos de todas as licenças usadas) e `REUSE.toml` estão sincronizados com [LICENSING.md](LICENSING.md); a atribuição CC-BY-4.0 da documentação está intacta.
 5. **Sem ffmpeg.** Não inclua, não faça link nem baixe o ffmpeg nos artefatos de lançamento. Ele é detectado no `PATH` em tempo de execução e a documentação diz que o usuário o instala.

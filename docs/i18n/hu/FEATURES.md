@@ -95,7 +95,7 @@ Felváltja a lejjebb szétszórt „jelölt #” listákat; a részletek és az 
 | Funkció | Állapot | IP | Biztonságos alap / feltétel |
 |---|---|---|---|
 | Böngészős stúdió visszavonással/újra | 🟡 | 🟢 | saját UI; gyártói elrendezések vagy nevek másolása nélkül |
-| WASM futtatókörnyezet, stabil Rust API + C ABI, sandboxolt szkriptelés (R-090…R-093) | 🟡 (az R-091, R-092, R-093 kész; az R-090 wasm-modul a CI-ben lefordul és átmegy a wrapper tesztjén Node alatt, de böngészőben még soha nem futtatták) | 🟢 | saját API |
+| WASM futtatókörnyezet, stabil Rust API + C ABI, sandboxolt szkriptelés (R-090…R-093) | 🟡 (az R-091, R-092, R-093 kész; az R-090 wasm-modul a CI-ben lefordul és átmegy a wrapper tesztjén Node alatt, és csak headless Chromiumban futtatták) | 🟢 | saját API |
 | **Ágens / MCP-szerver** patch-opok fölött: vizsgálat, szerkesztés (atomi, visszavonható), lint, biztonság, renderelés, mentés kizárólag a saját fájljába (R-094) | ✅ | 🟢 | nyílt JSON-RPC protokoll |
 | Teljes GUI: gizmók, idővonal, görbeszerkesztő (R-100…R-103) | 🟡 (az R-101, R-102 kész; az R-100 és R-103 oldalai léteznek, de a szerző soha nem futtatta őket valódi böngészőben) | 🟢 | általános widgetek; saját megjelenés |
 | Animáció-verziókezelés szemantikus merge-dzsel, CI észlelési diff, explain-this-pixel (I-01, I-06, I-07) | ✅ (I-01 `osatura vcs`, I-06 `osatura ci`, I-07 `explain`) | 🟢 | saját ötletek |

@@ -1504,7 +1504,7 @@ $ osatura sound add small.json x.json x nosuch.wav              # a missing file
 
 Linia de utilizare: `osatura import-svg <file.svg> <out.json> [--split]  SVG subset -> one vector layer, or one layer per shape named by its id (warnings for the rest)`
 
-Creează un proiect nou (24 fps, 24 de cadre; dimensiunea provine din `viewBox` sau din `width`/`height`, altfel 512x512) cu **un singur strat vectorial `svg`** care conține formele unui subset SVG: `path` (toate comenzile), `rect` (colțurile rotunjite sunt ignorate), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` cu `transform`, precum și `fill`/`stroke`/`stroke-width` pline. Tot restul este omis, cu o linie `warning:` **pe stdout**: `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. O umplere cu gradient (`fill="url(#g)"`) revine la gri. Limite: 8 MB de SVG, 200.000 de ancore, un plafon pentru numărul de elemente.
+Creează un proiect nou (24 fps, 24 de cadre; dimensiunea provine din `viewBox` sau din `width`/`height`, altfel 512x512) cu **un singur strat vectorial `svg`** care conține formele unui subset SVG: `path` (toate comenzile), `rect` (colțurile rotunjite sunt ignorate), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` cu `transform`, precum și `fill`/`stroke`/`stroke-width` pline. Tot restul este omis, cu o linie `warning:` **pe stdout** (când elementul este în afara `<defs>`; un `<filter>`, `<clipPath>`, `<mask>` sau `<pattern>` din interiorul `<defs>` și atributele `filter`, `clip-path` și `mask` sunt ignorate fără avertisment): `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. O umplere cu gradient (`fill="url(#g)"`) revine la gri. Limite: 8 MB de SVG, 200.000 de ancore, un plafon pentru numărul de elemente.
 
 ```
 $ osatura import-svg s.svg svg.json
@@ -1516,7 +1516,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-Cu `--split`, fiecare formă devine **propriul strat**, numit după `id`-ul formei (formele fără id se numesc `shape`; un nume repetat primește ` 2`, ` 3`...), în ordinea din fișier. Aceasta este forma de folosit când desenul urmează să fie echipat cu schelet parte cu parte; vezi [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+Cu `--split`, fiecare formă devine **propriul strat**, numit după `id`-ul formei, în ordinea din fișier. O formă fără id este numită după eticheta și poziția ei (`rect1`, `circle6`), un id repetat primește `_1`, `_2`..., iar caracterele pe care un nume de strat nu le poate conține (`/`, `::`, caractere de control) devin `_`; numele sunt tăiate la 100 de caractere. Aceasta este forma de folosit când desenul urmează să fie echipat cu schelet parte cu parte; vezi [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split

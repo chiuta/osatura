@@ -1501,7 +1501,7 @@ A `check` hibát jelez, ha egy hivatkozott hangfájl hiányzik vagy olvashatatla
 
 Használati sor: `osatura import-svg <file.svg> <out.json> [--split]  SVG subset -> one vector layer, or one layer per shape named by its id (warnings for the rest)`
 
-Új projektet hoz létre (24 fps, 24 képkocka; a méret a `viewBox`-ból vagy a `width`/`height` értékekből származik, egyébként 512x512) **egyetlen `svg` vektorréteggel**, amely egy SVG-részhalmaz alakzatait tartalmazza: `path` (minden parancs), `rect` (a lekerekített sarkokat figyelmen kívül hagyja), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` `transform` attribútummal, valamint egyszínű `fill`/`stroke`/`stroke-width`. Minden mást kihagy, és egy `warning:` sort ír **a stdout-ra**: `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. Az átmenetes kitöltés (`fill="url(#g)"`) szürkére cserélődik. Korlátok: 8 MB SVG, 200 000 horgonypont, az elemek számára felső korlát.
+Új projektet hoz létre (24 fps, 24 képkocka; a méret a `viewBox`-ból vagy a `width`/`height` értékekből származik, egyébként 512x512) **egyetlen `svg` vektorréteggel**, amely egy SVG-részhalmaz alakzatait tartalmazza: `path` (minden parancs), `rect` (a lekerekített sarkokat figyelmen kívül hagyja), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` `transform` attribútummal, valamint egyszínű `fill`/`stroke`/`stroke-width`. Minden mást kihagy, és egy `warning:` sort ír **a stdout-ra** (ha az elem a `<defs>` kívül van; a `<defs>` belüli `<filter>`, `<clipPath>`, `<mask>` vagy `<pattern>`, valamint a `filter`, `clip-path` és `mask` attribútumok figyelmeztetés nélkül kimaradnak): `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. Az átmenetes kitöltés (`fill="url(#g)"`) szürkére cserélődik. Korlátok: 8 MB SVG, 200 000 horgonypont, az elemek számára felső korlát.
 
 ```
 $ osatura import-svg s.svg svg.json
@@ -1513,7 +1513,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-A `--split` kapcsolóval minden alakzat **saját réteg** lesz, az alakzat `id`-jéről elnevezve (az id nélküli alakzatok neve `shape`; az ismétlődő név ` 2`, ` 3`... utótagot kap), a fájlbeli sorrendben. Ezt az alakot használd, ha a rajzot részenként fogod riggelni; lásd [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+A `--split` kapcsolóval minden alakzat **saját réteg** lesz, az alakzat `id`-jéről elnevezve, a fájlbeli sorrendben. Az id nélküli alakzat a címkéjéről és a pozíciójáról kapja a nevét (`rect1`, `circle6`), az ismétlődő id `_1`, `_2`... utótagot kap, a rétegnévben nem megengedett karakterek (`/`, `::`, vezérlőkarakterek) `_`-ra cserélődnek; a nevek 100 karakteresre vannak vágva. Ezt az alakot használd, ha a rajzot részenként fogod riggelni; lásd [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split

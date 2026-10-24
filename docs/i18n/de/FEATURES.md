@@ -96,7 +96,7 @@ Er ersetzt die verstreuten „Kandidat #"-Listen weiter unten; Details und IDs s
 | Feature | Status | IP | Unbedenkliche Grundlage / Bedingung |
 |---|---|---|---|
 | Browser-Studio mit Rückgängig/Wiederholen | 🟡 | 🟢 | eigene UI; keine Kopie von Layouts oder Namen anderer Hersteller |
-| WASM-Laufzeitumgebung, stabile Rust-API + C-ABI, Scripting in der Sandbox (R-090…R-093) | 🟡 (R-091, R-092, R-093 fertig; R-090: das WASM-Modul wird in CI gebaut und besteht den Test des Wrappers unter Node, wurde aber nie in einem Browser ausgeführt) | 🟢 | eigene API |
+| WASM-Laufzeitumgebung, stabile Rust-API + C-ABI, Scripting in der Sandbox (R-090…R-093) | 🟡 (R-091, R-092, R-093 fertig; R-090: das WASM-Modul wird in CI gebaut und besteht den Test des Wrappers unter Node, und wurde nur in Headless-Chromium ausgeführt) | 🟢 | eigene API |
 | **Agent-/MCP-Server** über Patch-Ops: inspizieren, bearbeiten (atomar, rückgängig machbar), linten, Sicherheit, rendern, nur in die eigene Datei speichern (R-094) | ✅ | 🟢 | offenes JSON-RPC-Protokoll |
 | Vollständige GUI: Gizmos, Timeline, Kurveneditor (R-100…R-103) | 🟡 (R-101, R-102 fertig; R-100 und R-103: die Seiten existieren, wurden vom Autor aber nie in einem echten Browser ausgeführt) | 🟢 | allgemeine Widgets; eigene Optik |
 | Versionskontrolle für Animationen mit semantischem Merge, perzeptuellem CI-Diff, Explain-this-pixel (I-01, I-06, I-07) | ✅ (I-01 `osatura vcs`, I-06 `osatura ci`, I-07 `explain`) | 🟢 | eigene Ideen |

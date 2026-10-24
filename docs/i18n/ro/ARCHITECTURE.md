@@ -358,7 +358,7 @@ termene limită și verificări de host/origine, autentificare cu token pentru c
 
 Editarea multi-utilizator este construită pe trei straturi, toate deterministe și testabile fără rețea.
 
-**collab.rs, replica.** Un CRDT peste JSON-ul proiectului. O cheie de obiect este un registru last-writer-wins.
+**collab/, replica.** Un CRDT peste JSON-ul proiectului. O cheie de obiect este un registru last-writer-wins.
 Un array este un RGA (replicated growable array, Roh et al. 2011) cu tombstone-uri, iar ștergerea
 câștigă în fața editărilor concurente. Ordonarea folosește ceasuri Lamport (Lamport 1978) și ceasuri vectoriale (Fidge,
 Mattern). Modificările circulă ca un `Envelope { replica, seq, lamport, deps, ops }`. Livrarea este cauzală
@@ -476,7 +476,7 @@ Exemplu: un număr nou, specific fiecărui strat.
 
 ### 12.3 Adăugarea unui exportator
 
-1. Pune scriitorul în `osatura-core` (de exemplu lângă `export.rs`, `gltf.rs` sau
+1. Pune scriitorul în `osatura-core` (de exemplu lângă `export.rs`, `gltf/` sau
    `lottie_export.rs`). Acesta primește un `Engine` sau un `Project`, evaluează cadrele prin
    `evaluate_checked` și nu are voie să citească starea privată.
 2. Decide și documentează ce nu poate reprezenta. Emite avertismente, nu presupuneri, pentru

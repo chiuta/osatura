@@ -360,7 +360,7 @@ Az `osatura studio` egyetlen HTML-oldalt (`studio.html`) és egy JSON API-t szol
 
 A többfelhasználós szerkesztés három rétegben épül fel, mindegyik determinisztikus és hálózat nélkül tesztelhető.
 
-**collab.rs, a replika.** CRDT a projekt JSON-ja fölött. Egy objektumkulcs last-writer-wins
+**collab/, a replika.** CRDT a projekt JSON-ja fölött. Egy objektumkulcs last-writer-wins
 regiszter. A tömb RGA (replicated growable array, Roh és mások 2011) sírkövekkel, és a törlés
 felülírja az egyidejű szerkesztéseket. A rendezés Lamport-órákat (Lamport 1978) és vektorórákat (Fidge,
 Mattern) használ. A változások `Envelope { replica, seq, lamport, deps, ops }` alakban utaznak. A kézbesítés oksági
@@ -460,7 +460,7 @@ Példa: egy új, rétegenkénti szám.
 
 ### 12.3 Exportáló hozzáadása
 
-1. Az írót az `osatura-core` crate-be tedd (például az `export.rs`, a `gltf.rs` vagy a `lottie_export.rs` mellé). `Engine`-t vagy `Project`-et kap, a képkockákat az `evaluate_checked` függvényen keresztül értékeli ki, és nem olvashat privát állapotot.
+1. Az írót az `osatura-core` crate-be tedd (például az `export.rs`, a `gltf/` vagy a `lottie_export.rs` mellé). `Engine`-t vagy `Project`-et kap, a képkockákat az `evaluate_checked` függvényen keresztül értékeli ki, és nem olvashat privát állapotot.
 2. Döntsd el és dokumentáld, mit nem tud ábrázolni. Az elhagyott funkciókról figyelmeztetést adj, ne találgass.
 3. Alkalmazz korlátokat: képkockák szorozva a horgonyokkal (40 milliós keret), képoldalak (16384) és pixelek, kimeneti méret.
 4. Soha ne írd felül a bemenetet: a CLI-ben használd a `guard_out` függvényt.

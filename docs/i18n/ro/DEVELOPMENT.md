@@ -13,7 +13,7 @@ Cuprins: [Mediul](#1-mediul) - [Comenzi de build și de test](#2-comenzi-de-buil
 | Rust (stable, workspace edition 2021) | totul | dezvoltat cu rustc 1.97.0; `Cargo.lock` este comis, build-urile sunt compatibile cu `--locked` |
 | Un compilator C (`cc`) | exemplul/testul C ABI (opțional) | vezi [C_ABI.md](C_ABI.md) |
 | `ffmpeg` / `ffprobe` în `PATH` | export video, decodarea audio mp3/ogg, `dof-export` în .mp4/.webm, `soundtrack` | **nu este niciodată inclus și nu este necesar pentru build**; comenzile care îl cer spun acest lucru și eșuează fără mesaj de succes |
-| Node.js >= 18 și `playwright-core` + Chromium | cele patru teste smoke ale studioului; testul wrapperului WASM | implicit: `/opt/npm-tools/node_modules/playwright-core`, `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`; se pot suprascrie cu `PLAYWRIGHT_CORE`, `CHROME` |
+| Node.js >= 18 și `playwright-core` + Chromium | cele cinci teste smoke ale studioului; testul wrapperului WASM | implicit: `/opt/npm-tools/node_modules/playwright-core`, `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`; se pot suprascrie cu `PLAYWRIGHT_CORE`, `CHROME` |
 | `cargo-deny` | politica de licențe/interdicții/surse | `scripts/licence-audit.sh` îl rulează dacă este instalat (`--no-deny` îl omite) |
 | `python3` | `scripts/licence-audit.sh` generează documentația cu un script inline | rulează cu `python3 -I` |
 | Un adaptor Vulkan sau GL | doar pentru cifre pe GPU real din `osatura-gpu` | testele revin la un adaptor software; vezi secțiunea 2 |
@@ -36,7 +36,7 @@ Fișiere la nivel de repository: `ROADMAP.md` (secțiunea 9 este jurnalul datat 
 
 ```sh
 cargo build                                  # default members: core, cli, capi, wasm (gpu is opt-in)
-cargo test --workspace                       # run: 1338 tests + 19 doc-tests without gpu and gui (section 3)
+cargo test --workspace                       # run: 1343 tests + 19 doc-tests without gpu and gui (section 3)
 cargo test -p osatura-core                  # one crate (the engine and the facade tests)
 cargo test -p osatura-core api::            # a module or a name filter
 cargo test -p osatura-cli --test e2e        # one integration test file
@@ -67,7 +67,7 @@ Numerele provin din `ROADMAP.md` secțiunea 9 și dintr-o rulare completă `carg
 |---|---:|---:|---|
 | `osatura-core` unit (`src/lib.rs`) | 1167 | 349 s | fiecare modul; include `api::tests::api_surface_snapshot` |
 | `osatura-core/tests/prelude_surface.rs` | 6 | 0.7 s | fațada văzută din afara crate-ului (`#[non_exhaustive]`, maparea erorilor, un subset reprezentativ de apeluri) |
-| `osatura-cli` unit (`src/main.rs`, studio, collab, http) | 80 | 42 s | parsarea opțiunilor, USAGE față de parser, serverul HTTP, politica, jurnalul collab |
+| `osatura-cli` unit (`src/usage_tests.rs`, `src/args.rs`, studio, collab, http) | 80 | 42 s | parsarea opțiunilor, USAGE față de parser, serverul HTTP, politica, jurnalul collab |
 | `tests/e2e.rs` | 2 | 214 s | întregul pipeline prin binarul real (aproximativ 19 s într-un build debug pe mașină liberă și 40 s în release, conform ROADMAP; aici mașina era încărcată) |
 | `tests/fixes.rs`, `tests/wave4.rs`, `tests/robust.rs` | 7, 15, 10 | 19 s, 1.2 s, 1.2 s | regresii ale valurilor de revizie și teste cu intrări ostile |
 | `tests/doc_mismatch.rs` | 20 | 1.8 s | regresii documentație/comportament: ieșiri atomice, opțiuni stricte, matricea de acceptare `--json`/`--quiet`/`--allow-empty`, regulile de scară ale `golden` |
@@ -81,11 +81,11 @@ Numerele provin din `ROADMAP.md` secțiunea 9 și dintr-o rulare completă `carg
 | `osatura-gpu` unit + `tests/parity.rs` | 18 + 13 | 0.2 s + 6.5 s | paritate GPU față de CPU (adaptor software când nu există GPU) |
 | Doc-tests (`osatura-core`) | 19 | 171 s (fiecare compilează un program) | exemplele fațadei (`api/`, `lib.rs`); `osatura-capi`, `osatura-wasm` nu au |
 
-Total: 1338 de teste în binarele de unit și de integrare și 19 doc-tests, numărate pe 24 oct. 2026 cu `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` (cele 1368 din propoziția următoare includeau și testele crate-ului GPU; renumărat dintr-o rulare completă `cargo test --workspace` din 22 oct. 2026 după valul 7, duratele pe suite de mai sus provin dintr-o rulare anterioară), plus 19 doc-tests; întregul `cargo test --workspace --offline` a durat 836 s pe mașina partajată.
+Total: 1343 de teste în binarele de unit și de integrare și 19 doc-tests, numărate pe 24 oct. 2026 cu `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` (cele 1368 din propoziția următoare includeau și testele crate-ului GPU; renumărat dintr-o rulare completă `cargo test --workspace` din 22 oct. 2026 după valul 7, duratele pe suite de mai sus provin dintr-o rulare anterioară), plus 19 doc-tests; întregul `cargo test --workspace --offline` a durat 836 s pe mașina partajată.
 
 Suite în afara `cargo test`:
 
-* **Teste smoke ale studioului (Chromium).** Cinci scripturi Node controlează studioul real în Chromium headless cu `playwright-core`: `studio_ui_smoke.js` (128 de verificări), `studio_collab_smoke.js` (60, două pagini pe aceeași mașină), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35) și `studio_demo_smoke.js` (12: demo-ul ghidat încarcă toți cei 13 pași, nu scrie niciodată, restaurează proiectul octet cu octet și recuperează o filă închisă); toate cinci au trecut pe 24 oct. 2026 (numerele sunt cele afișate de scripturi). **Nu** sunt rulate de `cargo test` și, implicit, nu fac parte din CI. Rulare:
+* **Teste smoke ale studioului (Chromium).** Cinci scripturi Node controlează studioul real în Chromium headless cu `playwright-core`: `studio_ui_smoke.js` (128 de verificări), `studio_collab_smoke.js` (60, două pagini pe aceeași mașină), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35) și `studio_demo_smoke.js` (25: demo-ul ghidat încarcă toți cei 13 pași, nu scrie niciodată, restaurează proiectul octet cu octet și recuperează o filă închisă); toate cinci au trecut pe 24 oct. 2026 (numerele sunt cele afișate de scripturi). **Nu** sunt rulate de `cargo test` și, implicit, nu fac parte din CI. Rulare:
 
   ```sh
   cargo build -p osatura-cli
@@ -108,7 +108,7 @@ Adăugarea de teste: pune testele motorului lângă cod (`#[cfg(test)]`), testel
 * **Scrieri atomice.** Scrie rezultatele cu `fsutil::write_atomic` (fișier temporar în același director, `fsync`, redenumire; refuză legăturile simbolice, cu excepția cazului în care se dă `--follow-symlinks`; revine la o suprascriere pe loc cu `fsync`, documentată ca neatomică, când directorul nu poate fi scris). Nu scrie niciodată direct cu `std::fs::write` un fișier al utilizatorului. Directoarele temporare vin din `fsutil` (mod 0700, fișiere 0600). Octeții aleatori vin din `fsutil::random_bytes` (`/dev/urandom`).
 * **Resursele trec prin `assets::resolve`.** Căile relative ale imaginilor, ale normal map-urilor și ale sunetelor se rezolvă față de directorul de resurse la nivel de proces (`assets::default_dir`, stabilit din folderul proiectului de intrare); căile absolute și `..` sunt refuzate, cu excepția cazului în care se dă `--allow-external-assets`; fișierele de imagine sunt limitate la 64 MB, iar cele audio la 256 MB. Comenzile care scriu un proiect derivat validează față de directorul proiectului de *intrare* și rescriu căile relative ale resurselor sau avertizează despre ele (`write_json`).
 * **Aleatoriu determinist.** Orice comportament aleatoriu (fuzzing, zgomot, jitter, simulare) folosește generatorul propriu al motorului, cu seed, și o opțiune `--seed`, și este reproductibil bit cu bit. Fără crate-ul `rand`, fără timpul sistemului ca seed.
-* **Println și pipe-uri închise.** CLI-ul umbrește `println!`/`print!` cu macro-uri care ies silențios la un pipe închis (`osatura ... | head` nu trebuie să intre în panică). Continuă să le folosești în `main.rs`.
+* **Println și pipe-uri închise.** CLI-ul umbrește `println!`/`print!` cu macro-uri care ies silențios la un pipe închis (`osatura ... | head` nu trebuie să intre în panică). Continuă să le folosești în modulele declarate după macro-uri în `main.rs`.
 * **Erorile spun ce trebuie făcut.** Mesajele spun ce a fost greșit, ce valoare, și intervalul permis sau remedierea (testele fațadei verifică acest stil).
 <!-- REUSE-IgnoreStart -->
 * **Anteturi SPDX.** Fiecare fișier `.rs`, `.js`, `.mjs` și `.sh` începe cu `SPDX-License-Identifier:` egal cu licența crate-ului său (MPL-2.0 pentru core/capi/wasm/gpu/scripts, AGPL-3.0-or-later pentru CLI) și o linie de copyright; documentele Markdown poartă comentariul-antet CC-BY-4.0, ca acest fișier. Celelalte fișiere (JSON, imagini, textele de licență) sunt acoperite de `REUSE.toml`; când adaugi un tipar nou de cale, adaugă-l acolo. Altfel `cargo test -p osatura-cli --test spdx_audit` eșuează.
@@ -119,7 +119,7 @@ Adăugarea de teste: pune testele motorului lângă cod (`#[cfg(test)]`), testel
 ## 5. Listă de verificare pentru un modul sau o comandă nouă
 
 1. **Modul** în `osatura-core/src/<name>.rs`, înregistrat în `lib.rs`; antet SPDX; teste unitare (valide, la limită, intrări ostile, determinism); fără panici.
-2. **Comandă CLI** în `osatura-cli/src/main.rs`: o intrare `USAGE` (scrierea exactă a fiecărei opțiuni), brațul de dispatch și tabelele de opțiuni: fiecare opțiune care ia o valoare trebuie listată în `VALUE_OPTS`; flag-urile care nu iau valoare, în intrarea `CMD_OPTS` a comenzii, acolo unde tabelul global ar fi greșit (de exemplu `ci --prune` este un flag, `export-oca --layers` și `autotrace --png` iau valori, `keyedit --free` este un flag). Testele unitare USAGE-față-de-parser eșuează dacă textul și parserul nu concordă. Suportă flag-urile globale (`--json`, `--quiet`, `--allow-empty`, `--allow-external-assets`, `--follow-symlinks`, `--max-input-bytes`), `<command> --help` și `--key=value`.
+2. **Comandă CLI**: o intrare `USAGE` (scrierea exactă a fiecărei opțiuni) în `osatura-cli/src/usage.rs`, brațul de dispatch într-unul dintre `osatura-cli/src/cmds_1.rs` până la `cmds_6.rs` (sau în `main.rs` pentru `ui`) și tabelele de opțiuni în `osatura-cli/src/args.rs`: fiecare opțiune care ia o valoare trebuie listată în `VALUE_OPTS`; flag-urile care nu iau valoare, în intrarea `CMD_OPTS` a comenzii, acolo unde tabelul global ar fi greșit (de exemplu `ci --prune` este un flag, `export-oca --layers` și `autotrace --png` iau valori, `keyedit --free` este un flag). Testele unitare USAGE-față-de-parser eșuează dacă textul și parserul nu concordă. Suportă flag-urile globale (`--json`, `--quiet`, `--allow-empty`, `--allow-external-assets`, `--follow-symlinks`, `--max-input-bytes`), `<command> --help` și `--key=value`.
 3. **Scrierea ieșirii** doar cu `fsutil::write_atomic` sau `write_json`; comenzile care nu produc nimic se încheie cu cod diferit de zero, cu excepția cazului în care se dă `--allow-empty`.
 4. **Documentație**: comanda în [CLI_REFERENCE.md](CLI_REFERENCE.md) dacă adaugi una, o mențiune într-un ghid acolo unde e relevant și intrarea din `ROADMAP.md` secțiunea 9 (ce a fost adăugat, ce *nu* s-a făcut: lista aceea alimentează [LIMITATIONS.md](LIMITATIONS.md)).
 5. **Rândul din CLEANROOM.md**: pentru fiecare algoritm nou consemnează sursa publică după care a fost implementat (manual, standard, articol) și derivarea independentă; fără rând, fără merge.
@@ -143,7 +143,7 @@ Proiectul este o implementare independentă. Pe scurt (textul obligatoriu este [
 Primele build-uri sunt pregătite ca pre-lansare ciornă `v0.1.0-alpha.3` (toate crate-urile sunt încă 0.1.0; etichetele de versiune „v0.5/v0.6/v0.7” din README, FEATURES și ROADMAP sunt niveluri de funcționalități, nu versiuni de crate; vezi [CHANGELOG.md](CHANGELOG.md)). Pentru a face una:
 
 1. **Versiune.** Stabilește versiunea fiecărui crate. Fațada are propria versiune (`API_VERSION`, azi 1.4.0: majoră la eliminarea sau schimbarea unei linii de suprafață, minoră la adăugare), iar `OSATURA_ABI_VERSION` / `arm_abi_version()` (ambele 1) se schimbă doar la o modificare incompatibilă a ABI-ului C sau wasm. Aliniază versiunile din `Cargo.toml`, ieșirea `osatura --version`, caseta de stare din README și CHANGELOG.
-2. **Condiții verzi.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, cele patru teste smoke Chromium, `scripts/e2e.sh` (release), `cargo test -p osatura-gpu` dacă s-a schimbat codul GPU.
+2. **Condiții verzi.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, cele cinci teste smoke Chromium, `scripts/e2e.sh` (release), `cargo test -p osatura-gpu` dacă s-a schimbat codul GPU.
 3. **Notificări terțe.** Rulează `scripts/licence-audit.sh`: regenerează `docs/THIRD_PARTY.md` (inventarul) și `docs/THIRD_PARTY_NOTICES.md` (textele de licență ale a tot ce se livrează), verifică liniile SPDX și rulează `cargo deny`. Comite fișierele regenerate. O distribuție binară trebuie să livreze pachetul de notificări alături de binar.
 4. **Fișiere de licență.** `LICENSE`, `LICENSES/` (textele fiecărei licențe folosite) și `REUSE.toml` sunt sincronizate cu [LICENSING.md](LICENSING.md); atribuirea CC-BY-4.0 pentru documentație este intactă.
 5. **Fără ffmpeg.** Nu include, nu lega și nu descărca ffmpeg în artefactele de lansare. Este detectat în `PATH` la rulare, iar documentația spune că utilizatorul îl instalează.

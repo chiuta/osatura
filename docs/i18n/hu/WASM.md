@@ -2,9 +2,9 @@
 
 *ABI 1-es verzió (`arm_abi_version()`). Crate: `osatura-wasm`, JavaScript-burkoló: `osatura-wasm/js/osatura.js`, demóoldal: `osatura-wasm/index.html`, build-szkript: `osatura-wasm/build-wasm.sh`. Célközönség: webfejlesztők, akik OSATURA-projekteket szeretnének lejátszani böngészőben vagy node-ban, és az első ember, aki böngészőben is lefuttatja a modult. Dokumentáció: CC-BY-4.0; kódminták: MPL-2.0.*
 
-> ## ÁLLAPOT: A CI-BEN LEFORDÍTVA ÉS TESZTELVE, BÖNGÉSZŐBEN SOSEM FUTTATTÁK
+> ## ÁLLAPOT: A CI-BEN LEFORDÍTVA ÉS TESZTELVE, CSAK HEADLESS CHROMIUMBAN FUTTATTÁK
 >
-> **2026. okt. 24-től a modul a GitHub Actionsön épül** (`wasm32-unknown-unknown`, debug build a `ci.yml`-ben, release build a `release.yml`-ben), és **a burkoló tesztje sikeres a valódi modul ellen Node 20 alatt** (`node osatura-wasm/js/test.mjs demo.json`, a valódi-modul részét is beleértve). A release build `osatura-web.tar.gz` néven csatolva van a `v0.1.0-alpha.3` előzetes kiadás-vázlathoz (tömörítve kb. 0,9 MB, az `osatura.js` fájllal és a demóoldallal). **Böngészőben még soha nem töltötték be**: ezen az oldalon semmi, ami böngészőkről, sebességről vagy memóriáról szól, nem megfigyelt viselkedés, és maga a fejlesztői környezet továbbra sem tudja telepíteni a célt (a szabványkönyvtárának letöltése ott blokkolt).
+> **2026. okt. 24-től a modul a GitHub Actionsön épül** (`wasm32-unknown-unknown`, debug build a `ci.yml`-ben, release build a `release.yml`-ben), és **a burkoló tesztje sikeres a valódi modul ellen Node 20 alatt** (`node osatura-wasm/js/test.mjs demo.json`, a valódi-modul részét is beleértve). A release build `osatura-web.tar.gz` néven csatolva van a `v0.1.0-alpha.3` előzetes kiadás-vázlathoz (tömörítve kb. 0,9 MB, az `osatura.js` fájllal és a demóoldallal). **Egyszer betöltötték headless Chromium 141-ben Linuxon, GPU nélkül** (az eredmények az oldal végén, az `osatura-wasm/js/browser-check.js` állította elő őket); Firefoxot, Safarit, telefonokat és valódi GPU-kat nem próbáltak, ezért az ezekről szóló állítások ezen az oldalon nem megfigyelt viselkedés, és maga a fejlesztői környezet továbbra sem tudja telepíteni a célt (a szabványkönyvtárának letöltése ott blokkolt).
 >
 > Ami tesztelve volt, és ez meddig terjed:
 >
@@ -68,7 +68,7 @@ A modul egyetlen **lineáris memóriát** birtokol (`memory` néven exportálva)
 
 ## Exportreferencia
 
-36 export plusz a `memory`. A `ptr` és a `len` a wasm-szignatúrában `i32` (Rustban `usize`). A `h` egy handle. A `-1` visszatérés = hiba, hacsak másként nem jelezzük.
+37 export plusz a `memory`. A `ptr` és a `len` a wasm-szignatúrában `i32` (Rustban `usize`). A `h` egy handle. A `-1` visszatérés = hiba, hacsak másként nem jelezzük.
 
 | Export | Szignatúra (Rust-nézet) | Eredmény |
 |---|---|---|
@@ -226,8 +226,8 @@ Az 1. és az 5. lépést a CI elvégezte 2026. okt. 24-én. A 3., 4., 6., 8., 9.
 
 1. **Telepítsd a célt és építs.** `rustup target add wasm32-unknown-unknown && ./osatura-wasm/build-wasm.sh`. (kockázat) Meglátod, lefordul-e a `zip`, a `tiny-skia`, a `png`, a `gif`, a `jpeg-decoder` és az `i_overlay`. Jegyezd fel a fordítót és a `rustc --version` kimenetét.
 2. **Nincs szkriptmotor.** A `cargo tree --target wasm32-unknown-unknown -p osatura-wasm | grep -ci 'rhai\|smartstring'` parancsnak 0-t kell kiírnia.
-3. **Nézd meg az exportokat.** Node-ban: `WebAssembly.Module.exports(new WebAssembly.Module(fs.readFileSync('osatura-wasm/osatura_wasm.wasm')))`. Várható a `memory` és az [exporttábla](#exportreferencia) 36 függvénye, és **nincs import** (a `WebAssembly.Module.imports(...)` üres). Ha a `memory` hiányzik, vagy importok jelennek meg (például `env.*` egy std feature-ből), a burkolót igazítani kell.
-4. **Méret.** Jegyezd fel a méretet a `wasm-opt -Oz` előtt és után, valamint a gzip / brotli méreteket. Eddig semmit sem mértek.
+3. **Nézd meg az exportokat.** Node-ban: `WebAssembly.Module.exports(new WebAssembly.Module(fs.readFileSync('osatura-wasm/osatura_wasm.wasm')))`. Várható a `memory` és az [exporttábla](#exportreferencia) 37 függvénye, és **nincs import** (a `WebAssembly.Module.imports(...)` üres). Ha a `memory` hiányzik, vagy importok jelennek meg (például `env.*` egy std feature-ből), a burkolót igazítani kell.
+4. **Méret.** Jegyezd fel a méretet a `wasm-opt -Oz` előtt és után, valamint a gzip / brotli méreteket. Egyszer megmérték a Chromiumos futásban: lásd az oldal végén lévő eredménytáblát.
 5. **Futtasd a node-tesztet valódi projekttel.** Az `osatura demo demo.json && node osatura-wasm/js/test.mjs demo.json` parancsnak a három mock-szakasz után `real wasm tests: ok` üzenetet kell kiírnia.
 6. **Hasonlítsd össze a natív renderelővel.** A demó 0., 12. és 47. képkockájára, 0,5-ös és 1-es skálán hasonlítsd össze az `Osatura.rgba` eredményét az `osatura render demo.json N out.png --scale S` RGBA-ra dekódolt kimenetével. (kockázat) Az anti-aliasing éleknél kis eltérések várhatók (más matematikai könyvtár); jelentsd a maximális és az átlagos abszolút eltérést, valamint a 24/255 fölötti pixelek hányadát. Nagy eltérés valódi hibára utal.
 7. **Gyakoroltasd a playert.** Építsd fel a C ABI példa projektjét (demo + `take-record` + `clip add` + `machine add`, lásd [C_ABI.md](C_ABI.md)), vezéreld a `startPlayer`, `setBool`, `advance`, `state`, `events`, `playerRgba` függvényekkel; valamint a konténert és scroll-régiót tartalmazó projektet a `setCanvas`, `scrollDrag`, `scrollRelease`, `scrollInfo`, `setScreen` függvényekkel (az utolsó részletességi szinteket épít: mérd az idejét, optimalizálatlanul lassú, és wasm-on nincs lemérve).

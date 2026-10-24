@@ -96,7 +96,7 @@ Sostituisce gli elenchi sparsi di "candidati n." più avanti; dettagli e ID si t
 | Funzionalità | Stato | IP | Base sicura / condizione |
 |---|---|---|---|
 | Studio nel browser con undo/redo | 🟡 | 🟢 | UI nostra; nessuna copia di layout o nomi di fornitori |
-| Runtime WASM, API Rust stabile + C ABI, scripting in sandbox (R-090…R-093) | 🟡 (R-091, R-092, R-093 fatti; R-090 il modulo wasm viene compilato e supera in CI il test del wrapper sotto Node, ma non è mai stato eseguito in un browser) | 🟢 | API nostra |
+| Runtime WASM, API Rust stabile + C ABI, scripting in sandbox (R-090…R-093) | 🟡 (R-091, R-092, R-093 fatti; R-090 il modulo wasm viene compilato e supera in CI il test del wrapper sotto Node, ed è stato eseguito solo in Chromium headless) | 🟢 | API nostra |
 | **Server Agent / MCP** su patch op: ispezione, modifica (atomica, annullabile), lint, sicurezza, render, salvataggio solo nel proprio file (R-094) | ✅ | 🟢 | protocollo JSON-RPC aperto |
 | GUI completa: gizmo, timeline, graph editor (R-100…R-103) | 🟡 (R-101, R-102 fatti; le pagine R-100 e R-103 esistono ma l'autore non le ha mai eseguite in un vero browser) | 🟢 | widget generici; aspetto nostro |
 | Controllo di versione dell'animazione con merge semantico, diff percettivo per CI, explain-this-pixel (I-01, I-06, I-07) | ✅ (I-01 `osatura vcs`, I-06 `osatura ci`, I-07 `explain`) | 🟢 | idee nostre |

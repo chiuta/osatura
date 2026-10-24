@@ -2,9 +2,9 @@
 
 *Versiunea ABI 1 (`arm_abi_version()`). Crate `osatura-wasm`, wrapper JavaScript `osatura-wasm/js/osatura.js`, pagină demo `osatura-wasm/index.html`, script de build `osatura-wasm/build-wasm.sh`. Public țintă: dezvoltatorii web care vor să redea proiecte OSATURA într-un browser sau în node și prima persoană care rulează modulul într-un browser. Documentație CC-BY-4.0; exemple de cod MPL-2.0.*
 
-> ## STARE: CONSTRUIT ȘI TESTAT ÎN CI, NICIODATĂ RULAT ÎNTR-UN BROWSER
+> ## STARE: CONSTRUIT ȘI TESTAT ÎN CI, RULAT DOAR ÎN CHROMIUM FĂRĂ INTERFAȚĂ
 >
-> **La 24 oct. 2026 modulul este construit pe GitHub Actions** (`wasm32-unknown-unknown`, build debug în `ci.yml`, build release în `release.yml`) și **testul wrapper-ului trece față de modulul real sub Node 20** (`node osatura-wasm/js/test.mjs demo.json`, inclusiv partea sa cu modulul real). Build-ul release este atașat la pre-lansarea ciornă `v0.1.0-alpha.3` ca `osatura-web.tar.gz` (aproximativ 0,9 MB comprimat, cu `osatura.js` și pagina demo). **Nu a fost niciodată încărcat într-un browser**: nimic din această pagină despre browsere, viteză sau memorie nu este comportament observat, iar mediul de dezvoltare în sine tot nu poate instala ținta (descărcarea bibliotecii sale standard este blocată acolo).
+> **La 24 oct. 2026 modulul este construit pe GitHub Actions** (`wasm32-unknown-unknown`, build debug în `ci.yml`, build release în `release.yml`) și **testul wrapper-ului trece față de modulul real sub Node 20** (`node osatura-wasm/js/test.mjs demo.json`, inclusiv partea sa cu modulul real). Build-ul release este atașat la pre-lansarea ciornă `v0.1.0-alpha.3` ca `osatura-web.tar.gz` (aproximativ 0,9 MB comprimat, cu `osatura.js` și pagina demo). **A fost încărcat o singură dată în Chromium 141 fără interfață, pe Linux, fără GPU** (rezultatele sunt la sfârșitul acestei pagini, produse de `osatura-wasm/js/browser-check.js`); Firefox, Safari, telefoanele și GPU-urile reale nu au fost încercate, deci afirmațiile despre ele din această pagină nu sunt comportament observat, iar mediul de dezvoltare în sine tot nu poate instala ținta (descărcarea bibliotecii sale standard este blocată acolo).
 >
 > Ce a fost testat și până unde ajunge acest lucru:
 >
@@ -68,7 +68,7 @@ Modulul deține o **memorie liniară** (exportată ca `memory`). Gazda nu partaj
 
 ## Referința exporturilor
 
-36 de exporturi plus `memory`. `ptr` și `len` sunt `i32` în semnătura wasm (`usize` în Rust). `h` este un handle. Returnarea `-1` = eroare, dacă nu se precizează altfel.
+37 de exporturi plus `memory`. `ptr` și `len` sunt `i32` în semnătura wasm (`usize` în Rust). `h` este un handle. Returnarea `-1` = eroare, dacă nu se precizează altfel.
 
 | Export | Semnătură (vedere Rust) | Rezultat |
 |---|---|---|
@@ -226,8 +226,8 @@ Pașii 1 și 5 au fost făcuți de CI pe 24 oct. 2026. Pașii 3, 4, 6, 8, 9, 11 
 
 1. **Instalează ținta și construiește.** `rustup target add wasm32-unknown-unknown && ./osatura-wasm/build-wasm.sh`. (risc) Așteaptă-te să vezi dacă `zip`, `tiny-skia`, `png`, `gif`, `jpeg-decoder` și `i_overlay` compilează. Notează compilatorul și `rustc --version`.
 2. **Fără motor de scripting.** `cargo tree --target wasm32-unknown-unknown -p osatura-wasm | grep -ci 'rhai\|smartstring'` trebuie să afișeze 0.
-3. **Privește exporturile.** În node: `WebAssembly.Module.exports(new WebAssembly.Module(fs.readFileSync('osatura-wasm/osatura_wasm.wasm')))`. Așteaptă-te la `memory` și la cele 36 de funcții din [tabelul exporturilor](#referința-exporturilor), și la **niciun import** (`WebAssembly.Module.imports(...)` gol). Dacă `memory` lipsește sau apar importuri (de exemplu `env.*` dintr-un feature std), wrapperul trebuie adaptat.
-4. **Dimensiune.** Notează dimensiunea înainte și după `wasm-opt -Oz`, precum și dimensiunile gzip / brotli. Nimic nu a fost măsurat vreodată.
+3. **Privește exporturile.** În node: `WebAssembly.Module.exports(new WebAssembly.Module(fs.readFileSync('osatura-wasm/osatura_wasm.wasm')))`. Așteaptă-te la `memory` și la cele 37 de funcții din [tabelul exporturilor](#referința-exporturilor), și la **niciun import** (`WebAssembly.Module.imports(...)` gol). Dacă `memory` lipsește sau apar importuri (de exemplu `env.*` dintr-un feature std), wrapperul trebuie adaptat.
+4. **Dimensiune.** Notează dimensiunea înainte și după `wasm-opt -Oz`, precum și dimensiunile gzip / brotli. Măsurat o singură dată în rularea Chromium: vezi tabelul de rezultate de la sfârșitul acestei pagini.
 5. **Rulează testul node cu un proiect real.** `osatura demo demo.json && node osatura-wasm/js/test.mjs demo.json` trebuie să afișeze `real wasm tests: ok` după cele trei secțiuni de mock.
 6. **Compară cu randerul nativ.** Pentru cadrele 0, 12 și 47 ale demo-ului, la scalele 0.5 și 1, compară `Osatura.rgba` cu `osatura render demo.json N out.png --scale S` decodat în RGBA. (risc) Așteaptă-te la diferențe mici la marginile anti-aliasate (bibliotecă matematică diferită); raportează diferența absolută maximă și medie și fracțiunea de pixeli peste 24/255. O diferență mare indică un bug real.
 7. **Exersează player-ul.** Construiește proiectul din exemplul ABI-ului C (demo + `take-record` + `clip add` + `machine add`, vezi [C_ABI.md](C_ABI.md)), comandă `startPlayer`, `setBool`, `advance`, `state`, `events`, `playerRgba`; și proiectul cu un container și o regiune de derulare pentru `setCanvas`, `scrollDrag`, `scrollRelease`, `scrollInfo`, `setScreen` (ultimul construiește niveluri de detaliu: măsoară-i timpul, este lent neoptimizat și nu a fost cronometrat pe wasm).

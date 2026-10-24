@@ -361,7 +361,7 @@ en sandbox con límites explícitos. El modelo de amenazas y las medidas de refu
 
 La edición multiusuario se construye en tres capas, todas deterministas y comprobables sin red.
 
-**collab.rs, la réplica.** Un CRDT sobre el JSON del proyecto. Una clave de objeto es un registro de
+**collab/, la réplica.** Un CRDT sobre el JSON del proyecto. Una clave de objeto es un registro de
 último escritor gana. Un array es un RGA (replicated growable array, Roh et al. 2011) con lápidas, y la eliminación
 prevalece sobre las ediciones concurrentes. La ordenación usa relojes de Lamport (Lamport 1978) y relojes vectoriales (Fidge,
 Mattern). Los cambios viajan como un `Envelope { replica, seq, lamport, deps, ops }`. La entrega es causal
@@ -473,7 +473,7 @@ Ejemplo: un nuevo número por capa.
 
 ### 12.3 Añadir un exportador
 
-1. Coloca el escritor en `osatura-core` (por ejemplo junto a `export.rs`, `gltf.rs` o
+1. Coloca el escritor en `osatura-core` (por ejemplo junto a `export.rs`, `gltf/` o
    `lottie_export.rs`). Recibe un `Engine` o un `Project`, evalúa los fotogramas mediante
    `evaluate_checked` y no debe leer estado privado.
 2. Decide y documenta qué no puede representar. Emite advertencias, no suposiciones, para las funciones descartadas.

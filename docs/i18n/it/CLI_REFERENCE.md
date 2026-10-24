@@ -1504,7 +1504,7 @@ $ osatura sound add small.json x.json x nosuch.wav              # a missing file
 
 Riga d'uso: `osatura import-svg <file.svg> <out.json> [--split]  SVG subset -> one vector layer, or one layer per shape named by its id (warnings for the rest)`
 
-Crea un nuovo progetto (24 fps, 24 fotogrammi; dimensioni dal `viewBox` o da `width`/`height`, altrimenti 512x512) con **un livello vettoriale `svg`** che contiene le forme di un sottoinsieme di SVG: `path` (tutti i comandi), `rect` (angoli arrotondati ignorati), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` con `transform`, e `fill`/`stroke`/`stroke-width` a tinta unita. Tutto il resto viene saltato con una riga `warning:` **su stdout**: `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. Un riempimento a gradiente (`fill="url(#g)"`) ripiega sul grigio. Limiti: 8 MB di SVG, 200.000 punti di ancoraggio, un tetto al numero di elementi.
+Crea un nuovo progetto (24 fps, 24 fotogrammi; dimensioni dal `viewBox` o da `width`/`height`, altrimenti 512x512) con **un livello vettoriale `svg`** che contiene le forme di un sottoinsieme di SVG: `path` (tutti i comandi), `rect` (angoli arrotondati ignorati), `circle`, `ellipse`, `line`, `polyline`, `polygon`, `g`/`a` con `transform`, e `fill`/`stroke`/`stroke-width` a tinta unita. Tutto il resto viene saltato con una riga `warning:` **su stdout** (quando l'elemento è fuori da `<defs>`; un `<filter>`, `<clipPath>`, `<mask>` o `<pattern>` dentro `<defs>` e gli attributi `filter`, `clip-path` e `mask` vengono ignorati senza avviso): `<text>`, `<filter>`, `<clipPath>`, `<mask>`, `<pattern>`, `<linearGradient>`/`<radialGradient>`, `<image>`, `<use>`, `<foreignObject>`. Un riempimento a gradiente (`fill="url(#g)"`) ripiega sul grigio. Limiti: 8 MB di SVG, 200.000 punti di ancoraggio, un tetto al numero di elementi.
 
 ```
 $ osatura import-svg s.svg svg.json
@@ -1516,7 +1516,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-Con `--split` ogni forma diventa **un proprio livello**, chiamato come l'`id` della forma (le forme senza id si chiamano `shape`; un nome ripetuto riceve ` 2`, ` 3`...), nell'ordine del file. È la forma da usare quando il disegno verrà rigato parte per parte; vedi [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+Con `--split` ogni forma diventa **un proprio livello**, chiamato come l'`id` della forma, nell'ordine del file. Una forma senza id prende il nome dal suo tag e dalla sua posizione (`rect1`, `circle6`), un id ripetuto riceve `_1`, `_2`..., e i caratteri che un nome di livello non può contenere (`/`, `::`, caratteri di controllo) diventano `_`; i nomi vengono troncati a 100 caratteri. È la forma da usare quando il disegno verrà rigato parte per parte; vedi [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split

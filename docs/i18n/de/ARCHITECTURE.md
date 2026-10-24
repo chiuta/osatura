@@ -363,7 +363,7 @@ Engine mit expliziten Grenzen. Das Bedrohungsmodell und die Härtungsmaßnahmen 
 
 Die Mehrbenutzerbearbeitung ist in drei Schichten aufgebaut, alle deterministisch und ohne Netzwerk testbar.
 
-**collab.rs, das Replikat.** Ein CRDT über das JSON des Projekts. Ein Objektschlüssel ist ein Last-Writer-Wins-
+**collab/, das Replikat.** Ein CRDT über das JSON des Projekts. Ein Objektschlüssel ist ein Last-Writer-Wins-
 Register. Ein Array ist eine RGA (Replicated Growable Array, Roh et al. 2011) mit Tombstones, und Entfernen
 gewinnt gegenüber gleichzeitigen Bearbeitungen. Die Ordnung verwendet Lamport-Uhren (Lamport 1978) und Vektoruhren (Fidge,
 Mattern). Änderungen reisen als `Envelope { replica, seq, lamport, deps, ops }`. Die Zustellung ist kausal
@@ -463,7 +463,7 @@ Beispiel: eine neue Zahl pro Ebene.
 
 ### 12.3 Einen Exporter hinzufügen
 
-1. Lege den Writer in `osatura-core` ab (zum Beispiel neben `export.rs`, `gltf.rs` oder `lottie_export.rs`). Er nimmt eine `Engine` oder ein `Project`, wertet Frames über `evaluate_checked` aus und darf keinen privaten Zustand lesen.
+1. Lege den Writer in `osatura-core` ab (zum Beispiel neben `export.rs`, `gltf/` oder `lottie_export.rs`). Er nimmt eine `Engine` oder ein `Project`, wertet Frames über `evaluate_checked` aus und darf keinen privaten Zustand lesen.
 2. Lege fest und dokumentiere, was er nicht darstellen kann. Gib für verworfene Features Warnungen aus, keine Vermutungen.
 3. Wende Obergrenzen an: Frames mal Anker (Budget von 40 Millionen), Bildseiten (16384) und Pixel, Ausgabegröße.
 4. Überschreibe niemals die Eingabe: verwende in der CLI `guard_out`.

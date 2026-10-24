@@ -2,9 +2,9 @@
 
 *Version d'ABI 1 (`arm_abi_version()`). Crate `osatura-wasm`, wrapper JavaScript `osatura-wasm/js/osatura.js`, page de démonstration `osatura-wasm/index.html`, script de compilation `osatura-wasm/build-wasm.sh`. Public : développeurs web qui veulent lire des projets OSATURA dans un navigateur ou dans node, et la première personne qui exécute le module dans un navigateur. Documentation CC-BY-4.0 ; exemples de code MPL-2.0.*
 
-> ## STATUT : COMPILÉ ET TESTÉ EN CI, JAMAIS EXÉCUTÉ DANS UN NAVIGATEUR
+> ## STATUT : COMPILÉ ET TESTÉ EN CI, EXÉCUTÉ SEULEMENT DANS CHROMIUM SANS INTERFACE
 >
-> **Au 24 oct. 2026, le module est compilé sur GitHub Actions** (`wasm32-unknown-unknown`, build de débogage dans `ci.yml`, build release dans `release.yml`) et **le test du wrapper réussit sur le vrai module sous Node 20** (`node osatura-wasm/js/test.mjs demo.json`, y compris sa partie avec le vrai module). Le build release est joint à la préversion en brouillon `v0.1.0-alpha.3` sous le nom `osatura-web.tar.gz` (environ 0,9 Mo compressé, avec `osatura.js` et la page de démonstration). **Il n'a jamais été chargé dans un navigateur** : rien de ce que cette page dit des navigateurs, de la vitesse ou de la mémoire n'est un comportement observé, et l'environnement de développement lui-même ne peut toujours pas installer la cible (le téléchargement de sa bibliothèque standard y est bloqué).
+> **Au 24 oct. 2026, le module est compilé sur GitHub Actions** (`wasm32-unknown-unknown`, build de débogage dans `ci.yml`, build release dans `release.yml`) et **le test du wrapper réussit sur le vrai module sous Node 20** (`node osatura-wasm/js/test.mjs demo.json`, y compris sa partie avec le vrai module). Le build release est joint à la préversion en brouillon `v0.1.0-alpha.3` sous le nom `osatura-web.tar.gz` (environ 0,9 Mo compressé, avec `osatura.js` et la page de démonstration). **Il a été chargé une fois dans Chromium 141 sans interface sous Linux, sans GPU** (résultats à la fin de cette page, produits par `osatura-wasm/js/browser-check.js`) ; Firefox, Safari, les téléphones et les vrais GPU n'ont pas été essayés, de sorte que les affirmations de cette page à leur sujet ne sont pas un comportement observé, et l'environnement de développement lui-même ne peut toujours pas installer la cible (le téléchargement de sa bibliothèque standard y est bloqué).
 >
 > Ce qui a été testé, et jusqu'où cela va :
 >
@@ -68,7 +68,7 @@ Le module possède une **mémoire linéaire** (exportée sous le nom `memory`). 
 
 ## Référence des exports
 
-36 exports plus `memory`. `ptr` et `len` sont des `i32` dans la signature wasm (`usize` en Rust). `h` est un handle. Le retour `-1` signifie une erreur, sauf indication contraire.
+37 exports plus `memory`. `ptr` et `len` sont des `i32` dans la signature wasm (`usize` en Rust). `h` est un handle. Le retour `-1` signifie une erreur, sauf indication contraire.
 
 | Export | Signature (vue Rust) | Résultat |
 |---|---|---|
@@ -226,8 +226,8 @@ Les étapes 1 et 5 ont été faites par la CI le 24 oct. 2026. Les étapes 3, 4,
 
 1. **Installer la cible et compiler.** `rustup target add wasm32-unknown-unknown && ./osatura-wasm/build-wasm.sh`. (risque) Vous verrez si `zip`, `tiny-skia`, `png`, `gif`, `jpeg-decoder` et `i_overlay` compilent. Consignez le compilateur et `rustc --version`.
 2. **Pas de moteur de script.** `cargo tree --target wasm32-unknown-unknown -p osatura-wasm | grep -ci 'rhai\|smartstring'` doit afficher 0.
-3. **Examiner les exports.** Dans node : `WebAssembly.Module.exports(new WebAssembly.Module(fs.readFileSync('osatura-wasm/osatura_wasm.wasm')))`. Attendez-vous à `memory` et aux 36 fonctions du [tableau des exports](#référence-des-exports), et à **aucun import** (`WebAssembly.Module.imports(...)` vide). Si `memory` manque ou si des imports apparaissent (par exemple `env.*` issus d'une feature de std), le wrapper doit être adapté.
-4. **Taille.** Consignez la taille avant et après `wasm-opt -Oz`, ainsi que les tailles gzip / brotli. Rien n'a jamais été mesuré.
+3. **Examiner les exports.** Dans node : `WebAssembly.Module.exports(new WebAssembly.Module(fs.readFileSync('osatura-wasm/osatura_wasm.wasm')))`. Attendez-vous à `memory` et aux 37 fonctions du [tableau des exports](#référence-des-exports), et à **aucun import** (`WebAssembly.Module.imports(...)` vide). Si `memory` manque ou si des imports apparaissent (par exemple `env.*` issus d'une feature de std), le wrapper doit être adapté.
+4. **Taille.** Consignez la taille avant et après `wasm-opt -Oz`, ainsi que les tailles gzip / brotli. Mesurée une fois lors de l'exécution dans Chromium : voir le tableau des résultats à la fin de cette page.
 5. **Lancer le test node avec un vrai projet.** `osatura demo demo.json && node osatura-wasm/js/test.mjs demo.json` doit afficher `real wasm tests: ok` après les trois sections de mock.
 6. **Comparer avec le moteur de rendu natif.** Pour les images 0, 12 et 47 de la démo aux échelles 0,5 et 1, comparez `Osatura.rgba` avec `osatura render demo.json N out.png --scale S` décodé en RGBA. (risque) Attendez-vous à de petites différences sur les bords anticrénelés (bibliothèque mathématique différente) ; indiquez la différence absolue maximale et moyenne, ainsi que la fraction de pixels au-dessus de 24/255. Une grande différence signale un vrai bug.
 7. **Exercer le player.** Construisez le projet de l'exemple de l'ABI C (demo + `take-record` + `clip add` + `machine add`, voir [C_ABI.md](C_ABI.md)), pilotez `startPlayer`, `setBool`, `advance`, `state`, `events`, `playerRgba` ; et le projet avec un conteneur et une région de défilement pour `setCanvas`, `scrollDrag`, `scrollRelease`, `scrollInfo`, `setScreen` (ce dernier construit des niveaux de détail : chronométrez-le, il est lent sans optimisation et n'a pas été chronométré sur wasm).

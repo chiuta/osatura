@@ -360,7 +360,7 @@ em sandbox com limites explícitos. O modelo de ameaças e as medidas de hardeni
 
 A edição multiusuário é construída em três camadas, todas determinísticas e testáveis sem rede.
 
-**collab.rs, a réplica.** Um CRDT sobre o JSON do projeto. Uma chave de objeto é um registrador last-writer-wins.
+**collab/, a réplica.** Um CRDT sobre o JSON do projeto. Uma chave de objeto é um registrador last-writer-wins.
 Um array é um RGA (replicated growable array, Roh et al. 2011) com tombstones, e a remoção
 prevalece sobre edições concorrentes. A ordenação usa relógios de Lamport (Lamport 1978) e relógios vetoriais (Fidge,
 Mattern). As mudanças viajam como um `Envelope { replica, seq, lamport, deps, ops }`. A entrega é causal
@@ -474,7 +474,7 @@ Exemplo: um novo número por camada.
 
 ### 12.3 Adicionar um exportador
 
-1. Coloque o escritor em `osatura-core` (por exemplo ao lado de `export.rs`, `gltf.rs` ou
+1. Coloque o escritor em `osatura-core` (por exemplo ao lado de `export.rs`, `gltf/` ou
    `lottie_export.rs`). Ele recebe um `Engine` ou `Project`, avalia os quadros por meio de
    `evaluate_checked` e não deve ler estado privado.
 2. Decida e documente o que ele não consegue representar. Emita avisos, não suposições, para recursos descartados.

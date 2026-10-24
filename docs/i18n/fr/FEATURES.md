@@ -96,7 +96,7 @@ Elle remplace les listes de « candidats n° » dispersées plus bas ; les déta
 | Fonctionnalité | Statut | PI | Base sûre / condition |
 |---|---|---|---|
 | Studio dans le navigateur avec annuler/rétablir | 🟡 | 🟢 | interface propre ; aucune copie de dispositions ou de noms d'éditeurs |
-| Runtime WASM, API Rust stable + ABI C, scripts en bac à sable (R-090…R-093) | 🟡 (R-091, R-092, R-093 terminés ; R-090 : le module wasm se compile et passe le test du wrapper sous Node en CI, mais n'a jamais été exécuté dans un navigateur) | 🟢 | API propre |
+| Runtime WASM, API Rust stable + ABI C, scripts en bac à sable (R-090…R-093) | 🟡 (R-091, R-092, R-093 terminés ; R-090 : le module wasm se compile et passe le test du wrapper sous Node en CI, et n'a été exécuté que dans Chromium sans interface) | 🟢 | API propre |
 | **Serveur agent / MCP** au-dessus des opérations de patch : inspecter, éditer (atomique, annulable), linter, sécurité, rendu, enregistrement dans son propre fichier uniquement (R-094) | ✅ | 🟢 | protocole JSON-RPC ouvert |
 | Interface complète : gizmos, timeline, éditeur de courbes (R-100…R-103) | 🟡 (R-101, R-102 terminés ; les pages R-100 et R-103 existent mais n'ont jamais été exécutées dans un vrai navigateur par l'auteur) | 🟢 | widgets génériques ; apparence propre |
 | Contrôle de version d'animation avec fusion sémantique, diff perceptuel en CI, explain-this-pixel (I-01, I-06, I-07) | ✅ (I-01 `osatura vcs`, I-06 `osatura ci`, I-07 `explain`) | 🟢 | idées propres |

@@ -360,7 +360,7 @@ in sandbox con limiti espliciti. Il modello delle minacce e le misure di hardeni
 
 La modifica multiutente è costruita su tre livelli, tutti deterministici e testabili senza rete.
 
-**collab.rs, la replica.** Un CRDT sul JSON del progetto. Una chiave di oggetto è un registro
+**collab/, la replica.** Un CRDT sul JSON del progetto. Una chiave di oggetto è un registro
 last-writer-wins. Un array è un RGA (replicated growable array, Roh et al. 2011) con tombstone, e la rimozione
 prevale sulle modifiche concorrenti. L'ordinamento usa orologi di Lamport (Lamport 1978) e orologi vettoriali (Fidge,
 Mattern). Le modifiche viaggiano come `Envelope { replica, seq, lamport, deps, ops }`. La consegna è causale
@@ -476,7 +476,7 @@ Esempio: un nuovo numero per livello.
 
 ### 12.3 Aggiungere un esportatore
 
-1. Colloca il writer in `osatura-core` (per esempio accanto a `export.rs`, `gltf.rs` o
+1. Colloca il writer in `osatura-core` (per esempio accanto a `export.rs`, `gltf/` o
    `lottie_export.rs`). Riceve un `Engine` o un `Project`, valuta i fotogrammi tramite
    `evaluate_checked` e non deve leggere lo stato privato.
 2. Decidi e documenta ciò che non può rappresentare. Emetti avvisi, non supposizioni, per le funzionalità
