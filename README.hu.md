@@ -2,11 +2,8 @@
 <!-- Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio) -->
 # OSATURA
 
-<<<<<<< HEAD
-=======
 **Languages:** [English](README.md) · [Română](README.ro.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Magyar](README.hu.md) · [Italiano](README.it.md) · [Português](README.pt.md)
 
->>>>>>> origin/main
 **Rustban írt 2D vektoros riggelő és animációs motor: csontok, IK, skinning, deformerek, állapotgép-futtatókörnyezet, parancssori eszköztár, böngészős stúdió és beágyazható könyvtárak egyetlen workspace-ben.** Román nyelvű változat: [README.ro.md](README.ro.md).
 
 ![Oldalnézetes figura (fej, fül, lófarok, törzs, ujjakkal ellátott kar, láb, talp) helyben jár az elúszó talajon; az osatura export valódi kimenete a beépített demóprojekten](docs/img/walk.gif)

@@ -2,11 +2,8 @@
 <!-- Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio) -->
 # OSATURA
 
-<<<<<<< HEAD
-=======
 **Languages:** [English](README.md) · [Română](README.ro.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Magyar](README.hu.md) · [Italiano](README.it.md) · [Português](README.pt.md)
 
->>>>>>> origin/main
 **Eine 2D-Vektor-Rigging- und Animations-Engine in Rust: Knochen, IK, Skinning, Deformer, eine Zustandsautomaten-Laufzeitumgebung, eine Kommandozeilen-Toolbox, ein Browser-Studio und einbettbare Bibliotheken, alles in einem Workspace.** Rumänische Version: [README.ro.md](README.ro.md).
 
 ![Ein Charakter in Seitenansicht (Kopf, Ohr, Pferdeschwanz, Rumpf, Arme mit Fingern, Beine, Füße) läuft auf der Stelle, der Boden zieht vorbei; echte Ausgabe von osatura export für das eingebaute Demoprojekt](docs/img/walk.gif)
