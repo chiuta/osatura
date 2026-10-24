@@ -459,7 +459,7 @@ Exemplu: un număr nou, specific fiecărui strat.
 1. Scrie logica în `osatura-core` ca funcție cu intrare tipizată și `Result<_, String>` sau o listă
    de erori; CLI-ul trebuie doar să parseze flag-urile și să afișeze. Astfel logica rămâne utilizabilă
    din ABI-ul C, din WASM și din Studio.
-2. În `osatura-cli/src/main.rs`, adaugă o intrare `USAGE`. `usage_for`, `documented_options` și
+2. În `osatura-cli/src/usage.rs`, adaugă o intrare `USAGE`. `usage_for`, `documented_options` și
    `check_flags` o citesc, iar un test compară USAGE cu parserul, deci un flag pe care parserul îl
    acceptă, dar USAGE nu îl menționează, face testul să eșueze.
 3. Înregistrează opțiunile care primesc o valoare în `VALUE_OPTS` (sau în tabelul `takes_value` al

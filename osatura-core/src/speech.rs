@@ -140,7 +140,7 @@ pub fn detect_speech(a: &Audio, o: &VadOptions) -> Result<Vad, String> {
         return Err("audio is silent (peak below -80 dBFS)".into());
     }
     let mut sorted = rms.clone();
-    sorted.sort_by(|x, y| x.partial_cmp(y).unwrap());
+    sorted.sort_by(|x, y| x.total_cmp(y));
     let floor = sorted[sorted.len() / 10].min(0.2 * peak);
     let span = peak - floor;
     if span < 1e-4 {
@@ -980,7 +980,7 @@ pub fn speech_motion(p: &Project, al: &Alignment, o: &MotionOptions) -> Result<V
     let mut rng = Rng::new(o.seed);
     // median syllable duration = the "unstressed" yardstick
     let mut durs: Vec<f32> = al.words.iter().flat_map(|w| w.syllables.iter().map(|s| s.end - s.start)).collect();
-    durs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    durs.sort_by(|a, b| a.total_cmp(b));
     let median = durs.get(durs.len() / 2).copied().unwrap_or(0.2).max(0.02);
     let mut last_nod = f32::NEG_INFINITY;
     let mut sentence_start = true;

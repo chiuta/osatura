@@ -458,7 +458,7 @@ Ejemplo: un nuevo número por capa.
 1. Escribe la lógica en `osatura-core` como una función con entrada tipada y `Result<_, String>` o una
    lista de errores; la CLI solo debe analizar las opciones e imprimir. Así la lógica se puede usar desde la ABI de C,
    WASM y el Studio.
-2. En `osatura-cli/src/main.rs`, añade una entrada en `USAGE`. `usage_for`, `documented_options` y
+2. En `osatura-cli/src/usage.rs`, añade una entrada en `USAGE`. `usage_for`, `documented_options` y
    `check_flags` la leen, y una prueba compara USAGE con el analizador, de modo que una opción que el analizador
    acepta pero USAGE no menciona hace fallar la prueba.
 3. Registra las opciones que reciben un valor en `VALUE_OPTS` (o en la tabla `takes_value` de cada comando).

@@ -1250,7 +1250,7 @@ fn parse_effects(l: &Value, nm: &str, tm: (f32, f32), warn: &mut Vec<String>) ->
                         // direction is an angle and distance a length, so dx / dy are curved between keys: sample every frame
                         times.extend((lo.ceil() as i32..=hi.floor() as i32).map(|f| f as f32));
                     }
-                    times.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                    times.sort_by(|a, b| a.total_cmp(b));
                     times.dedup_by(|a, b| (*a - *b).abs() < 1e-4);
                     let kx: Vec<(f32, f32, Ease)> = times.iter().map(|&t| (t, xy(t).0, Ease::Linear)).collect();
                     let ky: Vec<(f32, f32, Ease)> = times.iter().map(|&t| (t, xy(t).1, Ease::Linear)).collect();

@@ -4,6 +4,10 @@
 
 **Un moteur de rigging et d'animation vectoriels 2D en Rust : os, IK, skinning, déformateurs, un runtime de machines à états, une boîte à outils en ligne de commande, un studio dans le navigateur et des bibliothèques intégrables, réunis dans un seul workspace.** Version roumaine : [README.ro.md](README.ro.md).
 
+![Un personnage de profil (tête, oreille, queue de cheval, tronc, bras avec doigts, jambes, pieds) marche sur place sur un sol qui défile ; sortie réelle de osatura export sur le projet de démonstration intégré](docs/img/walk.gif)
+
+*Ce que ça produit : la personne qui marche intégrée, exportée avec `osatura demo-person` et `osatura export` (tout le projet tient dans un fichier JSON). À essayer en deux minutes : [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
+
 ## Résumé et philosophie
 
 OSATURA vous permet de construire un personnage ou une scène à partir de formes vectorielles et d'images, de les rigger avec des os et des contraintes, de les animer avec des clés, des clips et de la physique, puis de les exporter en GIF, en vidéo, en Lottie, en glTF, en lecteur HTML autonome ou en runtime interactif. Il est composé de petites briques déterministes : le même projet et la même seed donnent les mêmes pixels, chaque outil lit et écrit un projet JSON documenté, et chaque commande fonctionne depuis un terminal ; l'animation peut ainsi être scriptée, relue, comparée (diff) et testée comme du code source.

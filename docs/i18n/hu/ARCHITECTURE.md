@@ -450,7 +450,7 @@ Példa: egy új, rétegenkénti szám.
 ### 12.2 CLI-parancs hozzáadása
 
 1. Írd meg a logikát az `osatura-core` crate-ben függvényként, típusos bemenettel és `Result<_, String>` vagy hibalista visszatéréssel; a CLI-nek csak a kapcsolókat kell feldolgoznia és kiírnia. Így a logika használható marad a C ABI-ból, a WASM-ból és a Studióból.
-2. Az `osatura-cli/src/main.rs` fájlban adj hozzá egy `USAGE` bejegyzést. A `usage_for`, a `documented_options` és a `check_flags` ezt olvassa, és egy teszt összeveti a USAGE-ot az értelmezővel, így az a kapcsoló, amelyet az értelmező elfogad, de a USAGE nem említ, megbuktatja a tesztet.
+2. Az `osatura-cli/src/usage.rs` fájlban adj hozzá egy `USAGE` bejegyzést. A `usage_for`, a `documented_options` és a `check_flags` ezt olvassa, és egy teszt összeveti a USAGE-ot az értelmezővel, így az a kapcsoló, amelyet az értelmező elfogad, de a USAGE nem említ, megbuktatja a tesztet.
 3. Az értéket váró opciókat regisztráld a `VALUE_OPTS` táblában (vagy a parancsonkénti `takes_value` táblában).
 4. Adj hozzá egy match ágat a `run` függvényben (a `match pos.as_slice()` alapján oszt szét).
 5. A projekteket a `load` vagy a `load_sized` függvényen keresztül olvasd, hogy a méretkorlátok és az asset-bezárás érvényesüljön.

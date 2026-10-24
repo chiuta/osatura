@@ -4,6 +4,10 @@
 
 **A 2D vector rigging and animation engine in Rust: bones, IK, skinning, deformers, a state machine runtime, a command-line toolbox, a browser studio and embeddable libraries, in one workspace.** Romanian version: [README.ro.md](README.ro.md).
 
+![A side-view character with head, ear, ponytail, trunk, arms with fingers, legs and feet walking in place on a ground that scrolls past; the real output of osatura export on the built-in demo project](docs/img/walk.gif)
+
+*What it makes: the built-in walking person, exported with `osatura demo-person` and `osatura export` (the whole project is one JSON file). Try it in two minutes: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
+
 ## Summary and philosophy
 
 OSATURA lets you build a character or a scene from vector shapes and images, rig it with bones and constraints, animate it with keys, clips and physics, and send it out as GIF, video, Lottie, glTF, a self-contained HTML player or an interactive runtime. It is made of small, deterministic pieces: the same project and the same seed give the same pixels, every tool reads and writes a documented JSON project, and every command works from a terminal, so animation can be scripted, reviewed, diffed and tested like source code.

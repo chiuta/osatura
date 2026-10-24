@@ -4,6 +4,10 @@
 
 **Rustban írt 2D vektoros riggelő és animációs motor: csontok, IK, skinning, deformerek, állapotgép-futtatókörnyezet, parancssori eszköztár, böngészős stúdió és beágyazható könyvtárak egyetlen workspace-ben.** Román nyelvű változat: [README.ro.md](README.ro.md).
 
+![Oldalnézetes figura (fej, fül, lófarok, törzs, ujjakkal ellátott kar, láb, talp) helyben jár az elúszó talajon; az osatura export valódi kimenete a beépített demóprojekten](docs/img/walk.gif)
+
+*Mit készít: a beépített sétáló alak, az `osatura demo-person` és az `osatura export` parancsokkal exportálva (az egész projekt egyetlen JSON-fájl). Kétperces kipróbálás: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
+
 ## Összefoglalás és filozófia
 
 Az OSATURA-val vektoros alakzatokból és képekből építhetsz karaktert vagy jelenetet, csontokkal és kényszerekkel riggelheted, kulcsokkal, klipekkel és fizikával animálhatod, majd GIF-ként, videóként, Lottie-ként, glTF-ként, önálló HTML-lejátszóként vagy interaktív futtatókörnyezetként exportálhatod. Kis, determinisztikus elemekből épül fel: ugyanaz a projekt és ugyanaz a seed ugyanazokat a pixeleket adja, minden eszköz egy dokumentált JSON-projektet olvas és ír, és minden parancs terminálból is működik, így az animációt úgy lehet szkriptelni, átnézni, diffelni és tesztelni, mint a forráskódot.

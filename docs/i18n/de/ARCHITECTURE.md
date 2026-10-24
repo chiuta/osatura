@@ -453,7 +453,7 @@ Beispiel: eine neue Zahl pro Ebene.
 ### 12.2 Einen CLI-Befehl hinzufügen
 
 1. Schreibe die Logik in `osatura-core` als Funktion mit typisierter Eingabe und `Result<_, String>` oder einer Fehlerliste; die CLI soll nur Flags parsen und ausgeben. So bleibt die Logik aus der C-ABI, aus WASM und aus dem Studio nutzbar.
-2. Füge in `osatura-cli/src/main.rs` einen `USAGE`-Eintrag hinzu. `usage_for`, `documented_options` und `check_flags` lesen ihn, und ein Test vergleicht USAGE mit dem Parser, sodass ein Flag, den der Parser akzeptiert, den USAGE aber nicht erwähnt, den Test fehlschlagen lässt.
+2. Füge in `osatura-cli/src/usage.rs` einen `USAGE`-Eintrag hinzu. `usage_for`, `documented_options` und `check_flags` lesen ihn, und ein Test vergleicht USAGE mit dem Parser, sodass ein Flag, den der Parser akzeptiert, den USAGE aber nicht erwähnt, den Test fehlschlagen lässt.
 3. Registriere Optionen, die einen Wert annehmen, in `VALUE_OPTS` (oder in der befehlsspezifischen `takes_value`-Tabelle).
 4. Füge in `run` einen Match-Zweig hinzu (es verzweigt per `match pos.as_slice()`).
 5. Lies Projekte über `load` oder `load_sized`, damit Größenlimits und die Einschränkung von Assets gelten.

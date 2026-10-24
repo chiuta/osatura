@@ -459,7 +459,7 @@ Esempio: un nuovo numero per livello.
 1. Scrivi la logica in `osatura-core` come funzione con input tipizzato e `Result<_, String>` o un
    elenco di errori; la CLI deve limitarsi a interpretare i flag e a stampare. Così la logica resta
    utilizzabile dall'ABI C, da WASM e dallo Studio.
-2. In `osatura-cli/src/main.rs`, aggiungi una voce in `USAGE`. `usage_for`, `documented_options` e
+2. In `osatura-cli/src/usage.rs`, aggiungi una voce in `USAGE`. `usage_for`, `documented_options` e
    `check_flags` la leggono, e un test confronta USAGE con il parser, quindi un flag che il parser
    accetta ma che USAGE non menziona fa fallire il test.
 3. Registra le opzioni che richiedono un valore in `VALUE_OPTS` (o nella tabella `takes_value` del singolo

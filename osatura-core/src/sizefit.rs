@@ -256,7 +256,7 @@ pub fn chain(f: Format) -> Vec<Vec<usize>> {
             steps.push((j as f64 / (n - 1) as f64, i));
         }
     }
-    steps.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap().then(a.1.cmp(&b.1)));
+    steps.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
     let mut pos = vec![0usize; ax.len()];
     let mut out = vec![pos.clone()];
     for (_, i) in steps {

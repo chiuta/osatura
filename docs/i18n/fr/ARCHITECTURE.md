@@ -457,7 +457,7 @@ Exemple : un nouveau nombre par calque.
 1. Écrivez la logique dans `osatura-core` sous forme de fonction à entrée typée et `Result<_, String>` ou liste
    d'erreurs ; la CLI doit uniquement analyser les options et afficher. Ainsi, la logique reste utilisable depuis l'ABI C,
    WASM et le Studio.
-2. Dans `osatura-cli/src/main.rs`, ajoutez une entrée `USAGE`. `usage_for`, `documented_options` et
+2. Dans `osatura-cli/src/usage.rs`, ajoutez une entrée `USAGE`. `usage_for`, `documented_options` et
    `check_flags` la lisent, et un test compare USAGE à l'analyseur : une option que l'analyseur
    accepte mais que USAGE ne mentionne pas fait échouer le test.
 3. Déclarez les options qui prennent une valeur dans `VALUE_OPTS` (ou dans la table `takes_value` propre à la commande).

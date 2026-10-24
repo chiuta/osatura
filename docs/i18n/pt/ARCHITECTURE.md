@@ -459,7 +459,7 @@ Exemplo: um novo número por camada.
 1. Escreva a lógica em `osatura-core` como uma função com entrada tipada e `Result<_, String>` ou uma
    lista de erros; a CLI deve apenas interpretar as flags e imprimir. Isso mantém a lógica utilizável a partir da C ABI,
    do WASM e do Studio.
-2. Em `osatura-cli/src/main.rs`, adicione uma entrada em `USAGE`. `usage_for`, `documented_options` e
+2. Em `osatura-cli/src/usage.rs`, adicione uma entrada em `USAGE`. `usage_for`, `documented_options` e
    `check_flags` a leem, e um teste compara USAGE com o parser, de modo que uma flag que o parser
    aceita mas USAGE não menciona faz o teste falhar.
 3. Registre as opções que recebem um valor em `VALUE_OPTS` (ou na tabela `takes_value` de cada comando).

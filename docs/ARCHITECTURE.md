@@ -462,7 +462,7 @@ Example: a new per-layer number.
 1. Write the logic in `osatura-core` as a function with typed input and `Result<_, String>` or an
    error list; the CLI should only parse flags and print. This keeps the logic usable from the C ABI,
    WASM and the Studio.
-2. In `osatura-cli/src/main.rs`, add a `USAGE` entry. `usage_for`, `documented_options` and
+2. In `osatura-cli/src/usage.rs`, add a `USAGE` entry. `usage_for`, `documented_options` and
    `check_flags` read it, and a test compares USAGE with the parser, so a flag that the parser
    accepts but USAGE does not mention fails the test.
 3. Register options that take a value in `VALUE_OPTS` (or the per-command `takes_value` table).
