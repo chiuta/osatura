@@ -183,7 +183,7 @@ A running state machine (interactive playback). Created by `Animation::player`; 
 | `set_screen_size(w_px, h_px, max_error_px)` | `Result<(), ApiError>` | (1.2) pick the coarsest of eight prebuilt levels of detail whose declared bound, at the scale that fits the canvas into that screen, is at most `max_error_px`. Levels are built once on first use (level 1 bounded by 0.125 stage units, doubling) and cached; with `max_error_px` 0 only lossless levels qualify. |
 | `clear_screen_size()`, `lod_level()`, `lod_bound_px()` | `()`, `usize`, `f32` | back to the original; level in use (0 = original); its declared bound in pixels |
 
-Notes: the level-of-detail bound covers geometry and timeline keys as documented in `lod.rs` (`ASSUMPTIONS`, `LIMITS`); state-machine poses and bindings are not modelled by it, and pose channels that target a layer a level removed are dropped. The studio's scrub proxies use a separate mechanism with their own level grid. A scroll region's `input` goes through the player's value table, not through the data-binding runtime, so expressions, remapping and smoothing do not apply to it.
+Notes: the level-of-detail bound covers geometry and timeline keys as documented in `lod/mod.rs` (`ASSUMPTIONS`, `LIMITS`); state-machine poses and bindings are not modelled by it, and pose channels that target a layer a level removed are dropped. The studio's scrub proxies use a separate mechanism with their own level grid. A scroll region's `input` goes through the player's value table, not through the data-binding runtime, so expressions, remapping and smoothing do not apply to it.
 
 ## Reference: free functions (tools, version control, CI)
 

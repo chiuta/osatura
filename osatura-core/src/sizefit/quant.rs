@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Colour quantisation (median cut), dithering, indexed frames, GIF and APNG encode/decode (part of `sizefit`; see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 // Colour quantisation (median cut), dithering, indexed frame sequences

@@ -10,12 +10,12 @@ OSATURA is a pre-alpha engine with a command line and a browser editor, built by
 
 | | OSATURA | Spine (Esoteric Software) | Moho (Lost Marble) | DragonBones |
 |---|---|---|---|---|
-| Maturity | Alpha, one author, builds checked on three systems in CI, no known production use | Long-established commercial tool with runtimes for many engines | Long-established commercial tool | Unverified: check whether it is still maintained before relying on it |
+| Maturity | Alpha, one author, builds checked on three systems in CI, no known production use | Long-established commercial tool with runtimes for many engines | Long-established commercial tool | Reported as discontinued by a software directory (AlternativeTo, Oct 2026): check before relying on it |
 | Interface | Browser editor and window shell; **has not been tested by working animators** | Desktop editor | Desktop editor | Desktop editor (unverified) |
 | Licence | Libraries MPL-2.0, CLI and studio AGPL-3.0-or-later, docs CC-BY-4.0 | Proprietary, paid | Proprietary, paid | Unverified |
-| Headless and scripted use | Yes: every operation is a CLI command or a script, with CI checks for animations (`osatura ci`) | Command line export exists (see vendor docs) | Not the focus | Unverified |
-| Game-engine runtimes | **None.** Exports GIF, PNG sequence, sprite sheet, SVG, Lottie, HTML player, C library and Rust crate | Many official runtimes | Exports and some engine plug-ins (see vendor) | Unverified |
-| Mesh deformation, weights | Weights on anchors, deformers, IK, physics | Mature, with a large feature set | Mature | Unverified |
+| Headless and scripted use | Yes: every operation is a CLI command or a script, with CI checks for animations (`osatura ci`) | Command-line export exists (vendor documentation) | Unverified | Unverified |
+| Game-engine runtimes | **None.** Exports GIF, PNG sequence, sprite sheet, SVG, Lottie, HTML player, C library and Rust crate | Many official runtimes | Exports to several formats; engine plug-ins unverified | Unverified |
+| Mesh deformation, weights | Weights on anchors, deformers, IK, physics | Mature, with a large feature set (meshes are not in the cheapest edition) | Mature | Unverified |
 | Community, tutorials, support | None yet | Large | Large | Unverified |
 
 ## Where OSATURA is different
@@ -34,4 +34,4 @@ OSATURA is a pre-alpha engine with a command line and a browser editor, built by
 
 ## How to decide
 
-Try the two-minute path in [GETTING_STARTED.md](GETTING_STARTED.md) and the [SVG tutorial](TUTORIAL_SVG.md). If the result is not useful to you in an hour, that is a finding: please report it ([CONTRIBUTING.md](../CONTRIBUTING.md)). Corrections to this page, above all about other products, are welcome as issues.
+Try the two-minute path in [GETTING_STARTED.md](GETTING_STARTED.md) and the [SVG tutorial](TUTORIAL_SVG.md). If the result is not useful to you in an hour, that is a finding: please report it as an issue on [GitHub](https://github.com/chiuta/osatura/issues) (rules for contributions: [CONTRIBUTING.md](../CONTRIBUTING.md)). Corrections to this page, above all about other products, are welcome as issues.

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Key reduction with an L-infinity bound (part of `lod`; see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 // Key reduction with an L-infinity bound

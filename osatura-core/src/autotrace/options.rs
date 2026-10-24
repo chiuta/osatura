@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Part of `autotrace` (see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 // ---------------------------------------------------------------------------------------------
@@ -205,7 +204,7 @@ pub fn decode_image(bytes: &[u8]) -> Result<Image, String> {
 // small deterministic helpers
 // ---------------------------------------------------------------------------------------------
 
-pub(super) struct Rng( pub(super) u64);
+pub(super) struct Rng(pub(super) u64);
 
 impl Rng {
     pub(super) fn new(seed: u64) -> Rng {

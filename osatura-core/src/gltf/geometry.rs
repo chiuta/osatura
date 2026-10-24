@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Part of `gltf` (see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 pub(super) const MAX_ANIM_VALUES: usize = 4_000_000;

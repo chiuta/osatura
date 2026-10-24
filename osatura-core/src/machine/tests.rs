@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Tests of `machine`.
-#![allow(unused_imports)]
 
 use super::*;
 use crate::binding::{Binding, Remap, Target};

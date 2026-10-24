@@ -96,7 +96,7 @@ It supersedes the scattered "candidate #" lists further down; details and IDs li
 | Feature | Status | IP | Safe basis / condition |
 |---|---|---|---|
 | Browser studio with undo/redo | 🟡 | 🟢 | own UI; no copying of vendor layouts or names |
-| WASM runtime, stable Rust API + C ABI, sandboxed scripting (R-090…R-093) | 🟡 (R-091, R-092, R-093 done; R-090 the wasm module builds and passes the wrapper's test under Node in CI, but was never run in a browser) | 🟢 | own API |
+| WASM runtime, stable Rust API + C ABI, sandboxed scripting (R-090…R-093) | 🟡 (R-091, R-092, R-093 done; R-090 the wasm module builds and passes the wrapper's test under Node in CI, and was run only in headless Chromium) | 🟢 | own API |
 | **Agent / MCP server** over patch ops: inspect, edit (atomic, undoable), lint, safety, render, save to its own file only (R-094) | ✅ | 🟢 | open JSON-RPC protocol |
 | Full GUI: gizmos, timeline, graph editor (R-100…R-103) | 🟡 (R-101, R-102 done; R-100 and R-103 pages exist but were never run in a real browser by the author) | 🟢 | generic widgets; own look |
 | Animation version control with semantic merge, CI perceptual diff, explain-this-pixel (I-01, I-06, I-07) | ✅ (I-01 `osatura vcs`, I-06 `osatura ci`, I-07 `explain`) | 🟢 | own ideas |

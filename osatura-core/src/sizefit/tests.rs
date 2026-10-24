@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Tests of the size fitter.
-#![allow(unused_imports)]
 
 /// C12a: the gzip budget also holds for the system gzip at -9 and at its default -6.
 #[test]

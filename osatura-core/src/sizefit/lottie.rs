@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Lottie: reduce a baked document, read it back (part of `sizefit`; see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 // Lottie: reduce a baked document, read it back

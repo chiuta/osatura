@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Small utilities: gzip sizes, rounding, resizing (part of `sizefit`; see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 // Small utilities

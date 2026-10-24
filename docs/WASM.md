@@ -2,9 +2,9 @@
 
 *ABI version 1 (`arm_abi_version()`). Crate `osatura-wasm`, JavaScript wrapper `osatura-wasm/js/osatura.js`, demo page `osatura-wasm/index.html`, build script `osatura-wasm/build-wasm.sh`. Audience: web developers who want to play OSATURA projects in a browser or in node, and the first person who runs the module in a browser. Documentation CC-BY-4.0; code samples MPL-2.0.*
 
-> ## STATUS: BUILT AND TESTED IN CI, NEVER RUN IN A BROWSER
+> ## STATUS: BUILT AND TESTED IN CI, RUN ONLY IN HEADLESS CHROMIUM
 >
-> **As of 24 Oct 2026 the module is built on GitHub Actions** (`wasm32-unknown-unknown`, debug build in `ci.yml`, release build in `release.yml`) and **the wrapper's test passes against the real module under Node 20** (`node osatura-wasm/js/test.mjs demo.json`, including its real-module part). The release build is attached to the draft pre-release `v0.1.0-alpha.3` as `osatura-web.tar.gz` (about 0.9 MB compressed, with `osatura.js` and the demo page). **It has never been loaded in a browser**: nothing on this page about browsers, speed or memory is observed behaviour, and the development environment itself still cannot install the target (the download of its standard library is blocked there).
+> **As of 24 Oct 2026 the module is built on GitHub Actions** (`wasm32-unknown-unknown`, debug build in `ci.yml`, release build in `release.yml`) and **the wrapper's test passes against the real module under Node 20** (`node osatura-wasm/js/test.mjs demo.json`, including its real-module part). The release build is attached to the draft pre-release `v0.1.0-alpha.3` as `osatura-web.tar.gz` (about 0.9 MB compressed, with `osatura.js` and the demo page). **It was loaded once in headless Chromium 141 on Linux without a GPU** (results at the end of this page, produced by `osatura-wasm/js/browser-check.js`); Firefox, Safari, phones and real GPUs were not tried, so statements about them on this page are not observed behaviour, and the development environment itself still cannot install the target (the download of its standard library is blocked there).
 >
 > What was tested, and how far that goes:
 >
@@ -68,7 +68,7 @@ The module owns one **linear memory** (exported as `memory`). The host never sha
 
 ## Export reference
 
-36 exports plus `memory`. `ptr` and `len` are `i32` in the wasm signature (`usize` in Rust). `h` is a handle. Return `-1` = error unless stated.
+37 exports plus `memory`. `ptr` and `len` are `i32` in the wasm signature (`usize` in Rust). `h` is a handle. Return `-1` = error unless stated.
 
 | Export | Signature (Rust view) | Result |
 |---|---|---|
@@ -226,8 +226,8 @@ Steps 1 and 5 were done by CI on 24 Oct 2026. Steps 3, 4, 6, 8, 9, 11 and 13 wer
 
 1. **Install the target and build.** `rustup target add wasm32-unknown-unknown && ./osatura-wasm/build-wasm.sh`. (risk) Expect to see whether `zip`, `tiny-skia`, `png`, `gif`, `jpeg-decoder` and `i_overlay` compile. Record the compiler and `rustc --version`.
 2. **No scripting engine.** `cargo tree --target wasm32-unknown-unknown -p osatura-wasm | grep -ci 'rhai\|smartstring'` must print 0.
-3. **Look at the exports.** In node: `WebAssembly.Module.exports(new WebAssembly.Module(fs.readFileSync('osatura-wasm/osatura_wasm.wasm')))`. Expect `memory` and the 36 functions of the [export table](#export-reference), and **no imports** (`WebAssembly.Module.imports(...)` empty). If `memory` is missing or imports appear (for example `env.*` from a std feature), the wrapper must be adapted.
-4. **Size.** Record the size before and after `wasm-opt -Oz`, and gzip / brotli sizes. Nothing has ever been measured.
+3. **Look at the exports.** In node: `WebAssembly.Module.exports(new WebAssembly.Module(fs.readFileSync('osatura-wasm/osatura_wasm.wasm')))`. Expect `memory` and the 37 functions of the [export table](#export-reference), and **no imports** (`WebAssembly.Module.imports(...)` empty). If `memory` is missing or imports appear (for example `env.*` from a std feature), the wrapper must be adapted.
+4. **Size.** Record the size before and after `wasm-opt -Oz`, and gzip / brotli sizes. Measured once in the Chromium run: see the results table at the end of this page.
 5. **Run the node test with a real project.** `osatura demo demo.json && node osatura-wasm/js/test.mjs demo.json` must print `real wasm tests: ok` after the three mock sections.
 6. **Compare with the native renderer.** For frames 0, 12 and 47 of the demo at scales 0.5 and 1, compare `Osatura.rgba` with `osatura render demo.json N out.png --scale S` decoded to RGBA. (risk) Expect small differences at anti-aliased edges (different math library); report the maximum and mean absolute difference and the fraction of pixels above 24/255. A large difference points at a real bug.
 7. **Exercise the player.** Build the project of the C ABI example (demo + `take-record` + `clip add` + `machine add`, see [C_ABI.md](C_ABI.md)), drive `startPlayer`, `setBool`, `advance`, `state`, `events`, `playerRgba`; and the project with a container and a scroll region for `setCanvas`, `scrollDrag`, `scrollRelease`, `scrollInfo`, `setScreen` (the last builds level-of-detail levels: time it, it is slow unoptimised and has not been timed on wasm).

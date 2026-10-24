@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Tests of the argument parser, usage text and shared helpers of `main.rs`.
-#![allow(unused_imports)]
 
 use super::*;
 
@@ -51,7 +50,7 @@ fn unknown_flags_are_refused_with_a_suggestion() {
     }
 }
 
-/// Splits a CLI source file into `(commands, text)` chunks: in `main.rs` one chunk per `["command", ...] =>` arm of
+/// Splits a CLI source file into `(commands, text)` chunks: in `main.rs` and `cmds_N.rs` one chunk per `["command", ...] =>` arm of
 /// the dispatcher (commands = every `["name"` of the arm's pattern) and `None` for code outside the arms (shared
 /// helpers); other modules are one chunk for the commands they implement.
 fn option_read_sites() -> Vec<(String, Option<Vec<String>>, String)> {
@@ -79,8 +78,18 @@ fn option_read_sites() -> Vec<(String, Option<Vec<String>>, String)> {
         ("vcs_cmd.rs".to_string(), cmds(&["vcs"]), strip(include_str!("vcs_cmd.rs"))),
         ("face_cmd.rs".to_string(), cmds(&face), strip(include_str!("face_cmd.rs"))),
     ];
-    // main.rs: chunk per dispatcher arm
-    let main = strip(include_str!("main.rs"));
+    // main.rs and cmds_1..6.rs (the dispatcher arms live there): one chunk per arm
+    let dispatcher: [(&str, &str); 7] = [
+        ("main.rs", include_str!("main.rs")),
+        ("cmds_1.rs", include_str!("cmds_1.rs")),
+        ("cmds_2.rs", include_str!("cmds_2.rs")),
+        ("cmds_3.rs", include_str!("cmds_3.rs")),
+        ("cmds_4.rs", include_str!("cmds_4.rs")),
+        ("cmds_5.rs", include_str!("cmds_5.rs")),
+        ("cmds_6.rs", include_str!("cmds_6.rs")),
+    ];
+    for (label, text) in dispatcher {
+    let main = strip(text);
     let mut cur: (Option<Vec<String>>, String) = (None, String::new());
     let mut in_header = false;
     for l in main.lines() {
@@ -88,7 +97,7 @@ fn option_read_sites() -> Vec<(String, Option<Vec<String>>, String)> {
         let top = !l.is_empty() && !l.starts_with(' ');
         if is_arm || top {
             if !cur.1.is_empty() {
-                out.push(("main.rs".to_string(), cur.0.take(), std::mem::take(&mut cur.1)));
+                out.push((label.to_string(), cur.0.take(), std::mem::take(&mut cur.1)));
             }
             cur.0 = None;
             in_header = is_arm;
@@ -113,7 +122,8 @@ fn option_read_sites() -> Vec<(String, Option<Vec<String>>, String)> {
         cur.1.push_str(l);
         cur.1.push('\n');
     }
-    out.push(("main.rs".to_string(), cur.0, cur.1));
+    out.push((label.to_string(), cur.0, cur.1));
+    }
     out
 }
 
@@ -432,4 +442,19 @@ fn every_documented_option_parses_as_documented() {
     }
     assert!(bad.is_empty(), "{}", bad.join("\n"));
     assert!(checked > 100, "only {checked} options checked");
+}
+
+/// `import-svg --split` must never fail because of an odd SVG id.
+#[test]
+fn split_layer_names_are_always_valid() {
+    assert_eq!(split_layer_name("head"), "head");
+    assert_eq!(split_layer_name(""), "shape");
+    assert_eq!(split_layer_name("   "), "shape");
+    assert_eq!(split_layer_name("a/b::c"), "a_b_c");
+    assert_eq!(split_layer_name("x\u{1}y\n"), "x_y");
+    assert_eq!(split_layer_name(&"é".repeat(500)).chars().count(), 100);
+    for id in ["../../etc/passwd", "::", "/", "a::b::c", "\t", "é/é"] {
+        let n = split_layer_name(id);
+        assert!(!n.is_empty() && !n.contains('/') && !n.contains("::"), "{id:?} -> {n:?}");
+    }
 }

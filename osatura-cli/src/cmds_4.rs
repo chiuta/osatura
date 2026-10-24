@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Commands part 4 of the dispatcher in `main.rs` (arms kept in their original order, so the first matching arm still wins): script, audio-react, beats, waveform, skin, parent-switch, bone-vis, face-calibrate, face-bake, live-map, clip, cage, cage-pose, mesh-trace, warp-pivot, layer-pivot, mesh-lock, glue.
-#![allow(unused_imports)]
 use super::*;
 
 /// `Some(result)` when one of this part's arms matched the command line, `None` to try the next part.

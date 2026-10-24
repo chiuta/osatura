@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Projection to 2D (part of `mocap`; see the module docs in `mod.rs`).
-#![allow(unused_imports)]
 use super::*;
 
 // Projection to 2D
