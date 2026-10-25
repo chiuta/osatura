@@ -56,7 +56,7 @@ Jeder Pfad ist eine Reihenfolge, keine Vorschrift. Hör auf, wenn du hast, was d
 
 **Sicherheits-Reviewer oder Betreiber.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) Abschnitt 3 (was getestet wird) -> LIMITATIONS Abschnitt 2 und 11 -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> [CI.md](CI.md) Einschränkungen.
 
-**Lizenznehmer, Paketierer oder Jurist.** [../LICENSING.md](LICENSING.md) -> [../LICENSE](../../../LICENSE) und [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> Release-Checkliste in [DEVELOPMENT.md](DEVELOPMENT.md) Abschnitt 7.
+**Lizenznehmer, Paketierer oder Jurist.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../COPYRIGHT) und [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> Release-Checkliste in [DEVELOPMENT.md](DEVELOPMENT.md) Abschnitt 7.
 
 **Maintainer, der ein Release erstellt.** DEVELOPMENT Abschnitt 7 -> [../CHANGELOG.md](CHANGELOG.md) -> LIMITATIONS (aktualisieren) -> Statuskasten der README.
 
@@ -70,7 +70,7 @@ Jeder Pfad ist eine Reihenfolge, keine Vorschrift. Hör auf, wenn du hast, was d
 | [../FEATURES.md](FEATURES.md) | Funktionsmatrix im Vergleich mit anderen Werkzeugen (Teile sind veraltet, siehe LIMITATIONS) |
 | [../CLEANROOM.md](CLEANROOM.md) | Herkunftslog und Regeln für unabhängige Implementierung |
 | [../CONTRIBUTING.md](CONTRIBUTING.md) | Beitragsregeln, Inbound = Outbound-Lizenz, DCO 1.1 |
-| [../LICENSING.md](LICENSING.md), [../LICENSE](../../../LICENSE), [../LICENSES/](../../../LICENSES/) | Lizenzentscheidung (Variante A), Texte |
+| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Lizenzentscheidung (Variante A), Texte |
 | [../TRADEMARK.md](TRADEMARK.md) | Richtlinie zu Name und Logo |
 | `../REUSE.toml`, `../deny.toml` | Lizenz-Metadaten für Nicht-Quelldateien; Dependency-Richtlinie |
 

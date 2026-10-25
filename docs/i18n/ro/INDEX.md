@@ -56,7 +56,7 @@ Fiecare traseu este o ordine, nu o cerință. Oprește-te când ai găsit ce î�
 
 **Recenzor de securitate sau cel care face deploy.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) secțiunea 3 (ce este testat) -> LIMITATIONS secțiunile 2 și 11 -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> limitele din [CI.md](CI.md).
 
-**Licențiat, împachetător sau avocat.** [../LICENSING.md](LICENSING.md) -> [../LICENSE](../../../LICENSE) și [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> lista de verificare pentru lansare din [DEVELOPMENT.md](DEVELOPMENT.md) secțiunea 7.
+**Licențiat, împachetător sau avocat.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../COPYRIGHT) și [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> lista de verificare pentru lansare din [DEVELOPMENT.md](DEVELOPMENT.md) secțiunea 7.
 
 **Maintainer care face o lansare.** DEVELOPMENT secțiunea 7 -> [../CHANGELOG.md](CHANGELOG.md) -> LIMITATIONS (actualizare) -> caseta de stare din README.
 
@@ -70,7 +70,7 @@ Fiecare traseu este o ordine, nu o cerință. Oprește-te când ai găsit ce î�
 | [../FEATURES.md](FEATURES.md) | Matricea de funcționalități în comparație cu alte instrumente (părți sunt depășite, vezi LIMITATIONS) |
 | [../CLEANROOM.md](CLEANROOM.md) | Jurnal de proveniență și reguli pentru implementarea independentă |
 | [../CONTRIBUTING.md](CONTRIBUTING.md) | Reguli de contribuție, licență de intrare = licență de ieșire, DCO 1.1 |
-| [../LICENSING.md](LICENSING.md), [../LICENSE](../../../LICENSE), [../LICENSES/](../../../LICENSES/) | Decizia privind licența (Varianta A), texte |
+| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Decizia privind licența (Varianta A), texte |
 | [../TRADEMARK.md](TRADEMARK.md) | Politica privind numele și logoul |
 | `../REUSE.toml`, `../deny.toml` | Metadate de licență pentru fișierele care nu sunt sursă; politica dependențelor |
 

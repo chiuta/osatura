@@ -16,7 +16,7 @@
 ## 2. Repositorio
 
 - [x] El repositorio de GitHub existe y el árbol se subió sin `target/` ni `out/` (`.gitignore`).
-- [ ] Conserva `LICENSE`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
+- [ ] Conserva `COPYRIGHT`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
 - [ ] Activa la notificación privada de vulnerabilidades (pestaña Security) y haz que `docs/SECURITY.md` apunte a ella.
 - [ ] Pasa la URL del repositorio con `--source-url` al ejecutar el estudio (oferta de código fuente de la AGPL, ruta `/source`) y prueba la oferta desde una instalación limpia.
 

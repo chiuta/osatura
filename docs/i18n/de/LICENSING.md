@@ -1,11 +1,11 @@
-# OSATURA — Lizenzierung (ENTSCHIEDEN: Variante A, angewendet am 22. Okt. 2026; siehe LICENSE und LICENSES/)
+# OSATURA — Lizenzierung (ENTSCHIEDEN: Variante A, angewendet am 22. Okt. 2026; siehe COPYRIGHT und LICENSES/)
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/LICENSING.md) · [Română](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/ro/LICENSING.md) · [Français](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/fr/LICENSING.md) · [Italiano](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/it/LICENSING.md) · [Español](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/es/LICENSING.md) · [Português](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/pt/LICENSING.md) · [Deutsch](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/de/LICENSING.md) · [Magyar](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/hu/LICENSING.md)
 
 **Status:** Die unten beschriebene Variante A wurde gewählt und angewendet: MPL-2.0 für die Bibliotheken (core, capi, wasm, gpu), AGPL-3.0-or-later für `osatura-cli` (CLI + Studio) und `osatura-gui` (das Studio in einem nativen Fenster), CC-BY-4.0 für Dokumentation und synthetische Assets/Modelle, Markenrichtlinie in TRADEMARK.md, DCO in CONTRIBUTING.md, SPDX-Header in allen .rs/.js/.mjs/.sh-Dateien und REUSE.toml für den Rest, Quellcode-Angebot nach AGPL Abschnitt 13 (`/source`, `--source-url`), Cargo-Felder `license` gesetzt. Verbleibende Aufgaben des Inhabers: Prüfung durch einen Anwalt, Markenrecherche (EUIPO/OSIM), Patent-Screening (docs/PATENT_NOTES.md), ein CLA, falls Dual-Lizenzierung gewünscht ist, Hinweise zu Drittanbieter-Lizenzen den Binär-Releases beilegen.
 
 
-*Keine Rechtsberatung. Die Lizenz ist ENTSCHIEDEN (Variante A, siehe LICENSE); die folgenden Abschnitte bleiben als Begründung und als Dokumentation der erwogenen Alternativen erhalten. Lass dies vor dem ersten öffentlichen Release von einem Anwalt bestätigen (idealerweise von jemandem, der das rumänische und EU-Urheberrecht kennt). Beiträge: Solange kein CLA vorliegt, besteht kein Recht, Beiträge Dritter umzulizenzieren oder dual zu lizenzieren (CONTRIBUTING.md).*
+*Keine Rechtsberatung. Die Lizenz ist ENTSCHIEDEN (Variante A, siehe COPYRIGHT); die folgenden Abschnitte bleiben als Begründung und als Dokumentation der erwogenen Alternativen erhalten. Lass dies vor dem ersten öffentlichen Release von einem Anwalt bestätigen (idealerweise von jemandem, der das rumänische und EU-Urheberrecht kennt). Beiträge: Solange kein CLA vorliegt, besteht kein Recht, Beiträge Dritter umzulizenzieren oder dual zu lizenzieren (CONTRIBUTING.md).*
 
 ## 1. Was die Lizenz für dich leisten muss
 Dein Einkommen sind **Spenden (Buy Me a Coffee)**, keine Lizenzgebühren. Die Lizenz erzeugt also nicht das Geld — das tun **Wohlwollen, Sichtbarkeit und Vertrauen**. Sie hat drei Aufgaben:
@@ -61,7 +61,7 @@ Verhindert N Jahre lang kommerzielle Konkurrenz. Preis: **nicht Open Source**; s
 7. Halte **Patreon** (`patreon.com/c/alexio_tf`) und BMC beide sichtbar, gib aber jedem einen eigenen Zweck (BMC einmaliges Dankeschön; Patreon wiederkehrend), damit Unterstützer nicht verwirrt werden.
 
 ## 5. Checkliste zur Anwendung von Variante A (≈ 1 Stunde Arbeit, sobald gewählt)
-- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (REUSE-Layout) sowie die zusammenfassende `LICENSE`; `REUSE.toml` deckt Nicht-Quelldateien ab.
+- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (REUSE-Layout) sowie die zusammenfassende `COPYRIGHT`; `REUSE.toml` deckt Nicht-Quelldateien ab.
 - [x] `license =` in allen sechs `Cargo.toml`-Dateien gesetzt; SPDX-Header in allen .rs/.js/.mjs/.sh-Dateien, geprüft durch `osatura-cli/tests/spdx_audit.rs`.
 - [x] `docs/THIRD_PARTY.md` und `docs/THIRD_PARTY_NOTICES.md`, beide durch `scripts/licence-audit.sh` neu generiert.
 - [x] `CONTRIBUTING.md` mit dem Text des DCO 1.1. Vor jeder Dual-Lizenz wird weiterhin ein CLA benötigt.

@@ -4,7 +4,11 @@
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
 
-**Un motor de rigging și animație vectorială 2D scris în Rust: oase, cinematică inversă (IK), skinning, deformatoare, un runtime cu mașini de stări, o trusă de instrumente în linia de comandă, un studio în browser și biblioteci integrabile, într-un singur workspace.** Versiunea engleză: [README.md](README.md). Documentația din `docs/` este în limba engleză.
+**Un motor de rigging și animație vectorială 2D scris în Rust: oase, cinematică inversă (IK), skinning, deformatoare, un runtime cu mașini de stări, o trusă de instrumente în linia de comandă, un studio în browser și biblioteci integrabile, într-un singur workspace.** Versiunea engleză: [README.md](README.md). Documentația din `docs/` este în engleză; traducerile românești sunt în [docs/i18n/ro/](docs/i18n/ro/INDEX.md).
+
+![Un personaj văzut din profil, cu cap, ureche, coadă de cal, trunchi, brațe cu degete, picioare și tălpi, mergând pe loc pe un sol care se derulează; ieșirea reală a comenzii osatura export pe proiectul demo inclus](docs/img/walk.gif)
+
+*Ce produce: persoana care merge, inclusă în program, exportată cu `osatura demo-person` și `osatura export` (tot proiectul este un singur fișier JSON). Încearcă în două minute: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
 
 ## Rezumat și filozofie
 
@@ -29,6 +33,16 @@ Principiile proiectului:
 > | **Local (Linux x86-64, 24 oct. 2026):** 1343 de teste din `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` plus 19 doc-teste trec (crate-ul GPU are nevoie de un adaptor, iar crate-ul ferestrei de un desktop; înainte de aceasta, numărul incluzând crate-ul GPU era 1368). **Pe GitHub Actions (24 oct. 2026, toolchain 1.97.0):** suita de teste și `clippy -D warnings` trec pe Linux, macOS (arm64) și Windows; `cargo deny` și `reuse lint` trec; modulul WebAssembly se construiește pentru `wasm32-unknown-unknown`, iar testul wrapper-ului trece față de modulul real sub Node 20; binarele de lansare trec un test de fum (`--version`, `demo`, `check`, `render`), iar `osatura-studio --selftest` rulează pe Windows și macOS. Cinci teste de fum ale studioului în Chromium fără interfață trec; CLI-ul, fațada Rust și ABI-ul C (inclusiv sub ASan/UBSan) au fost rulate cu exemplele din documentație | **Nicio persoană nu a folosit executabilele pe un desktop real Windows sau macOS**: lansatorul Windows prin dublu clic și aplicația cu fereastră `osatura-studio` (WebView2 / WKWebView) au fost doar compilate și autotestate în CI; binarele **nu sunt semnate cu cod** (SmartScreen „Unknown publisher”, macOS Gatekeeper); binarul Linux a fost construit doar pe un runner Ubuntu; **modulul WebAssembly a fost rulat doar în Chromium fără interfață** (Firefox și Safari nu au fost încercate; aproximativ 73 ms per cadru 640x480 fără GPU); studioul nu a fost folosit de o persoană în producție și nici într-un alt browser decât Chromium; nu s-a folosit niciodată un GPU real (doar un adaptor software), o cameră web, o fotografie sau un fișier de captură de mișcare; fără audit de securitate, revizuire juridică sau căutare de brevete |
 >
 > Citește [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 de limite numerotate, cu gravitate și soluție ocolitoare) înainte să te bazezi pe ceva.
+
+## Maturitate: de unde să începi
+
+OSATURA are mult mai multe funcții decât poate valida o singură persoană. Tabelul arată unde pune autorul efortul mai întâi. **Este o intenție, nu o garanție de calitate: niciun animator în afară de autor nu a folosit încă vreuna dintre ele** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+
+| Nivel | Ce | Ce înseamnă |
+|---|---|---|
+| Nucleu | Formatul proiectului, oase, IK, skinning, chei și easing, randare, export în GIF, PNG, SVG, Lottie și HTML, linia de comandă `osatura`, funcțiile de bază ale studioului | Reparat primul, acoperit de cele mai multe teste, începe de aici ([tutorial](docs/TUTORIAL_SVG.md)) |
+| Suportat | Deformatoare, fizică, mașini de stări, import SVG și OpenRaster, biblioteca C, modulul WebAssembly | Funcționează în teste; mai puțini ochi pe el |
+| Experimental | Retargetare mocap, lip-sync și vorbire, detecție facială, intrare live, colaborare, control al versiunilor, export cu țintă de mărime, nivel de detaliu, randare GPU | Așteaptă-te la asperități și schimbări; nu construi încă pe el |
 
 ## Descărcare
 
@@ -153,7 +167,7 @@ cargo test -p osatura-cli --test spdx_audit
 * Numele și sigla nu sunt acoperite de aceste licențe ([TRADEMARK.md](TRADEMARK.md)). Situația brevetelor nu a fost evaluată ([docs/PATENT_NOTES.md](docs/PATENT_NOTES.md)). O licență comercială sau duală pentru codul contribuit nu este posibilă fără un acord de licență al contribuitorilor (CLA), iar un astfel de acord nu există.
 * Crate-uri terțe: 363 în inventarul din 24 oct. 2026 (toate platformele și țintele împreună, ceea ce include crate-urile doar-Windows / macOS / Linux ale aplicației cu fereastră; un binar dat conține un subset), toate permisive, cu excepția a șase crate-uri MPL-2.0 cu copyleft slab: `smartstring`, în spatele funcției opționale `scripting`, și cinci (`cssparser`, `cssparser-macros`, `dtoa-short`, `selectors`, `option-ext`) pe care le poate aduce doar aplicația cu fereastră `osatura-gui` ([docs/THIRD_PARTY.md](docs/THIRD_PARTY.md)). ffmpeg nu este niciodată inclus în pachet.
 
-Vezi [LICENSE](LICENSE), [LICENSES/](LICENSES/) și [LICENSING.md](LICENSING.md). Nimic din toate acestea nu este consultanță juridică; revizuirea de către un avocat este încă de făcut.
+Vezi [COPYRIGHT](COPYRIGHT), [LICENSES/](LICENSES/) și [LICENSING.md](LICENSING.md). Nimic din toate acestea nu este consultanță juridică; revizuirea de către un avocat este încă de făcut.
 
 ## Contribuții
 

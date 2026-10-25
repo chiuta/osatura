@@ -16,7 +16,7 @@
 ## 2. Dépôt
 
 - [x] Le dépôt GitHub existe et l'arborescence a été poussée sans `target/` ni `out/` (`.gitignore`).
-- [ ] Conservez `LICENSE`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
+- [ ] Conservez `COPYRIGHT`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
 - [ ] Activez le signalement privé des vulnérabilités (onglet Security) et faites-y pointer `docs/SECURITY.md`.
 - [ ] Passez l'URL du dépôt avec `--source-url` lors de l'exécution du studio (offre de code source AGPL, route `/source`) et testez l'offre depuis une installation neuve.
 

@@ -1,6 +1,6 @@
 # Licențe ale terților (generat)
 
-*Generat de `scripts/licence-audit.sh` din `cargo metadata --all-features` (toate țintele, dependențe normale + de build, fără dependențele de dezvoltare). Nu edita manual. Nu constituie consultanță juridică; expresiile SPDX sunt cele declarate de fiecare crate în `Cargo.toml` și nu au fost verificate independent în fișierele sursă. Crate-urile workspace-ului sunt ele însele MPL-2.0 (core, capi, wasm, gpu) și AGPL-3.0-or-later (osatura-cli); vezi LICENSE.*
+*Generat de `scripts/licence-audit.sh` din `cargo metadata --all-features` (toate țintele, dependențe normale + de build, fără dependențele de dezvoltare). Nu edita manual. Nu constituie consultanță juridică; expresiile SPDX sunt cele declarate de fiecare crate în `Cargo.toml` și nu au fost verificate independent în fișierele sursă. Crate-urile workspace-ului sunt ele însele MPL-2.0 (core, capi, wasm, gpu) și AGPL-3.0-or-later (osatura-cli); vezi LICENSE-*
 
 **363 de crate-uri terțe** (nume+versiune distincte). Grupa A (necesită verificare): 6; grupa B (licențe permisive / de domeniu public / de date, demne de reținut): 27; grupa C (stil MIT / Apache-2.0): 330.
 

@@ -56,7 +56,7 @@ Minden útvonal egy sorrend, nem követelmény. Állj meg, ha megvan, amire szü
 
 **Biztonsági átnéző vagy telepítő.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) 3. szakasz (mi van tesztelve) -> LIMITATIONS 2. és 11. szakasz -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> [CI.md](CI.md) korlátok.
 
-**Licencbirtokos, csomagoló vagy jogász.** [../LICENSING.md](LICENSING.md) -> [../LICENSE](../../../LICENSE) és [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> kiadási ellenőrzőlista a [DEVELOPMENT.md](DEVELOPMENT.md) 7. szakaszában.
+**Licencbirtokos, csomagoló vagy jogász.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../COPYRIGHT) és [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> kiadási ellenőrzőlista a [DEVELOPMENT.md](DEVELOPMENT.md) 7. szakaszában.
 
 **Kiadást készítő karbantartó.** DEVELOPMENT 7. szakasz -> [../CHANGELOG.md](CHANGELOG.md) -> LIMITATIONS (frissítés) -> a README állapotdoboza.
 
@@ -70,7 +70,7 @@ Minden útvonal egy sorrend, nem követelmény. Állj meg, ha megvan, amire szü
 | [../FEATURES.md](FEATURES.md) | Funkciómátrix más eszközökkel szemben (részei elavultak, lásd LIMITATIONS) |
 | [../CLEANROOM.md](CLEANROOM.md) | Eredetnapló és szabályok a független megvalósításhoz |
 | [../CONTRIBUTING.md](CONTRIBUTING.md) | Közreműködési szabályok, bejövő = kimenő licenc, DCO 1.1 |
-| [../LICENSING.md](LICENSING.md), [../LICENSE](../../../LICENSE), [../LICENSES/](../../../LICENSES/) | Licencdöntés (A változat), szövegek |
+| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Licencdöntés (A változat), szövegek |
 | [../TRADEMARK.md](TRADEMARK.md) | A név- és logóhasználati szabályzat |
 | `../REUSE.toml`, `../deny.toml` | Licenc-metaadatok a nem forrásfájlokhoz; függőségi szabályzat |
 

@@ -16,7 +16,7 @@
 ## 2. Depozit
 
 - [x] Depozitul GitHub există, iar arborele a fost încărcat fără `target/` și `out/` (`.gitignore`).
-- [ ] Păstrează `LICENSE`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
+- [ ] Păstrează `COPYRIGHT`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
 - [ ] Activează raportarea privată a vulnerabilităților (fila Security) și trimite către ea din `docs/SECURITY.md`.
 - [ ] Transmite URL-ul depozitului cu `--source-url` la rularea studioului (oferta de cod sursă AGPL, ruta `/source`) și testează oferta pe o instalare nouă.
 

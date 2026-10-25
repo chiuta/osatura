@@ -167,7 +167,7 @@ Parti da [docs/INDEX.md](docs/i18n/it/INDEX.md) (tutti i documenti, i destinatar
 * Il nome e il logo non sono coperti da queste licenze ([TRADEMARK.md](docs/i18n/it/TRADEMARK.md)). Lo stato dei brevetti non è stato valutato ([docs/PATENT_NOTES.md](docs/i18n/it/PATENT_NOTES.md)). Una licenza commerciale o duale per il codice contribuito non è possibile senza un contributor licence agreement, e non ne esiste alcuno.
 * Crate di terze parti: 363 nell'inventario del 24 ott 2026 (tutte le piattaforme e i target insieme, inclusi i crate della sola app a finestra per Windows / macOS / Linux; un dato binario ne contiene un sottoinsieme), tutti permissivi tranne sei crate MPL-2.0 a copyleft debole: `smartstring` dietro la funzionalità opzionale `scripting`, e cinque (`cssparser`, `cssparser-macros`, `dtoa-short`, `selectors`, `option-ext`) che solo l'app a finestra `osatura-gui` può includere ([docs/THIRD_PARTY.md](docs/i18n/it/THIRD_PARTY.md)). ffmpeg non viene mai incluso.
 
-Vedi [LICENSE](LICENSE), [LICENSES/](LICENSES/) e [LICENSING.md](docs/i18n/it/LICENSING.md). Nulla di tutto ciò è consulenza legale; la revisione di un avvocato è ancora in sospeso.
+Vedi [COPYRIGHT](COPYRIGHT), [LICENSES/](LICENSES/) e [LICENSING.md](docs/i18n/it/LICENSING.md). Nulla di tutto ciò è consulenza legale; la revisione di un avvocato è ancora in sospeso.
 
 ## Contribuire
 

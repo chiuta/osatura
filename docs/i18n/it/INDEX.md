@@ -56,7 +56,7 @@ Ogni percorso è un ordine, non un obbligo. Fermati quando hai ciò che ti serve
 
 **Revisore della sicurezza o chi installa in produzione.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) sezione 3 (cosa viene testato) -> LIMITATIONS sezioni 2 e 11 -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> limiti di [CI.md](CI.md).
 
-**Licenziatario, packager o avvocato.** [../LICENSING.md](LICENSING.md) -> [../LICENSE](../../../LICENSE) e [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> checklist di release in [DEVELOPMENT.md](DEVELOPMENT.md) sezione 7.
+**Licenziatario, packager o avvocato.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../COPYRIGHT) e [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> checklist di release in [DEVELOPMENT.md](DEVELOPMENT.md) sezione 7.
 
 **Maintainer che prepara una release.** DEVELOPMENT sezione 7 -> [../CHANGELOG.md](CHANGELOG.md) -> LIMITATIONS (aggiorna) -> riquadro di stato del README.
 
@@ -70,7 +70,7 @@ Ogni percorso è un ordine, non un obbligo. Fermati quando hai ciò che ti serve
 | [../FEATURES.md](FEATURES.md) | Matrice delle funzionalità rispetto ad altri strumenti (parti sono superate, vedi LIMITATIONS) |
 | [../CLEANROOM.md](CLEANROOM.md) | Registro della provenienza e regole per l'implementazione indipendente |
 | [../CONTRIBUTING.md](CONTRIBUTING.md) | Regole per i contributi, licenza in ingresso = licenza in uscita, DCO 1.1 |
-| [../LICENSING.md](LICENSING.md), [../LICENSE](../../../LICENSE), [../LICENSES/](../../../LICENSES/) | Decisione sulla licenza (Variante A), testi |
+| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Decisione sulla licenza (Variante A), testi |
 | [../TRADEMARK.md](TRADEMARK.md) | Politica sul nome e sul logo |
 | `../REUSE.toml`, `../deny.toml` | Metadati di licenza per i file non sorgente; politica sulle dipendenze |
 

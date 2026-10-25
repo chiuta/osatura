@@ -15,7 +15,7 @@
  "hint": "CURSOR BEWEGEN · DAS RIG FOLGT",
  "pe": "Interaktiver Playground",
  "ph": "Ein Rig, live in deinem Browser",
- "pp": "Eine FABRIK-Inverskinematik-Kette mit „bekleidetem“ Körper (Skin). Ziehe über die Zeichenfläche, und das ganze Skelett löst sich zum Mauszeiger hin auf. Das ist eine JavaScript-Veranschaulichung der Idee, nicht die Rust-Engine selbst.",
+ "pp": "Eine FABRIK-Inverskinematik-Kette mit „bekleidetem“ Körper (Skin). Ziehe über die Zeichenfläche, und der Solver biegt das ganze Skelett zum Mauszeiger. Das ist eine JavaScript-Veranschaulichung der Idee, nicht die Rust-Engine selbst.",
  "mSkin": "Skin",
  "mBoth": "Skin + Knochen",
  "mBones": "Knochen",
@@ -77,7 +77,7 @@
  "k1": "Tests in cargo test --workspace ohne die GPU- und Fenster-Crates (plus 19 Doc-Tests), 24. Okt. 2026, Linux x86-64; die CI läuft auch auf macOS und Windows durch",
  "k2": "nummerierte Einschränkungen, mit Schweregrad und Umgehung",
  "k3": "Drittanbieter-Crates im Inventar vom 24. Okt. 2026 (alle Plattformen zusammen)",
- "k4": "bisher veröffentlichte Releases — v0.1.0-alpha.3 liegt als Entwurf vor; „0.7“ ist eine Funktionsstufe, keine Version",
+ "k4": "bisher veröffentlichtes Release: v0.1.0-alpha.4, eine Vorabversion; „0.7“ ist eine Funktionsstufe, keine Version",
  "vyh": "Geprüft",
  "vxh": "Nicht geprüft",
  "ai": "<b>Offenlegung:</b> Der Code wurde größtenteils mit einem KI-Modell geschrieben, und das Projekt ist eine unabhängige Implementierung nach öffentlichen Spezifikationen; siehe CLEANROOM.md. Es ist weder mit einem kommerziellen Animationsprodukt verbunden noch davon abgeleitet oder dazu kompatibel.",
@@ -110,7 +110,7 @@
  ],
  "vx": [
   "Das WebAssembly-Modul läuft in Headless-Chromium (die Seite „Ausprobieren“); Geschwindigkeit und Speicher sind nicht gemessen, in anderen Browsern hat es niemand getestet",
-  "Nur eine Person hat den Windows-Starter und die Fenster-App ausprobiert (Windows 11, alpha.2); unter macOS hat sie niemand benutzt; die Binärdateien sind nicht signiert",
+  "Nur eine Person hat den Windows-Starter und die Fenster-App ausprobiert (Windows 11, alpha.2); unter macOS hat sie niemand benutzt; die Binärdateien haben Sigstore-Signaturen, aber keine Windows- oder macOS-Codesignatur",
   "Das Studio wurde nie von einer Person produktiv benutzt, auch nicht in einem anderen Browser als Chromium",
   "Nie wurde eine echte GPU, Webcam, Fotografie oder Motion-Capture-Datei benutzt; kein Sicherheitsaudit, keine Rechtsprüfung, keine Patentrecherche",
   "Der Name OSATURA wurde nur beim EUIPO recherchiert; OSIM, WIPO und eine anwaltliche Einschätzung stehen noch aus"
@@ -201,5 +201,19 @@
  "ctaTry": "Im Browser ausprobieren",
  "instSrc": "oder aus dem Quellcode bauen:",
  "supWho": "Beide Spendenseiten und die Adresse gehören dem Autor, Alexio.",
- "ptNote": "◐ teilweise: funktioniert, mit den Grenzen aus FEATURES.md und LIMITATIONS.md"
+ "ptNote": "◐ teilweise: funktioniert, mit den Grenzen aus FEATURES.md und LIMITATIONS.md",
+ "alSearch": "Dokumentation durchsuchen",
+ "alLang": "Sprache",
+ "alTheme": "Design",
+ "alGh": "OSATURA auf GitHub",
+ "alFabrik": "Interaktive FABRIK-Kette (inverse Kinematik), die dem Mauszeiger folgt",
+ "alBones": "Anzahl der Knochen",
+ "alDemo": "Demo",
+ "alFrame": "Bild",
+ "alSeedA": "Seed, Lauf A",
+ "alSeedB": "Seed, Lauf B",
+ "alMenu": "Menü",
+ "alClose": "Schließen",
+ "alImage": "Bild",
+ "tiPartial": "teilweise"
 }

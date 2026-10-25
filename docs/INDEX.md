@@ -56,7 +56,7 @@ Each path is an order, not a requirement. Stop when you have what you need.
 
 **Security reviewer or deployer.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) section 3 (what is tested) -> LIMITATIONS section 2 and 11 -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> [CI.md](CI.md) limits.
 
-**Licensee, packager or lawyer.** [../LICENSING.md](../LICENSING.md) -> [../LICENSE](../LICENSE) and [../LICENSES/](../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](../TRADEMARK.md) -> [../CLEANROOM.md](../CLEANROOM.md) -> release checklist in [DEVELOPMENT.md](DEVELOPMENT.md) section 7.
+**Licensee, packager or lawyer.** [../LICENSING.md](../LICENSING.md) -> [../COPYRIGHT](../COPYRIGHT) and [../LICENSES/](../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](../TRADEMARK.md) -> [../CLEANROOM.md](../CLEANROOM.md) -> release checklist in [DEVELOPMENT.md](DEVELOPMENT.md) section 7.
 
 **Maintainer making a release.** DEVELOPMENT section 7 -> [../CHANGELOG.md](../CHANGELOG.md) -> LIMITATIONS (update) -> README status box.
 
@@ -70,7 +70,7 @@ Each path is an order, not a requirement. Stop when you have what you need.
 | [../FEATURES.md](../FEATURES.md) | Feature matrix against other tools (parts are stale, see LIMITATIONS) |
 | [../CLEANROOM.md](../CLEANROOM.md) | Provenance log and rules for independent implementation |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Contribution rules, inbound = outbound licence, DCO 1.1 |
-| [../LICENSING.md](../LICENSING.md), [../LICENSE](../LICENSE), [../LICENSES/](../LICENSES/) | Licence decision (Variant A), texts |
+| [../LICENSING.md](../LICENSING.md), [../COPYRIGHT](../COPYRIGHT), [../LICENSES/](../LICENSES/) | Licence decision (Variant A), texts |
 | [../TRADEMARK.md](../TRADEMARK.md) | Name and logo policy |
 | `../REUSE.toml`, `../deny.toml` | Licence metadata for non-source files; dependency policy |
 

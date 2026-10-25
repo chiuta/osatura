@@ -16,7 +16,7 @@
 ## 2. Repó
 
 - [x] A GitHub repository létezik, és a fát a `target/` és az `out/` nélkül töltötték fel (`.gitignore`).
-- [ ] Tartsd meg a `LICENSE`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` fájlokat (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
+- [ ] Tartsd meg a `COPYRIGHT`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` fájlokat (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
 - [ ] Kapcsold be a privát sebezhetőség-bejelentést (Security fül), és irányítsd rá a `docs/SECURITY.md`-t.
 - [ ] A studio indításakor add meg a repó URL-jét a `--source-url` kapcsolóval (AGPL forrásajánlat, `/source` útvonal), és teszteld az ajánlatot friss telepítésből.
 

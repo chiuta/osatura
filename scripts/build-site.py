@@ -146,6 +146,9 @@ def prerender(html, t, lang, langs):
         return m.group(1) + str(t[k]) + m.group(4)
     html = re.sub(r'(<(\w+)\b[^>]*\sdata-i="(\w+)"[^>]*>)(</\2>)', fill, html)
     html = re.sub(r'(\sdata-ph="(\w+)")', lambda m: m.group(1) + (f' placeholder="{attr(t[m.group(2)])}"' if m.group(2) in t else ""), html)
+    html = re.sub(r'aria-label="[^"]*"(\s+data-al="(\w+)")', lambda m: f'aria-label="{attr(t[m.group(2)])}"' + m.group(1) if m.group(2) in t else m.group(0), html)
+    if "tiPartial" in t:
+        html = html.replace('class="pt" title="partial"', f'class="pt" title="{attr(t["tiPartial"])}"')
     for key in ("vy", "vx"):
         html = re.sub(rf'(<ul\b[^>]*\sid="{key}"[^>]*>)(</ul>)', lambda m: m.group(1) + "".join(f"<li>{x}</li>" for x in t[key]) + m.group(2), html)
     html = html.replace('<html lang="en">', f'<html lang="{lang}">', 1)

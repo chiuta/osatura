@@ -1,6 +1,6 @@
 # Külső licencek (generált)
 
-*A `scripts/licence-audit.sh` generálta a `cargo metadata --all-features` kimenetéből (minden target, normál + build függőségek, a dev-függőségek kizárva). Ne szerkeszd kézzel. Nem jogi tanács; az SPDX-kifejezések azt tükrözik, amit az egyes crate-ek a saját `Cargo.toml` fájljukban deklarálnak, a forrásfájlokkal szemben nem ellenőriztük őket külön. Maguk a workspace crate-ek MPL-2.0 (core, capi, wasm, gpu) és AGPL-3.0-or-later (osatura-cli) licenc alatt állnak; lásd LICENSE.*
+*A `scripts/licence-audit.sh` generálta a `cargo metadata --all-features` kimenetéből (minden target, normál + build függőségek, a dev-függőségek kizárva). Ne szerkeszd kézzel. Nem jogi tanács; az SPDX-kifejezések azt tükrözik, amit az egyes crate-ek a saját `Cargo.toml` fájljukban deklarálnak, a forrásfájlokkal szemben nem ellenőriztük őket külön. Maguk a workspace crate-ek MPL-2.0 (core, capi, wasm, gpu) és AGPL-3.0-or-later (osatura-cli) licenc alatt állnak; lásd LICENSE-*
 
 **363 külső crate** (különböző név+verzió párok). A csoport (felülvizsgálandó): 6; B csoport (figyelemre méltó megengedő / közkincs / adatlicencek): 27; C csoport (MIT / Apache-2.0 jellegű): 330.
 
