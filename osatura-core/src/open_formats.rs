@@ -156,7 +156,8 @@ pub fn write_oca(project: &Project, asset_dir: &Path, out_dir: &Path, scale: f32
     Ok(path)
 }
 
-/// dotLottie container (zip): `manifest.json` + `animations/animation.json`.
+/// dotLottie 2.0 container (zip): `manifest.json` (`version` "2") + `a/animation.json`
+/// (<https://dotlottie.io/spec/2.0/>; playback options such as loop belong to the player or a state machine).
 pub fn dotlottie_bytes(engine: &Engine) -> Result<Vec<u8>, String> {
     dotlottie_bytes_report(engine).map(|(b, _)| b)
 }
@@ -166,14 +167,14 @@ pub fn dotlottie_bytes_report(engine: &Engine) -> Result<(Vec<u8>, Vec<crate::lo
     use std::io::Write;
     let x = crate::lottie_export::lottie_export(engine);
     let lottie = x.doc.to_string();
-    let manifest = json!({"version": "1", "generator": "OSATURA", "animations": [{"id": "animation", "autoplay": true, "loop": true}]});
+    let manifest = json!({"version": "2", "generator": "OSATURA", "animations": [{"id": "animation"}]});
     let mut buf = Vec::new();
     {
         let mut z = zip::ZipWriter::new(Cursor::new(&mut buf));
         let o = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
         z.start_file("manifest.json", o).map_err(|e| e.to_string())?;
         z.write_all(manifest.to_string().as_bytes()).map_err(|e| e.to_string())?;
-        z.start_file("animations/animation.json", o).map_err(|e| e.to_string())?;
+        z.start_file("a/animation.json", o).map_err(|e| e.to_string())?;
         z.write_all(lottie.as_bytes()).map_err(|e| e.to_string())?;
         z.finish().map_err(|e| e.to_string())?;
     }
@@ -451,9 +452,11 @@ mod tests {
         let mut z = zip::ZipArchive::new(Cursor::new(b)).unwrap();
         let mut m = String::new();
         z.by_name("manifest.json").unwrap().read_to_string(&mut m).unwrap();
-        assert!(m.contains("\"animation\""));
+        let mv: Value = serde_json::from_str(&m).unwrap();
+        assert_eq!(mv["version"], "2", "dotLottie 2.0 manifest");
+        assert_eq!(mv["animations"][0], json!({"id": "animation"}), "v2 entries carry no autoplay/loop");
         let mut a = String::new();
-        z.by_name("animations/animation.json").unwrap().read_to_string(&mut a).unwrap();
+        z.by_name("a/animation.json").unwrap().read_to_string(&mut a).unwrap();
         let v: Value = serde_json::from_str(&a).unwrap();
         assert!(v["layers"].is_array(), "valid Lottie inside");
     }
