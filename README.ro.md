@@ -153,7 +153,7 @@ cargo test -p osatura-cli --test spdx_audit
 * Numele și sigla nu sunt acoperite de aceste licențe ([TRADEMARK.md](TRADEMARK.md)). Situația brevetelor nu a fost evaluată ([docs/PATENT_NOTES.md](docs/PATENT_NOTES.md)). O licență comercială sau duală pentru codul contribuit nu este posibilă fără un acord de licență al contribuitorilor (CLA), iar un astfel de acord nu există.
 * Crate-uri terțe: 363 în inventarul din 24 oct. 2026 (toate platformele și țintele împreună, ceea ce include crate-urile doar-Windows / macOS / Linux ale aplicației cu fereastră; un binar dat conține un subset), toate permisive, cu excepția a șase crate-uri MPL-2.0 cu copyleft slab: `smartstring`, în spatele funcției opționale `scripting`, și cinci (`cssparser`, `cssparser-macros`, `dtoa-short`, `selectors`, `option-ext`) pe care le poate aduce doar aplicația cu fereastră `osatura-gui` ([docs/THIRD_PARTY.md](docs/THIRD_PARTY.md)). ffmpeg nu este niciodată inclus în pachet.
 
-Vezi [LICENSE](LICENSE), [LICENSES/](LICENSES/) și [LICENSING.md](LICENSING.md). Nimic din toate acestea nu este consultanță juridică; revizuirea de către un avocat este încă de făcut.
+Vezi [COPYRIGHT](COPYRIGHT), [LICENSES/](LICENSES/) și [LICENSING.md](LICENSING.md). Nimic din toate acestea nu este consultanță juridică; revizuirea de către un avocat este încă de făcut.
 
 ## Contribuții
 

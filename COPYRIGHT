@@ -19,6 +19,8 @@ to you; these licences apply to the software, not to its output.
 
 The name "OSATURA" and its logo are not licensed by the above: see TRADEMARK.md.
 Third-party dependencies keep their own licences: see docs/THIRD_PARTY.md.
+LICENSE-MPL-2.0, LICENSE-AGPL-3.0-or-later and LICENSE-CC-BY-4.0 at the repository root are
+verbatim copies of the texts in LICENSES/, so that GitHub and other tools detect the licences.
 This summary is informational; the texts in LICENSES/ and the SPDX headers in
 each file are authoritative. This is not legal advice.
 

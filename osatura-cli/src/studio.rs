@@ -365,7 +365,7 @@ pub fn source_offer_text(url: Option<&str>) -> String {
         Some(u) => format!("The corresponding source code of this exact version is available at: {u}"),
         None => "The operator of this server has not configured a source URL (this build has none built in). You are entitled to the complete corresponding source of the version you are using: ask the person or organisation that runs this server or that gave you this program, or the maintainer (Alexio, alexio@trom.tf), and it will be provided. (The operator can set the address with `osatura studio --source-url URL`.)".to_string(),
     };
-    format!("OSATURA studio (osatura-cli) is free software under the GNU Affero General Public License, version 3 or (at your option) any later version. Copyright (c) 2026 Alexandru-Ionut Chiuta (Alexio). It comes with NO WARRANTY. If you modify it and let others interact with it over a network, section 13 of the AGPL requires you to offer them the corresponding source of your version. {where_} The engine libraries it links (osatura-core and others) are MPL-2.0 and keep that licence file by file; see LICENSE. {SUPPORT_LINE}")
+    format!("OSATURA studio (osatura-cli) is free software under the GNU Affero General Public License, version 3 or (at your option) any later version. Copyright (c) 2026 Alexandru-Ionut Chiuta (Alexio). It comes with NO WARRANTY. If you modify it and let others interact with it over a network, section 13 of the AGPL requires you to offer them the corresponding source of your version. {where_} The engine libraries it links (osatura-core and others) are MPL-2.0 and keep that licence file by file; see COPYRIGHT. {SUPPORT_LINE}")
 }
 
 fn source_page(url: Option<&str>) -> String {

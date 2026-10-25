@@ -42,7 +42,7 @@ OSATURA has no installer, writes nothing to the registry and installs no service
 
 ## Licences
 
-All code is open source under OSI-approved licences: MPL-2.0 (libraries) and AGPL-3.0-or-later (command-line tool, studio and window app); the documentation is CC-BY-4.0 ([LICENSE](LICENSE), [LICENSING.md](LICENSING.md)). The signed files contain no proprietary code, and OSATURA is not offered under any commercial or proprietary licence (no dual licensing).
+All code is open source under OSI-approved licences: MPL-2.0 (libraries) and AGPL-3.0-or-later (command-line tool, studio and window app); the documentation is CC-BY-4.0 ([COPYRIGHT](COPYRIGHT), [LICENSING.md](LICENSING.md)). The signed files contain no proprietary code, and OSATURA is not offered under any commercial or proprietary licence (no dual licensing).
 
 ## Verification
 

@@ -171,7 +171,7 @@ Start at [docs/INDEX.md](docs/INDEX.md) (all documents, audiences, reading paths
 * The name and logo are not covered by these licences ([TRADEMARK.md](TRADEMARK.md)). Patent status is not assessed ([docs/PATENT_NOTES.md](docs/PATENT_NOTES.md)). A commercial or dual licence for contributed code is not possible without a contributor licence agreement, and none exists.
 * Third-party crates: 363 in the 24 Oct 2026 inventory (all platforms and targets together, which includes the window app's Windows / macOS / Linux-only crates; a given binary contains a subset), all permissive except six weak-copyleft MPL-2.0 crates: `smartstring` behind the optional `scripting` feature, and five (`cssparser`, `cssparser-macros`, `dtoa-short`, `selectors`, `option-ext`) that only the window app `osatura-gui` can pull in ([docs/THIRD_PARTY.md](docs/THIRD_PARTY.md)). ffmpeg is never bundled.
 
-See [LICENSE](LICENSE), [LICENSES/](LICENSES/) and [LICENSING.md](LICENSING.md). None of this is legal advice; a lawyer review is still outstanding.
+See [COPYRIGHT](COPYRIGHT), [LICENSES/](LICENSES/) and [LICENSING.md](LICENSING.md). None of this is legal advice; a lawyer review is still outstanding.
 
 ## Contributing
 
