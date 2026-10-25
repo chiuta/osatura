@@ -27,7 +27,7 @@ cosign verify-blob osatura-windows-x86_64.zip \
 
 ## Quick check: checksums
 
-Every release carries `SHA256SUMS.txt` next to the archives (`osatura-linux-x86_64.tar.gz`, `osatura-macos-arm64.tar.gz`, `osatura-windows-x86_64.zip`, `osatura-web.tar.gz`). Download the archive and the sums file into the same folder.
+Every release carries `SHA256SUMS.txt` next to the archives (`osatura-linux-x86_64.tar.gz`, `osatura-macos-arm64.tar.gz`, `osatura-windows-x86_64.zip`, `osatura-web.tar.gz`). Releases after v0.1.0-alpha.4 also carry `osatura.spdx.json`, a software bill of materials (SPDX 2.3 JSON, every crate in `Cargo.lock` with its licence), signed and attested like the archives. Download the archive and the sums file into the same folder.
 
 **Linux:**
 
