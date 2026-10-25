@@ -167,7 +167,7 @@ Kezdd a [docs/INDEX.md](docs/i18n/hu/INDEX.md) fájlnál (minden dokumentum, cé
 * A név és a logó nem tartozik ezen licencek hatálya alá ([TRADEMARK.md](docs/i18n/hu/TRADEMARK.md)). A szabadalmi helyzetet nem értékeltük ([docs/PATENT_NOTES.md](docs/i18n/hu/PATENT_NOTES.md)). A beküldött kód kereskedelmi vagy kettős licencelése közreműködői licencszerződés nélkül nem lehetséges, és ilyen nincs.
 * Harmadik féltől származó crate-ek: 363 a 2026. okt. 24-i leltárban (minden platform és target együtt, ami az ablakos alkalmazás csak Windowson / macOS-en / Linuxon használt crate-jeit is tartalmazza; egy adott bináris ennek egy részhalmazát tartalmazza), mind megengedő licencű, kivéve hat gyenge copyleft MPL-2.0 crate-et: a `smartstring` az opcionális `scripting` funkció mögött, valamint öt (`cssparser`, `cssparser-macros`, `dtoa-short`, `selectors`, `option-ext`), amelyeket csak az `osatura-gui` ablakos alkalmazás húzhat be ([docs/THIRD_PARTY.md](docs/i18n/hu/THIRD_PARTY.md)). Az ffmpeg-et soha nem csomagoljuk.
 
-Lásd: [LICENSE](LICENSE), [LICENSES/](LICENSES/) és [LICENSING.md](docs/i18n/hu/LICENSING.md). Mindez nem jogi tanács; a jogi felülvizsgálat még hátravan.
+Lásd: [COPYRIGHT](COPYRIGHT), [LICENSES/](LICENSES/) és [LICENSING.md](docs/i18n/hu/LICENSING.md). Mindez nem jogi tanács; a jogi felülvizsgálat még hátravan.
 
 ## Közreműködés
 

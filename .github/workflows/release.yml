@@ -90,7 +90,7 @@ jobs:
           cp target/release/${{ matrix.lib }} $d/lib/ || true
           cp target/release/${{ matrix.slib }} $d/lib/ || true
           cp osatura-capi/osatura.h $d/include/
-          cp -r LICENSE LICENSES README.md CHANGELOG.md TRADEMARK.md CODE_SIGNING_POLICY.md PRIVACY.md docs/UNINSTALL.md docs/THIRD_PARTY_NOTICES.md $d/
+          cp -r COPYRIGHT LICENSES README.md CHANGELOG.md TRADEMARK.md CODE_SIGNING_POLICY.md PRIVACY.md docs/UNINSTALL.md docs/THIRD_PARTY_NOTICES.md $d/
           printf 'OSATURA binaries: osatura (CLI + studio) is AGPL-3.0-or-later; the C library is MPL-2.0.\nCorresponding source: https://github.com/chiuta/osatura at the commit/tag of this build (%s).\n' "$GITHUB_SHA" > $d/SOURCE.txt
           if [ "${{ runner.os }}" = "Windows" ]; then 7z a $d.zip $d >/dev/null; else tar czf $d.tar.gz $d; fi
           ls -la $d.* 
@@ -121,7 +121,7 @@ jobs:
           cp target/wasm32-unknown-unknown/release/osatura_wasm.wasm $d/
           cp osatura-wasm/js/osatura.js osatura-wasm/index.html $d/
           cargo run --release --locked -p osatura-cli -- demo-person $d/demo-person.json
-          cp -r LICENSES $d/ && cp LICENSE $d/
+          cp -r LICENSES $d/ && cp COPYRIGHT $d/
           printf 'Module: MPL-2.0. Source: https://github.com/chiuta/osatura at %s\n' "$GITHUB_SHA" > $d/SOURCE.txt
           ls -la $d/osatura_wasm.wasm | tee wasm-size.txt
           tar czf osatura-web.tar.gz $d

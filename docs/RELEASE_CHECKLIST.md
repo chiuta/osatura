@@ -16,7 +16,7 @@
 ## 2. Repository
 
 - [x] The GitHub repository exists and the tree was pushed without `target/` and `out/` (`.gitignore`).
-- [ ] Keep `LICENSE`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
+- [ ] Keep `COPYRIGHT`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
 - [ ] Enable private vulnerability reporting (Security tab) and point `docs/SECURITY.md` to it.
 - [ ] Pass the repository URL with `--source-url` when running the studio (AGPL source offer, `/source` route) and test the offer from a fresh install.
 
