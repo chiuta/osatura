@@ -209,7 +209,7 @@ $ osatura export small.json out.json --report rep.json
 wrote out.json
 warning: [variable-width-stroke] ink: variable-width stroke profiles are not supported by Lottie; the constant base width is used
 warning: [gradient-anisotropic] shadow: a gradient on a layer with non-uniform scale or skew is approximated (Lottie gradients are not sheared)
-$ osatura export small.json out.lottie       # a zip: manifest.json + animations/animation.json
+$ osatura export small.json out.lottie       # a zip: manifest.json + a/animation.json
 ```
 
 ### Cum este construit
@@ -256,9 +256,9 @@ dimensiunile sunt în unități de scenă (LIMITATIONS L-23).
 
 ### dotLottie (`.lottie`)
 
-Un zip cu `manifest.json` (`{"animations":[{"autoplay":true,"id":"animation","loop":true}],"generator":"OSATURA","version":"1"}`) și
-`animations/animation.json` (același Lottie ca mai sus, comprimat deflate: 46,843 de octeți au devenit un fișier de 11,515 octeți). `--report` funcționează în același
-mod. **Importul** unui `.lottie` nu este acceptat (`import-lottie` are nevoie de JSON; dezarhivează mai întâi `animations/animation.json`).
+Un zip cu `manifest.json` (`{"animations":[{"id":"animation"}],"generator":"OSATURA","version":"2"}`) și
+`a/animation.json` (același Lottie ca mai sus, comprimat deflate: 46,843 de octeți au devenit un fișier de 11,515 octeți). `--report` funcționează în același
+mod. **Importul** unui `.lottie` nu este acceptat (`import-lottie` are nevoie de JSON; dezarhivează mai întâi `a/animation.json`).
 
 ### Validare și avertizări
 
@@ -451,7 +451,7 @@ descriu ce scrie exportatorul.
 | Lanț de post-efecte (`fx`) | doar PNG | nu | nu | nu | nu | nu | nu | nu |
 | Transparență | da | da (alpha) | 1 bit | WebM da, MP4 nu | da | da | da | da |
 | Audio | nu | nu | nu | **da** | da (mp3) | nu (avertisment) | nu | nu |
-| Buclare | n/a | sheet: n/a, APNG: da | da | depinde de player | player | player; manifestul `.lottie` spune `loop: true` | n/a | n/a |
+| Buclare | n/a | sheet: n/a, APNG: da | da | depinde de player | player | player (dotLottie 2.0 lasă bucla în seama playerului sau a unei mașini de stări) | n/a | n/a |
 | Rig/canale editabile ulterior | nu | nu | nu | nu | nu | nu | doar oase | nu |
 | Mașini de stări, binding-uri, containere, scroll | nu | nu | nu | nu | nu | nu | nu | nu |
 | Independent de rezoluție | da (SVG) | nu | nu | nu | da | da | da | nu |
@@ -522,7 +522,7 @@ Dacă ffmpeg lipsește, comanda eșuează cu `cannot run ffmpeg (...)` și nu sc
 | EXR | `ffprobe f.exr` | `exr 640x480 gbrapf32le` |
 | Lottie | `python3 -c "import json;d=json.load(open('out.json'));print(d['v'],d['fr'],d['op'],d['w'],d['h'],len(d['layers']))"` | `5.7.0 24.0 8 640.0 480.0 12` |
 | Avertismente Lottie | `osatura export p.json out.json --report rep.json` | `rep.json` listează fiecare aproximare |
-| dotLottie | `unzip -l out.lottie` | doar `manifest.json` și `animations/animation.json` |
+| dotLottie | `unzip -l out.lottie` | doar `manifest.json` și `a/animation.json` |
 | Dus-întors Lottie | `osatura import-lottie out.json back.json && osatura check back.json` | `ok:` |
 | GLB | `python3 -c "import struct;b=open('out.glb','rb').read();print(b[:4],struct.unpack('<II',b[4:12]),len(b))"` | `b'glTF' (2, N)` cu N egal cu lungimea |
 | HTML | `grep -c '<svg' out.html`; `grep -o 'http[^"<]*' out.html` | un `<svg` pe cadru; doar URL-ul namespace-ului SVG |
