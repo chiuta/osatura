@@ -101,7 +101,7 @@ def main():
     h.update(demo.encode())
     files["demo"] = demo
     tpl = tpl[:m.start()] + m.group(1) + m.group(3) + tpl[m.end():]
-    out = tpl.replace("/*__I18N__*/ {}", dump(ui)).replace("/*__BUILD__*/", h.hexdigest()[:10])
+    out = tpl.replace("/*__I18N__*/ {}", dump(ui)).replace("/*__BUILD__*/", h.hexdigest()[:10]).replace("/*__IMGSZ__*/{}", (ROOT / "site" / "img" / "sizes.json").read_text().strip() if (ROOT / "site" / "img" / "sizes.json").exists() else "{}")
     # The page script goes to site/data/app.js (cacheable, versioned by its content hash).
     s_re = re.compile(r"<script>\n([\s\S]*?)</script>\s*(?=</body>)")
     m = s_re.search(out)
@@ -147,6 +147,8 @@ def prerender(html, t, lang, langs):
     html = re.sub(r'(<(\w+)\b[^>]*\sdata-i="(\w+)"[^>]*>)(</\2>)', fill, html)
     html = re.sub(r'(\sdata-ph="(\w+)")', lambda m: m.group(1) + (f' placeholder="{attr(t[m.group(2)])}"' if m.group(2) in t else ""), html)
     html = re.sub(r'aria-label="[^"]*"(\s+data-al="(\w+)")', lambda m: f'aria-label="{attr(t[m.group(2)])}"' + m.group(1) if m.group(2) in t else m.group(0), html)
+    for sid in ("lang", "rlang"):
+        html = re.sub(rf'(id="{sid}"[^>]*?aria-label=")[^"]*', lambda m: m.group(1) + attr(t["alLang"] + ": " + lang.upper()), html)
     if "tiPartial" in t:
         html = html.replace('class="pt" title="partial"', f'class="pt" title="{attr(t["tiPartial"])}"')
     for key in ("vy", "vx"):

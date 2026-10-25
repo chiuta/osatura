@@ -7,10 +7,14 @@ Object.keys(T).forEach(l=>{if(l!=='en')Object.setPrototypeOf(T[l],T.en)});
 let L=(()=>{if(window.OSA_LANG&&T[window.OSA_LANG])return window.OSA_LANG;try{const s=localStorage.getItem('l');if(s&&T[s])return s}catch(e){}return'en'})();
 function applyLang(){
   const t=T[L];document.documentElement.lang=L;
-  $$('[data-i]').forEach(e=>{e.innerHTML=t[e.dataset.i]});
-  $('#vy').innerHTML=t.vy.map(x=>`<li>${x}</li>`).join('');$('#vx').innerHTML=t.vx.map(x=>`<li>${x}</li>`).join('');
+  // the build prerenders these texts in the page language; rewriting them again would only repaint (and delay LCP)
+  const pre=!applyLang.ran&&(window.OSA_LANG||'en')===L;applyLang.ran=true;
+  if(!pre){$$('[data-i]').forEach(e=>{e.innerHTML=t[e.dataset.i]});
+  $('#vy').innerHTML=t.vy.map(x=>`<li>${x}</li>`).join('');$('#vx').innerHTML=t.vx.map(x=>`<li>${x}</li>`).join('');}
   $$('[data-ph]').forEach(e=>e.placeholder=t[e.dataset.ph]);
   $$('[data-al]').forEach(e=>{if(t[e.dataset.al])e.setAttribute('aria-label',t[e.dataset.al])});$$('.pt').forEach(e=>e.title=t.tiPartial||'partial');
+  // accessible names must contain the visible text (WCAG 2.5.3)
+  ['#lang','#rlang'].forEach(s=>$(s).setAttribute('aria-label',t.alLang+': '+L.toUpperCase()));
   $('#lang').textContent=L.toUpperCase()+' ▾';$('#rlang').textContent=L.toUpperCase()+' ▾';
   document.querySelector('meta[name=description]').content=t.metaDesc;if(!$('#reader').classList.contains('on'))document.title=t.metaTitle;
   updMatch();onLang&&onLang();
@@ -198,9 +202,16 @@ function updMatch(){const same=$('#ha').textContent===$('#hb').textContent,m=$('
 setInterval(()=>{DA.tick();DB.tick()},1000/24);
 
 /* ================= DOCS ATLAS ================= */
-const BUILD="6ba24ace8c";
+const BUILD="3259eee7c1";
 const DATA_DIR=(window.OSA_ROOT||'')+'site/data/';
 const imgUrl=n=>(window.OSA_ROOT||'')+'docs/img/'+n;
+const IMG_SZ={"rigging-sheet.png":[1200,450],"studio-collab.png":[1400,900],"studio-dopesheet.png":[1400,900],"studio-graph.png":[1400,900],"studio-layers.png":[1400,900],"studio-overlays.png":[1400,900],"studio-overview.png":[1400,900],"studio-palette.png":[1400,900],"studio-shortcuts.png":[1400,900],"studio-suggest.png":[1400,900],"tutorial-buddy.png":[1280,480],"tutorial-svg-walk.png":[1840,360],"walk-cycle.png":[1080,300]};
+// WebP copies made by scripts/build-images.py; the PNG stays the fallback and the lightbox source
+const webp=(n,w)=>(window.OSA_ROOT||'')+'site/img/'+n.replace(/\.png$/,'')+'-'+w+'.webp';
+const picture=(n,alt,extra)=>{const z=IMG_SZ[n];if(!z)return`<img src="${imgUrl(n)}" alt="${alt}" ${extra}>`;
+  const ws=[800,1400].filter(w=>w<=z[0]);const ss=ws.map(w=>`${webp(n,w)} ${w}w`).join(', ');
+  return`<picture>${ss?`<source type="image/webp" srcset="${ss}" sizes="(max-width: 960px) 100vw, 920px">`:''}<img src="${imgUrl(n)}" data-full="${imgUrl(n)}" alt="${alt}" width="${z[0]}" height="${z[1]}" ${extra}></picture>`};
+const thumb=n=>IMG_SZ[n]?webp(n,320):imgUrl(n);
 window.ARM_DATA=window.ARM_DATA||{};
 function loadScript(src){return new Promise((ok,fail)=>{const s=document.createElement('script');s.src=src+'?v='+BUILD;s.onload=ok;s.onerror=()=>fail(new Error('cannot load '+src));document.head.appendChild(s)})}
 const REPO='https://github.com/chiuta/osatura';
@@ -230,7 +241,7 @@ function inline(s,ctx){
   s=s.replace(/(`+)([\s\S]*?[^`])\1(?!`)/g,(m,a,c)=>stash('<code>'+esc(c.trim())+'</code>'));
   s=esc(s.replace(/<!--[\s\S]*?-->/g,''));
   s=s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;[^)]*&quot;)?\)/g,(m,alt,src)=>{
-    const n=src.split('/').pop();return stash(`<img src="${imgUrl(n)}" alt="${alt}" loading="lazy">`)});
+    const n=src.split('/').pop();return stash(picture(n,alt,'loading="lazy" decoding="async"'))});
   s=s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(m,t,h)=>{
     const r=resolveHref(h.replace(/&amp;/g,'&'),ctx);
     return stash(r.ext?`<a href="${r.ext}" target="_blank" rel="noopener">${emph(t)}</a>`:`<a href="#/d/${encodeURIComponent(r.doc)}${r.anchor?'/'+encodeURIComponent(r.anchor):''}">${emph(t)}</a>`)});
@@ -408,9 +419,9 @@ $('#rtheme').onclick=()=>$('#theme').click();
 art.addEventListener('click',e=>{
   const b=e.target.closest('.cb button');
   if(b){navigator.clipboard&&navigator.clipboard.writeText(b.nextElementSibling.textContent).then(()=>{b.textContent='✓';setTimeout(()=>b.textContent=T[L].copy2,1200)});return}
-  if(e.target.tagName==='IMG')lightbox(e.target.src);
+  if(e.target.tagName==='IMG')lightbox(e.target.dataset.full||e.target.src);
 });
-function lightbox(src){const lb=$('#lb');lb.querySelector('img').src=src;lb.classList.add('on')}
+function lightbox(src){const lb=$('#lb');let im=lb.querySelector('img');if(!im){im=document.createElement('img');im.alt='';lb.append(im)}im.src=src;lb.classList.add('on')}
 $('#lb').onclick=()=>$('#lb').classList.remove('on');
 
 /* ---- search / palette ---- */
@@ -594,10 +605,10 @@ function initGallery(){
 }
 function renderGal(){
   if(!GAL.length)return;const g=GAL[gi];
-  $('#gal').innerHTML=`<div class="big"><img src="${imgUrl(g.n)}" alt="${esc(g.alt)}"><div class="cap"><span>${esc(g.alt)}</span><a href="#/d/${g.id}${g.a?'/'+g.a:''}">${T[L].openIn}</a></div></div><div class="thumbs">${GAL.map((x,i)=>`<img src="${imgUrl(x.n)}" data-ix="${i}" class="${i===gi?'on':''}" alt="${esc(x.alt)}" tabindex="0" role="button" loading="lazy">`).join('')}</div>`;
+  $('#gal').innerHTML=`<div class="big">${picture(g.n,esc(g.alt),'loading="lazy" decoding="async"')}<div class="cap"><span>${esc(g.alt)}</span><a href="#/d/${g.id}${g.a?'/'+g.a:''}">${T[L].openIn}</a></div></div><div class="thumbs">${GAL.map((x,i)=>`<img src="${thumb(x.n)}" data-ix="${i}" class="${i===gi?'on':''}" alt="${esc(x.alt)}" tabindex="0" role="button" loading="lazy" decoding="async" width="160" height="${IMG_SZ[x.n]?Math.round(160*IMG_SZ[x.n][1]/IMG_SZ[x.n][0]):90}">`).join('')}</div>`;
 }
 $('#gal').onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('.thumbs img')){e.preventDefault();e.target.click()}};
-$('#gal').onclick=e=>{const t=e.target.closest('.thumbs img');if(t){gi=+t.dataset.ix;renderGal();return}if(e.target.closest('.big img'))lightbox(e.target.closest('.big img').src)};
+$('#gal').onclick=e=>{const t=e.target.closest('.thumbs img');if(t){gi=+t.dataset.ix;renderGal();return}if(e.target.closest('.big img')){const b=e.target.closest('.big img');lightbox(b.dataset.full||b.src)}};
 
 /* ---- CLI atlas ---- */
 let CMDS=[],csec='all',cq='';
@@ -813,7 +824,7 @@ function typeIn(done,noType){const s=S[si],tok=++typeTok;const total=s.commands.
   if(reduce||tab!=='t'||noType){renderTerm(null);done&&done();return}
   let n=0;const step=Math.max(2,Math.ceil(total/40));
   const t=()=>{if(tok!==typeTok)return;n+=step;if(n>=total){renderTerm(null);done&&done();return}renderTerm(n);el.term.scrollTop=el.term.scrollHeight;setTimeout(t,22)};t()}
-function setTab(k){tab=k;el.tabT.setAttribute('aria-selected',k==='t');el.tabS.setAttribute('aria-selected',k==='s');typeTok++;renderTerm(null)}
+function setTab(k){tab=k;el.tabT.setAttribute('aria-selected',k==='t');el.tabS.setAttribute('aria-selected',k==='s');el.term.setAttribute('aria-labelledby',k==='s'?'dtabS':'dtabT');typeTok++;renderTerm(null)}
 function labels(){el.tabT.textContent=tt('dTerm');el.tabS.textContent=tt('dScript');
   el.prev.textContent='← '+tt('dPrev');el.next.textContent=tt('dNext')+' →';el.auto.textContent=auto?tt('dStop'):tt('dAuto');
   el.play.textContent=playing?tt('dPause'):tt('dPlay');el.note.textContent=fmt('dNote',{engine:D.engine.replace(/ \(.*/,'')});
@@ -838,7 +849,7 @@ function scheduleAuto(){clearTimeout(autoTimer);if(!auto)return;const f=framesOf
 function setAuto(on){auto=on;clearTimeout(autoTimer);labels();if(on){if(si>=N-1){seen=new Set();go(0)}else scheduleAuto()}}
 
 // construcție
-el.steps.innerHTML=S.map((s,i)=>`<button type="button" role="tab" aria-selected="false" data-step="${i}"><i>${i+1}</i><span></span></button>`).join('');
+el.steps.innerHTML=S.map((s,i)=>`<button type="button" role="tab" aria-controls="dpanel" aria-selected="false" data-step="${i}"><i>${i+1}</i><span></span></button>`).join('');
 el.steps.onclick=e=>{const b=e.target.closest('button');if(b){auto=false;go(+b.dataset.step)}};
 el.prev.onclick=()=>{auto=false;go(si-1)};el.next.onclick=()=>{auto=false;go(si+1)};
 el.auto.onclick=()=>setAuto(!auto);

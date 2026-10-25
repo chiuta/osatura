@@ -2,7 +2,7 @@
 <!-- Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio) -->
 # Index de la documentation d'OSATURA
 
-*Commencez ici pour trouver la bonne page. Tous les documents sont en Markdown anglais sous CC-BY-4.0, à l'exception des fichiers tiers générés (voir leurs en-têtes). Le README roumain est [../README.ro.md](../../../README.fr.md).*
+*Commencez ici pour trouver la bonne page. Tous les documents sont en Markdown anglais sous CC-BY-4.0, à l'exception des fichiers tiers générés (voir leurs en-têtes).*
 
 OSATURA est un moteur de rigging et d'animation vectoriels 2D en Rust. C'est un projet alpha (les premiers builds sont préparés comme la préversion en brouillon `v0.1.0-alpha.3` ; les crates sont toujours en 0.1.0) ; lisez [LIMITATIONS.md](LIMITATIONS.md) avant de dépendre d'une fonctionnalité.
 
