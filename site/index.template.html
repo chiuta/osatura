@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OSATURA — 2D vector rigging and animation in Rust</title>
 <meta name="description" content="OSATURA: a 2D vector rigging and animation engine in Rust. Bones, IK, skinning, deformers, state-machine runtime, CLI, browser studio and libraries.">
+<link rel="canonical" href="https://osatura.chiuta.ro/">
+<meta name="theme-color" content="#080b11">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OSATURA">
+<meta property="og:url" content="https://osatura.chiuta.ro/">
+<meta property="og:title" content="OSATURA — 2D vector rigging and animation in Rust">
+<meta property="og:description" content="Bones, IK, skinning, deformers, state-machine runtime, CLI, browser studio and libraries. Open source (MPL-2.0 / AGPL-3.0).">
+<meta property="og:image" content="https://osatura.chiuta.ro/site/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A walking character rigged and rendered by the OSATURA engine">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OSATURA — 2D vector rigging and animation in Rust">
+<meta name="twitter:description" content="Bones, IK, skinning, deformers, state-machine runtime, CLI, browser studio and libraries.">
+<meta name="twitter:image" content="https://osatura.chiuta.ro/site/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0e14'/%3E%3Cpath d='M8 24L15 15L23 9' stroke='%235ef0c1' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='8' cy='24' r='3' fill='%23ffb86b'/%3E%3Ccircle cx='15' cy='15' r='3' fill='%23ffb86b'/%3E%3Ccircle cx='23' cy='9' r='3' fill='%23ffb86b'/%3E%3C/svg%3E">
 <style>
 :root{
@@ -410,6 +425,11 @@ body.rd{overflow:hidden}
 </style>
 </head>
 <body>
+<noscript><div style="max-width:760px;margin:0 auto;padding:96px 22px 24px;font:16px/1.6 system-ui,sans-serif">
+<h2 style="font-size:26px;line-height:1.3;margin-bottom:10px">OSATURA — 2D vector rigging and animation in Rust</h2>
+<p>Bones, FK/FABRIK IK, skinning, lattice and cage deformers, state machines, blend trees, a command-line tool, a browser studio and embeddable libraries (C ABI, WASM). This page needs JavaScript for the interactive demos and the documentation atlas.</p>
+<p><a href="https://github.com/chiuta/osatura">Source code on GitHub</a> · <a href="https://github.com/chiuta/osatura/blob/main/docs/GETTING_STARTED.md">Getting started</a> · <a href="https://github.com/chiuta/osatura/blob/main/docs/LIMITATIONS.md">Limitations</a> · <a href="https://github.com/chiuta/osatura/releases">Releases</a></p>
+</div></noscript>
 <div id="bar"></div>
 <nav><div class="wrap">
   <a class="logo" href="#top" aria-label="OSATURA">
@@ -1414,7 +1434,11 @@ loadDocs().then(async()=>{
 /*demo:js*/
 /* demo pas cu pas — redă randările REALE ale motorului (SVG) și ieșirea reală a comenzilor; nimic nu e desenat de mână. */
 (async()=>{
-const D=JSON.parse(document.getElementById('demo-data').textContent);
+// datele demo (~1 MB) stau în site/data/demo.js și se încarcă doar când secțiunea se apropie de ecran
+const dHost=document.getElementById('demoapp');
+await new Promise(ok=>{if(!('IntersectionObserver' in window))return ok();const o=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){o.disconnect();ok()}},{rootMargin:'800px 0px'});o.observe(dHost)});
+const dInline=document.getElementById('demo-data');
+const D=dInline&&dInline.textContent.trim()?JSON.parse(dInline.textContent):(await loadScript(DATA_DIR+'demo.js'),ARM_DATA.demo);
 /*gunzip:begin*/
 async function gunzipJson(b64){
   const src=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
