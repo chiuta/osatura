@@ -69,13 +69,13 @@ SPDX-FileCopyrightText = "2026 Alexandru-Ionuț Chiuță (Alexio)"
 SPDX-License-Identifier = "CC-BY-4.0"
 
 [[annotations]]
-path = ["index.html", "site/index.template.html", "site/data/*.js"]
+path = ["index.html", "site/index.template.html", "site/data/*.js", "site/og.png"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Alexandru-Ionuț Chiuță (Alexio)"
 SPDX-License-Identifier = "CC-BY-4.0 AND MPL-2.0"
 
 [[annotations]]
-path = ["CNAME", "scripts/build-site.py", "scripts/i18n.py"]
+path = ["CNAME", "robots.txt", "sitemap.xml", "scripts/build-site.py", "scripts/i18n.py"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Alexandru-Ionuț Chiuță (Alexio)"
 SPDX-License-Identifier = "MPL-2.0"

@@ -69,7 +69,9 @@ def main():
     # Plain scripts, not fetch(), so the page also works when opened from disk.
     data = ROOT / "site" / "data"
     data.mkdir(exist_ok=True)
-    for old in data.glob("docs.*.js"):
+    for old in [*data.glob("docs.*.js"), data / "demo.js", data / "app.js"]:
+        if not old.exists():
+            continue
         old.unlink()
     files = {"en": "window.ARM_DATA=window.ARM_DATA||{};ARM_DATA.en=" + dump({"order": order, "docs": docs}) + ";\n"}
     for lang in i18n.LANGS:
@@ -88,7 +90,27 @@ def main():
             sys.exit(f"site/i18n/{lang}.json: keys differ from en.json: {sorted(base ^ set(d))}")
 
     tpl = (ROOT / "site" / "index.template.html").read_text(encoding="utf-8")
+    # The step-by-step demo data (~1 MB, written into the template by scripts/build-person-demo.mjs) goes to
+    # site/data/demo.js, loaded by the page only when the demo section comes near the viewport.
+    d_re = re.compile(r'(<script type="application/json" id="demo-data">)([\s\S]*?)(</script>)')
+    m = d_re.search(tpl)
+    if not m:
+        sys.exit("site/index.template.html: no #demo-data block")
+    demo = "window.ARM_DATA=window.ARM_DATA||{};ARM_DATA.demo=" + m.group(2).strip() + ";\n"
+    (data / "demo.js").write_text(demo, encoding="utf-8")
+    h.update(demo.encode())
+    files["demo"] = demo
+    tpl = tpl[:m.start()] + m.group(1) + m.group(3) + tpl[m.end():]
     out = tpl.replace("/*__I18N__*/ {}", dump(ui)).replace("/*__BUILD__*/", h.hexdigest()[:10])
+    # The page script goes to site/data/app.js (cacheable, versioned by its content hash).
+    s_re = re.compile(r"<script>\n([\s\S]*?)</script>\s*(?=</body>)")
+    m = s_re.search(out)
+    if not m:
+        sys.exit("site/index.template.html: no page <script> before </body>")
+    app = m.group(1)
+    (data / "app.js").write_text(app, encoding="utf-8")
+    v = hashlib.sha1(app.encode()).hexdigest()[:10]
+    out = out[:m.start()] + f'<script src="site/data/app.js?v={v}" defer></script>\n' + out[m.end():]
     (ROOT / "index.html").write_text(out, encoding="utf-8")
     size = sum(len(t.encode()) for t in files.values()) / 1024
     print(f"index.html: {len(out)/1024:.0f} KiB; site/data: {len(files)} files, {size:.0f} KiB; {len(docs)} documents")
