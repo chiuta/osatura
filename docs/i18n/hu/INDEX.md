@@ -2,7 +2,7 @@
 <!-- Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio) -->
 # Az OSATURA dokumentációjának tartalomjegyzéke
 
-*Itt kezdj, hogy megtaláld a megfelelő oldalt. Minden dokumentum angol nyelvű Markdown CC-BY-4.0 licenc alatt, kivéve a generált harmadik féltől származó fájlokat (lásd a fejlécüket). A román README itt található: [../README.ro.md](../../../README.hu.md).*
+*Itt kezdj, hogy megtaláld a megfelelő oldalt. Minden dokumentum angol nyelvű Markdown CC-BY-4.0 licenc alatt, kivéve a generált harmadik féltől származó fájlokat (lásd a fejlécüket).*
 
 Az OSATURA egy Rustban írt 2D vektoros riggelő és animációs motor. Alfa projekt (az első buildek a `v0.1.0-alpha.3` előzetes kiadás-vázlatként készülnek; a crate-ek továbbra is 0.1.0); mielőtt egy funkcióra támaszkodnál, olvasd el a [LIMITATIONS.md](LIMITATIONS.md) fájlt.
 
