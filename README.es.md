@@ -4,7 +4,7 @@
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
 
-**Un motor de rigging y animación vectorial 2D en Rust: huesos, IK, skinning, deformadores, un runtime de máquinas de estados, una caja de herramientas de línea de comandos, un estudio en el navegador y bibliotecas integrables, todo en un único workspace.** Versión en rumano: [README.ro.md](README.ro.md).
+**Un motor de rigging y animación vectorial 2D en Rust: huesos, IK, skinning, deformadores, un runtime de máquinas de estados, una caja de herramientas de línea de comandos, un estudio en el navegador y bibliotecas integrables, todo en un único workspace.**
 
 ![Un personaje de perfil (cabeza, oreja, coleta, tronco, brazos con dedos, piernas, pies) camina en el sitio sobre un suelo que se desplaza; salida real de osatura export con el proyecto de demostración incorporado](docs/img/walk.gif)
 

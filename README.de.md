@@ -4,7 +4,7 @@
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
 
-**Eine 2D-Vektor-Rigging- und Animations-Engine in Rust: Knochen, IK, Skinning, Deformer, eine Zustandsautomaten-Laufzeitumgebung, eine Kommandozeilen-Toolbox, ein Browser-Studio und einbettbare Bibliotheken, alles in einem Workspace.** Rumänische Version: [README.ro.md](README.ro.md).
+**Eine 2D-Vektor-Rigging- und Animations-Engine in Rust: Knochen, IK, Skinning, Deformer, eine Zustandsautomaten-Laufzeitumgebung, eine Kommandozeilen-Toolbox, ein Browser-Studio und einbettbare Bibliotheken, alles in einem Workspace.**
 
 ![Ein Charakter in Seitenansicht (Kopf, Ohr, Pferdeschwanz, Rumpf, Arme mit Fingern, Beine, Füße) läuft auf der Stelle, der Boden zieht vorbei; echte Ausgabe von osatura export für das eingebaute Demoprojekt](docs/img/walk.gif)
 

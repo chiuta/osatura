@@ -198,7 +198,7 @@ function updMatch(){const same=$('#ha').textContent===$('#hb').textContent,m=$('
 setInterval(()=>{DA.tick();DB.tick()},1000/24);
 
 /* ================= DOCS ATLAS ================= */
-const BUILD="c0c146db16";
+const BUILD="6ba24ace8c";
 const DATA_DIR=(window.OSA_ROOT||'')+'site/data/';
 const imgUrl=n=>(window.OSA_ROOT||'')+'docs/img/'+n;
 window.ARM_DATA=window.ARM_DATA||{};
