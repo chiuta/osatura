@@ -4,7 +4,7 @@
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
 
-**Rustban írt 2D vektoros riggelő és animációs motor: csontok, IK, skinning, deformerek, állapotgép-futtatókörnyezet, parancssori eszköztár, böngészős stúdió és beágyazható könyvtárak egyetlen workspace-ben.** Román nyelvű változat: [README.ro.md](README.ro.md).
+**Rustban írt 2D vektoros riggelő és animációs motor: csontok, IK, skinning, deformerek, állapotgép-futtatókörnyezet, parancssori eszköztár, böngészős stúdió és beágyazható könyvtárak egyetlen workspace-ben.**
 
 ![Oldalnézetes figura (fej, fül, lófarok, törzs, ujjakkal ellátott kar, láb, talp) helyben jár az elúszó talajon; az osatura export valódi kimenete a beépített demóprojekten](docs/img/walk.gif)
 
