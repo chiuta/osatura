@@ -318,6 +318,19 @@ mod tests {
         assert!(!j.contains("sounds"), "empty list is not serialised");
     }
 
+    #[test]
+    fn the_demuxer_is_forced_only_for_the_three_accepted_extensions() {
+        let d = |f: &str| forced_demuxer(Path::new(f));
+        assert_eq!(d("a.wav"), Some("wav"));
+        assert_eq!(d("dir/B.WAV"), Some("wav"));
+        assert_eq!(d("a.Mp3"), Some("mp3"));
+        assert_eq!(d("a.ogg"), Some("ogg"));
+        assert_eq!(d("a.flac"), None);
+        assert_eq!(d("a.m3u"), None);
+        assert_eq!(d("wav"), None);
+        assert_eq!(d("a.wav.txt"), None);
+    }
+
     #[cfg(unix)] // asserts POSIX path separators
     #[test]
     fn filter_graph() {
