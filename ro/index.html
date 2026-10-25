@@ -2,6 +2,7 @@
 <html lang="ro">
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OSATURA — rigging și animație vectorială 2D în Rust</title>
 <meta name="description" content="OSATURA: motor de rigging și animație vectorială 2D în Rust. Oase, IK, skinning, deformatoare, runtime cu mașini de stări, CLI, studio în browser și biblioteci.">
@@ -30,7 +31,7 @@
 <meta name="twitter:title" content="OSATURA — rigging și animație vectorială 2D în Rust">
 <meta name="twitter:description" content="OSATURA: motor de rigging și animație vectorială 2D în Rust. Oase, IK, skinning, deformatoare, runtime cu mașini de stări, CLI, studio în browser și biblioteci.">
 <meta name="twitter:image" content="https://osatura.chiuta.ro/site/og.png">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0e14'/%3E%3Cpath d='M8 24L15 15L23 9' stroke='%235ef0c1' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='8' cy='24' r='3' fill='%23ffb86b'/%3E%3Ccircle cx='15' cy='15' r='3' fill='%23ffb86b'/%3E%3Ccircle cx='23' cy='9' r='3' fill='%23ffb86b'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%230b0e14'/%3E%3Cpath%20d='M8%2024L15%2015L23%209'%20stroke='%235ef0c1'%20stroke-width='3'%20stroke-linecap='round'%20fill='none'/%3E%3Ccircle%20cx='8'%20cy='24'%20r='3'%20fill='%23ffb86b'/%3E%3Ccircle%20cx='15'%20cy='15'%20r='3'%20fill='%23ffb86b'/%3E%3Ccircle%20cx='23'%20cy='9'%20r='3'%20fill='%23ffb86b'/%3E%3C/svg%3E">
 <style>
 :root{
   --bg:#080b11;--bg2:#0d1119;--card:#111723;--line:#1f2838;--tx:#e9eef7;--mut:#8f9bb3;
@@ -510,7 +511,7 @@ body.rd{overflow:hidden}
   <p class="lead rv" data-i="dP">Iată persoana care merge, cea cu care se deschide studioul la prima pornire. O construim în unsprezece etape; fiecare etapă este același proiect, tăiat după pasul respectiv, iar osatura demo-person îl scrie pe cel terminat. Comenzile au rulat pe binarul real osatura, iar fiecare imagine este un cadru randat de motor.</p>
   <div class="demo rv" id="demoapp">
     <div class="dsteps" id="dsteps" role="tablist" aria-label="Demo" data-al="alDemo"></div>
-    <div class="dgrid">
+    <div class="dgrid" id="dpanel" role="tabpanel" aria-labelledby="dtitle">
       <div class="dview">
         <div class="dcanvas" id="dv" role="img" aria-labelledby="dtitle"></div>
         <div class="dbar">
@@ -525,8 +526,8 @@ body.rd{overflow:hidden}
           <h3 id="dtitle" aria-live="polite" data-i="dS1">Un proiect gol</h3>
           <p id="ddesc" data-i="dD1">Câteva chei JSON sunt un proiect întreg: 640×480, 24 de cadre pe secundă, 32 de cadre. check confirmă că e valid.</p>
         </div>
-        <div class="dtabs" role="tablist"><button type="button" id="dtabT" role="tab" aria-selected="true" data-i="dTerm">Terminal</button><button type="button" id="dtabS" role="tab" aria-selected="false" data-i="dScript">Script</button></div>
-        <pre class="dterm" id="dterm" tabindex="0" aria-live="off"></pre>
+        <div class="dtabs" role="tablist"><button type="button" id="dtabT" role="tab" aria-controls="dterm" aria-selected="true" data-i="dTerm">Terminal</button><button type="button" id="dtabS" role="tab" aria-controls="dterm" aria-selected="false" data-i="dScript">Script</button></div>
+        <pre class="dterm" id="dterm" role="tabpanel" aria-labelledby="dtabT" tabindex="0" aria-live="off"></pre>
         <div class="dnav">
           <button class="dbtn" id="dprev" type="button" data-i="dPrev">Înapoi</button>
           <button class="dbtn p" id="dnext" type="button" data-i="dNext">Înainte</button>
@@ -723,8 +724,8 @@ body.rd{overflow:hidden}
   </div>
 </div>
 <div id="lmenu"></div>
-<div id="lb" role="dialog" aria-label="Imagine" data-al="alImage"><img alt=""></div>
+<div id="lb" role="dialog" aria-label="Imagine" data-al="alImage"></div>
 <script>window.OSA_ROOT='../';window.OSA_LANG='ro'</script>
-<script src="../site/data/app.js?v=c775d6dbd2" defer></script>
+<script src="../site/data/app.js?v=21f6a5a957" defer></script>
 </body>
 </html>

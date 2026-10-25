@@ -421,7 +421,7 @@ art.addEventListener('click',e=>{
   if(b){navigator.clipboard&&navigator.clipboard.writeText(b.nextElementSibling.textContent).then(()=>{b.textContent='✓';setTimeout(()=>b.textContent=T[L].copy2,1200)});return}
   if(e.target.tagName==='IMG')lightbox(e.target.dataset.full||e.target.src);
 });
-function lightbox(src){const lb=$('#lb');lb.querySelector('img').src=src;lb.classList.add('on')}
+function lightbox(src){const lb=$('#lb');let im=lb.querySelector('img');if(!im){im=document.createElement('img');im.alt='';lb.append(im)}im.src=src;lb.classList.add('on')}
 $('#lb').onclick=()=>$('#lb').classList.remove('on');
 
 /* ---- search / palette ---- */
@@ -824,7 +824,7 @@ function typeIn(done,noType){const s=S[si],tok=++typeTok;const total=s.commands.
   if(reduce||tab!=='t'||noType){renderTerm(null);done&&done();return}
   let n=0;const step=Math.max(2,Math.ceil(total/40));
   const t=()=>{if(tok!==typeTok)return;n+=step;if(n>=total){renderTerm(null);done&&done();return}renderTerm(n);el.term.scrollTop=el.term.scrollHeight;setTimeout(t,22)};t()}
-function setTab(k){tab=k;el.tabT.setAttribute('aria-selected',k==='t');el.tabS.setAttribute('aria-selected',k==='s');typeTok++;renderTerm(null)}
+function setTab(k){tab=k;el.tabT.setAttribute('aria-selected',k==='t');el.tabS.setAttribute('aria-selected',k==='s');el.term.setAttribute('aria-labelledby',k==='s'?'dtabS':'dtabT');typeTok++;renderTerm(null)}
 function labels(){el.tabT.textContent=tt('dTerm');el.tabS.textContent=tt('dScript');
   el.prev.textContent='← '+tt('dPrev');el.next.textContent=tt('dNext')+' →';el.auto.textContent=auto?tt('dStop'):tt('dAuto');
   el.play.textContent=playing?tt('dPause'):tt('dPlay');el.note.textContent=fmt('dNote',{engine:D.engine.replace(/ \(.*/,'')});
@@ -849,7 +849,7 @@ function scheduleAuto(){clearTimeout(autoTimer);if(!auto)return;const f=framesOf
 function setAuto(on){auto=on;clearTimeout(autoTimer);labels();if(on){if(si>=N-1){seen=new Set();go(0)}else scheduleAuto()}}
 
 // construcție
-el.steps.innerHTML=S.map((s,i)=>`<button type="button" role="tab" aria-selected="false" data-step="${i}"><i>${i+1}</i><span></span></button>`).join('');
+el.steps.innerHTML=S.map((s,i)=>`<button type="button" role="tab" aria-controls="dpanel" aria-selected="false" data-step="${i}"><i>${i+1}</i><span></span></button>`).join('');
 el.steps.onclick=e=>{const b=e.target.closest('button');if(b){auto=false;go(+b.dataset.step)}};
 el.prev.onclick=()=>{auto=false;go(si-1)};el.next.onclick=()=>{auto=false;go(si+1)};
 el.auto.onclick=()=>setAuto(!auto);

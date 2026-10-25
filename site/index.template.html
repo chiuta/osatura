@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OSATURA — 2D vector rigging and animation in Rust</title>
 <meta name="description" content="OSATURA: a 2D vector rigging and animation engine in Rust. Bones, IK, skinning, deformers, state-machine runtime, CLI, browser studio and libraries.">
@@ -21,7 +22,7 @@
 <meta name="twitter:title" content="OSATURA — 2D vector rigging and animation in Rust">
 <meta name="twitter:description" content="Bones, IK, skinning, deformers, state-machine runtime, CLI, browser studio and libraries.">
 <meta name="twitter:image" content="https://osatura.chiuta.ro/site/og.png">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0e14'/%3E%3Cpath d='M8 24L15 15L23 9' stroke='%235ef0c1' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='8' cy='24' r='3' fill='%23ffb86b'/%3E%3Ccircle cx='15' cy='15' r='3' fill='%23ffb86b'/%3E%3Ccircle cx='23' cy='9' r='3' fill='%23ffb86b'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%230b0e14'/%3E%3Cpath%20d='M8%2024L15%2015L23%209'%20stroke='%235ef0c1'%20stroke-width='3'%20stroke-linecap='round'%20fill='none'/%3E%3Ccircle%20cx='8'%20cy='24'%20r='3'%20fill='%23ffb86b'/%3E%3Ccircle%20cx='15'%20cy='15'%20r='3'%20fill='%23ffb86b'/%3E%3Ccircle%20cx='23'%20cy='9'%20r='3'%20fill='%23ffb86b'/%3E%3C/svg%3E">
 <style>
 :root{
   --bg:#080b11;--bg2:#0d1119;--card:#111723;--line:#1f2838;--tx:#e9eef7;--mut:#8f9bb3;
@@ -501,7 +502,7 @@ body.rd{overflow:hidden}
   <p class="lead rv" data-i="dP"></p>
   <div class="demo rv" id="demoapp">
     <div class="dsteps" id="dsteps" role="tablist" aria-label="Demo" data-al="alDemo"></div>
-    <div class="dgrid">
+    <div class="dgrid" id="dpanel" role="tabpanel" aria-labelledby="dtitle">
       <div class="dview">
         <div class="dcanvas" id="dv" role="img" aria-labelledby="dtitle"></div>
         <div class="dbar">
@@ -516,8 +517,8 @@ body.rd{overflow:hidden}
           <h3 id="dtitle" aria-live="polite" data-i="dS1"></h3>
           <p id="ddesc" data-i="dD1"></p>
         </div>
-        <div class="dtabs" role="tablist"><button type="button" id="dtabT" role="tab" aria-selected="true" data-i="dTerm"></button><button type="button" id="dtabS" role="tab" aria-selected="false" data-i="dScript"></button></div>
-        <pre class="dterm" id="dterm" tabindex="0" aria-live="off"></pre>
+        <div class="dtabs" role="tablist"><button type="button" id="dtabT" role="tab" aria-controls="dterm" aria-selected="true" data-i="dTerm"></button><button type="button" id="dtabS" role="tab" aria-controls="dterm" aria-selected="false" data-i="dScript"></button></div>
+        <pre class="dterm" id="dterm" role="tabpanel" aria-labelledby="dtabT" tabindex="0" aria-live="off"></pre>
         <div class="dnav">
           <button class="dbtn" id="dprev" type="button" data-i="dPrev"></button>
           <button class="dbtn p" id="dnext" type="button" data-i="dNext"></button>
@@ -714,7 +715,7 @@ body.rd{overflow:hidden}
   </div>
 </div>
 <div id="lmenu"></div>
-<div id="lb" role="dialog" aria-label="Image" data-al="alImage"><img alt=""></div>
+<div id="lb" role="dialog" aria-label="Image" data-al="alImage"></div>
 <script>
 let onLang=null;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -1139,7 +1140,7 @@ art.addEventListener('click',e=>{
   if(b){navigator.clipboard&&navigator.clipboard.writeText(b.nextElementSibling.textContent).then(()=>{b.textContent='✓';setTimeout(()=>b.textContent=T[L].copy2,1200)});return}
   if(e.target.tagName==='IMG')lightbox(e.target.dataset.full||e.target.src);
 });
-function lightbox(src){const lb=$('#lb');lb.querySelector('img').src=src;lb.classList.add('on')}
+function lightbox(src){const lb=$('#lb');let im=lb.querySelector('img');if(!im){im=document.createElement('img');im.alt='';lb.append(im)}im.src=src;lb.classList.add('on')}
 $('#lb').onclick=()=>$('#lb').classList.remove('on');
 
 /* ---- search / palette ---- */
@@ -1542,7 +1543,7 @@ function typeIn(done,noType){const s=S[si],tok=++typeTok;const total=s.commands.
   if(reduce||tab!=='t'||noType){renderTerm(null);done&&done();return}
   let n=0;const step=Math.max(2,Math.ceil(total/40));
   const t=()=>{if(tok!==typeTok)return;n+=step;if(n>=total){renderTerm(null);done&&done();return}renderTerm(n);el.term.scrollTop=el.term.scrollHeight;setTimeout(t,22)};t()}
-function setTab(k){tab=k;el.tabT.setAttribute('aria-selected',k==='t');el.tabS.setAttribute('aria-selected',k==='s');typeTok++;renderTerm(null)}
+function setTab(k){tab=k;el.tabT.setAttribute('aria-selected',k==='t');el.tabS.setAttribute('aria-selected',k==='s');el.term.setAttribute('aria-labelledby',k==='s'?'dtabS':'dtabT');typeTok++;renderTerm(null)}
 function labels(){el.tabT.textContent=tt('dTerm');el.tabS.textContent=tt('dScript');
   el.prev.textContent='← '+tt('dPrev');el.next.textContent=tt('dNext')+' →';el.auto.textContent=auto?tt('dStop'):tt('dAuto');
   el.play.textContent=playing?tt('dPause'):tt('dPlay');el.note.textContent=fmt('dNote',{engine:D.engine.replace(/ \(.*/,'')});
@@ -1567,7 +1568,7 @@ function scheduleAuto(){clearTimeout(autoTimer);if(!auto)return;const f=framesOf
 function setAuto(on){auto=on;clearTimeout(autoTimer);labels();if(on){if(si>=N-1){seen=new Set();go(0)}else scheduleAuto()}}
 
 // construcție
-el.steps.innerHTML=S.map((s,i)=>`<button type="button" role="tab" aria-selected="false" data-step="${i}"><i>${i+1}</i><span></span></button>`).join('');
+el.steps.innerHTML=S.map((s,i)=>`<button type="button" role="tab" aria-controls="dpanel" aria-selected="false" data-step="${i}"><i>${i+1}</i><span></span></button>`).join('');
 el.steps.onclick=e=>{const b=e.target.closest('button');if(b){auto=false;go(+b.dataset.step)}};
 el.prev.onclick=()=>{auto=false;go(si-1)};el.next.onclick=()=>{auto=false;go(si+1)};
 el.auto.onclick=()=>setAuto(!auto);
