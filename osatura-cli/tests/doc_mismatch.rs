@@ -490,7 +490,7 @@ fn studio_serves_a_favicon_and_marks_the_cookie_secure_over_https() {
     assert!(plain.contains("HttpOnly") && plain.contains("SameSite=Strict") && !plain.contains("Secure"), "{plain}");
     let tls = login("X-Forwarded-Proto: https\r\n");
     assert!(tls.contains("HttpOnly") && tls.contains("SameSite=Strict") && tls.contains("; Secure"), "{tls}");
-    let page = req("GET", "/", "Cookie: arm_token=0123456789abcdef-token\r\n", "");
+    let page = req("GET", "/", "Cookie: osatura_token=0123456789abcdef-token\r\n", "");
     assert!(page.contains("synthetic (stylised) faces only") && !page.contains("contains <b>no face detector</b>"), "the face panel text names the synthetic detector");
     assert!(page.contains("rel=\"icon\""), "the page links its icon");
 }

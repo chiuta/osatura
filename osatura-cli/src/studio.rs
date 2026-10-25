@@ -432,6 +432,15 @@ fn handle(ed: &mut Editor, live: &mut LiveSession, face: &mut FaceState, ui: &mu
     if !collab.verify_ctx(&ctx) {
         return Reply::Full(json_resp(err(vec!["X-Collab-Replica needs the matching X-Collab-Secret".into()])).with_status_code(403));
     }
+    // saving writes the project file, compacting rewrites the shared history and revoking locks people out: with
+    // `--collab-host` only the named per-participant tokens may do these (everybody else can still edit)
+    if method == Method::Post {
+        let host_only = matches!(path, "/api/save" | "/api/collab/compact");
+        let admin_only = path == "/api/collab/revoke";
+        if (host_only && !collab.is_host()) || (admin_only && !collab.can_administer()) {
+            return Reply::Full(json_resp(err(vec!["this needs a host token: start the studio with --collab-host NAMES and sign in with one of those names".into()])).with_status_code(403));
+        }
+    }
     let rev0 = ed.revision();
     let body = match std::str::from_utf8(&req.body) {
         Ok(b) => b.to_string(),
@@ -1019,6 +1028,9 @@ pub struct Security {
     pub secret: Option<String>,
     /// `--collab-revoke`: participant names whose tokens are refused.
     pub revoke: Vec<String>,
+    /// `--collab-host`: participant names that may save the project, compact the session log and revoke tokens
+    /// (empty = not restricted).
+    pub hosts: Vec<String>,
     /// `--collab-rate`: requests per second per client address; `None` = the default (100 when a credential is
     /// required, no limit otherwise), `Some(0.0)` = off.
     pub rate: Option<f64>,
@@ -1079,6 +1091,12 @@ pub fn serve(mut ed: Editor, save_path: &str, addr: &str, ui_path: Option<std::p
     let mut collab = Collab::new(ed.doc(), sec.token.clone()).with_rate(rate);
     if let Some(s) = &sec.secret {
         collab = collab.with_secret(s, sec.revoke.clone())?;
+        if !sec.hosts.is_empty() {
+            collab = collab.with_hosts(sec.hosts.clone())?;
+            println!("hosts: only {} may save the project, compact the session log and revoke tokens (POST /api/collab/revoke); other participants can edit", sec.hosts.join(", "));
+        } else {
+            println!("hosts: not restricted - every participant may save the project and compact the session log; name the people who may with --collab-host NAMES (docs/SECURITY.md)");
+        }
         println!("per-participant tokens: made with `osatura collab-token NAME --secret-file F`; each is bound to one name and expires{}", if sec.revoke.is_empty() { String::new() } else { format!("; revoked: {}", sec.revoke.join(", ")) });
     }
     if rate > 0.0 {

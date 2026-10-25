@@ -2,6 +2,8 @@
 name = "osatura-wasm"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.97"
+publish = false
 description = "OSATURA WebAssembly module: plain extern C ABI (no wasm-bindgen) over osatura-core"
 license = "MPL-2.0"
 

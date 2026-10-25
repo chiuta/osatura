@@ -2,58 +2,93 @@
 # Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 #
 # Builds the executables on GitHub-hosted runners (the authoring environment never builds --release).
-#   * push to main        -> artifacts only (Actions tab, kept 30 days)
-#   * tag v*, or a commit on main whose message contains "[release vX.Y.Z...]"
-#                         -> the same, plus a DRAFT release with the archives, SHA-256 sums and signatures attached
-#                            (a draft is visible only to people with write access; publish it by hand).
-# Every run also signs the archives and the sums (Sigstore keyless + GitHub build provenance; job "sign").
+#   * tag v<MAJOR>.<MINOR>.<PATCH>[-prerelease]  -> builds, signs, and creates a DRAFT release with the archives,
+#                         SHA-256 sums, SBOM and signatures attached (a draft is visible only to people with write
+#                         access; publish it by hand).
+#   * manual run (workflow_dispatch) from main   -> the same artifacts, no release (Actions tab, kept 30 days).
+# Nothing else triggers this workflow: a push to a branch, a pull request or a commit message cannot produce signed
+# artifacts. The job "guard" refuses a tag that is not a valid version or whose commit is not on main, and refuses a
+# manual run from any ref but main.
+# Every run signs the archives and the sums (Sigstore keyless + GitHub build provenance; job "sign").
 # Each archive carries the licence texts, the third-party notices and the AGPL source offer note.
+# The Rust version is fixed in rust-toolchain.toml; the Linux x86_64 build runs on ubuntu-22.04 (glibc 2.35) and is
+# checked against that floor (docs/LIMITATIONS.md L-77).
 name: build
 
 on:
   push:
-    branches: [main]
     tags: ["v*"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false   # never abort a release half-way through signing
+
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  guard:
+    name: guard (tag format, tag on main, manual runs from main only)
+    if: github.ref_type == 'tag' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Version, and the tag must sit on main
+        id: ver
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            v="${GITHUB_REF_NAME#v}"
+            if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error title=release-guard::tag '$GITHUB_REF_NAME' is not vMAJOR.MINOR.PATCH[-prerelease]"
+              exit 1
+            fi
+            if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+              echo "::error title=release-guard::tag '$GITHUB_REF_NAME' points at a commit that is not on main"
+              exit 1
+            fi
+          else
+            v="$(grep -m1 '^version' osatura-cli/Cargo.toml | cut -d'"' -f2)-dev.${GITHUB_SHA::7}"
+          fi
+          echo "release version: $v"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
   cli:
     name: cli (${{ matrix.name }})
+    needs: [guard]
     runs-on: ${{ matrix.os }}
     outputs:
-      version: ${{ steps.ver.outputs.version }}   # the same in every matrix leg
+      version: ${{ needs.guard.outputs.version }}   # the same in every matrix leg
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { name: linux-x86_64, os: ubuntu-latest, exe: osatura, lib: libosatura_capi.so, slib: libosatura_capi.a }
+          - { name: linux-x86_64, os: ubuntu-22.04, exe: osatura, lib: libosatura_capi.so, slib: libosatura_capi.a }
           - { name: macos-arm64, os: macos-latest, exe: osatura, lib: libosatura_capi.dylib, slib: libosatura_capi.a }
           - { name: windows-x86_64, os: windows-latest, exe: osatura.exe, lib: osatura_capi.dll, slib: osatura_capi.lib }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
-        with:
-          toolchain: 1.97.0  # the SHA pin no longer carries the version
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       - name: Release version (embedded in the Windows file metadata)
-        id: ver
         shell: bash
         env:
-          MSG: ${{ github.event.head_commit.message }}
+          V: ${{ needs.guard.outputs.version }}
         run: |
-          v=""
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then v="${GITHUB_REF_NAME#v}"
-          else v=$(printf '%s' "$MSG" | grep -o '\[release v[0-9][^]]*\]' | head -1 | sed 's/\[release v\(.*\)\]/\1/' || true); fi
-          [ -n "$v" ] || v="$(grep -m1 '^version' osatura-cli/Cargo.toml | cut -d'"' -f2)-dev.${GITHUB_SHA::7}"
-          echo "release version: $v"
-          echo "OSATURA_VERSION=$v" >> "$GITHUB_ENV"
-          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "release version: $V"
+          echo "OSATURA_VERSION=$V" >> "$GITHUB_ENV"
       - name: Build release binaries (CLI + studio, C ABI)
         env:
           OSATURA_REQUIRE_WIN_METADATA: "1"
@@ -61,6 +96,17 @@ jobs:
           # (a fork that builds with its own workflow points to itself).
           OSATURA_SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.sha }}
         run: cargo build --release --locked -p osatura-cli -p osatura-capi -p osatura-gui
+      - name: glibc floor (Linux) - the binaries must not need a glibc newer than 2.35
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          max=$(objdump -T target/release/osatura target/release/libosatura_capi.so | grep -o 'GLIBC_[0-9][0-9.]*' | sed 's/GLIBC_//' | sort -V | tail -1)
+          echo "highest glibc symbol version needed: $max"
+          if [ "$(printf '%s\n' "$max" 2.35 | sort -V | tail -1)" != "2.35" ]; then
+            echo "::error title=glibc-floor::the Linux binaries need glibc $max, newer than 2.35 (see docs/LIMITATIONS.md L-77)"
+            exit 1
+          fi
       - name: Smoke test the release binary
         shell: bash
         env:
@@ -95,7 +141,7 @@ jobs:
           cp -r COPYRIGHT LICENSES README.md CHANGELOG.md TRADEMARK.md CODE_SIGNING_POLICY.md PRIVACY.md docs/UNINSTALL.md docs/THIRD_PARTY_NOTICES.md $d/
           printf 'OSATURA binaries: osatura (CLI + studio) is AGPL-3.0-or-later; the C library is MPL-2.0.\nCorresponding source: https://github.com/chiuta/osatura at the commit/tag of this build (%s).\n' "$GITHUB_SHA" > $d/SOURCE.txt
           if [ "${{ runner.os }}" = "Windows" ]; then 7z a $d.zip $d >/dev/null; else tar czf $d.tar.gz $d; fi
-          ls -la $d.* 
+          ls -la $d.*
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: osatura-${{ matrix.name }}
@@ -109,25 +155,22 @@ jobs:
     # Fully static Linux build (musl libc) for distributions whose glibc is older than 2.35 (RHEL/Rocky/Alma 8 and 9,
     # Debian 10 and 11, Ubuntu 18.04 and 20.04 ...). CLI + browser studio only, no C library; see docs/LIMITATIONS.md L-77.
     name: cli (linux-x86_64-musl, static)
-    runs-on: ubuntu-latest
+    needs: [guard]
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
         with:
-          toolchain: 1.97.0  # the SHA pin no longer carries the version
           targets: x86_64-unknown-linux-musl
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install && rustup target add x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       - name: musl C toolchain
         run: sudo apt-get install -y -qq musl-tools >/dev/null
       - name: Release version
         env:
-          MSG: ${{ github.event.head_commit.message }}
-        run: |
-          v=""
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then v="${GITHUB_REF_NAME#v}"
-          else v=$(printf '%s' "$MSG" | grep -o '\[release v[0-9][^]]*\]' | head -1 | sed 's/\[release v\(.*\)\]/\1/' || true); fi
-          [ -n "$v" ] || v="$(grep -m1 '^version' osatura-cli/Cargo.toml | cut -d'"' -f2)-dev.${GITHUB_SHA::7}"
-          echo "OSATURA_VERSION=$v" >> "$GITHUB_ENV"
+          V: ${{ needs.guard.outputs.version }}
+        run: echo "OSATURA_VERSION=$V" >> "$GITHUB_ENV"
       - name: Build the static binary
         env:
           OSATURA_SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.sha }}
@@ -159,13 +202,15 @@ jobs:
 
   wasm:
     name: wasm module
-    runs-on: ubuntu-latest
+    needs: [guard]
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
         with:
-          toolchain: 1.97.0  # the SHA pin no longer carries the version
           targets: wasm32-unknown-unknown
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install && rustup target add wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       - name: Build the release module
         run: cargo build --release --target wasm32-unknown-unknown -p osatura-wasm --locked
@@ -188,13 +233,14 @@ jobs:
 
   windows-authenticode:
     # Authenticode signature of osatura.exe, osatura-studio.exe and osatura_capi.dll by SignPath Foundation
-    # (CODE_SIGNING_POLICY.md). Runs only for releases and only once the repository variable SIGNPATH_ORGANIZATION_ID
-    # and the secret SIGNPATH_API_TOKEN exist; until then the release ships without an OS signature (L-74).
-    # A person approves every signing request in SignPath; the zip that comes back replaces the unsigned one.
+    # (CODE_SIGNING_POLICY.md). Runs only for tagged releases and only once the repository variable
+    # SIGNPATH_ORGANIZATION_ID and the secret SIGNPATH_API_TOKEN exist; until then the release ships without an OS
+    # signature (L-74). A person approves every signing request in SignPath; the zip that comes back replaces the
+    # unsigned one.
     name: windows authenticode (SignPath Foundation)
-    if: vars.SIGNPATH_ORGANIZATION_ID != '' && (startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && (contains(github.event.head_commit.message, '[release v0') || contains(github.event.head_commit.message, '[release v1'))))
-    needs: [cli]
-    runs-on: ubuntu-latest
+    if: vars.SIGNPATH_ORGANIZATION_ID != '' && github.ref_type == 'tag'
+    needs: [guard, cli]
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       actions: read   # SignPath reads the run and downloads the unsigned artifact
@@ -218,7 +264,7 @@ jobs:
           wait-for-completion-timeout-in-seconds: 3600
           output-artifact-directory: signed
           parameters: |
-            version: ${{ toJSON(needs.cli.outputs.version) }}
+            version: ${{ toJSON(needs.guard.outputs.version) }}
       - name: Check that the files are signed
         run: |
           ls -la signed
@@ -237,10 +283,10 @@ jobs:
     # Sigstore certificate that names this workflow, this repository and the ref; the signatures are logged in the public
     # Rekor transparency log. Verification: docs/VERIFY_DOWNLOADS.md.
     name: checksums, provenance and signatures
-    needs: [cli, cli-static, wasm, windows-authenticode]
+    needs: [guard, cli, cli-static, wasm, windows-authenticode]
     # runs when the Authenticode job succeeded or was skipped (not configured / not a release), never after a failure
-    if: ${{ !cancelled() && needs.cli.result == 'success' && needs.cli-static.result == 'success' && needs.wasm.result == 'success' && needs.windows-authenticode.result != 'failure' }}
-    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && needs.guard.result == 'success' && needs.cli.result == 'success' && needs.cli-static.result == 'success' && needs.wasm.result == 'success' && needs.windows-authenticode.result != 'failure' }}
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       id-token: write       # mint the OIDC token for the Sigstore certificate
@@ -289,7 +335,9 @@ jobs:
             cosign verify-blob --bundle "$f.sigstore.json" \
               --certificate-identity "$IDENTITY" \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com "$f"
-            gh attestation verify "$f" -R "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" >/dev/null
+            gh attestation verify "$f" -R "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --source-ref "$GITHUB_REF" >/dev/null
             echo "verified: $f"
           done
           sha256sum -c SHA256SUMS.txt
@@ -301,10 +349,10 @@ jobs:
           retention-days: 30
 
   draft-release:
-    name: draft release (tags, or "[release vX]" commits)
-    if: ${{ !cancelled() && needs.sign.result == 'success' && (startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && (contains(github.event.head_commit.message, '[release v0') || contains(github.event.head_commit.message, '[release v1')))) }}
+    name: draft release (tags only)
+    if: ${{ !cancelled() && needs.sign.result == 'success' && github.ref_type == 'tag' }}
     needs: [sign]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
     steps:
@@ -316,14 +364,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          MSG: ${{ github.event.head_commit.message }}
+          TAG: ${{ github.ref_name }}
         run: |
-          TAG="$GITHUB_REF_NAME"
-          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then TAG=$(printf '%s' "$MSG" | grep -o '\[release v[0-9][^]]*\]' | head -1 | sed 's/\[release \(.*\)\]/\1/'); fi
           echo "tag: $TAG"
-          # remove stale DRAFT releases that carry this tag or the placeholder tag 'vX' from earlier attempts
-          for t in "$TAG" vX; do
-            gh api "repos/$GH_REPO/releases?per_page=100" --jq ".[] | select(.draft and .tag_name==\"$t\") | .id" | while read -r id; do gh api -X DELETE "repos/$GH_REPO/releases/$id"; done
-          done
+          # remove a stale DRAFT release that carries this tag from an earlier attempt (published releases are never touched)
+          gh api "repos/$GH_REPO/releases?per_page=100" --jq ".[] | select(.draft and .tag_name==\"$TAG\") | .id" | while read -r id; do gh api -X DELETE "repos/$GH_REPO/releases/$id"; done
           gh release create "$TAG" dist/* --target "$GITHUB_SHA" --draft --prerelease --title "OSATURA $TAG" \
-            --notes "Pre-release builds from CI. Unverified by people on Windows and macOS; see docs/LIMITATIONS.md. Licences: CLI AGPL-3.0-or-later, libraries MPL-2.0, docs CC-BY-4.0. Each file has a Sigstore signature (.sigstore.json) and a GitHub build-provenance attestation; see docs/VERIFY_DOWNLOADS.md. Code signing policy: https://github.com/chiuta/osatura/blob/main/CODE_SIGNING_POLICY.md . Privacy: the programs send nothing over the network unless you ask them to (PRIVACY.md). Uninstall: docs/UNINSTALL.md."
+            --notes "Pre-release builds from CI. Unverified by people on Windows and macOS; see docs/LIMITATIONS.md. Licences: CLI AGPL-3.0-or-later, libraries MPL-2.0, docs CC-BY-4.0. Each file has a Sigstore signature (.sigstore.json) and a GitHub build-provenance attestation; a valid attestation proves where a file was built, not that it is a release: follow docs/VERIFY_DOWNLOADS.md (it pins the signer workflow and the tag). Code signing policy: https://github.com/chiuta/osatura/blob/main/CODE_SIGNING_POLICY.md . Privacy: the programs send nothing over the network unless you ask them to (PRIVACY.md). Uninstall: docs/UNINSTALL.md."

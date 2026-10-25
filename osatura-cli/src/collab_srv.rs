@@ -4,7 +4,7 @@
 //! stream, the optional shared token. The merge logic is in `osatura_core::collabhub` / `collab`.
 //!
 //! Security, honestly: plain HTTP (no TLS), no user accounts. With `--collab-token T` (at least 16
-//! characters) every request must carry the token, as the `X-Collab-Token` header or in the `arm_token`
+//! characters) every request must carry the token, as the `X-Collab-Token` header or in the `osatura_token`
 //! cookie that `POST /api/login` sets (HttpOnly, SameSite=Strict); the token is never accepted in the URL, so it
 //! does not end up in logs, history or Referer headers. It is compared in constant time (as SHA-256 digests),
 //! and failed attempts are slowed down per client address (from the fifth in a row the server answers 429 to that
@@ -139,8 +139,11 @@ pub struct Collab {
     clients: std::collections::HashMap<String, Attempts>,
     /// Server secret for per-participant tokens (`osatura_core::collabauth`), set with `--collab-secret-file`.
     secret: Option<String>,
-    /// Participant names whose tokens are refused although they verify (`--collab-revoke`).
+    /// Participant names whose tokens are refused although they verify (`--collab-revoke`, `POST /api/collab/revoke`).
     revoked: Vec<String>,
+    /// `--collab-host`: names of the per-participant tokens that may save the project, compact the session log and
+    /// revoke tokens. `None` = not restricted (the default, as before).
+    hosts: Option<Vec<String>>,
     /// `(requests per second, burst)` allowed per client address; `None` = no limit.
     rate: Option<(f64, f64)>,
     buckets: std::collections::HashMap<String, Bucket>,
@@ -161,6 +164,9 @@ struct Attempts {
 
 /// Most client addresses remembered; beyond that the idlest entry is dropped.
 const MAX_CLIENTS: usize = 512;
+
+/// Most participant names that can be revoked while the server runs.
+const MAX_REVOKED: usize = 1000;
 
 /// Constant-time comparison: both sides are hashed first, so neither the content nor the length leaks.
 fn ct_eq(a: &str, b: &str) -> bool {
@@ -242,6 +248,7 @@ impl Collab {
             clients: Default::default(),
             secret: None,
             revoked: Vec::new(),
+            hosts: None,
             rate: None,
             buckets: Default::default(),
             authed: None,
@@ -259,6 +266,76 @@ impl Collab {
         self.secret = Some(secret.trim().to_string());
         self.revoked = revoked;
         Ok(self)
+    }
+
+    /// Only these participant names (tokens made with `--collab-secret-file`) may save the project, compact the session log
+    /// and revoke tokens; everybody else with a valid token can still edit. Needs the secret (the names come from the tokens).
+    pub fn with_hosts(mut self, hosts: Vec<String>) -> Result<Collab, String> {
+        if self.secret.is_none() {
+            return Err("--collab-host needs --collab-secret-file (the host names come from per-participant tokens)".into());
+        }
+        if hosts.is_empty() {
+            return Err("--collab-host needs at least one participant name".into());
+        }
+        for n in &hosts {
+            collabauth::check_name(n).map_err(|e| format!("--collab-host: {e}"))?;
+        }
+        self.hosts = Some(hosts);
+        Ok(self)
+    }
+
+    /// May the request that was just authenticated save the project and compact the session log? Everyone may unless
+    /// `--collab-host` is given; with it only the named per-participant tokens may. The shared `--collab-token` and a
+    /// server that needs no credential at all are not restricted (they have no names).
+    pub fn is_host(&self) -> bool {
+        match (&self.authed, &self.hosts) {
+            (Some(name), Some(hosts)) => hosts.iter().any(|h| h == name),
+            _ => true,
+        }
+    }
+
+    /// May the request that was just authenticated revoke tokens? Stricter than `is_host`: with per-participant tokens
+    /// only the named hosts may (without `--collab-host` nobody may: restart with `--collab-revoke` instead).
+    pub fn can_administer(&self) -> bool {
+        match (&self.authed, &self.hosts) {
+            (None, _) => true,
+            (Some(name), Some(hosts)) => hosts.iter().any(|h| h == name),
+            (Some(_), None) => false,
+        }
+    }
+
+    /// Refuse the tokens of `names` from now on and remove the participants who joined under those names (an event
+    /// stream that is already open ends when its client disconnects; its next request is refused). Returns the names that
+    /// were not revoked before.
+    pub fn revoke_names(&mut self, names: &[String]) -> Result<Vec<String>, String> {
+        if self.secret.is_none() {
+            return Err("no per-participant tokens are in use (start the studio with --collab-secret-file)".into());
+        }
+        if names.is_empty() || names.len() > 64 {
+            return Err("give 1 to 64 participant names".into());
+        }
+        for n in names {
+            collabauth::check_name(n)?;
+        }
+        let mut added = Vec::new();
+        for n in names {
+            if !self.revoked.contains(n) {
+                if self.revoked.len() >= MAX_REVOKED {
+                    return Err(format!("too many revoked names ({MAX_REVOKED}): change the secret instead, which revokes every token"));
+                }
+                self.revoked.push(n.clone());
+                added.push(n.clone());
+            }
+        }
+        for u in self.hub.users_view() {
+            if let (Some(id), Some(name)) = (u["replica"].as_u64(), u["name"].as_str()) {
+                if names.iter().any(|n| n == name) {
+                    self.secrets.remove(&(id as u32));
+                    self.hub.leave(id as u32);
+                }
+            }
+        }
+        Ok(added)
     }
 
     /// Limit every client address to `per_sec` requests per second (bursts of twice that); 0 switches the limit off.
@@ -489,7 +566,7 @@ impl Collab {
         }
         self.authed = None;
         self.auth_note = None;
-        let from_cookie = cookie.and_then(|c| c.split(';').filter_map(|p| p.trim().strip_prefix("arm_token=")).next());
+        let from_cookie = cookie.and_then(|c| c.split(';').filter_map(|p| p.trim().strip_prefix("osatura_token=")).next());
         let given: Vec<&str> = [header, from_cookie].into_iter().flatten().collect();
         for t in &given {
             if self.credential_ok(t) {
@@ -530,7 +607,7 @@ impl Collab {
                 (Some(_), Ok(c)) => format!("; Max-Age={}", c.expires.saturating_sub(self.unix_now())),
                 _ => String::new(),
             };
-            json(json!({"ok": true, "name": self.authed})).with_header(("Set-Cookie".into(), format!("arm_token={given}; Path=/; HttpOnly; SameSite=Strict{max_age}{}", if https { "; Secure" } else { "" })))
+            json(json!({"ok": true, "name": self.authed})).with_header(("Set-Cookie".into(), format!("osatura_token={given}; Path=/; HttpOnly; SameSite=Strict{max_age}{}", if https { "; Secure" } else { "" })))
         } else if let Some(note) = self.auth_note.clone() {
             json(err(vec![note])).with_status_code(401)
         } else {
@@ -740,6 +817,13 @@ impl Collab {
                 self.flush();
                 Ok(json!({"ok": true}))
             }
+            (Method::Post, "/api/collab/revoke") => {
+                // `{"names": ["ana", "bob"]}`; the caller was checked by the studio (`Collab::can_administer`)
+                let v = parse(body)?;
+                let names: Vec<String> = v["names"].as_array().map(|a| a.iter().filter_map(|n| n.as_str().map(String::from)).collect()).unwrap_or_default();
+                let added = self.revoke_names(&names).map_err(|e| err(vec![e]))?;
+                Ok(json!({"ok": true, "revoked": added, "revoked_total": self.revoked.len()}))
+            }
             (Method::Post, "/api/collab/compact") => {
                 let mut out = self.hub.compact();
                 self.log_checkpoint();
@@ -811,7 +895,7 @@ mod tests {
         assert_eq!(c.check_auth(Some(&ana), None, "a"), Ok(()));
         assert_eq!(c.authed.as_deref(), Some("ana"));
         // via the cookie, as the login page sets it
-        assert_eq!(c.check_auth(None, Some(&format!("x=1; arm_token={ana}")), "a"), Ok(()));
+        assert_eq!(c.check_auth(None, Some(&format!("x=1; osatura_token={ana}")), "a"), Ok(()));
         // the secret itself and a token from another secret are no credentials
         assert_eq!(c.check_auth(Some(SECRET), None, "a"), Err(401));
         let other = osatura_core::collabauth::mint_token("ffffffffffffffffffffffffffffffff", "ana", 1_000_000, 600).unwrap();
@@ -853,6 +937,65 @@ mod tests {
         assert_eq!(c.check_auth(Some("nope"), None, "a"), Err(401));
     }
 
+    /// `--collab-host`: saving, compacting and revoking are for the named tokens only; editing is for everybody.
+    #[test]
+    fn only_the_named_hosts_may_save_compact_and_revoke() {
+        let tok = |n: &str| osatura_core::collabauth::mint_token(SECRET, n, 1_000_000, 600).unwrap();
+        let mut c = secret_collab().with_hosts(vec!["alexio".into()]).unwrap();
+        c.unix_now = Some(1_000_000);
+        assert_eq!(c.check_auth(Some(&tok("alexio")), None, "a"), Ok(()));
+        assert!(c.is_host() && c.can_administer());
+        assert_eq!(c.check_auth(Some(&tok("ana")), None, "a"), Ok(()), "a participant may still edit");
+        assert!(!c.is_host() && !c.can_administer(), "but not save, compact or revoke");
+
+        // without --collab-host nothing changes for save/compact, but revoking over HTTP stays closed to token holders
+        let mut open = secret_collab();
+        assert_eq!(open.check_auth(Some(&tok("ana")), None, "a"), Ok(()));
+        assert!(open.is_host(), "not restricted by default");
+        assert!(!open.can_administer(), "revoking needs a named host");
+
+        // the shared token and a server with no credential have no names: they are not restricted
+        let mut both = Collab::new(&json!({}), Some("s3cret-s3cret-s3cret".into())).with_secret(SECRET, vec![]).unwrap().with_hosts(vec!["alexio".into()]).unwrap();
+        both.unix_now = Some(1_000_000);
+        assert_eq!(both.check_auth(Some("s3cret-s3cret-s3cret"), None, "a"), Ok(()));
+        assert!(both.is_host() && both.can_administer(), "the shared token is the admin key");
+        let plain = Collab::new(&json!({}), None);
+        assert!(plain.is_host() && plain.can_administer());
+
+        // hosts need the secret, at least one valid name
+        assert!(Collab::new(&json!({}), None).with_hosts(vec!["alexio".into()]).is_err());
+        assert!(secret_collab().with_hosts(vec![]).is_err());
+        assert!(secret_collab().with_hosts(vec!["a b".into()]).is_err());
+    }
+
+    #[test]
+    fn revoking_a_name_refuses_its_token_at_once_and_removes_the_participant() {
+        let ana = osatura_core::collabauth::mint_token(SECRET, "ana", 1_000_000, 600).unwrap();
+        let bob = osatura_core::collabauth::mint_token(SECRET, "bob", 1_000_000, 600).unwrap();
+        let mut c = secret_collab();
+        let mut ed = editor();
+        assert_eq!(c.check_auth(Some(&ana), None, "a"), Ok(()));
+        let j = call(&mut c, &mut ed, Method::Post, "/api/collab/join", "", json!({"mode": "thin"})).unwrap();
+        assert_eq!(j["name"], "ana", "joined under the token's name");
+        assert!(c.hub.users_view().iter().any(|u| u["name"] == "ana"));
+
+        let added = c.revoke_names(&["ana".into(), "ana".into(), "cy".into()]).unwrap();
+        assert_eq!(added, vec!["ana".to_string(), "cy".to_string()], "each name once");
+        assert!(!c.hub.users_view().iter().any(|u| u["name"] == "ana"), "the revoked participant is gone");
+        assert_eq!(c.check_auth(Some(&ana), None, "a"), Err(401), "the very next request is refused");
+        assert!(c.auth_note().unwrap().contains("revoked"));
+        assert_eq!(c.check_auth(Some(&bob), None, "a"), Ok(()), "other tokens still work");
+        // nothing to revoke without per-participant tokens; bad arguments are refused
+        assert!(Collab::new(&json!({}), Some("s3cret-s3cret-s3cret".into())).revoke_names(&["ana".into()]).is_err());
+        assert!(c.revoke_names(&[]).is_err());
+        assert!(c.revoke_names(&["a b".into()]).is_err());
+        assert!(c.revoke_names(&(0..65).map(|i| format!("n{i}")).collect::<Vec<_>>()).is_err());
+        // the HTTP route does the same
+        let r = call(&mut c, &mut ed, Method::Post, "/api/collab/revoke", "", json!({"names": ["bob"]})).unwrap();
+        assert_eq!((r["ok"].as_bool(), r["revoked"].clone()), (Some(true), json!(["bob"])));
+        assert_eq!(c.check_auth(Some(&bob), None, "a"), Err(401));
+    }
+
     #[test]
     fn login_with_a_participant_token_sets_a_cookie_that_expires_with_it_and_join_uses_the_token_name() {
         let mut c = secret_collab();
@@ -860,7 +1003,7 @@ mod tests {
         let r = c.login(format!(r#"{{"token":"{t}"}}"#).as_bytes(), "a", false);
         assert_eq!(r.status, 200);
         let cookie = r.headers.iter().find(|(k, _)| k == "Set-Cookie").map(|(_, v)| v.clone()).unwrap();
-        assert!(cookie.starts_with(&format!("arm_token={t};")) && cookie.contains("HttpOnly") && cookie.contains("Max-Age=600"), "{cookie}");
+        assert!(cookie.starts_with(&format!("osatura_token={t};")) && cookie.contains("HttpOnly") && cookie.contains("Max-Age=600"), "{cookie}");
         assert_eq!(c.login(br#"{"token":"wrong"}"#, "a", false).status, 401);
         c.unix_now = Some(2_000_000);
         let r = c.login(format!(r#"{{"token":"{t}"}}"#).as_bytes(), "a", false);
@@ -924,8 +1067,8 @@ mod tests {
         assert_eq!(c.check_auth(Some("s3cret-s3cret-s3cre"), None, "a"), Err(401), "a prefix is not the token");
         assert_eq!(c.check_auth(Some("s3cret-s3cret-s3cretx"), Some("a=b"), "a"), Err(401));
         assert_eq!(c.check_auth(Some("s3cret-s3cret-s3cret"), None, "a"), Ok(()));
-        assert_eq!(c.check_auth(None, Some("x=1; arm_token=s3cret-s3cret-s3cret; y=2"), "a"), Ok(()));
-        assert_eq!(c.check_auth(None, Some("arm_token=nope"), "a"), Err(401));
+        assert_eq!(c.check_auth(None, Some("x=1; osatura_token=s3cret-s3cret-s3cret; y=2"), "a"), Ok(()));
+        assert_eq!(c.check_auth(None, Some("osatura_token=nope"), "a"), Err(401));
         assert_eq!(Collab::new(&json!({}), None).check_auth(None, None, "a"), Ok(()));
     }
 
@@ -945,11 +1088,11 @@ mod tests {
         let r = c.login(br#"{"token":"0123456789abcdef"}"#, "a", false);
         assert_eq!(r.status, 200);
         let cookie = r.headers.iter().find(|(k, _)| k == "Set-Cookie").map(|(_, v)| v.clone()).unwrap();
-        assert_eq!(cookie, "arm_token=0123456789abcdef; Path=/; HttpOnly; SameSite=Strict");
+        assert_eq!(cookie, "osatura_token=0123456789abcdef; Path=/; HttpOnly; SameSite=Strict");
         // over HTTPS (a TLS proxy in front, --public-origin https://...) the cookie is Secure as well
         let r = c.login(br#"{"token":"0123456789abcdef"}"#, "a", true);
         let cookie = r.headers.iter().find(|(k, _)| k == "Set-Cookie").map(|(_, v)| v.clone()).unwrap();
-        assert_eq!(cookie, "arm_token=0123456789abcdef; Path=/; HttpOnly; SameSite=Strict; Secure");
+        assert_eq!(cookie, "osatura_token=0123456789abcdef; Path=/; HttpOnly; SameSite=Strict; Secure");
         assert_eq!(c.login(br#"{"token":"wrong"}"#, "a", false).status, 401);
         assert_eq!(c.login(b"not json", "a", false).status, 401);
     }
@@ -974,10 +1117,10 @@ mod tests {
         // a wrong COOKIE counts as a failed attempt as well (it used to be a free way to guess)
         let mut d = Collab::new(&json!({}), Some(T.into()));
         for _ in 0..5 {
-            assert_eq!(d.check_auth(None, Some("arm_token=old"), "10.0.0.3"), Err(401));
+            assert_eq!(d.check_auth(None, Some("osatura_token=old"), "10.0.0.3"), Err(401));
         }
-        assert_eq!(d.check_auth(None, Some("arm_token=old"), "10.0.0.3"), Err(429));
-        assert_eq!(d.check_auth(None, Some("arm_token=old"), "10.0.0.4"), Err(401), "other addresses are not locked");
+        assert_eq!(d.check_auth(None, Some("osatura_token=old"), "10.0.0.3"), Err(429));
+        assert_eq!(d.check_auth(None, Some("osatura_token=old"), "10.0.0.4"), Err(401), "other addresses are not locked");
         // no credential at all (the first page load) is no attempt
         let mut e = Collab::new(&json!({}), Some(T.into()));
         for _ in 0..20 {

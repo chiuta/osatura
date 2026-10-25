@@ -266,11 +266,15 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
             if !revoke.is_empty() && secret.is_none() {
                 return Err("--collab-revoke needs --collab-secret-file (it revokes per-participant tokens)".into());
             }
+            let hosts: Vec<String> = a.opts.get("--collab-host").map(|v| v.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect()).unwrap_or_default();
+            if a.opts.contains_key("--collab-host") && (hosts.is_empty() || secret.is_none()) {
+                return Err("--collab-host NAMES needs --collab-secret-file and at least one participant name (the host names come from per-participant tokens)".into());
+            }
             let rate = match a.opts.get("--collab-rate") {
                 Some(v) => Some(v.parse::<f64>().ok().filter(|r| r.is_finite() && *r >= 0.0 && *r <= 100000.0).ok_or_else(|| format!("--collab-rate needs a number of requests per second (0 = off), got '{v}'"))?),
                 None => None,
             };
-            let security = studio::Security { token, secret, revoke, rate };
+            let security = studio::Security { token, secret, revoke, hosts, rate };
             let allow_hosts: Vec<String> = a.opts.get("--allow-host").map(|v| v.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect()).unwrap_or_default();
             if a.flags.iter().any(|f| f == "--collab-nosync") && !a.opts.contains_key("--collab-log") {
                 return Err("--collab-nosync only changes how --collab-log is flushed; it needs --collab-log LOG (nothing was started)".into());

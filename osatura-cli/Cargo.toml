@@ -2,6 +2,8 @@
 name = "osatura-cli"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.97"
+publish = false
 description = "OSATURA command-line tools and web studio (independently implemented; AGPL-3.0-or-later)"
 license = "AGPL-3.0-or-later"
 
