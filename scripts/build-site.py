@@ -111,10 +111,82 @@ def main():
     (data / "app.js").write_text(app, encoding="utf-8")
     v = hashlib.sha1(app.encode()).hexdigest()[:10]
     out = out[:m.start()] + f'<script src="site/data/app.js?v={v}" defer></script>\n' + out[m.end():]
-    (ROOT / "index.html").write_text(out, encoding="utf-8")
+    write_pages(out, ui, demo_i18n(tpl))
     size = sum(len(t.encode()) for t in files.values()) / 1024
     print(f"index.html: {len(out)/1024:.0f} KiB; site/data: {len(files)} files, {size:.0f} KiB; {len(docs)} documents")
 
+
+
+SITE = "https://osatura.chiuta.ro/"
+CSP = ("default-src 'self'; script-src 'self' {h}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; "
+       "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'")
+
+
+def demo_i18n(tpl):
+    m = re.search(r"/\*demo:i18n\*/Object\.entries\(([\s\S]*?)\)\.forEach", tpl)
+    return json.loads(m.group(1)) if m else {}
+
+
+def attr(v):
+    return str(v).replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
+
+
+def prerender(html, t, lang, langs):
+    """Static text for one language: the same values applyLang() would set, so crawlers and no-JS readers see them."""
+    root = "" if lang == "en" else "../"
+    url = SITE + ("" if lang == "en" else f"{lang}/")
+    filled = 0
+
+    def fill(m):
+        nonlocal filled
+        k = m.group(3)
+        if k not in t:
+            return m.group(0)
+        filled += 1
+        return m.group(1) + str(t[k]) + m.group(4)
+    html = re.sub(r'(<(\w+)\b[^>]*\sdata-i="(\w+)"[^>]*>)(</\2>)', fill, html)
+    html = re.sub(r'(\sdata-ph="(\w+)")', lambda m: m.group(1) + (f' placeholder="{attr(t[m.group(2)])}"' if m.group(2) in t else ""), html)
+    for key in ("vy", "vx"):
+        html = re.sub(rf'(<ul\b[^>]*\sid="{key}"[^>]*>)(</ul>)', lambda m: m.group(1) + "".join(f"<li>{x}</li>" for x in t[key]) + m.group(2), html)
+    html = html.replace('<html lang="en">', f'<html lang="{lang}">', 1)
+    html = re.sub(r"<title>[^<]*</title>", f"<title>{attr(t['metaTitle'])}</title>", html, count=1)
+    html = re.sub(r'(<meta name="description" content=")[^"]*', lambda m: m.group(1) + attr(t["metaDesc"]), html, count=1)
+    html = re.sub(r'(<meta property="og:(?:title|description)" content=")[^"]*',
+                  lambda m: m.group(1) + attr(t["metaTitle"] if "title" in m.group(1) else t["metaDesc"]), html)
+    html = re.sub(r'(<meta name="twitter:(?:title|description)" content=")[^"]*',
+                  lambda m: m.group(1) + attr(t["metaTitle"] if "title" in m.group(1) else t["metaDesc"]), html)
+    html = html.replace(f'<link rel="canonical" href="{SITE}">', f'<link rel="canonical" href="{url}">', 1)
+    html = html.replace(f'<meta property="og:url" content="{SITE}">', f'<meta property="og:url" content="{url}">', 1)
+    alt = "".join(f'<link rel="alternate" hreflang="{l}" href="{SITE}{"" if l == "en" else l + "/"}">\n' for l in langs)
+    alt += f'<link rel="alternate" hreflang="x-default" href="{SITE}">\n'
+    html = html.replace('<link rel="canonical"', alt + '<link rel="canonical"', 1)
+    html = html.replace("EN ▾</button>", f"{lang.upper()} ▾</button>")
+    boot = f"window.OSA_ROOT='{root}'" + ("" if lang == "en" else f";window.OSA_LANG='{lang}'")
+    sha = "'sha256-" + __import__("base64").b64encode(hashlib.sha256(boot.encode()).digest()).decode() + "'"
+    html = html.replace("/*__CSP__*/", CSP.format(h=sha), 1)
+    html = html.replace('<script src="site/data/app.js', f"<script>{boot}</script>\n" + '<script src="site/data/app.js', 1)
+    if root:
+        html = re.sub(r'(\s(?:src|href)=")(?=(?:site|docs|try)/)', r"\1" + root, html)
+    return html, filled
+
+
+def write_pages(html, ui, demo):
+    langs = list(ui)
+    langs.sort(key=lambda l: (l != "en", l))
+    total = len(re.findall(r'\sdata-i="', html))
+    for lang in langs:
+        t = dict(ui["en"]); t.update(demo.get("en", {}))
+        if lang != "en":
+            t.update(ui[lang]); t.update(demo.get(lang, {}))
+        page, filled = prerender(html, t, lang, langs)
+        if filled < total:
+            sys.exit(f"{lang}: only {filled} of {total} data-i elements were filled")
+        dest = ROOT / ("index.html" if lang == "en" else f"{lang}/index.html")
+        dest.parent.mkdir(exist_ok=True)
+        dest.write_text(page, encoding="utf-8")
+    urls = [SITE] + [f"{SITE}{l}/" for l in langs if l != "en"] + [f"{SITE}try/"]
+    (ROOT / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+                                      + "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls) + "</urlset>\n", encoding="utf-8")
 
 def dump(obj):
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))

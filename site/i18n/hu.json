@@ -5,7 +5,7 @@
  "n4": "Formátumok",
  "n5": "Állapot",
  "n6": "Licencek",
- "pill": "alfa · v0.1.0-alpha.3 tervezet · Rust · nyílt formátumok",
+ "pill": "alfa · v0.1.0-alpha.4 előzetes kiadás · Rust · nyílt formátumok",
  "sub": "2D vektoros rigging és animáció kódként: csontok, IK, skinning, deformerek, futtatókörnyezet és böngészős stúdió — determinisztikusan és szkriptelhetően.",
  "cta1": "Próbáld ki a rigelést",
  "cta3": "Dokumentáció olvasása",
@@ -86,7 +86,7 @@
  "a1": "Motor, formátumok, eszközök és a stabil Rust homlokzat.",
  "a2": "Az osatura bináris, a böngészős stúdió és az együttműködési szerver.",
  "a3": "C ABI: fejléc, megosztott és statikus könyvtár; ASan/UBSan alatt is futtatva.",
- "a4": "WebAssembly ABI és JS-burkoló. CI-ben épül és Node alatt tesztelt; böngészőben még nem futott.",
+ "a4": "WebAssembly ABI és JS-burkoló. CI-ben épül és Node alatt tesztelt; fej nélküli Chromiumban fut a „kipróbálás” oldalon.",
  "a5": "Opcionális wgpu renderelő, nem alapértelmezett tag.",
  "le": "Licencelés",
  "lh": "Könyvtárak, amelyeket beépíthetsz, egy stúdió, amely nyitott marad",
@@ -109,11 +109,11 @@
   "A CLI, a Rust homlokzat és a C ABI a dokumentált példákkal futtatva, ASan/UBSan alatt is"
  ],
  "vx": [
-  "A WebAssembly-modul böngészőben még soha nem futott; sebessége és memóriahasználata nincs megmérve",
+  "A WebAssembly-modul fut fej nélküli Chromiumban (a „kipróbálás” oldal); sebessége és memóriahasználata nincs megmérve, más böngészőben senki sem próbálta",
   "A Windows-indítót és az ablakos alkalmazást csak egy ember próbálta ki (Windows 11, alpha.2); macOS-en senki nem használta; a binárisok nincsenek aláírva",
   "A stúdiót ember nem használta éles munkában, és nem is Chromiumtól eltérő böngészőben",
   "Valódi GPU-t, webkamerát, fényképet vagy mozgásrögzítő fájlt soha nem használtak; nincs biztonsági audit, jogi felülvizsgálat vagy szabadalmi keresés",
-  "Az OSATURA nevet (az ARMATURA-ból átnevezve egy uniós nyilvántartásbeli ütközés után) csak az EUIPO-nál kerestük; az OSIM, a WIPO és egy ügyvéd véleménye még hátra van"
+  "Az OSATURA nevet csak az EUIPO-nál kerestük; az OSIM, a WIPO és egy ügyvéd véleménye még hátra van"
  ],
  "nDocs": "Dok.",
  "nStudio": "Stúdió",
@@ -197,5 +197,9 @@
  "trMissing": "Még nincs lefordítva — az angol eredeti látható.",
  "langLabel": "Nyelv",
  "a6": "A stúdió natív ablakban (Windows, macOS). CI-ben lefordítva és önteszttel ellenőrizve; az ablakot és az exportokat egy ember kipróbálta Windows 11-en (alpha.2); a „Mentés másként” párbeszédablak tesztelés nélküli.",
- "cta4": "Letöltés (kiadások)"
+ "cta4": "Letöltés (kiadások)",
+ "ctaTry": "Próbáld ki a böngészőben",
+ "instSrc": "vagy fordítsd forrásból:",
+ "supWho": "Mindkét adományoldal és a cím a szerzőé, Alexióé.",
+ "ptNote": "◐ részleges: működik, a FEATURES.md és a LIMITATIONS.md korlátaival"
 }
