@@ -52,7 +52,8 @@ Arhivele precompilate, după ce proprietarul publică lansarea ciornă, se găse
 |---|---|
 | `osatura-windows-x86_64.zip` | `osatura.exe` (linia de comandă + serverul studioului), `osatura-studio.exe` (aplicația cu fereastră), biblioteca C și header-ul, licențe, notificări despre terți |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (doar Apple silicon), biblioteca C și header-ul, licențe, notificări |
-| `osatura-linux-x86_64.tar.gz` | `osatura`, biblioteca C și header-ul, licențe, notificări (fără aplicație cu fereastră: folosește `osatura studio` și un browser) |
+| `osatura-linux-x86_64.tar.gz` | `osatura`, biblioteca C și header-ul, licențe, notificări (fără aplicație cu fereastră: folosește `osatura studio` și un browser); necesită glibc 2.35+ (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
+| `osatura-linux-x86_64-musl.tar.gz` | `osatura` static (musl libc, nu are nevoie de biblioteci de sistem) pentru distribuții mai vechi, de exemplu RHEL/Rocky/Alma 8 și 9, Debian 10 și 11, Ubuntu 20.04; fără biblioteca C; cu circa 5-50 % mai lent decât build-ul glibc |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (rulat doar în Chromium fără interfață, vezi [docs/WASM.md](docs/WASM.md)) |
 | `SHA256SUMS.txt` | verifică fiecare descărcare față de el |
 

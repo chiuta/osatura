@@ -52,7 +52,8 @@ Les archives précompilées, une fois que le propriétaire a publié la version 
 |---|---|
 | `osatura-windows-x86_64.zip` | `osatura.exe` (ligne de commande + serveur du studio), `osatura-studio.exe` (application à fenêtre), bibliothèque C et en-tête, licences, mentions des composants tiers |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (Apple Silicon uniquement), bibliothèque C et en-tête, licences, mentions |
-| `osatura-linux-x86_64.tar.gz` | `osatura`, bibliothèque C et en-tête, licences, mentions (pas d'application à fenêtre : utilisez `osatura studio` et un navigateur) |
+| `osatura-linux-x86_64.tar.gz` | `osatura`, bibliothèque C et en-tête, licences, mentions (pas d'application à fenêtre : utilisez `osatura studio` et un navigateur) ; nécessite glibc 2.35+ (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
+| `osatura-linux-x86_64-musl.tar.gz` | `osatura` statique (musl libc, aucune bibliothèque système requise) pour les distributions plus anciennes comme RHEL/Rocky/Alma 8 et 9, Debian 10 et 11, Ubuntu 20.04 ; sans bibliothèque C ; environ 5 à 50 % plus lent que le build glibc |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, page de démonstration `index.html` (exécutée seulement dans Chromium sans interface, voir [docs/WASM.md](docs/i18n/fr/WASM.md)) |
 | `SHA256SUMS.txt` | vérifiez chaque téléchargement avec ce fichier |
 
