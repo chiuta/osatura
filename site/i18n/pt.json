@@ -5,7 +5,7 @@
  "n4": "Formatos",
  "n5": "Estado",
  "n6": "Licenças",
- "pill": "alfa · rascunho v0.1.0-alpha.3 · Rust · formatos abertos",
+ "pill": "alfa · pré-lançamento v0.1.0-alpha.4 · Rust · formatos abertos",
  "sub": "Rigging e animação vetorial 2D como código: ossos, IK, skinning, deformadores, um runtime e um estúdio no navegador — determinísticos e programáveis.",
  "cta1": "Experimentar o rig",
  "cta3": "Ler a documentação",
@@ -86,7 +86,7 @@
  "a1": "Motor, formatos, ferramentas e a fachada Rust estável.",
  "a2": "O binário osatura, o estúdio no navegador e o servidor de colaboração.",
  "a3": "ABI C: cabeçalho, biblioteca compartilhada e estática; também executada sob ASan/UBSan.",
- "a4": "ABI WebAssembly e wrapper JS. Construído na CI e testado com Node; ainda não executado em um navegador.",
+ "a4": "ABI WebAssembly e wrapper JS. Construído na CI e testado com Node; roda no Chromium headless na página «experimentar».",
  "a5": "Renderizador wgpu opcional, não é membro padrão.",
  "le": "Licenciamento",
  "lh": "Bibliotecas que você pode vincular, um estúdio que continua aberto",
@@ -109,11 +109,11 @@
   "CLI, fachada Rust e ABI C executadas com os exemplos documentados, também sob ASan/UBSan"
  ],
  "vx": [
-  "O módulo WebAssembly nunca foi executado em um navegador; velocidade e memória não foram medidas",
+  "O módulo WebAssembly roda no Chromium headless (a página «experimentar»); velocidade e memória não foram medidas e ninguém o testou em outros navegadores",
   "Apenas uma pessoa experimentou o lançador do Windows e o aplicativo com janela (Windows 11, alpha.2); ninguém os usou no macOS; os binários não são assinados",
   "O estúdio nunca foi usado por uma pessoa em produção, nem em um navegador diferente do Chromium",
   "Nunca se usou GPU real, webcam, fotografia ou arquivo de captura de movimento; sem auditoria de segurança, revisão jurídica ou busca de patentes",
-  "O nome OSATURA (renomeado de ARMATURA após um conflito no registro da UE) foi pesquisado apenas no EUIPO; OSIM, OMPI e o parecer de um advogado continuam pendentes"
+  "O nome OSATURA foi pesquisado apenas no EUIPO; OSIM, OMPI e o parecer de um advogado continuam pendentes"
  ],
  "nDocs": "Docs",
  "nStudio": "Estúdio",
@@ -197,5 +197,9 @@
  "trMissing": "Ainda não traduzido — a mostrar o original em inglês.",
  "langLabel": "Idioma",
  "a6": "O estúdio em uma janela nativa (Windows, macOS). Compilado e autotestado na CI; a janela e as exportações foram experimentadas por uma pessoa no Windows 11 (alpha.2); a caixa «Salvar como» não foi testada.",
- "cta4": "Baixar (versões)"
+ "cta4": "Baixar (versões)",
+ "ctaTry": "Experimente no navegador",
+ "instSrc": "ou compile a partir do código:",
+ "supWho": "As duas páginas de doação e o endereço pertencem ao autor, Alexio.",
+ "ptNote": "◐ parcial: funciona, com os limites de FEATURES.md e LIMITATIONS.md"
 }

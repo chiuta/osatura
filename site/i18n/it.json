@@ -5,7 +5,7 @@
  "n4": "Formati",
  "n5": "Stato",
  "n6": "Licenze",
- "pill": "alpha · bozza v0.1.0-alpha.3 · Rust · formati aperti",
+ "pill": "alpha · pre-release v0.1.0-alpha.4 · Rust · formati aperti",
  "sub": "Rigging e animazione vettoriale 2D come codice: ossa, IK, skinning, deformatori, un runtime e uno studio nel browser — deterministici e scriptabili.",
  "cta1": "Prova il rig",
  "cta3": "Leggi la documentazione",
@@ -86,7 +86,7 @@
  "a1": "Motore, formati, strumenti e la facciata Rust stabile.",
  "a2": "Il binario osatura, lo studio nel browser e il server di collaborazione.",
  "a3": "ABI C: header, libreria condivisa e statica; eseguita anche sotto ASan/UBSan.",
- "a4": "ABI WebAssembly e wrapper JS. Costruito in CI e testato con Node; non ancora eseguito in un browser.",
+ "a4": "ABI WebAssembly e wrapper JS. Costruito in CI e testato con Node; funziona in Chromium headless nella pagina «prova».",
  "a5": "Renderer wgpu opzionale, non membro predefinito.",
  "le": "Licenze",
  "lh": "Librerie che puoi collegare, uno studio che resta aperto",
@@ -109,11 +109,11 @@
   "CLI, facciata Rust e ABI C eseguite con gli esempi documentati, anche sotto ASan/UBSan"
  ],
  "vx": [
-  "Il modulo WebAssembly non è mai stato eseguito in un browser; velocità e memoria non sono misurate",
+  "Il modulo WebAssembly funziona in Chromium headless (la pagina «prova»); velocità e memoria non sono misurate e nessuno l’ha provato in altri browser",
   "Una sola persona ha provato il launcher Windows e l’app con finestra (Windows 11, alpha.2); nessuno li ha usati su macOS; i binari non sono firmati",
   "Lo studio non è mai stato usato da una persona in produzione, né in un browser diverso da Chromium",
   "Nessuna GPU reale, webcam, fotografia o file di motion capture è mai stato usato; nessun audit di sicurezza, revisione legale o ricerca di brevetti",
-  "Il nome OSATURA (ribattezzato da ARMATURA dopo un conflitto nel registro UE) è stato cercato solo all’EUIPO; OSIM, OMPI e il parere di un avvocato restano da fare"
+  "Il nome OSATURA è stato cercato solo all’EUIPO; OSIM, OMPI e il parere di un avvocato restano da fare"
  ],
  "nDocs": "Docs",
  "nStudio": "Studio",
@@ -197,5 +197,9 @@
  "trMissing": "Non ancora tradotto — viene mostrato l'originale inglese.",
  "langLabel": "Lingua",
  "a6": "Lo studio in una finestra nativa (Windows, macOS). Compilato e autotestato in CI; la finestra e le esportazioni sono state provate da una persona su Windows 11 (alpha.2); la finestra «Salva con nome» non è testata.",
- "cta4": "Scarica (release)"
+ "cta4": "Scarica (release)",
+ "ctaTry": "Provalo nel browser",
+ "instSrc": "oppure compila dai sorgenti:",
+ "supWho": "Entrambe le pagine di donazione e l’indirizzo appartengono all’autore, Alexio.",
+ "ptNote": "◐ parziale: funziona, con i limiti elencati in FEATURES.md e LIMITATIONS.md"
 }

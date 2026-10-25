@@ -5,7 +5,7 @@
  "n4": "Formate",
  "n5": "Status",
  "n6": "Lizenzen",
- "pill": "Alpha · Entwurf v0.1.0-alpha.3 · Rust · offene Formate",
+ "pill": "Alpha · Vorabversion v0.1.0-alpha.4 · Rust · offene Formate",
  "sub": "2D-Vektor-Rigging und -Animation als Code: Knochen, IK, Skinning, Deformer, eine Laufzeitumgebung und ein Studio im Browser — deterministisch und skriptbar.",
  "cta1": "Rig ausprobieren",
  "cta3": "Dokumentation lesen",
@@ -86,7 +86,7 @@
  "a1": "Engine, Formate, Werkzeuge und die stabile Rust-Fassade.",
  "a2": "Die Binärdatei osatura, das Studio im Browser und der Kollaborationsserver.",
  "a3": "C-ABI: Header, dynamische und statische Bibliothek; auch unter ASan/UBSan ausgeführt.",
- "a4": "WebAssembly-ABI und JS-Wrapper. In der CI gebaut und unter Node getestet; noch nicht in einem Browser ausgeführt.",
+ "a4": "WebAssembly-ABI und JS-Wrapper. In der CI gebaut und unter Node getestet; läuft in Headless-Chromium auf der Seite „Ausprobieren“.",
  "a5": "Optionaler wgpu-Renderer, kein Standardmitglied.",
  "le": "Lizenzierung",
  "lh": "Bibliotheken zum Einbinden, ein Studio, das offen bleibt",
@@ -109,11 +109,11 @@
   "CLI, Rust-Fassade und C-ABI wurden mit den dokumentierten Beispielen ausgeführt, auch unter ASan/UBSan"
  ],
  "vx": [
-  "Das WebAssembly-Modul wurde nie in einem Browser ausgeführt; Geschwindigkeit und Speicher sind nicht gemessen",
+  "Das WebAssembly-Modul läuft in Headless-Chromium (die Seite „Ausprobieren“); Geschwindigkeit und Speicher sind nicht gemessen, in anderen Browsern hat es niemand getestet",
   "Nur eine Person hat den Windows-Starter und die Fenster-App ausprobiert (Windows 11, alpha.2); unter macOS hat sie niemand benutzt; die Binärdateien sind nicht signiert",
   "Das Studio wurde nie von einer Person produktiv benutzt, auch nicht in einem anderen Browser als Chromium",
   "Nie wurde eine echte GPU, Webcam, Fotografie oder Motion-Capture-Datei benutzt; kein Sicherheitsaudit, keine Rechtsprüfung, keine Patentrecherche",
-  "Der Name OSATURA (umbenannt von ARMATURA nach einem Konflikt im EU-Register) wurde nur beim EUIPO recherchiert; OSIM, WIPO und eine anwaltliche Einschätzung stehen noch aus"
+  "Der Name OSATURA wurde nur beim EUIPO recherchiert; OSIM, WIPO und eine anwaltliche Einschätzung stehen noch aus"
  ],
  "nDocs": "Doku",
  "nStudio": "Studio",
@@ -197,5 +197,9 @@
  "trMissing": "Noch nicht übersetzt — das englische Original wird angezeigt.",
  "langLabel": "Sprache",
  "a6": "Das Studio in einem nativen Fenster (Windows, macOS). In der CI kompiliert und selbstgetestet; Fenster und Exporte hat eine Person unter Windows 11 ausprobiert (alpha.2); der Dialog „Speichern unter“ ist ungetestet.",
- "cta4": "Herunterladen (Releases)"
+ "cta4": "Herunterladen (Releases)",
+ "ctaTry": "Im Browser ausprobieren",
+ "instSrc": "oder aus dem Quellcode bauen:",
+ "supWho": "Beide Spendenseiten und die Adresse gehören dem Autor, Alexio.",
+ "ptNote": "◐ teilweise: funktioniert, mit den Grenzen aus FEATURES.md und LIMITATIONS.md"
 }

@@ -5,7 +5,7 @@
  "n4": "Formats",
  "n5": "Status",
  "n6": "Licences",
- "pill": "alpha · v0.1.0-alpha.3 draft · Rust · open formats",
+ "pill": "alpha · v0.1.0-alpha.4 prerelease · Rust · open formats",
  "sub": "2D vector rigging and animation as code: bones, IK, skinning, deformers, a runtime and a browser studio — deterministic and scriptable.",
  "cta1": "Try the rig",
  "cta3": "Read the docs",
@@ -86,7 +86,7 @@
  "a1": "Engine, formats, tools and the stable Rust facade.",
  "a2": "The osatura binary, the browser studio and the collaboration server.",
  "a3": "C ABI: header, shared and static library; also run under ASan/UBSan.",
- "a4": "WebAssembly ABI and JS wrapper. Built in CI and tested under Node; not yet run in a browser.",
+ "a4": "WebAssembly ABI and JS wrapper. Built in CI and tested under Node; runs in headless Chromium on the “try it” page.",
  "a5": "Optional wgpu renderer, not a default member.",
  "le": "Licensing",
  "lh": "Libraries you can link, a studio that stays open",
@@ -109,11 +109,11 @@
   "CLI, Rust facade and C ABI run with the documented examples, also under ASan/UBSan"
  ],
  "vx": [
-  "The WebAssembly module has never been run in a browser; its speed and memory are unmeasured",
+  "The WebAssembly module runs in headless Chromium (the “try it” page); no person has measured its speed or memory, or tried it in other browsers",
   "Only one person has tried the Windows launcher and the window app (Windows 11, alpha.2); nobody has used them on macOS; the binaries are not code-signed",
   "The studio was never used by a person in production, nor in a browser other than Chromium",
   "No real GPU, webcam, photograph or motion-capture file was ever used; no security audit, lawyer review or patent search",
-  "The name OSATURA (renamed from ARMATURA after a conflict in the EU register) was searched only at the EUIPO; OSIM, WIPO and a lawyer’s opinion are still open"
+  "The name OSATURA was searched only at the EUIPO; OSIM, WIPO and a lawyer’s opinion are still open"
  ],
  "nDocs": "Docs",
  "nStudio": "Studio",
@@ -197,5 +197,9 @@
  "trMissing": "Not translated yet — showing the English original.",
  "langLabel": "Language",
  "a6": "The studio in a native window (Windows, macOS). Compiled and self-tested in CI; the window and its exports were tried by one person on Windows 11 (alpha.2); the Save-as dialog is untested.",
- "cta4": "Download (releases)"
+ "cta4": "Download (releases)",
+ "ctaTry": "Try it in your browser",
+ "instSrc": "or build from source:",
+ "supWho": "Both donation pages and the address belong to the author, Alexio.",
+ "ptNote": "◐ partial: works, with the limits listed in FEATURES.md and LIMITATIONS.md"
 }
