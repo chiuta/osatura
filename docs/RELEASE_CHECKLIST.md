@@ -42,7 +42,12 @@
 ## 6. Release artefacts
 
 - [x] The release binaries are built on GitHub-hosted runners (`release.yml`) and `SHA256SUMS.txt` is generated in the draft. **Open:** review the draft `v0.1.0-alpha.3`, tick "pre-release", publish it, and tag the commit (the tag is created with the release).
-- [ ] Decide on code signing (Windows Authenticode certificate, Apple Developer ID and notarisation); until then the downloads are flagged as unsigned (L-74).
+- [x] Provenance signing: Sigstore keyless signatures and GitHub build-provenance attestations for every release file (job `sign` in `release.yml`, verified in CI).
+- [x] SignPath Foundation prerequisites in the repository: CODE_SIGNING_POLICY.md (linked from the README, the site and every release), PRIVACY.md, docs/UNINSTALL.md, no dual licensing (LICENSING.md), Windows file metadata (`build.rs`, checked in release.yml), artifact configuration in `.signpath/`, job `windows-authenticode`.
+- [ ] Owner: enable two-factor authentication on GitHub (required by SignPath for every team member).
+- [ ] Owner: publish a release (SignPath requires the project to be released in the form that will be signed), then apply at https://signpath.org/apply.
+- [ ] After acceptance: in SignPath create project `osatura`, signing policy `release-signing`, artifact configuration `windows-zip` (paste `.signpath/artifact-configuration.xml`), link the GitHub repository as trusted build system; in GitHub add the repository variable `SIGNPATH_ORGANIZATION_ID` and the secret `SIGNPATH_API_TOKEN`. The next release is then signed after manual approval.
+- [ ] macOS: Apple Developer ID and notarisation (not planned yet); until then Gatekeeper warns (L-74).
 - [ ] Attach the corresponding source for the AGPL parts (the tag itself is enough; keep it available as long as you distribute binaries).
 - [x] `docs/THIRD_PARTY_NOTICES.md` is regenerated (24 Oct 2026) and each archive carries it; regenerate again with `scripts/licence-audit.sh` before every later release.
 - [ ] Crates.io / npm / package registries: check the names are free and the licence fields match `LICENSING.md`.

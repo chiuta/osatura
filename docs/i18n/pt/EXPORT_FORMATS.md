@@ -209,7 +209,7 @@ $ osatura export small.json out.json --report rep.json
 wrote out.json
 warning: [variable-width-stroke] ink: variable-width stroke profiles are not supported by Lottie; the constant base width is used
 warning: [gradient-anisotropic] shadow: a gradient on a layer with non-uniform scale or skew is approximated (Lottie gradients are not sheared)
-$ osatura export small.json out.lottie       # a zip: manifest.json + animations/animation.json
+$ osatura export small.json out.lottie       # a zip: manifest.json + a/animation.json
 ```
 
 ### Como é construído
@@ -256,9 +256,9 @@ os tamanhos estão em unidades do palco (LIMITATIONS L-23).
 
 ### dotLottie (`.lottie`)
 
-Um zip com `manifest.json` (`{"animations":[{"autoplay":true,"id":"animation","loop":true}],"generator":"OSATURA","version":"1"}`) e
-`animations/animation.json` (o mesmo Lottie acima, compactado com deflate: 46,843 bytes viraram um arquivo de 11,515 bytes). `--report` funciona da mesma
-forma. **Importar** um `.lottie` não é suportado (`import-lottie` precisa do JSON; descompacte `animations/animation.json` antes).
+Um zip com `manifest.json` (`{"animations":[{"id":"animation"}],"generator":"OSATURA","version":"2"}`) e
+`a/animation.json` (o mesmo Lottie acima, compactado com deflate: 46,843 bytes viraram um arquivo de 11,515 bytes). `--report` funciona da mesma
+forma. **Importar** um `.lottie` não é suportado (`import-lottie` precisa do JSON; descompacte `a/animation.json` antes).
 
 ### Validação e ressalvas
 
@@ -451,7 +451,7 @@ independente descrevem o que o exportador grava.
 | Cadeia de pós-efeitos (`fx`) | somente PNG | no | no | no | no | no | no | no |
 | Transparência | yes | yes (alfa) | 1 bit | WebM yes, MP4 no | yes | yes | yes | yes |
 | Áudio | no | no | no | **yes** | yes (mp3) | no (com aviso) | no | no |
-| Loop | n/a | sheet: n/a, APNG: yes | yes | depende do player | player | player; o manifesto do `.lottie` diz `loop: true` | n/a | n/a |
+| Loop | n/a | sheet: n/a, APNG: yes | yes | depende do player | player | player (o dotLottie 2.0 deixa o loop ao player ou a uma máquina de estados) | n/a | n/a |
 | Rig/canais editáveis depois | no | no | no | no | no | no | somente ossos | no |
 | Máquinas de estados, bindings, containers, scroll | no | no | no | no | no | no | no | no |
 | Independente de resolução | yes (SVG) | no | no | no | yes | yes | yes | no |
@@ -522,7 +522,7 @@ Se o ffmpeg estiver ausente, o comando falha com `cannot run ffmpeg (...)` e nã
 | EXR | `ffprobe f.exr` | `exr 640x480 gbrapf32le` |
 | Lottie | `python3 -c "import json;d=json.load(open('out.json'));print(d['v'],d['fr'],d['op'],d['w'],d['h'],len(d['layers']))"` | `5.7.0 24.0 8 640.0 480.0 12` |
 | Avisos do Lottie | `osatura export p.json out.json --report rep.json` | `rep.json` lista cada aproximação |
-| dotLottie | `unzip -l out.lottie` | somente `manifest.json` e `animations/animation.json` |
+| dotLottie | `unzip -l out.lottie` | somente `manifest.json` e `a/animation.json` |
 | Ida e volta do Lottie | `osatura import-lottie out.json back.json && osatura check back.json` | `ok:` |
 | GLB | `python3 -c "import struct;b=open('out.glb','rb').read();print(b[:4],struct.unpack('<II',b[4:12]),len(b))"` | `b'glTF' (2, N)` com N igual ao comprimento |
 | HTML | `grep -c '<svg' out.html`; `grep -o 'http[^"<]*' out.html` | um `<svg` por quadro; somente a URL do namespace SVG |

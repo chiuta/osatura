@@ -526,7 +526,7 @@ Extensia ieșirii selectează formatul:
 | `.gif` | GIF în buclă la rata de cadre a proiectului (vezi [EXPORT_FORMATS.md](EXPORT_FORMATS.md)) | nu | `--scale`, `--report` |
 | `.html`, `.htm` | un player HTML autonom (cadre SVG inline, play/pauză, scrubber, audio încorporat opțional) | doar pentru audio | - |
 | `.json` | Lottie (Bodymovin) | nu | `--report` |
-| `.lottie` | container dotLottie (zip: `manifest.json` + `animations/animation.json`) | nu | `--report` |
+| `.lottie` | container dotLottie (zip: `manifest.json` + `a/animation.json`) | nu | `--report` |
 | `.mp4` | H.264 yuv420p (+ AAC când proiectul are sunete) | da (`libx264`, `aac`) | `--scale` |
 | `.apng` | PNG animat | nu | `--scale` |
 | `.webm` | VP9 (implicit) sau AV1 cu alpha (+ sunet Opus) | da (`libvpx-vp9` / `libaom-av1`, `libopus`) | `--scale`, `--codec vp9\|av1` |
@@ -1565,7 +1565,7 @@ imported 11 layers; wrote li2.json
 $ echo '{}' > bad.json; osatura import-lottie bad.json o.json
 missing 'w'                                                        [exit 1]
 ```
-**Capcană:** `import-lottie in.json in.json` este refuzat (`refusing to overwrite the input ...`), la fel și pentru `fx.json`. **Limite:** intrarea `.lottie` (zip) nu este citită (`stream did not contain valid UTF-8`) - dezarhivează mai întâi `animations/animation.json`; munca pătratică din morfările de forme este limitată doar de plafoanele de dimensiune.
+**Capcană:** `import-lottie in.json in.json` este refuzat (`refusing to overwrite the input ...`), la fel și pentru `fx.json`. **Limite:** intrarea `.lottie` (zip) nu este citită (`stream did not contain valid UTF-8`) - dezarhivează mai întâi `a/animation.json`; munca pătratică din morfările de forme este limitată doar de plafoanele de dimensiune.
 
 ### `import-bvh`
 

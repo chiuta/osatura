@@ -202,7 +202,7 @@ function updMatch(){const same=$('#ha').textContent===$('#hb').textContent,m=$('
 setInterval(()=>{DA.tick();DB.tick()},1000/24);
 
 /* ================= DOCS ATLAS ================= */
-const BUILD="3259eee7c1";
+const BUILD="f210020120";
 const DATA_DIR=(window.OSA_ROOT||'')+'site/data/';
 const imgUrl=n=>(window.OSA_ROOT||'')+'docs/img/'+n;
 const IMG_SZ={"rigging-sheet.png":[1200,450],"studio-collab.png":[1400,900],"studio-dopesheet.png":[1400,900],"studio-graph.png":[1400,900],"studio-layers.png":[1400,900],"studio-overlays.png":[1400,900],"studio-overview.png":[1400,900],"studio-palette.png":[1400,900],"studio-shortcuts.png":[1400,900],"studio-suggest.png":[1400,900],"tutorial-buddy.png":[1280,480],"tutorial-svg-walk.png":[1840,360],"walk-cycle.png":[1080,300]};
@@ -477,7 +477,7 @@ function renderPal(){
     const sub=r.k==='sec'?`<small>${esc(D.docs[r.id].t)}</small>`:r.k==='doc'?`<small>${gname(D.docs[r.id].g)}</small>`:'';
     return`<a data-ix="${i}" class="${i===palSel?'on':''}"><b>${tag} ${esc(r.t)} ${sub}</b>${r.s?`<span>${r.k==='sec'?r.s:esc(r.s)}</span>`:''}</a>`}).join(''):`<div class="empty">${T[L].none}</div>`;
 }
-function openPal(){if(!D)return;$('#pal').classList.add('on');$('#pin').value='';palSel=0;renderPal();setTimeout(()=>$('#pin').focus(),20)}
+function openPal(){if(!D){startDocs().then(()=>{if(D)openPal()});return}$('#pal').classList.add('on');$('#pin').value='';palSel=0;renderPal();setTimeout(()=>$('#pin').focus(),20)}
 function closePal(){$('#pal').classList.remove('on')}
 function choose(i){const r=palRes[i];if(!r||r.k==='info')return;closePal();
   if(r.k==='act')r.run();else if(r.k==='doc')location.hash='#/d/'+encodeURIComponent(r.id);
@@ -735,13 +735,23 @@ onLang=async()=>{
   try{await ensureLang(L)}catch(e){console.error(e)}
   document.body.style.cursor='';renderDyn();
 };
-loadDocs().then(async()=>{
+// the documents (about 1.2 MB per language) load only when a docs-backed section comes near the screen,
+// when a #/d/ link is opened or when the search palette is used, not at page start
+let docsP=null;
+function startDocs(){return docsP||(docsP=loadDocs().then(async()=>{
   try{await ensureLang(L)}catch(e){console.error(e)}
   D.order.forEach(id=>{const d=D.docs[id];PATHMAP[d.p]=id;LANGS.forEach(([l])=>{if(l!=='en')PATHMAP[trPath(id,l)]=id})});
   applyDocLang();
   initCst();
   renderDyn();route();
-}).catch(err=>{console.error(err);$$('#docs .rv').forEach(e=>e.classList.add('in'))});
+}).catch(err=>{console.error(err);$$('#docs .rv').forEach(e=>e.classList.add('in'))}))}
+(()=>{
+  const now=()=>startDocs();
+  if(/^#\/d\//.test(location.hash)||!('IntersectionObserver' in window))return now();
+  addEventListener('hashchange',()=>{if(/^#\/d\//.test(location.hash))now()});
+  const o=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){o.disconnect();now()}},{rootMargin:'800px 0px'});
+  ['docs','studio','cli','status'].forEach(id=>{const el=document.getElementById(id);if(el)o.observe(el)});
+})();
 
 /*demo:js*/
 /* demo pas cu pas — redă randările REALE ale motorului (SVG) și ieșirea reală a comenzilor; nimic nu e desenat de mână. */

@@ -209,7 +209,7 @@ $ osatura export small.json out.json --report rep.json
 wrote out.json
 warning: [variable-width-stroke] ink: variable-width stroke profiles are not supported by Lottie; the constant base width is used
 warning: [gradient-anisotropic] shadow: a gradient on a layer with non-uniform scale or skew is approximated (Lottie gradients are not sheared)
-$ osatura export small.json out.lottie       # a zip: manifest.json + animations/animation.json
+$ osatura export small.json out.lottie       # a zip: manifest.json + a/animation.json
 ```
 
 ### Felépítése
@@ -256,9 +256,9 @@ méretek színpadegységben vannak (LIMITATIONS L-23).
 
 ### dotLottie (`.lottie`)
 
-Egy zip `manifest.json` fájllal (`{"animations":[{"autoplay":true,"id":"animation","loop":true}],"generator":"OSATURA","version":"1"}`) és
-`animations/animation.json` fájllal (ugyanaz a Lottie, mint fent, deflate-tel tömörítve: 46 843 bájtból 11 515 bájtos fájl lett). A `--report` ugyanúgy
-működik. A `.lottie` **importálása** nem támogatott (az `import-lottie` JSON-t igényel; előbb csomagold ki az `animations/animation.json` fájlt).
+Egy zip `manifest.json` fájllal (`{"animations":[{"id":"animation"}],"generator":"OSATURA","version":"2"}`) és
+`a/animation.json` fájllal (ugyanaz a Lottie, mint fent, deflate-tel tömörítve: 46 843 bájtból 11 515 bájtos fájl lett). A `--report` ugyanúgy
+működik. A `.lottie` **importálása** nem támogatott (az `import-lottie` JSON-t igényel; előbb csomagold ki az `a/animation.json` fájlt).
 
 ### Ellenőrzés és fenntartások
 
@@ -451,7 +451,7 @@ azt írják le, amit az exportáló kiír.
 | Utóeffekt-lánc (`fx`) | PNG only | no | no | no | no | no | no | no |
 | Átlátszóság | yes | yes (alpha) | 1-bit | WebM yes, MP4 no | yes | yes | yes | yes |
 | Hang | no | no | no | **yes** | yes (mp3) | no (warned) | no | no |
-| Ismétlés | n/a | sheet: n/a, APNG: yes | yes | player-dependent | player | player; `.lottie` manifest says `loop: true` | n/a | n/a |
+| Ismétlés | n/a | sheet: n/a, APNG: yes | yes | player-dependent | player | lejátszó (a dotLottie 2.0 a lejátszóra vagy egy állapotgépre bízza az ismétlést) | n/a | n/a |
 | Utólag szerkeszthető rig/csatornák | no | no | no | no | no | no | bones only | no |
 | Állapotgépek, kötések, container-ek, görgetés | no | no | no | no | no | no | no | no |
 | Felbontásfüggetlen | yes (SVG) | no | no | no | yes | yes | yes | no |
@@ -522,7 +522,7 @@ Ha az ffmpeg hiányzik, a parancs `cannot run ffmpeg (...)` üzenettel hibázik,
 | EXR | `ffprobe f.exr` | `exr 640x480 gbrapf32le` |
 | Lottie | `python3 -c "import json;d=json.load(open('out.json'));print(d['v'],d['fr'],d['op'],d['w'],d['h'],len(d['layers']))"` | `5.7.0 24.0 8 640.0 480.0 12` |
 | Lottie-figyelmeztetések | `osatura export p.json out.json --report rep.json` | a `rep.json` minden közelítést felsorol |
-| dotLottie | `unzip -l out.lottie` | csak a `manifest.json` és az `animations/animation.json` |
+| dotLottie | `unzip -l out.lottie` | csak a `manifest.json` és az `a/animation.json` |
 | Lottie-körbejárás | `osatura import-lottie out.json back.json && osatura check back.json` | `ok:` |
 | GLB | `python3 -c "import struct;b=open('out.glb','rb').read();print(b[:4],struct.unpack('<II',b[4:12]),len(b))"` | `b'glTF' (2, N)`, ahol N egyenlő a hosszal |
 | HTML | `grep -c '<svg' out.html`; `grep -o 'http[^"<]*' out.html` | képkockánként egy `<svg`; csak az SVG-névtér URL-je |

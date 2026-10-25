@@ -526,7 +526,7 @@ Die Endung der Ausgabedatei wählt das Format:
 | `.gif` | Endlos-GIF mit der Frame-Rate des Projekts (siehe [EXPORT_FORMATS.md](EXPORT_FORMATS.md)) | nein | `--scale`, `--report` |
 | `.html`, `.htm` | ein eigenständiger HTML-Player (Inline-SVG-Frames, Play/Pause, Scrubber, optional eingebettetes Audio) | nur für Audio | - |
 | `.json` | Lottie (Bodymovin) | nein | `--report` |
-| `.lottie` | dotLottie-Container (Zip: `manifest.json` + `animations/animation.json`) | nein | `--report` |
+| `.lottie` | dotLottie-Container (Zip: `manifest.json` + `a/animation.json`) | nein | `--report` |
 | `.mp4` | H.264 yuv420p (+ AAC, wenn das Projekt Sounds hat) | ja (`libx264`, `aac`) | `--scale` |
 | `.apng` | animiertes PNG | nein | `--scale` |
 | `.webm` | VP9 (Standard) oder AV1 mit Alpha (+ Opus-Ton) | ja (`libvpx-vp9` / `libaom-av1`, `libopus`) | `--scale`, `--codec vp9\|av1` |
@@ -1564,7 +1564,7 @@ imported 11 layers; wrote li2.json
 $ echo '{}' > bad.json; osatura import-lottie bad.json o.json
 missing 'w'                                                        [exit 1]
 ```
-**Stolperfalle:** `import-lottie in.json in.json` wird abgelehnt (`refusing to overwrite the input ...`), ebenso für `fx.json`. **Grenzen:** Eine `.lottie`-Datei (zip) als Eingabe wird nicht gelesen (`stream did not contain valid UTF-8`) - entpacke zuerst `animations/animation.json`; der quadratische Aufwand bei Form-Morphs ist nur durch die Größenobergrenzen beschränkt.
+**Stolperfalle:** `import-lottie in.json in.json` wird abgelehnt (`refusing to overwrite the input ...`), ebenso für `fx.json`. **Grenzen:** Eine `.lottie`-Datei (zip) als Eingabe wird nicht gelesen (`stream did not contain valid UTF-8`) - entpacke zuerst `a/animation.json`; der quadratische Aufwand bei Form-Morphs ist nur durch die Größenobergrenzen beschränkt.
 
 ### `import-bvh`
 

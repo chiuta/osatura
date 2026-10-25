@@ -526,7 +526,7 @@ A extensão de saída seleciona o formato:
 | `.gif` | GIF em loop na taxa de quadros do projeto (veja [EXPORT_FORMATS.md](EXPORT_FORMATS.md)) | não | `--scale`, `--report` |
 | `.html`, `.htm` | um player HTML autocontido (quadros SVG embutidos, play/pause, scrubber, áudio embutido opcional) | somente para áudio | - |
 | `.json` | Lottie (Bodymovin) | não | `--report` |
-| `.lottie` | contêiner dotLottie (zip: `manifest.json` + `animations/animation.json`) | não | `--report` |
+| `.lottie` | contêiner dotLottie (zip: `manifest.json` + `a/animation.json`) | não | `--report` |
 | `.mp4` | H.264 yuv420p (+ AAC quando o projeto tem sons) | sim (`libx264`, `aac`) | `--scale` |
 | `.apng` | PNG animado | não | `--scale` |
 | `.webm` | VP9 (padrão) ou AV1 com alfa (+ som Opus) | sim (`libvpx-vp9` / `libaom-av1`, `libopus`) | `--scale`, `--codec vp9\|av1` |
@@ -1565,7 +1565,7 @@ imported 11 layers; wrote li2.json
 $ echo '{}' > bad.json; osatura import-lottie bad.json o.json
 missing 'w'                                                        [exit 1]
 ```
-**Pegadinha:** `import-lottie in.json in.json` é recusado (`refusing to overwrite the input ...`), também para `fx.json`. **Limites:** a entrada `.lottie` (zip) não é lida (`stream did not contain valid UTF-8`) - descompacte `animations/animation.json` antes; o trabalho quadrático em morphs de forma é limitado apenas pelos tetos de tamanho.
+**Pegadinha:** `import-lottie in.json in.json` é recusado (`refusing to overwrite the input ...`), também para `fx.json`. **Limites:** a entrada `.lottie` (zip) não é lida (`stream did not contain valid UTF-8`) - descompacte `a/animation.json` antes; o trabalho quadrático em morphs de forma é limitado apenas pelos tetos de tamanho.
 
 ### `import-bvh`
 

@@ -523,7 +523,7 @@ A kimeneti kiterjesztés választja ki a formátumot:
 | `.gif` | a projekt képkockasebességén ismétlődő GIF (lásd [EXPORT_FORMATS.md](EXPORT_FORMATS.md)) | nem | `--scale`, `--report` |
 | `.html`, `.htm` | egyetlen önálló HTML-lejátszó (beágyazott SVG-képkockák, lejátszás/szünet, csúszka, opcionálisan beágyazott hang) | csak a hanghoz | - |
 | `.json` | Lottie (Bodymovin) | nem | `--report` |
-| `.lottie` | dotLottie konténer (zip: `manifest.json` + `animations/animation.json`) | nem | `--report` |
+| `.lottie` | dotLottie konténer (zip: `manifest.json` + `a/animation.json`) | nem | `--report` |
 | `.mp4` | H.264 yuv420p (+ AAC, ha a projektnek vannak hangjai) | igen (`libx264`, `aac`) | `--scale` |
 | `.apng` | animált PNG | nem | `--scale` |
 | `.webm` | VP9 (alapértelmezés) vagy AV1 alfával (+ Opus hang) | igen (`libvpx-vp9` / `libaom-av1`, `libopus`) | `--scale`, `--codec vp9\|av1` |
@@ -1562,7 +1562,7 @@ imported 11 layers; wrote li2.json
 $ echo '{}' > bad.json; osatura import-lottie bad.json o.json
 missing 'w'                                                        [exit 1]
 ```
-**Figyelem:** az `import-lottie in.json in.json` parancsot elutasítja (`refusing to overwrite the input ...`), az `fx.json` esetén is. **Korlátok:** a `.lottie` (zip) bemenetet nem olvassa (`stream did not contain valid UTF-8`) - előbb csomagold ki az `animations/animation.json` fájlt; az alakzat-morphok négyzetes munkáját csak a méretkorlátok szabják meg.
+**Figyelem:** az `import-lottie in.json in.json` parancsot elutasítja (`refusing to overwrite the input ...`), az `fx.json` esetén is. **Korlátok:** a `.lottie` (zip) bemenetet nem olvassa (`stream did not contain valid UTF-8`) - előbb csomagold ki az `a/animation.json` fájlt; az alakzat-morphok négyzetes munkáját csak a méretkorlátok szabják meg.
 
 ### `import-bvh`
 
