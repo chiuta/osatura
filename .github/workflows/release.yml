@@ -26,6 +26,8 @@ jobs:
   cli:
     name: cli (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
+    outputs:
+      version: ${{ steps.ver.outputs.version }}   # the same in every matrix leg
     strategy:
       fail-fast: false
       matrix:
@@ -37,8 +39,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.97.0
       - uses: Swatinem/rust-cache@v2
+      - name: Release version (embedded in the Windows file metadata)
+        id: ver
+        shell: bash
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          v=""
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then v="${GITHUB_REF_NAME#v}"
+          else v=$(printf '%s' "$MSG" | grep -o '\[release v[0-9][^]]*\]' | head -1 | sed 's/\[release v\(.*\)\]/\1/' || true); fi
+          [ -n "$v" ] || v="$(grep -m1 '^version' osatura-cli/Cargo.toml | cut -d'"' -f2)-dev.${GITHUB_SHA::7}"
+          echo "release version: $v"
+          echo "OSATURA_VERSION=$v" >> "$GITHUB_ENV"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
       - name: Build release binaries (CLI + studio, C ABI)
         env:
+          OSATURA_REQUIRE_WIN_METADATA: "1"
           # AGPL section 13: the studio's /source page and `--version` point to the exact commit this binary is built from
           # (a fork that builds with its own workflow points to itself).
           OSATURA_SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.sha }}
@@ -55,6 +71,15 @@ jobs:
           ./target/release/${{ matrix.exe }} render smoke.json 0 smoke.png
           test -s smoke.png
           if [ "${{ runner.os }}" != "Linux" ]; then ./target/release/osatura-studio --selftest; fi
+      - name: Check the Windows file metadata (required for code signing)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          foreach ($f in 'osatura.exe','osatura-studio.exe','osatura_capi.dll') {
+            $i = (Get-Item "target/release/$f").VersionInfo
+            "{0}: ProductName={1} ProductVersion={2} FileDescription={3} OriginalFilename={4}" -f $f, $i.ProductName, $i.ProductVersion, $i.FileDescription, $i.OriginalFilename
+            if ($i.ProductName -ne 'OSATURA' -or $i.ProductVersion -ne $env:OSATURA_VERSION -or $i.OriginalFilename -ne $f) { throw "wrong metadata in $f" }
+          }
       - name: Package
         shell: bash
         run: |
@@ -65,7 +90,7 @@ jobs:
           cp target/release/${{ matrix.lib }} $d/lib/ || true
           cp target/release/${{ matrix.slib }} $d/lib/ || true
           cp osatura-capi/osatura.h $d/include/
-          cp -r LICENSE LICENSES README.md CHANGELOG.md TRADEMARK.md docs/THIRD_PARTY_NOTICES.md $d/
+          cp -r LICENSE LICENSES README.md CHANGELOG.md TRADEMARK.md CODE_SIGNING_POLICY.md PRIVACY.md docs/UNINSTALL.md docs/THIRD_PARTY_NOTICES.md $d/
           printf 'OSATURA binaries: osatura (CLI + studio) is AGPL-3.0-or-later; the C library is MPL-2.0.\nCorresponding source: https://github.com/chiuta/osatura at the commit/tag of this build (%s).\n' "$GITHUB_SHA" > $d/SOURCE.txt
           if [ "${{ runner.os }}" = "Windows" ]; then 7z a $d.zip $d >/dev/null; else tar czf $d.tar.gz $d; fi
           ls -la $d.* 
@@ -106,12 +131,60 @@ jobs:
           path: osatura-web.tar.gz
           retention-days: 30
 
+  windows-authenticode:
+    # Authenticode signature of osatura.exe, osatura-studio.exe and osatura_capi.dll by SignPath Foundation
+    # (CODE_SIGNING_POLICY.md). Runs only for releases and only once the repository variable SIGNPATH_ORGANIZATION_ID
+    # and the secret SIGNPATH_API_TOKEN exist; until then the release ships without an OS signature (L-74).
+    # A person approves every signing request in SignPath; the zip that comes back replaces the unsigned one.
+    name: windows authenticode (SignPath Foundation)
+    if: vars.SIGNPATH_ORGANIZATION_ID != '' && (startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && (contains(github.event.head_commit.message, '[release v0') || contains(github.event.head_commit.message, '[release v1'))))
+    needs: [cli]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read   # SignPath reads the run and downloads the unsigned artifact
+    steps:
+      - name: Find the unsigned Windows artifact
+        id: art
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[] | select(.name=="osatura-windows-x86_64") | .id')
+          test -n "$id" && echo "id=$id" >> "$GITHUB_OUTPUT"
+      - uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092  # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: osatura
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: windows-zip
+          github-artifact-id: ${{ steps.art.outputs.id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed
+          parameters: |
+            version: ${{ toJSON(needs.cli.outputs.version) }}
+      - name: Check that the files are signed
+        run: |
+          ls -la signed
+          cd signed && unzip -q osatura-windows-x86_64.zip && sudo apt-get install -y -qq osslsigncode >/dev/null
+          for f in osatura.exe osatura-studio.exe lib/osatura_capi.dll; do osslsigncode verify -in "osatura-windows-x86_64/$f" | grep -E "Signer|Subject:" | head -2; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: osatura-windows-x86_64
+          path: signed/osatura-windows-x86_64.zip
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 30
+
   sign:
     # Keyless signing: no key or secret is stored anywhere. The job's GitHub OIDC token is exchanged for a short-lived
     # Sigstore certificate that names this workflow, this repository and the ref; the signatures are logged in the public
     # Rekor transparency log. Verification: docs/VERIFY_DOWNLOADS.md.
     name: checksums, provenance and signatures
-    needs: [cli, wasm]
+    needs: [cli, wasm, windows-authenticode]
+    # runs when the Authenticode job succeeded or was skipped (not configured / not a release), never after a failure
+    if: ${{ !cancelled() && needs.cli.result == 'success' && needs.wasm.result == 'success' && needs.windows-authenticode.result != 'failure' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -162,7 +235,7 @@ jobs:
 
   draft-release:
     name: draft release (tags, or "[release vX]" commits)
-    if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release v0') || contains(github.event.head_commit.message, '[release v1'))
+    if: ${{ !cancelled() && needs.sign.result == 'success' && (startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && (contains(github.event.head_commit.message, '[release v0') || contains(github.event.head_commit.message, '[release v1')))) }}
     needs: [sign]
     runs-on: ubuntu-latest
     permissions:
@@ -186,4 +259,4 @@ jobs:
             gh api "repos/$GH_REPO/releases?per_page=100" --jq ".[] | select(.draft and .tag_name==\"$t\") | .id" | while read -r id; do gh api -X DELETE "repos/$GH_REPO/releases/$id"; done
           done
           gh release create "$TAG" dist/* --target "$GITHUB_SHA" --draft --prerelease --title "OSATURA $TAG" \
-            --notes "Pre-release builds from CI. Unverified by people on Windows and macOS; see docs/LIMITATIONS.md. Licences: CLI AGPL-3.0-or-later, libraries MPL-2.0, docs CC-BY-4.0. Each file has a Sigstore signature (.sigstore.json) and a GitHub build-provenance attestation; see docs/VERIFY_DOWNLOADS.md."
+            --notes "Pre-release builds from CI. Unverified by people on Windows and macOS; see docs/LIMITATIONS.md. Licences: CLI AGPL-3.0-or-later, libraries MPL-2.0, docs CC-BY-4.0. Each file has a Sigstore signature (.sigstore.json) and a GitHub build-provenance attestation; see docs/VERIFY_DOWNLOADS.md. Code signing policy: https://github.com/chiuta/osatura/blob/main/CODE_SIGNING_POLICY.md . Privacy: the programs send nothing over the network unless you ask them to (PRIVACY.md). Uninstall: docs/UNINSTALL.md."
