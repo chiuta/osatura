@@ -10,6 +10,10 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Release
+
+- **Static Linux archive `osatura-linux-x86_64-musl.tar.gz`** for distributions with glibc older than 2.35 (RHEL/Rocky/Alma 8 and 9, Debian 10 and 11, Ubuntu 20.04): `osatura` linked against musl, no system libraries needed. CI runs the core and CLI tests on musl and runs the binary inside an empty chroot (`scripts/linux-static-check.sh`). Signed, attested and listed in `SHA256SUMS.txt` like the other archives.
+
 ### Export
 
 - **`.lottie` is now a dotLottie 2.0 container** ([spec](https://dotlottie.io/spec/2.0/)): `manifest.json` has `"version": "2"` and the animation is `a/animation.json`; `autoplay`/`loop` are no longer written (in 2.0 they belong to the player or a state machine). v0.1.0-alpha.4 and older wrote dotLottie 1.0 (`animations/animation.json`). Checked with @lottiefiles/dotlottie-web and lottie-web.

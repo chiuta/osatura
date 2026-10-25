@@ -105,6 +105,58 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  cli-static:
+    # Fully static Linux build (musl libc) for distributions whose glibc is older than 2.35 (RHEL/Rocky/Alma 8 and 9,
+    # Debian 10 and 11, Ubuntu 18.04 and 20.04 ...). CLI + browser studio only, no C library; see docs/LIMITATIONS.md L-77.
+    name: cli (linux-x86_64-musl, static)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+        with:
+          toolchain: 1.97.0  # the SHA pin no longer carries the version
+          targets: x86_64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: musl C toolchain
+        run: sudo apt-get install -y -qq musl-tools >/dev/null
+      - name: Release version
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          v=""
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then v="${GITHUB_REF_NAME#v}"
+          else v=$(printf '%s' "$MSG" | grep -o '\[release v[0-9][^]]*\]' | head -1 | sed 's/\[release v\(.*\)\]/\1/' || true); fi
+          [ -n "$v" ] || v="$(grep -m1 '^version' osatura-cli/Cargo.toml | cut -d'"' -f2)-dev.${GITHUB_SHA::7}"
+          echo "OSATURA_VERSION=$v" >> "$GITHUB_ENV"
+      - name: Build the static binary
+        env:
+          OSATURA_SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.sha }}
+        run: cargo build --release --locked -p osatura-cli --target x86_64-unknown-linux-musl
+      - name: Static and runs with no system libraries (empty chroot)
+        env:
+          OSATURA_SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.sha }}
+        run: |
+          b=target/x86_64-unknown-linux-musl/release/osatura
+          $b --version | grep -q "available at: ${OSATURA_SOURCE_URL}"
+          bash scripts/linux-static-check.sh $b
+      - name: Package
+        run: |
+          d=osatura-linux-x86_64-musl
+          mkdir -p $d
+          cp target/x86_64-unknown-linux-musl/release/osatura $d/
+          cp -r COPYRIGHT LICENSES README.md CHANGELOG.md TRADEMARK.md CODE_SIGNING_POLICY.md PRIVACY.md docs/UNINSTALL.md docs/THIRD_PARTY_NOTICES.md $d/
+          printf 'OSATURA static Linux build (musl libc, no system libraries needed): osatura (CLI + studio) is AGPL-3.0-or-later.\nCorresponding source: https://github.com/chiuta/osatura at the commit/tag of this build (%s).\nLinked in: musl libc (MIT, notice in MUSL-COPYRIGHT.txt) and LLVM libunwind (Apache-2.0 WITH LLVM-exception).\n' "$GITHUB_SHA" > $d/SOURCE.txt
+          # musl libc (MIT) and LLVM libunwind (Apache-2.0 WITH LLVM-exception) come from Rust's self-contained musl target
+          cp /usr/share/doc/musl/copyright $d/MUSL-COPYRIGHT.txt
+          tar czf $d.tar.gz $d
+          ls -la $d.tar.gz
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: osatura-linux-x86_64-musl
+          path: osatura-linux-x86_64-musl.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
   wasm:
     name: wasm module
     runs-on: ubuntu-latest
@@ -185,9 +237,9 @@ jobs:
     # Sigstore certificate that names this workflow, this repository and the ref; the signatures are logged in the public
     # Rekor transparency log. Verification: docs/VERIFY_DOWNLOADS.md.
     name: checksums, provenance and signatures
-    needs: [cli, wasm, windows-authenticode]
+    needs: [cli, cli-static, wasm, windows-authenticode]
     # runs when the Authenticode job succeeded or was skipped (not configured / not a release), never after a failure
-    if: ${{ !cancelled() && needs.cli.result == 'success' && needs.wasm.result == 'success' && needs.windows-authenticode.result != 'failure' }}
+    if: ${{ !cancelled() && needs.cli.result == 'success' && needs.cli-static.result == 'success' && needs.wasm.result == 'success' && needs.windows-authenticode.result != 'failure' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
