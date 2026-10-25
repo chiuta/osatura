@@ -54,7 +54,8 @@ Prebuilt archives, once the owner has published the draft release, are on the pr
 |---|---|
 | `osatura-windows-x86_64.zip` | `osatura.exe` (command line + studio server), `osatura-studio.exe` (window app), C library and header, licences, third-party notices |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (Apple-silicon only), C library and header, licences, notices |
-| `osatura-linux-x86_64.tar.gz` | `osatura`, C library and header, licences, notices (no window app: use `osatura studio` and a browser) |
+| `osatura-linux-x86_64.tar.gz` | `osatura`, C library and header, licences, notices (no window app: use `osatura studio` and a browser); needs glibc 2.35+ (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
+| `osatura-linux-x86_64-musl.tar.gz` | static `osatura` (musl libc, no system libraries needed) for older distributions such as RHEL/Rocky/Alma 8 and 9, Debian 10 and 11, Ubuntu 20.04; no C library; about 5-50 % slower than the glibc build |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (run only in headless Chromium, see [docs/WASM.md](docs/WASM.md)) |
 | `SHA256SUMS.txt` | check every download against it |
 | `*.sigstore.json` | Sigstore signature of each file ([docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md)) |
