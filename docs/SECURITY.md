@@ -60,7 +60,7 @@ Every response carries `Connection: close` (no keep-alive state to exhaust), `Ca
 Option `--collab-token T` (or the token required by a non-local `--bind`) enables access control; `--collab-log LOG` persists a shared session.
 
 * **Token format.** At least 16 characters, from `A-Za-z0-9._~+/=-`. Anything with CR, LF, `;` or other characters is refused at startup (header and cookie injection).
-* **Presentation.** Header `X-Collab-Token: T`, or the cookie `arm_token` (`HttpOnly`, `SameSite=Strict`, plus `Secure` when the request came in under an `https://` `--public-origin` name, an https `Origin`, or `X-Forwarded-Proto: https`) set by `POST /api/login`. A wrong cookie counts as a failed attempt like a wrong header.
+* **Presentation.** Header `X-Collab-Token: T`, or the cookie `osatura_token` (`HttpOnly`, `SameSite=Strict`, plus `Secure` when the request came in under an `https://` `--public-origin` name, an https `Origin`, or `X-Forwarded-Proto: https`) set by `POST /api/login`. A wrong cookie counts as a failed attempt like a wrong header.
 * **Comparison.** Constant-time (both sides are hashed with SHA-256 and the digests compared), so response time does not reveal prefix matches.
 * **Back-off.** Per client IP address, from the **5th** consecutive failure: 2, 4, 8, 16, then 30 seconds of 429 responses; up to 512 client addresses are tracked. The right token is always accepted, even during a back-off (so an attacker cannot lock the owner out). The back-off slows guessing; it does not stop a distributed attack. **Behind a reverse proxy every client appears with the proxy's address**, so they share one back-off counter: a flood of bad requests from one visitor delays the failure counter for all, but the correct token still works.
 * **Participant secrets.** Each collaborator gets a random 128-bit secret (`X-Collab-Secret`) identifying their stream; at most 32 participants and 64 event streams.
@@ -68,7 +68,11 @@ Option `--collab-token T` (or the token required by a non-local `--bind`) enable
 * **Per-participant tokens (wave 7, optional).** `--collab-secret-file F` replaces the one shared bearer by tokens that are derived from a secret: `ap1.<name>.<expires>.<mac>` with `mac` = HMAC-SHA-256 (RFC 2104, own SHA-256, RFC 4231 test vectors in the tests) over the name and the deadline. The host mints them with `osatura collab-token NAME --secret-file F --ttl SECONDS` (default 8 hours, at most 30 days) and gives each person their own. A token is bound to one name (a joining participant gets that name whatever the page sends, so nobody can join as somebody else), expires on its own, is verified by recomputation (no table on the server, nothing to steal from it but the secret itself), and its cookie gets a `Max-Age` equal to the remaining life. `--collab-revoke NAMES` refuses the tokens of those names before they expire; changing the secret revokes everything. The secret file must be private (mode 600 on Unix, otherwise the studio refuses to start), at least 16 characters, and is never accepted as a command line argument. `--collab-token` and `--collab-secret-file` can be combined; either satisfies the rule that a non-loopback bind needs a credential. Expiry is checked **per request**: an event stream that is already open stays open until it ends, and the next connection is refused. An expired or revoked token is answered `401` with the reason and does not feed the guessing back-off.
 * **Rate limit (wave 7).** `--collab-rate N` allows N requests per second per client address, with bursts of 2N (token bucket); more is answered `429` with `Retry-After`. The default is 100 per second when a credential is required and no limit otherwise; 0 switches it off. It is applied after authentication and per **address** (a connection's source), not per TCP connection, because a per-connection limit is circumvented by opening more connections; behind a reverse proxy all clients share the proxy's address, so also limit at the proxy (section 12).
 * **Bind-address warnings (wave 7).** A non-loopback `--bind` prints a warning at start (plain HTTP; for `0.0.0.0` / `::` that the studio listens on every interface; for a shared token that it has no names and never expires).
-* **No TLS, no accounts.** The server speaks plain HTTP. A token travelling over a network is readable by anyone on the path. Put the studio behind a TLS-terminating reverse proxy or an SSH / VPN tunnel (section 11). There are no user accounts, roles or per-project permissions: the token grants full edit access.
+* **Token spelling.** The deadline in a per-participant token has exactly one written form (decimal digits, no sign, no leading zeros, no `+`): any other spelling of the same number is refused as malformed, and the signature is judged before the deadline, so a forged token learns nothing from the answer.
+* **Hosts (opt-in).** `--collab-host NAMES` (needs `--collab-secret-file`) names the participants who may **save** (`/api/save`), **compact** the session log (`/api/collab/compact`) and **revoke** (`/api/collab/revoke`, a `POST` that adds names to the revoked list, at most 1000). Everyone else with a valid token can still edit and watch, and is answered `403` on those three. Without `--collab-host` nothing changes: every holder of a valid credential may do all of it, as before. The shared `--collab-token` is not tied to a name and counts as a host.
+* **Event stream.** The event stream needs a credential (a token) but not a participant secret; the secret identifies a participant's own stream, it is not a second password.
+* **Connections per address.** One client address may hold at most 16 connections at once (in addition to the global cap), so one machine cannot use up all the slots. Loopback addresses are not counted by default, because a reverse proxy on the same host reaches the studio from `127.0.0.1` for every visitor; limit per visitor at the proxy (section 12).
+* **No TLS, no accounts.** The server speaks plain HTTP. A token travelling over a network is readable by anyone on the path. Put the studio behind a TLS-terminating reverse proxy or an SSH / VPN tunnel (section 11). There are no user accounts or per-project permissions; the only role is the optional host list above, and any other valid token grants edit access.
 
 ## 4. Asset resolution and input limits
 
@@ -100,6 +104,7 @@ ffmpeg and ffprobe are run as separate processes **only** for video export, mp3 
 * passes arguments as an array (no shell, no string concatenation into a command line);
 * uses `-protocol_whitelist file` (one internal pipe use adds `pipe,fd`), so a media file cannot make ffmpeg open `http://`, `concat:` or other network / special protocols;
 * passes file names through `fsutil::file_arg`, which prefixes `./` to names that begin with `-` or contain `:` or `|` in the first path component, so a file name cannot be read as an option or URL;
+* for `.wav`, `.mp3` and `.ogg` sound files forces the demuxer with `-f` (`soundtrack::forced_demuxer`), so a file that is not what its name says is refused rather than opened as some other container;
 * uses `-loglevel error`.
 
 ffmpeg itself parses complex media formats and has had vulnerabilities of its own: keep it up to date and do not feed it media from sources you do not trust on a machine that holds secrets. Time-budgeted commands (`export-fit --max-seconds`) cannot interrupt a single running ffmpeg call.
@@ -119,7 +124,7 @@ Honest list; see [LIMITATIONS.md](LIMITATIONS.md) for the wider list of function
 2. **Back-off is per address** and shared behind a proxy; it slows but does not prevent online guessing. Use a long random token (the minimum of 16 characters is a floor, not a recommendation).
 3. **The collaboration log is chained, not signed.**
 4. **Not an audited codebase.** No third-party penetration test or formal fuzzing campaign; the checks are the project's own tests and review waves.
-5. **Dependencies are policed for licences, not vulnerabilities.** There is no `cargo audit` step in the repository; run it yourself before deploying.
+5. **Dependencies.** CI runs `cargo deny` for advisories (vulnerabilities, yanked crates, unmaintained direct dependencies), licences, banned crates (no TLS or HTTP client stack) and sources. Transitive maintenance notices are reviewed by hand (see `deny.toml`). The check only knows advisories published so far; run it again before you deploy.
 6. **Asset directory is process-wide.** `merge` over several input directories uses the last directory for assets; only `write_json` rewrites asset paths (other writers do not).
 7. **Non-atomic fallback** when the output directory is not writable.
 8. **Path checks use canonical paths.** `assets::resolve` canonicalises existing files and refuses a file whose real location is outside the project directory, so a symbolic link inside a project folder that points outside it is refused (tested in `assets.rs`); links that stay inside the folder work. A race between the check and the later read (time-of-check to time-of-use) by someone who can modify the project folder concurrently is not excluded.
@@ -129,10 +134,10 @@ Honest list; see [LIMITATIONS.md](LIMITATIONS.md) for the wider list of function
 
 ## 10. Reporting a vulnerability
 
-* **Do not open a public issue** for a vulnerability. Send a private report to the maintainer: **`alexio@trom.tf`**. *(Placeholder: the address appears in the program's `--version` notice and in the licence documents; the owner must confirm it as the security contact and may replace it with a dedicated address or a private advisory channel before the first release.)*
+* **Do not open a public issue** for a vulnerability. Send a private report to the maintainer: **`alexio@trom.tf`** (the address in the program's `--version` notice and the licence documents), or use GitHub's private vulnerability reporting on the repository's *Security* tab when it is enabled.
 * Include: version (`osatura --version`) and platform, the project or request that triggers the problem (a minimal file is best), what you expected and what happened, and whether you want to be credited.
 * What to expect *(intent, not a contract: this is a one-person project)*: an acknowledgement within a reasonable time, a fix developed in private, a regression test added to the suite, a note in [CHANGELOG.md](../CHANGELOG.md), and credit if you wish. Please allow time for a fix before publishing details.
-* Supported versions: only the newest pre-release (`v0.1.0-alpha.3` once published) and the current tree on `main` are supported.
+* Supported versions: only the newest pre-release (currently `v0.1.0-alpha.4`) and the current tree on `main` are supported.
 * Reports about the studio's network exposure when it is deliberately bound to a public address without a reverse proxy are documentation issues first: see section 11.
 
 ## 11. Deployer hardening checklist
@@ -143,16 +148,16 @@ For anyone running `osatura studio` for more than one person or off localhost.
 2. [ ] If exposed, **terminate TLS** in a reverse proxy (nginx, Caddy, ...) in front of it; never expose the plain HTTP port to the Internet.
 3. [ ] Use a **long random token** (for example 32+ characters from `openssl rand -base64 24`), pass it through a protected file or environment of the service rather than a shell history, and rotate it when people leave. Remember it is full edit access.
 4. [ ] Start with `--bind 127.0.0.1` (or the private interface) plus the proxy; set `--allow-host your.domain` and `--public-origin https://your.domain` so Host and Origin checks pass for the proxy and for nothing else.
-5. [ ] Prefer **per-participant tokens** (`--collab-secret-file`, section 3) with a short `--ttl` over one shared token; keep the secret file at mode 600 outside the served folder.
-5a. [ ] Have the proxy **rate-limit** and, if possible, restrict by IP or add a second authentication layer (HTTP basic over TLS, VPN, SSO proxy), because the built-in back-off sees only the proxy's address.
-6. [ ] Run as an **unprivileged user** in a dedicated directory containing only the projects to be served; no secrets, no sensitive symlinks. Use a read-only file system elsewhere, a container or systemd sandboxing (`ProtectSystem`, `PrivateTmp`, `NoNewPrivileges`).
-7. [ ] Keep `--allow-external-assets` and `--follow-symlinks` **off**.
-8. [ ] Set `--source-url` to where the (possibly modified) source can be fetched (AGPL section 13).
-9. [ ] Persist with `--collab-log` on a private directory, back it up, and keep the 0600 mode. Treat the log as sensitive: it contains the whole edit history.
-10. [ ] Bound resources at the OS level (memory, CPU time, open files, disk quota); the built-in caps limit single requests, not total load.
-11. [ ] Keep ffmpeg and the Rust toolchain used for the build current; run `cargo audit` (or an equivalent) on `Cargo.lock` for your release.
-12. [ ] Do not feed the server projects from untrusted sources unless it runs in the sandbox above. For scripting-free deployments build with `--no-default-features`.
-13. [ ] Watch the logs for 421, 403, 429 and 503 responses; spikes mean probing or misconfiguration.
+5. [ ] Prefer **per-participant tokens** (`--collab-secret-file`, section 3) with a short `--ttl` over one shared token; keep the secret file at mode 600 outside the served folder, and name the people who may save, compact and revoke with `--collab-host`.
+6. [ ] Have the proxy **rate-limit** and, if possible, restrict by IP or add a second authentication layer (HTTP basic over TLS, VPN, SSO proxy), because the built-in back-off sees only the proxy's address.
+7. [ ] Run as an **unprivileged user** in a dedicated directory containing only the projects to be served; no secrets, no sensitive symlinks. Use a read-only file system elsewhere, a container or systemd sandboxing (`ProtectSystem`, `PrivateTmp`, `NoNewPrivileges`).
+8. [ ] Keep `--allow-external-assets` and `--follow-symlinks` **off**.
+9. [ ] Set `--source-url` to where the (possibly modified) source can be fetched (AGPL section 13).
+10. [ ] Persist with `--collab-log` on a private directory, back it up, and keep the 0600 mode. Treat the log as sensitive: it contains the whole edit history.
+11. [ ] Bound resources at the OS level (memory, CPU time, open files, disk quota); the built-in caps limit single requests, not total load.
+12. [ ] Keep ffmpeg and the Rust toolchain used for the build current; run `cargo deny check` (or `cargo audit`) on `Cargo.lock` for your release.
+13. [ ] Do not feed the server projects from untrusted sources unless it runs in the sandbox above. For scripting-free deployments build with `--no-default-features`.
+14. [ ] Watch the logs for 421, 403, 429 and 503 responses; spikes mean probing or misconfiguration.
 
 ## 12. Reverse proxy with TLS: nginx and Caddy
 

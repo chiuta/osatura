@@ -2,6 +2,8 @@
 name = "osatura-capi"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.97"
+publish = false
 description = "OSATURA C ABI: load a project, evaluate bones, render RGBA frames"
 license = "MPL-2.0"
 

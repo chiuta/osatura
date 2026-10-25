@@ -28,7 +28,7 @@ Principles that shape the project:
 
 *Name: the project was called ARMATURA until 24 Oct 2026 and was renamed OSATURA after a trademark search ([docs/LIMITATIONS.md](docs/LIMITATIONS.md) L-78). The repository and the site address were renamed too (old repository links redirect).*
 
-> **Alpha. First builds prepared as a draft pre-release: `v0.1.0-alpha.3`.** The executables for Windows x86-64, macOS arm64 and Linux x86-64 and the WebAssembly module are built by GitHub Actions and attached to a *draft* pre-release on <https://github.com/chiuta/osatura/releases> (a draft is visible only to the owner until it is published by hand). All crates are still version `0.1.0`; "v0.5 / v0.6 / v0.7" are *feature levels* in the history, not release numbers ([CHANGELOG.md](CHANGELOG.md)).
+> **Alpha. Latest published pre-release: `v0.1.0-alpha.4`; the next one is `v0.1.0-alpha.5`.** The executables for Windows x86-64, macOS arm64 and Linux x86-64 and the WebAssembly module are built by GitHub Actions and attached to a *draft* pre-release on <https://github.com/chiuta/osatura/releases> (a draft is visible only to the owner until it is published by hand). All crates are still version `0.1.0`; "v0.5 / v0.6 / v0.7" are *feature levels* in the history, not release numbers ([CHANGELOG.md](CHANGELOG.md)).
 >
 > | Verified | Not verified |
 > |---|---|
@@ -55,7 +55,7 @@ Prebuilt archives, once the owner has published the draft release, are on the pr
 | `osatura-windows-x86_64.zip` | `osatura.exe` (command line + studio server), `osatura-studio.exe` (window app), C library and header, licences, third-party notices |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (Apple-silicon only), C library and header, licences, notices |
 | `osatura-linux-x86_64.tar.gz` | `osatura`, C library and header, licences, notices (no window app: use `osatura studio` and a browser); needs glibc 2.35+ (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
-| `osatura-linux-x86_64-musl.tar.gz` | static `osatura` (musl libc, no system libraries needed) for older distributions such as RHEL/Rocky/Alma 8 and 9, Debian 10 and 11, Ubuntu 20.04; no C library; about 5-50 % slower than the glibc build |
+| `osatura-linux-x86_64-musl.tar.gz` | static `osatura` (musl libc, no system libraries needed) for older distributions such as RHEL/Rocky/Alma 8 and 9, Debian 10 and 11, Ubuntu 20.04; no C library; about 5-50 % slower than the glibc build. **Not in alpha.4**: it starts with the next release |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (run only in headless Chromium, see [docs/WASM.md](docs/WASM.md)) |
 | `SHA256SUMS.txt` | check every download against it |
 | `*.sigstore.json` | Sigstore signature of each file ([docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md)) |

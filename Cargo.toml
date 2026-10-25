@@ -7,3 +7,7 @@ default-members = ["osatura-core", "osatura-cli", "osatura-capi", "osatura-wasm"
 
 [profile.release]
 strip = "symbols"
+# Integer overflow panics instead of wrapping silently. Release builds are what runs on other people's machines with
+# files from other people: a wrapped size or index must stop the program (a panic is reported, never a corrupted
+# result), not feed the next calculation. Code that wants wrapping says so (`wrapping_*`). The cost is a few percent.
+overflow-checks = true

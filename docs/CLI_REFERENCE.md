@@ -2480,7 +2480,7 @@ binary assets referenced by the project are not versioned.
 
 ### `studio`
 
-**Synopsis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
+**Synopsis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES] [--collab-host NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
 
 Starts the **browser editor** (undo/redo, timeline, live and face panels, VCS and agent-style operations) as a local web
 server and blocks until Ctrl-C. Defaults: `--port 8080`, `--bind 127.0.0.1`. The project is validated at start; saves go
@@ -2502,7 +2502,11 @@ the one shared bearer by **per-participant tokens**: F holds a random secret (fi
 Unix, otherwise it is refused) and each person gets a token from `osatura collab-token NAME`; a token is bound to one name
 (joining uses that name, nobody can join as somebody else), expires, and is checked by recomputing its HMAC-SHA-256, so the
 server keeps no table. `--collab-revoke NAMES` (comma separated, needs `--collab-secret-file`) refuses the tokens of those
-names before they expire. `--collab-token` and `--collab-secret-file` can be combined (the shared token then acts as an
+names before they expire (a running server can also revoke with `POST /api/collab/revoke {"names":["ana"]}`, see below). `--collab-host NAMES`
+(comma separated, needs `--collab-secret-file`) names the participants whose tokens may **save the project, compact the session log and revoke
+tokens**; everybody else with a valid token can still edit but gets `403` for those three requests. Without `--collab-host` every participant may
+save and compact (as before) and nobody but the shared `--collab-token` / an unauthenticated local session may revoke over HTTP; the studio says which
+at start. `--collab-token` and `--collab-secret-file` can be combined (the shared token then acts as an
 admin key); either one satisfies the rule that a non-loopback bind needs a credential. `--collab-rate N` limits every client
 address to N requests per second (bursts of 2N; answer `429` with `Retry-After`); the default is 100 when a credential is
 required and no limit otherwise; 0 turns it off. A non-loopback bind prints warnings (plain HTTP; every interface for

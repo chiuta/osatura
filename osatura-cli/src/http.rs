@@ -11,10 +11,11 @@
 //! Every response is `Connection: close` (no keep-alive state to attack) and carries the security headers
 //! (`Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`).
 
+use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::{Shutdown, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -80,11 +81,17 @@ pub struct Limits {
     pub max_head: usize,
     pub max_body: usize,
     pub max_conns: usize,
+    /// Most simultaneous connections from ONE remote address (0 = no limit): a client that opens connections and never
+    /// finishes a request cannot use up the whole `max_conns` and lock everybody else out before authentication.
+    pub max_conns_per_peer: usize,
+    /// Also apply `max_conns_per_peer` to loopback addresses. Off by default: a reverse proxy on the same machine
+    /// connects from 127.0.0.1 on behalf of every visitor and must limit its own clients (docs/SECURITY.md section 12).
+    pub limit_loopback_peers: bool,
 }
 
 impl Default for Limits {
     fn default() -> Limits {
-        Limits { head_deadline: Duration::from_secs(10), body_deadline: Duration::from_secs(20), write_timeout: Duration::from_secs(10), max_head: 16 << 10, max_body: 32 << 20, max_conns: 128 }
+        Limits { head_deadline: Duration::from_secs(10), body_deadline: Duration::from_secs(20), write_timeout: Duration::from_secs(10), max_head: 16 << 10, max_body: 32 << 20, max_conns: 128, max_conns_per_peer: 16, limit_loopback_peers: false }
     }
 }
 
@@ -335,11 +342,45 @@ fn serve_conn(mut s: TcpStream, lim: Limits, jobs: mpsc::Sender<Job>) {
     }
 }
 
-struct Slot(Arc<AtomicUsize>);
+/// Open connections per remote address (only for the addresses `max_conns_per_peer` applies to).
+#[derive(Default)]
+struct PeerCounts(Mutex<HashMap<std::net::IpAddr, usize>>);
+
+impl PeerCounts {
+    /// Count one more connection from `ip`; false (and nothing counted) when it already has `max`.
+    fn acquire(&self, ip: std::net::IpAddr, max: usize) -> bool {
+        let mut g = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let c = g.entry(ip).or_insert(0);
+        if *c >= max {
+            return false;
+        }
+        *c += 1;
+        true
+    }
+
+    fn release(&self, ip: std::net::IpAddr) {
+        let mut g = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(c) = g.get_mut(&ip) {
+            *c = c.saturating_sub(1);
+            if *c == 0 {
+                g.remove(&ip);
+            }
+        }
+    }
+}
+
+/// One accepted connection's claim on the global and the per-address counters; released when it ends.
+struct Slot {
+    total: Arc<AtomicUsize>,
+    peer: Option<(Arc<PeerCounts>, std::net::IpAddr)>,
+}
 
 impl Drop for Slot {
     fn drop(&mut self) {
-        self.0.fetch_sub(1, Ordering::SeqCst);
+        self.total.fetch_sub(1, Ordering::SeqCst);
+        if let Some((counts, ip)) = &self.peer {
+            counts.release(*ip);
+        }
     }
 }
 
@@ -349,15 +390,25 @@ pub fn serve_loop(listener: TcpListener, lim: Limits, mut handler: impl FnMut(Ht
     let (jobs_tx, jobs_rx) = mpsc::channel::<Job>();
     let live = Arc::new(AtomicUsize::new(0));
     let l2 = live.clone();
+    let peers = Arc::new(PeerCounts::default());
     std::thread::spawn(move || {
         for conn in listener.incoming() {
             let Ok(mut s) = conn else { continue };
+            // the per-address cap first: one address must not be able to fill the global cap
+            let per_peer = s.peer_addr().ok().map(|a| a.ip()).filter(|ip| lim.max_conns_per_peer > 0 && (lim.limit_loopback_peers || !ip.is_loopback()));
+            if let Some(ip) = per_peer {
+                if !peers.acquire(ip, lim.max_conns_per_peer) {
+                    write_all_timeout(&mut s, &encode(&Resp::from_string("too many connections from this address").with_status_code(503)), &lim);
+                    continue;
+                }
+            }
+            let slot = Slot { total: l2.clone(), peer: per_peer.map(|ip| (peers.clone(), ip)) };
             if l2.fetch_add(1, Ordering::SeqCst) >= lim.max_conns {
-                l2.fetch_sub(1, Ordering::SeqCst);
+                // (dropping the slot gives back both counters)
+                drop(slot);
                 write_all_timeout(&mut s, &encode(&Resp::from_string("too many connections").with_status_code(503)), &lim);
                 continue;
             }
-            let slot = Slot(l2.clone());
             let jt = jobs_tx.clone();
             if std::thread::Builder::new().spawn(move || {
                 let _slot = slot;
@@ -378,7 +429,7 @@ mod tests {
     use super::*;
 
     fn lim() -> Limits {
-        Limits { head_deadline: Duration::from_millis(400), body_deadline: Duration::from_millis(400), write_timeout: Duration::from_secs(2), max_head: 4096, max_body: 1024, max_conns: 6 }
+        Limits { head_deadline: Duration::from_millis(400), body_deadline: Duration::from_millis(400), write_timeout: Duration::from_secs(2), max_head: 4096, max_body: 1024, max_conns: 6, max_conns_per_peer: 0, limit_loopback_peers: false }
     }
 
     fn start(l: Limits) -> std::net::SocketAddr {
@@ -472,6 +523,55 @@ mod tests {
             let _ = s.read_to_string(&mut out);
             assert!(out.starts_with("HTTP/1.1 408"), "{out}");
         }
+    }
+
+    #[test]
+    fn one_address_cannot_use_up_the_connection_cap() {
+        // 3 per address (loopback counted for the test), 6 in all: a flood from one address leaves room for another
+        let a = start(Limits { max_conns_per_peer: 3, limit_loopback_peers: true, ..lim() });
+        let holders: Vec<TcpStream> = (0..3).map(|_| {
+            let mut s = TcpStream::connect(a).unwrap();
+            s.write_all(b"GET /x HTTP/1.1\r\n").unwrap();
+            s
+        }).collect();
+        std::thread::sleep(Duration::from_millis(100));
+        let r = roundtrip(a, b"GET /ok HTTP/1.1\r\n\r\n");
+        assert!(r.starts_with("HTTP/1.1 503") && r.contains("from this address"), "{r}");
+        // the slots come back when the stalled connections end (408 after the head deadline), and nothing leaks
+        std::thread::sleep(Duration::from_millis(700));
+        drop(holders);
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(roundtrip(a, b"GET /ok HTTP/1.1\r\n\r\n").starts_with("HTTP/1.1 200"));
+    }
+
+    #[test]
+    fn loopback_peers_are_not_counted_by_default() {
+        // a reverse proxy on this machine connects from 127.0.0.1 for everybody: no per-address cap there
+        let a = start(Limits { max_conns_per_peer: 2, ..lim() });
+        let holders: Vec<TcpStream> = (0..4).map(|_| {
+            let mut s = TcpStream::connect(a).unwrap();
+            s.write_all(b"GET /x HTTP/1.1\r\n").unwrap();
+            s
+        }).collect();
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(roundtrip(a, b"GET /ok HTTP/1.1\r\n\r\n").starts_with("HTTP/1.1 200"));
+        drop(holders);
+    }
+
+    #[test]
+    fn peer_counts_acquire_and_release() {
+        let c = PeerCounts::default();
+        let ip: std::net::IpAddr = "192.0.2.7".parse().unwrap();
+        let other: std::net::IpAddr = "192.0.2.8".parse().unwrap();
+        assert!(c.acquire(ip, 2) && c.acquire(ip, 2));
+        assert!(!c.acquire(ip, 2), "the third is refused");
+        assert!(c.acquire(other, 2), "another address has its own count");
+        c.release(ip);
+        assert!(c.acquire(ip, 2), "a released slot can be taken again");
+        c.release(ip);
+        c.release(ip);
+        c.release(ip); // releasing more than was taken never underflows
+        assert!(c.0.lock().unwrap().get(&ip).is_none(), "an address with no connection is forgotten");
     }
 
     #[test]

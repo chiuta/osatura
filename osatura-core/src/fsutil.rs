@@ -24,6 +24,21 @@ pub fn random_bytes(n: usize) -> Vec<u8> {
             }
         }
     }
+    #[cfg(windows)]
+    {
+        // The system generator (RtlGenRandom, exported by advapi32 as SystemFunction036): no extra crate, no handle.
+        #[link(name = "advapi32")]
+        extern "system" {
+            fn SystemFunction036(buf: *mut u8, len: u32) -> u8;
+        }
+        let ok = out.chunks_mut(1 << 20).all(|c| {
+            // SAFETY: `c` is a valid, writable slice of exactly `c.len()` bytes (at most 1 MiB, so it fits a u32).
+            unsafe { SystemFunction036(c.as_mut_ptr(), c.len() as u32) != 0 }
+        });
+        if ok {
+            return out;
+        }
+    }
     let mut filled = 0;
     while filled < n {
         let t = crate::clock::unix_nanos();
