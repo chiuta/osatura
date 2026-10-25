@@ -1,6 +1,6 @@
 # Licenças de terceiros (gerado)
 
-*Gerado por `scripts/licence-audit.sh` a partir de `cargo metadata --all-features` (todos os alvos, dependências normais e de build, dependências de desenvolvimento excluídas). Não edite manualmente. Isto não é aconselhamento jurídico; as expressões SPDX são o que cada crate declara em seu `Cargo.toml`, e não foram verificadas de forma independente em relação aos arquivos-fonte. Os próprios crates do workspace são MPL-2.0 (core, capi, wasm, gpu) e AGPL-3.0-or-later (osatura-cli); veja LICENSE.*
+*Gerado por `scripts/licence-audit.sh` a partir de `cargo metadata --all-features` (todos os alvos, dependências normais e de build, dependências de desenvolvimento excluídas). Não edite manualmente. Isto não é aconselhamento jurídico; as expressões SPDX são o que cada crate declara em seu `Cargo.toml`, e não foram verificadas de forma independente em relação aos arquivos-fonte. Os próprios crates do workspace são MPL-2.0 (core, capi, wasm, gpu) e AGPL-3.0-or-later (osatura-cli); veja LICENSE-*
 
 **363 crates de terceiros** (nome+versão distintos). Grupo A (requer revisão): 6; grupo B (licenças permissivas / de domínio público / de dados dignas de nota): 27; grupo C (estilo MIT / Apache-2.0): 330.
 

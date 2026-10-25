@@ -1,11 +1,11 @@
-# OSATURA — licencelés (ELDÖNTVE: A változat, alkalmazva 2026. okt. 22-én; lásd LICENSE és LICENSES/)
+# OSATURA — licencelés (ELDÖNTVE: A változat, alkalmazva 2026. okt. 22-én; lásd COPYRIGHT és LICENSES/)
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/LICENSING.md) · [Română](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/ro/LICENSING.md) · [Français](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/fr/LICENSING.md) · [Italiano](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/it/LICENSING.md) · [Español](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/es/LICENSING.md) · [Português](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/pt/LICENSING.md) · [Deutsch](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/de/LICENSING.md) · [Magyar](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/hu/LICENSING.md)
 
 **Állapot:** Az alábbi A változatot választottuk és alkalmaztuk: MPL-2.0 a könyvtárakra (core, capi, wasm, gpu), AGPL-3.0-or-later az `osatura-cli`-re (CLI + studio) és az `osatura-gui`-ra (a studio natív ablakban), CC-BY-4.0 a dokumentációra és a szintetikus asset-ekre/modellekre, védjegyszabályzat a TRADEMARK.md-ben, DCO a CONTRIBUTING.md-ben, SPDX-fejlécek minden .rs/.js/.mjs/.sh fájlban és REUSE.toml a többihez, AGPL 13. szakasz szerinti forrásajánlat (`/source`, `--source-url`), a Cargo `license` mezők beállítva. Hátralévő tulajdonosi teendők: jogi felülvizsgálat, védjegykeresés (EUIPO/OSIM), szabadalmi átvilágítás (docs/PATENT_NOTES.md), CLA, ha kettős licencelést szeretnénk, harmadik felek értesítéseinek mellékelése a bináris kiadásokhoz.
 
 
-*Nem jogi tanács. A licenc ELDÖNTÖTT (A változat, lásd LICENSE); az alábbi szakaszok indoklásként és a mérlegelt alternatívák bemutatásaként maradtak meg. Az első nyilvános kiadás előtt erősíttesd meg egy jogásszal (lehetőleg olyannal, aki ismeri a román/uniós szerzői jogot). Hozzájárulások: amíg nincs CLA, harmadik felek hozzájárulásaira nem áll fenn újralicencelési vagy kettős licencelési jog (CONTRIBUTING.md).*
+*Nem jogi tanács. A licenc ELDÖNTÖTT (A változat, lásd COPYRIGHT); az alábbi szakaszok indoklásként és a mérlegelt alternatívák bemutatásaként maradtak meg. Az első nyilvános kiadás előtt erősíttesd meg egy jogásszal (lehetőleg olyannal, aki ismeri a román/uniós szerzői jogot). Hozzájárulások: amíg nincs CLA, harmadik felek hozzájárulásaira nem áll fenn újralicencelési vagy kettős licencelési jog (CONTRIBUTING.md).*
 
 ## 1. Mit kell tudnia a licencnek a te érdekedben
 A bevételed **adományokból (Buy Me a Coffee)** származik, nem licencdíjakból. A licenc tehát nem teremt pénzt — **a jóindulat, a láthatóság és a bizalom teremt**. Három feladata van:
@@ -61,7 +61,7 @@ N évig megakadályozza a kereskedelmi versenyt. Ára: **nem nyílt forráskód�
 7. Tartsd láthatóan a **Patreont** (`patreon.com/c/alexio_tf`) és a BMC-t is, de adj mindkettőnek külön célt (BMC egyszeri köszönet; Patreon ismétlődő), hogy a támogatók ne zavarodjanak össze.
 
 ## 5. Ellenőrzőlista az A változat alkalmazásához (≈ 1 óra munka a választás után)
-- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (REUSE-elrendezés) plusz az összefoglaló `LICENSE`; a `REUSE.toml` lefedi a nem forrásfájlokat.
+- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (REUSE-elrendezés) plusz az összefoglaló `COPYRIGHT`; a `REUSE.toml` lefedi a nem forrásfájlokat.
 - [x] `license =` beállítva mind a hat `Cargo.toml` fájlban; SPDX-fejlécek minden .rs/.js/.mjs/.sh fájlban, az `osatura-cli/tests/spdx_audit.rs` ellenőrzi.
 - [x] `docs/THIRD_PARTY.md` és `docs/THIRD_PARTY_NOTICES.md`, mindkettőt a `scripts/licence-audit.sh` generálja újra.
 - [x] `CONTRIBUTING.md` a DCO 1.1 szövegével. Bármilyen kettős licenc előtt még szükség van CLA-ra.

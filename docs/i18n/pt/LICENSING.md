@@ -1,11 +1,11 @@
-# OSATURA — licenciamento (DECIDIDO: Variante A, aplicada em 22 de out. de 2026; veja LICENSE e LICENSES/)
+# OSATURA — licenciamento (DECIDIDO: Variante A, aplicada em 22 de out. de 2026; veja COPYRIGHT e LICENSES/)
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/LICENSING.md) · [Română](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/ro/LICENSING.md) · [Français](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/fr/LICENSING.md) · [Italiano](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/it/LICENSING.md) · [Español](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/es/LICENSING.md) · [Português](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/pt/LICENSING.md) · [Deutsch](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/de/LICENSING.md) · [Magyar](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/hu/LICENSING.md)
 
 **Situação:** a Variante A abaixo foi escolhida e aplicada: MPL-2.0 para as bibliotecas (core, capi, wasm, gpu), AGPL-3.0-or-later para `osatura-cli` (CLI + studio) e `osatura-gui` (o estúdio em uma janela nativa), CC-BY-4.0 para a documentação e para os assets e modelos sintéticos, política de marca em TRADEMARK.md, DCO em CONTRIBUTING.md, cabeçalhos SPDX em todos os arquivos .rs/.js/.mjs/.sh e REUSE.toml para os demais, oferta de código-fonte da seção 13 da AGPL (`/source`, `--source-url`), campos `license` do Cargo definidos. Ações restantes do proprietário: revisão por um advogado, busca de marca (EUIPO/OSIM), triagem de patentes (docs/PATENT_NOTES.md), um CLA caso se queira licenciamento duplo, incluir os avisos de terceiros nas versões binárias.
 
 
-*Isto não é aconselhamento jurídico. A licença está DECIDIDA (Variante A, veja LICENSE); as seções abaixo são mantidas como justificativa e como registro das alternativas consideradas. Peça a um advogado (de preferência alguém que conheça o direito autoral romeno/da UE) que confirme antes da primeira versão pública. Contribuições: não existe direito de relicenciamento nem de licenciamento duplo sobre contribuições de terceiros enquanto não houver um CLA (CONTRIBUTING.md).*
+*Isto não é aconselhamento jurídico. A licença está DECIDIDA (Variante A, veja COPYRIGHT); as seções abaixo são mantidas como justificativa e como registro das alternativas consideradas. Peça a um advogado (de preferência alguém que conheça o direito autoral romeno/da UE) que confirme antes da primeira versão pública. Contribuições: não existe direito de relicenciamento nem de licenciamento duplo sobre contribuições de terceiros enquanto não houver um CLA (CONTRIBUTING.md).*
 
 ## 1. O que a licença precisa fazer por você
 Sua renda vem de **doações (Buy Me a Coffee)**, não de taxas de licença. Portanto, a licença não cria o dinheiro — **boa vontade, visibilidade e confiança criam**. Ela tem três funções:
@@ -61,7 +61,7 @@ Impede a concorrência comercial por N anos. Custo: **não é código aberto**; 
 7. Mantenha o **Patreon** (`patreon.com/c/alexio_tf`) e o BMC ambos visíveis, mas dê a cada um uma finalidade distinta (BMC para agradecimentos pontuais; Patreon para apoio recorrente) para que os apoiadores não fiquem confusos.
 
 ## 5. Checklist para aplicar a Variante A (≈ 1 hora de trabalho depois de escolhida)
-- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (estrutura REUSE) mais o resumo `LICENSE`; `REUSE.toml` cobre os arquivos que não são código-fonte.
+- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (estrutura REUSE) mais o resumo `COPYRIGHT`; `REUSE.toml` cobre os arquivos que não são código-fonte.
 - [x] `license =` definido em todos os seis arquivos `Cargo.toml`; cabeçalhos SPDX em todos os arquivos .rs/.js/.mjs/.sh, verificados por `osatura-cli/tests/spdx_audit.rs`.
 - [x] `docs/THIRD_PARTY.md` e `docs/THIRD_PARTY_NOTICES.md`, ambos regenerados por `scripts/licence-audit.sh`.
 - [x] `CONTRIBUTING.md` com o texto do DCO 1.1. Ainda é necessário um CLA antes de qualquer licença dupla.

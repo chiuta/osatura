@@ -16,7 +16,7 @@
 ## 2. Repository
 
 - [x] Das GitHub-Repository existiert, und der Baum wurde ohne `target/` und `out/` gepusht (`.gitignore`).
-- [ ] `LICENSE`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` behalten (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
+- [ ] `COPYRIGHT`, `LICENSES/`, `REUSE.toml`, `.github/FUNDING.yml` behalten (Buy Me a Coffee `echo.of.the.strings`, Patreon `alexio_tf`).
 - [ ] Privates Melden von Sicherheitslücken aktivieren (Reiter Security) und `docs/SECURITY.md` darauf verweisen lassen.
 - [ ] Beim Start des Studios die Repository-URL mit `--source-url` übergeben (AGPL-Quellcode-Angebot, Route `/source`) und das Angebot an einer frischen Installation testen.
 

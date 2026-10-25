@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 import { Osatura } from './osatura.js';
+import { t } from './i18n.js';
 const $ = (s) => document.getElementById(s);
 const stage = $('stage'), play = $('play'), scrub = $('scrub'), bones = $('bones'), info = $('info'), err = $('err');
 let x = null, a = null, f = 0, running = false, showBones = false, raf = 0, t0 = 0, f0 = 0;
@@ -33,7 +34,7 @@ function loop(ts) {
 }
 function setRunning(on) {
   running = on; t0 = 0; cancelAnimationFrame(raf);
-  play.textContent = on ? 'Pause' : 'Play';
+  play.textContent = on ? t('pause') : t('play');
   if (on) raf = requestAnimationFrame(loop);
 }
 function fail(e) { setRunning(false); err.textContent = String(e && e.message ? e.message : e); }
@@ -44,16 +45,16 @@ function open(project, name) {
     a = new Osatura(x, 0); a.load(project);
   } catch (e) { fail(e); return; }
   f = 0; scrub.max = String(Math.max(0, a.frames - 0.1));
-  const label = `${name}: ${a.width}×${a.height}, ${a.frames} frames at ${a.fps} fps`;
+  const label = t('info', { name, w: a.width, h: a.height, n: a.frames, fps: a.fps });
   info.textContent = label; canvas.setAttribute('aria-label', label); svgBox.setAttribute('aria-label', label);
   for (const el of [play, scrub, bones]) el.disabled = false;
   draw(); setRunning(!reduce);
 }
 play.onclick = () => setRunning(!running);
 scrub.oninput = () => { setRunning(false); f = +scrub.value; try { draw(); } catch (e) { fail(e); } };
-bones.onclick = () => { showBones = !showBones; bones.setAttribute('aria-pressed', String(showBones)); bones.textContent = showBones ? 'Hide bones' : 'Show bones'; try { draw(); } catch (e) { fail(e); } };
+bones.onclick = () => { showBones = !showBones; bones.setAttribute('aria-pressed', String(showBones)); bones.textContent = showBones ? t('hide') : t('show'); try { draw(); } catch (e) { fail(e); } };
 $('file').onchange = async (ev) => { const file = ev.target.files[0]; if (file) open(await file.text(), file.name); };
 try {
   x = await Osatura.instantiate(await fetch('osatura_wasm.wasm'));
   open(await (await fetch('demo-person.json')).text(), 'demo-person.json');
-} catch (e) { $('loading') && ($('loading').textContent = 'The engine could not start in this browser.'); fail(e); }
+} catch (e) { $('loading') && ($('loading').textContent = t('fail')); fail(e); }

@@ -15,7 +15,7 @@
  "hint": "MUEVE EL CURSOR · EL RIG TE SIGUE",
  "pe": "Zona de pruebas interactiva",
  "ph": "Un rig, en vivo en tu navegador",
- "pp": "Una cadena de cinemática inversa FABRIK con un cuerpo «revestido» (skin). Arrastra por el canvas y todo el esqueleto se resuelve hacia tu puntero. Es una ilustración en JavaScript de la idea, no el motor Rust en sí.",
+ "pp": "Una cadena de cinemática inversa FABRIK con un cuerpo «revestido» (skin). Arrastra por el canvas y el solver dobla todo el esqueleto hacia tu puntero. Es una ilustración en JavaScript de la idea, no el motor Rust en sí.",
  "mSkin": "skin",
  "mBoth": "skin + huesos",
  "mBones": "huesos",
@@ -77,7 +77,7 @@
  "k1": "pruebas en cargo test --workspace sin los crates GPU y ventana (más 19 doc-tests), 24 oct 2026, Linux x86-64; la CI también pasa en macOS y Windows",
  "k2": "limitaciones numeradas, con gravedad y alternativa",
  "k3": "crates de terceros en el inventario del 24 oct 2026 (todas las plataformas juntas)",
- "k4": "versiones publicadas hasta ahora — v0.1.0-alpha.3 está construida como borrador; «0.7» es un nivel de funciones, no una versión",
+ "k4": "versión publicada hasta ahora: v0.1.0-alpha.4, una versión preliminar; «0.7» es un nivel de funciones, no una versión",
  "vyh": "Verificado",
  "vxh": "No verificado",
  "ai": "<b>Transparencia:</b> el código se escribió en gran parte con un modelo de IA, y el proyecto es una implementación independiente a partir de especificaciones públicas; véase CLEANROOM.md. No está afiliado a, derivado de ni es compatible con ningún producto comercial de animación.",
@@ -110,7 +110,7 @@
  ],
  "vx": [
   "El módulo WebAssembly funciona en Chromium sin interfaz (la página «probar»); su velocidad y memoria no se han medido y nadie lo ha probado en otros navegadores",
-  "Solo una persona ha probado el lanzador de Windows y la aplicación con ventana (Windows 11, alpha.2); nadie los ha usado en macOS; los binarios no están firmados",
+  "Solo una persona ha probado el lanzador de Windows y la aplicación con ventana (Windows 11, alpha.2); nadie los ha usado en macOS; los binarios tienen firmas Sigstore pero no firma de código de Windows ni de macOS",
   "El estudio nunca lo ha usado una persona en producción, ni en un navegador distinto de Chromium",
   "Nunca se usó una GPU real, webcam, fotografía o archivo de captura de movimiento; sin auditoría de seguridad, revisión jurídica ni búsqueda de patentes",
   "El nombre OSATURA solo se buscó en la EUIPO; OSIM, la OMPI y la opinión de un abogado siguen pendientes"
@@ -201,5 +201,19 @@
  "ctaTry": "Pruébalo en el navegador",
  "instSrc": "o compila desde el código:",
  "supWho": "Ambas páginas de donación y la dirección pertenecen al autor, Alexio.",
- "ptNote": "◐ parcial: funciona, con los límites de FEATURES.md y LIMITATIONS.md"
+ "ptNote": "◐ parcial: funciona, con los límites de FEATURES.md y LIMITATIONS.md",
+ "alSearch": "Buscar en la documentación",
+ "alLang": "Idioma",
+ "alTheme": "Tema",
+ "alGh": "OSATURA en GitHub",
+ "alFabrik": "Cadena interactiva de cinemática inversa FABRIK que sigue al puntero",
+ "alBones": "Número de huesos",
+ "alDemo": "Demo",
+ "alFrame": "Fotograma",
+ "alSeedA": "Semilla, ejecución A",
+ "alSeedB": "Semilla, ejecución B",
+ "alMenu": "Menú",
+ "alClose": "Cerrar",
+ "alImage": "Imagen",
+ "tiPartial": "parcial"
 }

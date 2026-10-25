@@ -454,10 +454,10 @@ body.rd{overflow:hidden}
     <li><a href="#studio" data-i="nStudio">Stúdió</a></li><li><a href="#cli" data-i="nCli">CLI</a></li><li><a href="#status" data-i="n5">Állapot</a></li>
   </ul>
   <div class="tools">
-    <button class="ib" id="navsearch" aria-label="Search">⌕ Ctrl K</button>
-    <button class="ib" id="lang" aria-haspopup="true" aria-label="Language">HU ▾</button>
-    <button class="ib" id="theme" aria-label="Theme">◐</button>
-    <a class="ib gh" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" aria-label="OSATURA on GitHub">GitHub</a>
+    <button class="ib" id="navsearch" aria-label="Keresés a dokumentációban" data-al="alSearch">⌕ Ctrl K</button>
+    <button class="ib" id="lang" aria-haspopup="true" aria-label="Nyelv" data-al="alLang">HU ▾</button>
+    <button class="ib" id="theme" aria-label="Téma" data-al="alTheme">◐</button>
+    <a class="ib gh" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" aria-label="Az OSATURA a GitHubon" data-al="alGh">GitHub</a>
   </div>
 </div></nav>
 
@@ -466,7 +466,7 @@ body.rd{overflow:hidden}
   <div class="wrap">
     <div class="pill"><i></i><span data-i="pill">alfa · v0.1.0-alpha.4 előzetes kiadás · Rust · nyílt formátumok</span></div>
     <h1>OSA<span class="grad">TURA</span></h1>
-    <p class="sub" data-i="sub">2D vektoros rigging és animáció kódként: csontok, IK, skinning, deformerek, futtatókörnyezet és böngészős stúdió — determinisztikusan és szkriptelhetően.</p>
+    <p class="sub" data-i="sub">2D vektoros rigging és animáció kódként: csontok, IK, skinning, deformerek, futtatókörnyezet és böngészős stúdió — determinisztikus és szkriptelhető.</p>
     <div class="btns">
       <a class="btn p" href="../try/" data-i="ctaTry">Próbáld ki a böngészőben</a>
       <a class="btn" href="https://github.com/chiuta/osatura/releases" target="_blank" rel="noopener" data-i="cta4">Letöltés (kiadások)</a>
@@ -481,12 +481,12 @@ body.rd{overflow:hidden}
 <section id="play"><div class="wrap">
   <div class="eyebrow rv" data-i="pe">Interaktív játszótér</div>
   <h2 class="rv" data-i="ph">Egy rig, élőben a böngésződben</h2>
-  <p class="lead rv" data-i="pp">Egy FABRIK inverz kinematikai lánc „felöltöztetett” testtel (skin). Húzd az egeret a vásznon, és az egész váz az egérmutató felé oldódik meg. Ez az ötlet JavaScript-illusztrációja, nem maga a Rust motor.</p>
+  <p class="lead rv" data-i="pp">Egy FABRIK inverz kinematikai lánc „felöltöztetett” testtel (skin). Húzd az egeret a vásznon, és a megoldó az egész vázat az egérmutató felé hajlítja. Ez az ötlet JavaScript-illusztrációja, nem maga a Rust motor.</p>
   <div class="stage rv">
-    <canvas id="pg" role="img" aria-label="Interactive FABRIK inverse-kinematics chain that follows the pointer"></canvas>
+    <canvas id="pg" role="img" aria-label="Interaktív FABRIK inverz kinematikai lánc, amely követi az egérmutatót" data-al="alFabrik"></canvas>
     <div class="panel">
       <div class="seg" id="mode"><button data-m="skin" data-i="mSkin">skin</button><button data-m="both" class="on" data-i="mBoth">skin + csontok</button><button data-m="bones" data-i="mBones">csontok</button></div>
-      <div class="sl"><span data-i="lBones">csontok</span><input type="range" id="nb" aria-label="Number of bones" min="2" max="9" value="5"><b id="nbv">5</b></div>
+      <div class="sl"><span data-i="lBones">csontok</span><input type="range" id="nb" aria-label="Csontok száma" data-al="alBones" min="2" max="9" value="5"><b id="nbv">5</b></div>
       <div class="seg" id="spring"><button data-s="0" data-i="sDirect">közvetlen</button><button data-s="1" class="on" data-i="sSpring">rugó</button></div>
       <div class="seg" id="auto"><button data-a="1" data-i="aAuto">auto</button><button data-a="0" class="on" data-i="aMouse">egér</button></div>
     </div>
@@ -505,15 +505,15 @@ body.rd{overflow:hidden}
 <section id="demo"><div class="wrap">
   <div class="eyebrow rv" data-i="dEy">Lépésről lépésre demó</div>
   <h2 class="rv" data-i="dH">Karakter építése, az üres fájltól az exportált filmig</h2>
-  <p class="lead rv" data-i="dP">A sétáló személy, amellyel a stúdió első indításkor megnyílik. Tizenegy lépésben építjük fel; minden szakasz ugyanaz a projekt, az adott lépés után elvágva, a késznek az osatura demo-person írja ki. A parancsok a valódi osatura binárison futottak, és minden kép a motor által renderelt kocka.</p>
+  <p class="lead rv" data-i="dP">Íme a sétáló alak, amellyel a stúdió első indításkor megnyílik. Tizenegy lépésben építjük fel; minden szakasz ugyanaz a projekt, az adott lépés után elvágva, a késznek az osatura demo-person írja ki. A parancsok a valódi osatura binárison futottak, és minden kép a motor által renderelt kocka.</p>
   <div class="demo rv" id="demoapp">
-    <div class="dsteps" id="dsteps" role="tablist" aria-label="Demo"></div>
+    <div class="dsteps" id="dsteps" role="tablist" aria-label="Demó" data-al="alDemo"></div>
     <div class="dgrid">
       <div class="dview">
         <div class="dcanvas" id="dv" role="img" aria-labelledby="dtitle"></div>
         <div class="dbar">
           <button class="dbtn" id="dplay" type="button" data-i="dPlay">Lejátszás</button>
-          <input type="range" id="dscrub" min="0" max="23" value="0" aria-label="Frame">
+          <input type="range" id="dscrub" min="0" max="23" value="0" aria-label="Képkocka" data-al="alFrame">
           <span class="dfr" id="dfr"></span>
         </div>
       </div>
@@ -547,10 +547,10 @@ body.rd{overflow:hidden}
     <div class="card rv"><div class="n">02 · RIG</div><h3 data-i="c2h">Rigging</h3><p data-i="c2p">Csontok FK-val, kétcsontos, lágy, nyújtós és FABRIK IK-val. Korlátok, kényszerek, rugók, súlyozó eszközök, lattice, spine, morph és cage deformerek, auto-rig a rétegnevekből.</p><div class="tags"><span>FK</span><span>FABRIK IK</span><span>skinning</span><span>lattice</span><span>pin warp</span></div></div>
     <div class="card w3 rv"><div class="n">03 · ANIMATE</div><h3 data-i="c3h">Animáció</h3><p data-i="c3p">Kulcsok Bézier-, lépcsős, rugós és pattogó easinggel; kifejezések; rétegezett klipköteg; lábrögzítés; lánc-, haj- és szövetfizika; ajaksinkron hangból vagy átiratból; BVH-retargeting; MIDI-, egér-, kontroller- és webkamerás jellemzőpont-bemenet.</p>
       <div class="tl" aria-hidden="true"><div><i style="left:6%"></i><i style="left:34%"></i><i style="left:71%"></i></div><div><i style="left:12%"></i><i style="left:48%"></i><i style="left:90%"></i></div><div><i style="left:22%"></i><i style="left:58%"></i></div><u></u></div></div>
-    <div class="card w3 rv"><div class="n">04 · RUN</div><h3 data-i="c4h">Futtatókörnyezet</h3><p data-i="c4p">Állapotgépek 1-D blend fákkal, adatkötés, görgetési fizika, hibakorlátos részletességi szint, Rhai szkript-homokozó és MCP ügynökszerver patch-műveletek fölött.</p><div class="tags"><span>state machines</span><span>blend trees</span><span class="pt" title="partial">Rhai</span><span class="pt" title="partial">LOD</span><span>MCP agent</span></div></div>
-    <div class="card rv"><div class="n">05 · EXPORT</div><h3 data-i="c5h">Kimenet</h3><p data-i="c5p">SVG-től és PNG-től a GIF-en és videón át a Lottie-ig, glTF-ig és az önálló HTML-lejátszóig.</p><div class="tags"><span>GIF</span><span class="pt" title="partial">Lottie</span><span class="pt" title="partial">glTF</span><span>HTML</span></div></div>
+    <div class="card w3 rv"><div class="n">04 · RUN</div><h3 data-i="c4h">Futtatókörnyezet</h3><p data-i="c4p">Állapotgépek 1-D blend fákkal, adatkötés, görgetési fizika, hibakorlátos részletességi szint, Rhai szkript-homokozó és MCP ügynökszerver patch-műveletek fölött.</p><div class="tags"><span>state machines</span><span>blend trees</span><span class="pt" title="részleges">Rhai</span><span class="pt" title="részleges">LOD</span><span>MCP agent</span></div></div>
+    <div class="card rv"><div class="n">05 · EXPORT</div><h3 data-i="c5h">Kimenet</h3><p data-i="c5p">SVG-től és PNG-től a GIF-en és videón át a Lottie-ig, glTF-ig és az önálló HTML-lejátszóig.</p><div class="tags"><span>GIF</span><span class="pt" title="részleges">Lottie</span><span class="pt" title="részleges">glTF</span><span>HTML</span></div></div>
     <div class="card rv"><div class="n">06 · VERIFY</div><h3 data-i="c6h">Minőségi eszközök</h3><p data-i="c6p">check, lint, szemantikus diff, póz-fuzzing, animációs CI referenciakockákkal, verziókezelés szemantikus összefésüléssel.</p><div class="tags"><span>lint</span><span>diff</span><span>CI</span><span>fuzz</span></div></div>
-    <div class="card rv"><div class="n">07 · STUDIO</div><h3 data-i="c7h">Böngészős stúdió</h3><p data-i="c7p">Gizmók, idővonal, dope sheet, görbeszerkesztő, parancspaletta, visszavonás/újra és valós idejű többfelhasználós szerkesztés.</p><div class="tags"><span class="pt" title="partial">timeline</span><span class="pt" title="partial">graph editor</span><span class="pt" title="partial">collab</span></div></div>
+    <div class="card rv"><div class="n">07 · STUDIO</div><h3 data-i="c7h">Böngészős stúdió</h3><p data-i="c7p">Gizmók, idővonal, dope sheet, görbeszerkesztő, parancspaletta, visszavonás/újra és valós idejű többfelhasználós szerkesztés.</p><div class="tags"><span class="pt" title="részleges">timeline</span><span class="pt" title="részleges">graph editor</span><span class="pt" title="részleges">collab</span></div></div>
   </div>
   <p class="ptnote" data-i="ptNote">◐ részleges: működik, a FEATURES.md és a LIMITATIONS.md korlátaival</p>
 </div></section>
@@ -620,8 +620,8 @@ body.rd{overflow:hidden}
   <h2 class="rv" data-i="dh">Azonos seed, azonos pixelek</h2>
   <p class="lead rv" data-i="dp">Változtasd meg a B futás seedjét: a hash megváltozik. Állítsd az A-val egyenlőre: ismét megegyeznek. A motor erre a tulajdonságra épül, és ez teszi lehetővé a referenciakockás CI-t.</p>
   <div class="dbox rv">
-    <div class="run"><canvas id="ca"></canvas><div class="row"><span>seed</span><input id="sa" type="number" aria-label="Seed, run A" value="42"><span>hash@48</span><b id="ha"></b></div></div>
-    <div class="run"><canvas id="cb"></canvas><div class="row"><span>seed</span><input id="sb" type="number" aria-label="Seed, run B" value="42"><span>hash@48</span><b id="hb"></b></div></div>
+    <div class="run"><canvas id="ca"></canvas><div class="row"><span>seed</span><input id="sa" type="number" aria-label="Seed, A futtatás" data-al="alSeedA" value="42"><span>hash@48</span><b id="ha"></b></div></div>
+    <div class="run"><canvas id="cb"></canvas><div class="row"><span>seed</span><input id="sb" type="number" aria-label="Seed, B futtatás" data-al="alSeedB" value="42"><span>hash@48</span><b id="hb"></b></div></div>
   </div>
   <div id="match" class="y"></div>
   <p class="lead" style="margin-top:14px;font-size:.88rem" data-i="dn">Illusztráció: seedelt részecskerobbanás JavaScriptben, nem a Rust motor kimenete.</p>
@@ -635,11 +635,11 @@ body.rd{overflow:hidden}
     <div class="stat"><b data-n="1338">0</b><span data-i="k1">teszt a cargo test --workspace parancsban a GPU- és ablak-crate nélkül (plusz 19 doc-teszt), 2026. okt. 24., Linux x86-64; a CI macOS-en és Windowson is átmegy</span></div>
     <div class="stat"><b data-n="78">0</b><span data-i="k2">számozott korlátozás, súlyossággal és kerülőmegoldással</span></div>
     <div class="stat"><b data-n="363">0</b><span data-i="k3">külső crate a 2026. okt. 24-i leltárban (minden platform együtt)</span></div>
-    <div class="stat"><b data-n="0">0</b><span data-i="k4">eddig közzétett kiadás — a v0.1.0-alpha.3 tervezetként elkészült; a „0.7” funkciószint, nem verzió</span></div>
+    <div class="stat"><b data-n="1">1</b><span data-i="k4">eddig közzétett kiadás: a v0.1.0-alpha.4 előzetes kiadás; a „0.7” funkciószint, nem verzió</span></div>
   </div>
   <div class="vs rv">
     <div class="card y"><h3 data-i="vyh">Ellenőrizve</h3><ul id="vy"><li>1338 teszt plusz 19 doc-teszt lefut helyben (2026. okt. 24., Linux x86-64); ugyanez a csomag és a clippy a GitHub Actionsön Linuxon, macOS-en és Windowson is átmegy</li><li>A WebAssembly-modul CI-ben épül, és a burkoló tesztje Node alatt átmegy rajta; a cargo-deny és a REUSE átmegy</li><li>A stúdió 4 fej nélküli Chromium füsttesztje átmegy (124, 60, 89 és 35 ellenőrzés)</li><li>A CLI, a Rust homlokzat és a C ABI a dokumentált példákkal futtatva, ASan/UBSan alatt is</li></ul></div>
-    <div class="card x"><h3 data-i="vxh">Nincs ellenőrizve</h3><ul id="vx"><li>A WebAssembly-modul fut fej nélküli Chromiumban (a „kipróbálás” oldal); sebessége és memóriahasználata nincs megmérve, más böngészőben senki sem próbálta</li><li>A Windows-indítót és az ablakos alkalmazást csak egy ember próbálta ki (Windows 11, alpha.2); macOS-en senki nem használta; a binárisok nincsenek aláírva</li><li>A stúdiót ember nem használta éles munkában, és nem is Chromiumtól eltérő böngészőben</li><li>Valódi GPU-t, webkamerát, fényképet vagy mozgásrögzítő fájlt soha nem használtak; nincs biztonsági audit, jogi felülvizsgálat vagy szabadalmi keresés</li><li>Az OSATURA nevet csak az EUIPO-nál kerestük; az OSIM, a WIPO és egy ügyvéd véleménye még hátra van</li></ul></div>
+    <div class="card x"><h3 data-i="vxh">Nincs ellenőrizve</h3><ul id="vx"><li>A WebAssembly-modul fut fej nélküli Chromiumban (a „kipróbálás” oldal); sebessége és memóriahasználata nincs megmérve, más böngészőben senki sem próbálta</li><li>A Windows-indítót és az ablakos alkalmazást csak egy ember próbálta ki (Windows 11, alpha.2); macOS-en senki nem használta; a binárisok Sigstore-aláírással rendelkeznek, de Windows- vagy macOS-kódaláírásuk nincs</li><li>A stúdiót ember nem használta éles munkában, és nem is Chromiumtól eltérő böngészőben</li><li>Valódi GPU-t, webkamerát, fényképet vagy mozgásrögzítő fájlt soha nem használtak; nincs biztonsági audit, jogi felülvizsgálat vagy szabadalmi keresés</li><li>Az OSATURA nevet csak az EUIPO-nál kerestük; az OSIM, a WIPO és egy ügyvéd véleménye még hátra van</li></ul></div>
   </div>
   <div class="warn rv" data-i="ai"><b>Közzététel:</b> a kódot nagyrészt egy MI-modellel írták, a projekt pedig nyilvános specifikációkból készült független megvalósítás; lásd CLEANROOM.md. Nem áll kapcsolatban, nem származik és nem kompatibilis egyetlen kereskedelmi animációs termékkel sem.</div>
   <h3 class="h3s rv" data-i="lxH">Korlátozásböngésző</h3>
@@ -679,7 +679,7 @@ body.rd{overflow:hidden}
 
 <section id="start"><div class="wrap">
   <div class="eyebrow rv" style="justify-content:center" data-i="gse">Első lépések</div>
-  <h2 class="rv" data-i="gsh">Építs rigelést még ma este</h2>
+  <h2 class="rv" data-i="gsh">Építs egy riget még ma este</h2>
   <p class="lead rv" data-i="gsp">Klónozd, futtasd az osatura demo parancsot, és nyisd meg rajta a stúdiót.</p>
   <div class="btns rv">
     <a class="btn p" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" data-i="g1">Tároló megnyitása</a>
@@ -706,13 +706,13 @@ body.rd{overflow:hidden}
 <div id="reader">
   <div id="rbar"></div>
   <div class="rh">
-    <button class="ib" id="rmenu" aria-label="Menu">☰</button>
+    <button class="ib" id="rmenu" aria-label="Menü" data-al="alMenu">☰</button>
     <a class="logo" href="#top"><svg viewBox="0 0 32 32" style="width:22px;height:22px"><path d="M6 26L14 16L26 8" stroke="var(--a)" stroke-width="3" stroke-linecap="round" fill="none"/><g fill="var(--c)"><circle cx="6" cy="26" r="3.2"/><circle cx="14" cy="16" r="3.2"/><circle cx="26" cy="8" r="3.2"/></g></svg>DOCS</a>
     <span class="path" id="rpath"></span><span class="sp"></span>
-    <button class="ib" id="rsearch" aria-label="Search the documentation">⌕ Ctrl K</button>
-    <button class="ib" id="rlang" aria-haspopup="true" aria-label="Language">HU ▾</button>
-    <button class="ib" id="rtheme" aria-label="Theme">◐</button>
-    <button class="ib" id="rclose" aria-label="Close">✕</button>
+    <button class="ib" id="rsearch" aria-label="Keresés a dokumentációban" data-al="alSearch">⌕ Ctrl K</button>
+    <button class="ib" id="rlang" aria-haspopup="true" aria-label="Nyelv" data-al="alLang">HU ▾</button>
+    <button class="ib" id="rtheme" aria-label="Téma" data-al="alTheme">◐</button>
+    <button class="ib" id="rclose" aria-label="Bezárás" data-al="alClose">✕</button>
   </div>
   <div class="rb">
     <aside id="rside"><input id="rfilter" type="search" autocomplete="off" data-ph="rfph" placeholder="dokumentumok szűrése…"><div id="rnav"></div></aside>
@@ -721,8 +721,8 @@ body.rd{overflow:hidden}
   </div>
 </div>
 <div id="lmenu"></div>
-<div id="lb" role="dialog" aria-label="Image"><img alt=""></div>
+<div id="lb" role="dialog" aria-label="Kép" data-al="alImage"><img alt=""></div>
 <script>window.OSA_ROOT='../';window.OSA_LANG='hu'</script>
-<script src="../site/data/app.js?v=247c19d20e" defer></script>
+<script src="../site/data/app.js?v=db2565fa54" defer></script>
 </body>
 </html>

@@ -1,11 +1,11 @@
-# OSATURA — licențiere (DECIS: Varianta A, aplicată la 22 oct. 2026; vezi LICENSE și LICENSES/)
+# OSATURA — licențiere (DECIS: Varianta A, aplicată la 22 oct. 2026; vezi COPYRIGHT și LICENSES/)
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/LICENSING.md) · [Română](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/ro/LICENSING.md) · [Français](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/fr/LICENSING.md) · [Italiano](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/it/LICENSING.md) · [Español](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/es/LICENSING.md) · [Português](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/pt/LICENSING.md) · [Deutsch](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/de/LICENSING.md) · [Magyar](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/hu/LICENSING.md)
 
 **Stare:** Varianta A de mai jos a fost aleasă și aplicată: MPL-2.0 pentru biblioteci (core, capi, wasm, gpu), AGPL-3.0-or-later pentru `osatura-cli` (CLI + studio) și `osatura-gui` (studioul într-o fereastră nativă), CC-BY-4.0 pentru documentație și pentru resursele și modelele sintetice, politica de mărci în TRADEMARK.md, DCO în CONTRIBUTING.md, anteturi SPDX în toate fișierele .rs/.js/.mjs/.sh și REUSE.toml pentru restul, oferta de cod sursă conform secțiunii 13 din AGPL (`/source`, `--source-url`), câmpurile `license` din Cargo completate. Acțiuni rămase proprietarului: verificarea de către un avocat, căutarea mărcii (EUIPO/OSIM), verificarea brevetelor (docs/PATENT_NOTES.md), un CLA dacă se dorește licențiere duală, includerea notificărilor despre terți în lansările binare.
 
 
-*Nu constituie consultanță juridică. Licența este DECISĂ (Varianta A, vezi LICENSE); secțiunile de mai jos sunt păstrate ca justificare și ca alternativele care au fost luate în considerare. Cere unui avocat (de preferat unul care cunoaște dreptul de autor românesc/european) să confirme înainte de prima lansare publică. Contribuții: nu există niciun drept de relicențiere sau de licențiere duală pentru contribuțiile terților până când nu există un CLA (CONTRIBUTING.md).*
+*Nu constituie consultanță juridică. Licența este DECISĂ (Varianta A, vezi COPYRIGHT); secțiunile de mai jos sunt păstrate ca justificare și ca alternativele care au fost luate în considerare. Cere unui avocat (de preferat unul care cunoaște dreptul de autor românesc/european) să confirme înainte de prima lansare publică. Contribuții: nu există niciun drept de relicențiere sau de licențiere duală pentru contribuțiile terților până când nu există un CLA (CONTRIBUTING.md).*
 
 ## 1. Ce trebuie să facă licența pentru tine
 Venitul tău provine din **donații (Buy Me a Coffee)**, nu din taxe de licență. Așadar licența nu creează banii — o fac **bunăvoința, vizibilitatea și încrederea**. Ea are trei roluri:
@@ -61,7 +61,7 @@ Acoperire maximă și zero fricțiune; include acordarea de brevete. Cost: orici
 7. Păstrează **Patreon** (`patreon.com/c/alexio_tf`) și BMC vizibile ambele, dar dă-le scopuri distincte (BMC pentru mulțumiri unice; Patreon pentru sprijin recurent), ca susținătorii să nu fie confuzi.
 
 ## 5. Listă de verificare pentru aplicarea Variantei A (≈ 1 oră de lucru după alegere)
-- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (structura REUSE) plus rezumatul `LICENSE`; `REUSE.toml` acoperă fișierele care nu conțin cod sursă.
+- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (structura REUSE) plus rezumatul `COPYRIGHT`; `REUSE.toml` acoperă fișierele care nu conțin cod sursă.
 - [x] `license =` setat în toate cele șase fișiere `Cargo.toml`; anteturi SPDX în toate fișierele .rs/.js/.mjs/.sh, verificate de `osatura-cli/tests/spdx_audit.rs`.
 - [x] `docs/THIRD_PARTY.md` și `docs/THIRD_PARTY_NOTICES.md`, ambele regenerate de `scripts/licence-audit.sh`.
 - [x] `CONTRIBUTING.md` cu textul DCO 1.1. Un CLA este în continuare necesar înainte de orice licență duală.

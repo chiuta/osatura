@@ -3,7 +3,7 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Try OSATURA in your browser (WebAssembly)</title>
+<title data-t="title">Try OSATURA in your browser (WebAssembly)</title>
 <meta name="description" content="The OSATURA engine compiled to WebAssembly, running in your browser: play the demo character, scrub frames, show bones, or open your own project file.">
 <link rel="canonical" href="https://osatura.chiuta.ro/try/">
 <meta property="og:title" content="Try OSATURA in your browser">
@@ -32,18 +32,18 @@ input[type=range]{flex:1;min-width:160px;accent-color:var(--a)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head><body><div class="wrap">
-<header><div><h1>Try OSATURA in your browser</h1>
-<p class="mut">The real engine compiled to WebAssembly: every frame below is rendered by it, on your machine. Nothing is uploaded.</p></div>
-<a href="../">← osatura.chiuta.ro</a></header>
-<div class="stage" id="stage" aria-live="polite"><p class="mut" id="loading">Loading the engine (≈ 3 MB)…</p></div>
+<header><div><h1 data-t="h1">Try OSATURA in your browser</h1>
+<p class="mut" data-t="lead">The real engine compiled to WebAssembly: every frame below is rendered by it, on your machine. Nothing is uploaded.</p></div>
+<a href="../" id="home">← osatura.chiuta.ro</a></header>
+<div class="stage" id="stage" aria-live="polite"><p class="mut" id="loading" data-t="loading">Loading the engine (≈ 3 MB)…</p></div>
 <div class="bar">
 <button class="pri" id="play" disabled>Pause</button>
-<label class="sr" for="scrub">Frame</label><input type="range" id="scrub" min="0" max="0" step="0.1" value="0" disabled>
-<button id="bones" aria-pressed="false" disabled>Show bones</button>
-<label class="btn">Open a project (.json)<input type="file" id="file" accept=".json,application/json" class="sr"></label>
+<label class="sr" for="scrub" data-t="frame">Frame</label><input type="range" id="scrub" min="0" max="0" step="0.1" value="0" disabled>
+<button id="bones" aria-pressed="false" disabled data-t="show">Show bones</button>
+<label class="btn"><span data-t="openf">Open a project (.json)</span><input type="file" id="file" accept=".json,application/json" class="sr"></label>
 </div>
 <p id="info"></p><p id="err" role="alert"></p>
-<p class="note">Experimental. This page runs the <code>osatura-web</code> package of the <a href="https://github.com/chiuta/osatura/releases">latest prerelease</a>; speed and memory use have not been measured. To create projects use the command-line tool or the studio (<a href="https://github.com/chiuta/osatura/blob/main/docs/GETTING_STARTED.md">getting started</a>). Module licence MPL-2.0, <a href="SOURCE.txt">source</a>; demo character CC-BY-4.0.</p>
+<p class="note" data-th="note">Experimental. This page runs the <code>osatura-web</code> package of the <a href="https://github.com/chiuta/osatura/releases">latest prerelease</a>; speed and memory use have not been measured. To create projects use the command-line tool or the studio (<a href="https://github.com/chiuta/osatura/blob/main/docs/GETTING_STARTED.md">getting started</a>). Module licence MPL-2.0, <a href="SOURCE.txt">source</a>; demo character CC-BY-4.0.</p>
 </div>
 <script type="module" src="try.js"></script>
 </body></html>

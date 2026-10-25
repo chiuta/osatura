@@ -167,7 +167,7 @@ Commencez par [docs/INDEX.md](docs/i18n/fr/INDEX.md) (tous les documents, public
 * Le nom et le logo ne sont pas couverts par ces licences ([TRADEMARK.md](docs/i18n/fr/TRADEMARK.md)). Le statut vis-à-vis des brevets n'a pas été évalué ([docs/PATENT_NOTES.md](docs/i18n/fr/PATENT_NOTES.md)). Une licence commerciale ou double pour le code contribué n'est pas possible sans accord de licence de contributeur, et il n'en existe aucun.
 * Crates tiers : 363 dans l'inventaire du 24 oct. 2026 (toutes plateformes et cibles confondues, ce qui inclut les crates propres à Windows / macOS / Linux de l'application à fenêtre ; un binaire donné en contient un sous-ensemble), tous permissifs sauf six crates MPL-2.0 à copyleft faible : `smartstring` derrière la fonctionnalité optionnelle `scripting`, et cinq (`cssparser`, `cssparser-macros`, `dtoa-short`, `selectors`, `option-ext`) que seule l'application à fenêtre `osatura-gui` peut faire intervenir ([docs/THIRD_PARTY.md](docs/i18n/fr/THIRD_PARTY.md)). ffmpeg n'est jamais fourni avec le projet.
 
-Voir [LICENSE](LICENSE), [LICENSES/](LICENSES/) et [LICENSING.md](docs/i18n/fr/LICENSING.md). Rien de ceci ne constitue un avis juridique ; une revue par un juriste reste à faire.
+Voir [COPYRIGHT](COPYRIGHT), [LICENSES/](LICENSES/) et [LICENSING.md](docs/i18n/fr/LICENSING.md). Rien de ceci ne constitue un avis juridique ; une revue par un juriste reste à faire.
 
 ## Contribuer
 

@@ -1,6 +1,6 @@
 # Política de nome e logotipo do OSATURA
 
-As licenças em LICENSE cobrem o código, não o nome "OSATURA" nem qualquer logotipo. (Disponibilidade da marca: veja docs/LIMITATIONS.md L-78; "osatura" também é uma palavra comum em romeno que significa esqueleto ou estrutura.)
+As licenças em COPYRIGHT cobrem o código, não o nome "OSATURA" nem qualquer logotipo. (Disponibilidade da marca: veja docs/LIMITATIONS.md L-78; "osatura" também é uma palavra comum em romeno que significa esqueleto ou estrutura.)
 
 Permitido sem pedir autorização: dizer que seu software é "compatible with OSATURA" ou "made with OSATURA"; redistribuir uma compilação sem modificações com o nome original; criar links para o projeto.
 

@@ -1,11 +1,11 @@
-# OSATURA — licenze (DECISO: Variante A, applicata il 22 ott 2026; vedi LICENSE e LICENSES/)
+# OSATURA — licenze (DECISO: Variante A, applicata il 22 ott 2026; vedi COPYRIGHT e LICENSES/)
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/LICENSING.md) · [Română](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/ro/LICENSING.md) · [Français](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/fr/LICENSING.md) · [Italiano](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/it/LICENSING.md) · [Español](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/es/LICENSING.md) · [Português](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/pt/LICENSING.md) · [Deutsch](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/de/LICENSING.md) · [Magyar](https://github.com/chiuta/osatura/blob/landing-page/docs/i18n/hu/LICENSING.md)
 
 **Stato:** la Variante A qui sotto è stata scelta e applicata: MPL-2.0 per le librerie (core, capi, wasm, gpu), AGPL-3.0-or-later per `osatura-cli` (CLI + studio) e `osatura-gui` (lo studio in una finestra nativa), CC-BY-4.0 per la documentazione e per gli asset e i modelli sintetici, politica sul marchio in TRADEMARK.md, DCO in CONTRIBUTING.md, intestazioni SPDX in tutti i file .rs/.js/.mjs/.sh e REUSE.toml per il resto, offerta del sorgente ai sensi della sezione 13 della AGPL (`/source`, `--source-url`), campi `license` di Cargo impostati. Azioni rimanenti a carico del titolare: revisione legale, ricerca sul marchio (EUIPO/OSIM), verifica dei brevetti (docs/PATENT_NOTES.md), un CLA se si vuole la doppia licenza, inclusione degli avvisi di terze parti nelle release binarie.
 
 
-*Non è consulenza legale. La licenza è DECISA (Variante A, vedi LICENSE); le sezioni seguenti sono conservate come motivazione e come elenco delle alternative considerate. Fai confermare il tutto da un avvocato (idealmente uno che conosca il diritto d'autore rumeno/UE) prima della prima release pubblica. Contributi: finché non esiste un CLA, non c'è alcun diritto di rilicenziare o di concedere in doppia licenza i contributi di terzi (CONTRIBUTING.md).*
+*Non è consulenza legale. La licenza è DECISA (Variante A, vedi COPYRIGHT); le sezioni seguenti sono conservate come motivazione e come elenco delle alternative considerate. Fai confermare il tutto da un avvocato (idealmente uno che conosca il diritto d'autore rumeno/UE) prima della prima release pubblica. Contributi: finché non esiste un CLA, non c'è alcun diritto di rilicenziare o di concedere in doppia licenza i contributi di terzi (CONTRIBUTING.md).*
 
 ## 1. Cosa deve fare la licenza per te
 Il tuo reddito sono le **donazioni (Buy Me a Coffee)**, non i canoni di licenza. Quindi non è la licenza a creare il denaro: lo fanno **benevolenza, visibilità e fiducia**. La licenza ha tre compiti:
@@ -61,7 +61,7 @@ Impedisce la concorrenza commerciale per N anni. Costo: **non è open source**; 
 7. Tieni visibili sia **Patreon** (`patreon.com/c/alexio_tf`) sia BMC, ma dai a ciascuno uno scopo distinto (BMC per un ringraziamento una tantum; Patreon per il sostegno ricorrente) così i sostenitori non si confondono.
 
 ## 5. Checklist per applicare la Variante A (≈ 1 ora di lavoro una volta scelta)
-- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (struttura REUSE) più il riepilogo `LICENSE`; `REUSE.toml` copre i file non sorgente.
+- [x] `LICENSES/MPL-2.0.txt`, `LICENSES/AGPL-3.0-or-later.txt`, `LICENSES/CC-BY-4.0.txt`, `LICENSES/LicenseRef-third-party.txt` (struttura REUSE) più il riepilogo `COPYRIGHT`; `REUSE.toml` copre i file non sorgente.
 - [x] `license =` impostato in tutti e sei i file `Cargo.toml`; intestazioni SPDX in tutti i file .rs/.js/.mjs/.sh, verificate da `osatura-cli/tests/spdx_audit.rs`.
 - [x] `docs/THIRD_PARTY.md` e `docs/THIRD_PARTY_NOTICES.md`, entrambi rigenerati da `scripts/licence-audit.sh`.
 - [x] `CONTRIBUTING.md` con il testo del DCO 1.1. Un CLA serve ancora prima di qualsiasi doppia licenza.
