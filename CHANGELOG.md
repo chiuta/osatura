@@ -10,6 +10,10 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Export
+
+- **`.lottie` is now a dotLottie 2.0 container** ([spec](https://dotlottie.io/spec/2.0/)): `manifest.json` has `"version": "2"` and the animation is `a/animation.json`; `autoplay`/`loop` are no longer written (in 2.0 they belong to the player or a state machine). v0.1.0-alpha.4 and older wrote dotLottie 1.0 (`animations/animation.json`). Checked with @lottiefiles/dotlottie-web and lottie-web.
+
 ### Studio
 
 - **Guided demo (Demo button, command `demo.panel`)**: builds the walking person in 13 steps (scenery, body, head, arms with five fingers, skeleton, walk, arm swing, trunk and head, blink and smile, moving ground, check, export). Each step loads that stage of the project into the editor through one replace-all operation (one Undo step); Save is disabled while it is loaded and *Restore my project* brings your own project back. The stages are cut from `osatura demo-person`; `scripts/build-studio-tour.mjs` regenerates them with the real binary.
