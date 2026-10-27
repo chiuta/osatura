@@ -10,6 +10,10 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Documentation
+
+- README (English and Romanian): new section "Live demo and animation examples": the hosted live demo is stated as **planned** (none exists), and the animation examples that exist in the repository are listed. Documentation only; no Rust source, manifest or build file was touched. `cargo check` could not be run in the review environment (toolchain 1.97.0 not downloadable offline).
+
 ### Release
 
 - **Static Linux archive `osatura-linux-x86_64-musl.tar.gz`** for distributions with glibc older than 2.35 (RHEL/Rocky/Alma 8 and 9, Debian 10 and 11, Ubuntu 20.04): `osatura` linked against musl, no system libraries needed. CI runs the core and CLI tests on musl and runs the binary inside an empty chroot (`scripts/linux-static-check.sh`). Signed, attested and listed in `SHA256SUMS.txt` like the other archives.

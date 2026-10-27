@@ -36,6 +36,15 @@ Principles that shape the project:
 >
 > Read [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 numbered limits with severity and workaround) before you depend on anything.
 
+## Live demo and animation examples
+
+* **Live demo (in the browser, hosted): planned.** There is no hosted demo today and no web address to point to. Until then you can try the studio locally (`osatura studio demo.json --port 8080`, see Quick start) or, when a release exists, with the `osatura-web.tar.gz` archive; the WebAssembly demo page has so far only been loaded in headless Chromium without the `.wasm` file ([docs/WASM.md](docs/WASM.md)), so do not expect a verified in-browser rendering.
+* **Animation examples that exist in this repository** (checked in the file list, not re-rendered in this review):
+  * [`docs/img/walk.gif`](docs/img/walk.gif): the built-in walking person, real output of `osatura export` (the image at the top of this page); [`docs/img/walk-cycle.png`](docs/img/walk-cycle.png): the same cycle as a sheet.
+  * [`docs/examples/pip.svg`](docs/examples/pip.svg) and [`docs/examples/pip-rig.rhai`](docs/examples/pip-rig.rhai): a drawing and the script that rigs it and gives it a walk cycle, used step by step in [docs/TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) (result: [`docs/img/tutorial-svg-walk.png`](docs/img/tutorial-svg-walk.png)).
+  * `osatura demo` (rig demo, 48 frames) and `osatura demo-fx` (liquid, booleans, particles) generate project files you can render and export yourself.
+  * More animated examples: not yet added (planned).
+
 ## Maturity: where to start
 
 OSATURA has far more features than one person can validate. This table says where the author puts the effort first. **It is an intention, not a quality guarantee: no animator other than the author has used any of it yet** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
