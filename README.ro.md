@@ -22,7 +22,7 @@ Principiile proiectului:
 
 *Nume: proiectul s-a numit ARMATURA până la 24 oct. 2026 și a fost redenumit OSATURA în urma unei căutări de mărci ([docs/LIMITATIONS.md](docs/LIMITATIONS.md) L-78). Depozitul și adresa site-ului au fost redenumite și ele (linkurile vechi către depozit redirecționează).*
 
-> **Alpha. Primele build-uri sunt pregătite ca pre-lansare ciornă: `v0.1.0-alpha.3`.** Executabilele pentru Windows x86-64, macOS arm64 și Linux x86-64 și modulul WebAssembly sunt construite de GitHub Actions și atașate la o pre-lansare *ciornă* pe <https://github.com/chiuta/osatura/releases> (o ciornă este vizibilă doar proprietarului până când este publicată manual). Toate crate-urile au în continuare versiunea `0.1.0`; „v0.5 / v0.6 / v0.7” sunt *niveluri de funcționalitate* în istoric, nu numere de lansare ([CHANGELOG.md](CHANGELOG.md)).
+> **Alpha. Cea mai recentă pre-lansare publicată: `v0.1.0-alpha.4`; următoarea este `v0.1.0-alpha.5`.** Executabilele pentru Windows x86-64, macOS arm64 și Linux x86-64 și modulul WebAssembly sunt construite de GitHub Actions și atașate la o pre-lansare *ciornă* pe <https://github.com/chiuta/osatura/releases> (o ciornă este vizibilă doar proprietarului până când este publicată manual). Toate crate-urile au în continuare versiunea `0.1.0`; „v0.5 / v0.6 / v0.7” sunt *niveluri de funcționalitate* în istoric, nu numere de lansare ([CHANGELOG.md](CHANGELOG.md)).
 >
 > | Verificat | Neverificat |
 > |---|---|
