@@ -30,6 +30,15 @@ Principiile proiectului:
 >
 > Citește [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 de limite numerotate, cu gravitate și soluție ocolitoare) înainte să te bazezi pe ceva.
 
+## Demo online și exemple de animație
+
+* **Demo online (în browser, găzduit): planificat.** Astăzi nu există un demo găzduit și nicio adresă web la care să trimit. Până atunci poți încerca studioul local (`osatura studio demo.json --port 8080`, vezi Pornire rapidă) sau, când va exista o lansare, cu arhiva `osatura-web.tar.gz`; pagina demo WebAssembly a fost încărcată până acum doar în Chromium fără ecran și fără fișierul `.wasm` ([docs/WASM.md](docs/WASM.md)), așa că nu te aștepta la o randare verificată în browser.
+* **Exemple de animație care există în acest depozit** (verificate în lista de fișiere, nerandate din nou în această recenzie):
+  * [`docs/img/walk.gif`](docs/img/walk.gif): persoana care merge, din demo-ul integrat, rezultat real al `osatura export` (imaginea din capul paginii); [`docs/img/walk-cycle.png`](docs/img/walk-cycle.png): același ciclu ca planșă.
+  * [`docs/examples/pip.svg`](docs/examples/pip.svg) și [`docs/examples/pip-rig.rhai`](docs/examples/pip-rig.rhai): un desen și scriptul care îi pune schelet și ciclu de mers, folosite pas cu pas în [docs/TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) (rezultat: [`docs/img/tutorial-svg-walk.png`](docs/img/tutorial-svg-walk.png)).
+  * `osatura demo` (demo de rig, 48 de cadre) și `osatura demo-fx` (lichid, booleene, particule) generează fișiere de proiect pe care le poți randa și exporta singur.
+  * Alte exemple animate: încă neadăugate (planificat).
+
 ## Descărcare
 
 Arhivele precompilate, după ce proprietarul publică lansarea ciornă, se găsesc pe [pagina Releases](https://github.com/chiuta/osatura/releases) a proiectului:
