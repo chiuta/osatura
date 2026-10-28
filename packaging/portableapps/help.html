@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>OSATURA Portable - Help</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem;color:#1b2a30}code{background:#eef2f3;padding:0 .25em}</style></head>
+<body>
+<h1>OSATURA Portable @DISPLAY_VERSION@</h1>
+<p>OSATURA is a 2D rigging and animation studio and command-line engine. This package runs it from a USB drive or any folder, without installing anything and without leaving files on the computer you use.</p>
+<h2>Using it</h2>
+<ul>
+<li>Start <strong>OSATURAPortable</strong>: the studio opens in its own window. Close the window to stop it.</li>
+<li>Your first project, <code>first-rig.json</code>, is created in <code>Data\Projects</code> the first time. Your own projects can live there too.</li>
+<li>The studio settings are in <code>Data\settings\ui.json</code>; the window component's cache and browser storage are in <code>Data\WebView2</code>. Copy the <code>Data</code> folder to move your settings and projects.</li>
+<li>The command-line program is <code>App\OSATURA\osatura.exe</code> (run <code>osatura --help</code> in a terminal). It is not redirected: without the launcher it uses your user profile for its settings unless you set <code>OSATURA_UI_CONFIG</code> and <code>OSATURA_DOCUMENTS</code> yourself.</li>
+</ul>
+<h2>Requirements</h2>
+<ul>
+<li>Windows 10 or 11, 64-bit, with the Microsoft Edge WebView2 Runtime (already part of current Windows 10 and 11; otherwise install it from Microsoft). It is not included in this package.</li>
+<li>Optional: <code>ffmpeg</code> on the PATH for video export and mp3/ogg audio. It is not included.</li>
+<li>The studio listens only on this computer (127.0.0.1). A firewall prompt, if one appears, can be answered "cancel"/"block".</li>
+</ul>
+<h2>Good to know</h2>
+<ul>
+<li>Temporary files (audio mixing, exports) go to the system temporary folder and are normally removed when the command ends.</li>
+<li>This is an alpha release. Back up your projects.</li>
+<li>The release files are signed and attested; how to check them: <code>docs/VERIFY_DOWNLOADS.md</code> in the source, or <a href="https://github.com/chiuta/osatura">github.com/chiuta/osatura</a>.</li>
+</ul>
+<h2>Licence</h2>
+<p>OSATURA is free software: the programs under AGPL-3.0-or-later, the libraries under MPL-2.0, the documentation under CC-BY-4.0. The licence texts and the third-party notices are in <code>App\OSATURA</code>. Source code: <a href="https://github.com/chiuta/osatura">github.com/chiuta/osatura</a>.</p>
+</body></html>

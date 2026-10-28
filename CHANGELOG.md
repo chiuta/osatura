@@ -26,6 +26,10 @@ Related versions that **are** real and independent of the above: the Rust facade
 - **Collaboration**: `--collab-host NAMES` limits save, compact and the new `POST /api/collab/revoke` to named hosts (opt-in; without it nothing changes); one client address may hold at most 16 connections (loopback exempt); a participant token's deadline has one accepted spelling and the signature is checked before the deadline.
 - **ffmpeg/ffprobe**: `.wav`, `.mp3` and `.ogg` sound files are opened with a forced demuxer. On Windows random bytes now come from the system generator instead of a hash-based fallback.
 
+### Portable
+
+- **PortableApps.com package sources** in `packaging/portableapps` (`appinfo.ini`, launcher configuration, icon, help page and `make_package.py`, which assembles the layout from the Windows release archive). The new environment variable `OSATURA_DOCUMENTS` moves the folder of the first project (window application and double-click start). The launcher program and installer still have to be built and tested on Windows with the PortableApps.com tools.
+
 ### Export
 
 - **`.lottie` is now a dotLottie 2.0 container** ([spec](https://dotlottie.io/spec/2.0/)): `manifest.json` has `"version": "2"` and the animation is `a/animation.json`; `autoplay`/`loop` are no longer written (in 2.0 they belong to the player or a state machine). v0.1.0-alpha.4 and older wrote dotLottie 1.0 (`animations/animation.json`). Checked with @lottiefiles/dotlottie-web and lottie-web.
