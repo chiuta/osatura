@@ -145,6 +145,9 @@ def prerender(html, t, lang, langs):
         filled += 1
         return m.group(1) + str(t[k]) + m.group(4)
     html = re.sub(r'(<(\w+)\b[^>]*\sdata-i="(\w+)"[^>]*>)(</\2>)', fill, html)
+    # counters ship their final value in the page language (no JS needed, no stray "0"); '.' groups in ro/de/it/es/pt, narrow no-break space in fr/hu, ',' in en
+    grp = {'ro': '.', 'de': '.', 'it': '.', 'es': '.', 'pt': '.', 'fr': '\u202f', 'hu': '\u202f'}.get(lang, ',')
+    html = re.sub(r'(<b data-n="(\d+)">)[^<]*(</b>)', lambda m: m.group(1) + f"{int(m.group(2)):,}".replace(',', grp) + m.group(3), html)
     html = re.sub(r'(\sdata-ph="(\w+)")', lambda m: m.group(1) + (f' placeholder="{attr(t[m.group(2)])}"' if m.group(2) in t else ""), html)
     html = re.sub(r'aria-label="[^"]*"(\s+data-al="(\w+)")', lambda m: f'aria-label="{attr(t[m.group(2)])}"' + m.group(1) if m.group(2) in t else m.group(0), html)
     for sid in ("lang", "rlang"):
