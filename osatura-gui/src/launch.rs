@@ -45,10 +45,19 @@ fn hide_console(c: &mut Command) {
     }
 }
 
+/// The folder for the first project: `OSATURA_DOCUMENTS` when set and not empty (a portable installation, e.g. the
+/// PortableApps.com package, points it into its own data folder), else `<home>/Documents/OSATURA`.
+fn projects_dir(env: impl Fn(&str) -> Option<std::ffi::OsString>) -> Result<PathBuf, String> {
+    if let Some(d) = env("OSATURA_DOCUMENTS").filter(|v| !v.is_empty()) {
+        return Ok(PathBuf::from(d));
+    }
+    let home = env("USERPROFILE").or_else(|| env("HOME")).ok_or("no home folder")?;
+    Ok(PathBuf::from(home).join("Documents").join("OSATURA"))
+}
+
 /// `<Documents>/OSATURA/first-rig.json`, created from the built-in demo when missing (an existing file is never touched).
 pub fn default_project(engine: &Path) -> Result<PathBuf, String> {
-    let home = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")).ok_or("no home folder")?;
-    let dir = PathBuf::from(home).join("Documents").join("OSATURA");
+    let dir = projects_dir(|k| std::env::var_os(k))?;
     std::fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     let p = dir.join("first-rig.json");
     if !p.exists() {
@@ -110,4 +119,22 @@ pub fn page_ok(s: &Studio) -> bool {
     let mut buf = Vec::new();
     let _ = t.read_to_end(&mut buf);
     buf.starts_with(b"HTTP/1.1 200") || buf.starts_with(b"HTTP/1.0 200")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::OsString;
+
+    fn env<'a>(pairs: &'a [(&'a str, &'a str)]) -> impl Fn(&str) -> Option<OsString> + 'a {
+        move |k| pairs.iter().find(|(n, _)| *n == k).map(|(_, v)| OsString::from(v))
+    }
+
+    #[test]
+    fn the_projects_folder_follows_osatura_documents_then_the_home_folder() {
+        assert_eq!(projects_dir(env(&[("OSATURA_DOCUMENTS", "/p/data"), ("HOME", "/h")])).unwrap(), PathBuf::from("/p/data"));
+        assert_eq!(projects_dir(env(&[("OSATURA_DOCUMENTS", ""), ("HOME", "/h")])).unwrap(), PathBuf::from("/h").join("Documents").join("OSATURA"));
+        assert_eq!(projects_dir(env(&[("USERPROFILE", "/u"), ("HOME", "/h")])).unwrap(), PathBuf::from("/u").join("Documents").join("OSATURA"));
+        assert!(projects_dir(env(&[])).is_err());
+    }
 }

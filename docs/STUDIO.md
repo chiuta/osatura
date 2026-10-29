@@ -38,6 +38,8 @@ same message. Unknown fields are warned about (`warning: unknown field bogus (ig
 | `--port N` | 8080 | TCP port. An occupied port gives `cannot listen on 127.0.0.1:8861: Address already in use (os error 98)`; a bad one `cannot listen on 127.0.0.1:99999: invalid port value`. |
 | `--bind ADDR` | `127.0.0.1` | Interface to listen on. Anything that is not a loopback address **requires `--collab-token`**. |
 | `--ui-config F` | `$OSATURA_UI_CONFIG`, else `$XDG_CONFIG_HOME/osatura/ui.json`, else on Windows `%APPDATA%\OSATURA\ui.json` (before alpha.3 there was none: settings were kept for the session only), else `~/.config/osatura/ui.json` | Where layout, shortcuts, recent commands and overlay settings are kept. It is a per-user file, never part of the project. |
+
+The window application and the double-click start create the first project in `OSATURA_DOCUMENTS` when that variable is set, else in `Documents\OSATURA` (used by the portable package).
 | `--allow-host NAMES` | none | Extra `Host` names to accept (comma separated), for access under a DNS name. |
 | `--public-origin URL` | none | The bare origin (`https://studio.example.org`, no path) that a TLS reverse proxy presents; its `Host` and `Origin` are then accepted. |
 | `--source-url URL` | none; in the official release binaries the commit they were built from (`https://github.com/chiuta/osatura/tree/<commit>`) | Where the corresponding source of *your* build can be downloaded (AGPL section 13); shown on `/source` and by `--version`. An explicit value always wins. |
