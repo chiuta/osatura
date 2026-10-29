@@ -52,8 +52,7 @@ Az előre elkészített archívumok – miután a tulajdonos közzétette a váz
 |---|---|
 | `osatura-windows-x86_64.zip` | `osatura.exe` (parancssor + stúdiószerver), `osatura-studio.exe` (ablakos alkalmazás), C könyvtár és fejléc, licencek, harmadik féltől származó közlemények |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (csak Apple silicon), C könyvtár és fejléc, licencek, közlemények |
-| `osatura-linux-x86_64.tar.gz` | `osatura`, C könyvtár és fejléc, licencek, közlemények (nincs ablakos alkalmazás: használd az `osatura studio` parancsot és egy böngészőt); glibc 2.35+ szükséges (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
-| `osatura-linux-x86_64-musl.tar.gz` | statikus `osatura` (musl libc, nem kellenek rendszerkönyvtárak) régebbi disztribúciókhoz, pl. RHEL/Rocky/Alma 8 és 9, Debian 10 és 11, Ubuntu 20.04; C könyvtár nélkül; kb. 5-50 %-kal lassabb a glibc buildnél |
+| `osatura-linux-x86_64.tar.gz` | `osatura`, C könyvtár és fejléc, licencek, közlemények (nincs ablakos alkalmazás: használd az `osatura studio` parancsot és egy böngészőt) |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demó `index.html` (csak headless Chromiumban futtatva, lásd [docs/WASM.md](docs/i18n/hu/WASM.md)) |
 | `SHA256SUMS.txt` | minden letöltést ellenőrizz ezzel |
 

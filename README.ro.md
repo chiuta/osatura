@@ -4,11 +4,7 @@
 
 **Languages:** [English](https://github.com/chiuta/osatura/blob/main/README.md) · [Română](https://github.com/chiuta/osatura/blob/main/README.ro.md) · [Français](https://github.com/chiuta/osatura/blob/main/README.fr.md) · [Italiano](https://github.com/chiuta/osatura/blob/main/README.it.md) · [Español](https://github.com/chiuta/osatura/blob/main/README.es.md) · [Português](https://github.com/chiuta/osatura/blob/main/README.pt.md) · [Deutsch](https://github.com/chiuta/osatura/blob/main/README.de.md) · [Magyar](https://github.com/chiuta/osatura/blob/main/README.hu.md)
 
-**Un motor de rigging și animație vectorială 2D scris în Rust: oase, cinematică inversă (IK), skinning, deformatoare, un runtime cu mașini de stări, o trusă de instrumente în linia de comandă, un studio în browser și biblioteci integrabile, într-un singur workspace.** Documentația din `docs/` este în engleză; traducerile românești sunt în [docs/i18n/ro/](docs/i18n/ro/INDEX.md).
-
-![Un personaj văzut din profil, cu cap, ureche, coadă de cal, trunchi, brațe cu degete, picioare și tălpi, mergând pe loc pe un sol care se derulează; ieșirea reală a comenzii osatura export pe proiectul demo inclus](docs/img/walk.gif)
-
-*Ce produce: persoana care merge, inclusă în program, exportată cu `osatura demo-person` și `osatura export` (tot proiectul este un singur fișier JSON). Încearcă în două minute: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
+**Un motor de rigging și animație vectorială 2D scris în Rust: oase, cinematică inversă (IK), skinning, deformatoare, un runtime cu mașini de stări, o trusă de instrumente în linia de comandă, un studio în browser și biblioteci integrabile, într-un singur workspace.** Documentația din `docs/` este în limba engleză.
 
 ## Rezumat și filozofie
 
@@ -26,7 +22,7 @@ Principiile proiectului:
 
 *Nume: proiectul s-a numit ARMATURA până la 24 oct. 2026 și a fost redenumit OSATURA în urma unei căutări de mărci ([docs/LIMITATIONS.md](docs/LIMITATIONS.md) L-78). Depozitul și adresa site-ului au fost redenumite și ele (linkurile vechi către depozit redirecționează).*
 
-> **Alpha. Primele build-uri sunt pregătite ca pre-lansare ciornă: `v0.1.0-alpha.3`.** Executabilele pentru Windows x86-64, macOS arm64 și Linux x86-64 și modulul WebAssembly sunt construite de GitHub Actions și atașate la o pre-lansare *ciornă* pe <https://github.com/chiuta/osatura/releases> (o ciornă este vizibilă doar proprietarului până când este publicată manual). Toate crate-urile au în continuare versiunea `0.1.0`; „v0.5 / v0.6 / v0.7” sunt *niveluri de funcționalitate* în istoric, nu numere de lansare ([CHANGELOG.md](CHANGELOG.md)).
+> **Alpha. Cea mai recentă pre-lansare publicată: `v0.1.0-alpha.4`; următoarea este `v0.1.0-alpha.5`.** Executabilele pentru Windows x86-64, macOS arm64 și Linux x86-64 și modulul WebAssembly sunt construite de GitHub Actions și atașate la o pre-lansare *ciornă* pe <https://github.com/chiuta/osatura/releases> (o ciornă este vizibilă doar proprietarului până când este publicată manual). Toate crate-urile au în continuare versiunea `0.1.0`; „v0.5 / v0.6 / v0.7” sunt *niveluri de funcționalitate* în istoric, nu numere de lansare ([CHANGELOG.md](CHANGELOG.md)).
 >
 > | Verificat | Neverificat |
 > |---|---|
@@ -34,15 +30,14 @@ Principiile proiectului:
 >
 > Citește [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 de limite numerotate, cu gravitate și soluție ocolitoare) înainte să te bazezi pe ceva.
 
-## Maturitate: de unde să începi
+## Demo online și exemple de animație
 
-OSATURA are mult mai multe funcții decât poate valida o singură persoană. Tabelul arată unde pune autorul efortul mai întâi. **Este o intenție, nu o garanție de calitate: niciun animator în afară de autor nu a folosit încă vreuna dintre ele** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
-
-| Nivel | Ce | Ce înseamnă |
-|---|---|---|
-| Nucleu | Formatul proiectului, oase, IK, skinning, chei și easing, randare, export în GIF, PNG, SVG, Lottie și HTML, linia de comandă `osatura`, funcțiile de bază ale studioului | Reparat primul, acoperit de cele mai multe teste, începe de aici ([tutorial](docs/TUTORIAL_SVG.md)) |
-| Suportat | Deformatoare, fizică, mașini de stări, import SVG și OpenRaster, biblioteca C, modulul WebAssembly | Funcționează în teste; mai puțini ochi pe el |
-| Experimental | Retargetare mocap, lip-sync și vorbire, detecție facială, intrare live, colaborare, control al versiunilor, export cu țintă de mărime, nivel de detaliu, randare GPU | Așteaptă-te la asperități și schimbări; nu construi încă pe el |
+* **Demo online (în browser, găzduit): planificat.** Astăzi nu există un demo găzduit și nicio adresă web la care să trimit. Până atunci poți încerca studioul local (`osatura studio demo.json --port 8080`, vezi Pornire rapidă) sau, când va exista o lansare, cu arhiva `osatura-web.tar.gz`; pagina demo WebAssembly a fost încărcată până acum doar în Chromium fără ecran și fără fișierul `.wasm` ([docs/WASM.md](docs/WASM.md)), așa că nu te aștepta la o randare verificată în browser.
+* **Exemple de animație care există în acest depozit** (verificate în lista de fișiere, nerandate din nou în această recenzie):
+  * [`docs/img/walk.gif`](docs/img/walk.gif): persoana care merge, din demo-ul integrat, rezultat real al `osatura export` (imaginea din capul paginii); [`docs/img/walk-cycle.png`](docs/img/walk-cycle.png): același ciclu ca planșă.
+  * [`docs/examples/pip.svg`](docs/examples/pip.svg) și [`docs/examples/pip-rig.rhai`](docs/examples/pip-rig.rhai): un desen și scriptul care îi pune schelet și ciclu de mers, folosite pas cu pas în [docs/TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) (rezultat: [`docs/img/tutorial-svg-walk.png`](docs/img/tutorial-svg-walk.png)).
+  * `osatura demo` (demo de rig, 48 de cadre) și `osatura demo-fx` (lichid, booleene, particule) generează fișiere de proiect pe care le poți randa și exporta singur.
+  * Alte exemple animate: încă neadăugate (planificat).
 
 ## Descărcare
 
@@ -52,8 +47,7 @@ Arhivele precompilate, după ce proprietarul publică lansarea ciornă, se găse
 |---|---|
 | `osatura-windows-x86_64.zip` | `osatura.exe` (linia de comandă + serverul studioului), `osatura-studio.exe` (aplicația cu fereastră), biblioteca C și header-ul, licențe, notificări despre terți |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (doar Apple silicon), biblioteca C și header-ul, licențe, notificări |
-| `osatura-linux-x86_64.tar.gz` | `osatura`, biblioteca C și header-ul, licențe, notificări (fără aplicație cu fereastră: folosește `osatura studio` și un browser); necesită glibc 2.35+ (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
-| `osatura-linux-x86_64-musl.tar.gz` | `osatura` static (musl libc, nu are nevoie de biblioteci de sistem) pentru distribuții mai vechi, de exemplu RHEL/Rocky/Alma 8 și 9, Debian 10 și 11, Ubuntu 20.04; fără biblioteca C; cu circa 5-50 % mai lent decât build-ul glibc |
+| `osatura-linux-x86_64.tar.gz` | `osatura`, biblioteca C și header-ul, licențe, notificări (fără aplicație cu fereastră: folosește `osatura studio` și un browser) |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (rulat doar în Chromium fără interfață, vezi [docs/WASM.md](docs/WASM.md)) |
 | `SHA256SUMS.txt` | verifică fiecare descărcare față de el |
 

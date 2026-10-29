@@ -40721,7 +40721,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 ```
 
 ---
-## tokio 1.54.0 — MIT
+## tokio 1.54.1 — MIT
 Source: https://github.com/tokio-rs/tokio
 
 ### LICENSE

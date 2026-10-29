@@ -202,7 +202,7 @@ function updMatch(){const same=$('#ha').textContent===$('#hb').textContent,m=$('
 setInterval(()=>{DA.tick();DB.tick()},1000/24);
 
 /* ================= DOCS ATLAS ================= */
-const BUILD="cc20203290";
+const BUILD="2ec38ea804";
 const DATA_DIR=(window.OSA_ROOT||'')+'site/data/';
 const imgUrl=n=>(window.OSA_ROOT||'')+'docs/img/'+n;
 const IMG_SZ={"rigging-sheet.png":[1200,450],"studio-collab.png":[1400,900],"studio-dopesheet.png":[1400,900],"studio-graph.png":[1400,900],"studio-layers.png":[1400,900],"studio-overlays.png":[1400,900],"studio-overview.png":[1400,900],"studio-palette.png":[1400,900],"studio-shortcuts.png":[1400,900],"studio-suggest.png":[1400,900],"tutorial-buddy.png":[1280,480],"tutorial-svg-walk.png":[1840,360],"walk-cycle.png":[1080,300]};
