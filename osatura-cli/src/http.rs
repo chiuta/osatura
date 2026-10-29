@@ -540,8 +540,16 @@ mod tests {
         // the slots come back when the stalled connections end (408 after the head deadline), and nothing leaks
         std::thread::sleep(Duration::from_millis(700));
         drop(holders);
-        std::thread::sleep(Duration::from_millis(100));
-        assert!(roundtrip(a, b"GET /ok HTTP/1.1\r\n\r\n").starts_with("HTTP/1.1 200"));
+        // slot release is not instant on a loaded runner (seen on Windows CI): allow a few seconds, not one guess
+        let mut r = String::new();
+        for _ in 0..30 {
+            std::thread::sleep(Duration::from_millis(100));
+            r = roundtrip(a, b"GET /ok HTTP/1.1\r\n\r\n");
+            if r.starts_with("HTTP/1.1 200") {
+                break;
+            }
+        }
+        assert!(r.starts_with("HTTP/1.1 200"), "{r}");
     }
 
     #[test]
