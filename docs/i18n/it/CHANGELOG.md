@@ -10,6 +10,30 @@ Le versioni correlate che **sono** reali e indipendenti da quanto sopra: l'`API_
 
 ## [Unreleased]
 
+### Documentation
+
+- README (inglese e rumeno): nuova sezione "Live demo and animation examples": la demo online ospitata è dichiarata **prevista** (non ne esiste alcuna) e sono elencati gli esempi di animazione presenti nel repository. Solo documentazione; non è stato toccato alcun sorgente Rust, manifest o file di build. `cargo check` non ha potuto essere eseguito nell'ambiente di revisione (la toolchain 1.97.0 non è scaricabile offline).
+
+### Release
+
+- **Archivio Linux statico `osatura-linux-x86_64-musl.tar.gz`** per le distribuzioni con glibc precedente alla 2.35 (RHEL/Rocky/Alma 8 e 9, Debian 10 e 11, Ubuntu 20.04): `osatura` collegato a musl, senza bisogno di librerie di sistema. La CI esegue i test di core e CLI su musl e lancia il binario in un chroot vuoto (`scripts/linux-static-check.sh`). Firmato, attestato ed elencato in `SHA256SUMS.txt` come gli altri archivi.
+
+### Security and build
+
+- **Workflow di release rafforzato**: viene eseguito solo per un tag di versione il cui commit è su `main` (oppure a mano, senza creare una release); la grafia del tag viene controllata; Linux compila su ubuntu-22.04 (soglia glibc 2.35, verificata); firme e attestazioni riportano il tag, e [docs/VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) fissa workflow e riferimento.
+- **Toolchain fissata in `rust-toolchain.toml`**; `rust-version = "1.97"` in ogni crate; le build di release hanno `overflow-checks = true` (un overflow va in panic invece di andare a capo).
+- **`cargo deny` ora controlla anche advisory, crate yanked, versioni con caratteri jolly e crate vietati** (nessuno stack client TLS/HTTP); i workflow hanno gruppi `concurrency`.
+- **Collaborazione**: `--collab-host NAMES` limita il salvataggio, la compattazione e la nuova `POST /api/collab/revoke` agli host indicati (opzionale; senza di esso non cambia nulla); un indirizzo client può tenere aperte al massimo 16 connessioni (loopback escluso); la scadenza di un token di partecipante ha una sola grafia accettata e la firma viene controllata prima della scadenza.
+- **ffmpeg/ffprobe**: i file sonori `.wav`, `.mp3` e `.ogg` vengono aperti con un demuxer forzato. Su Windows i byte casuali ora provengono dal generatore di sistema invece che da un ripiego basato su hash.
+
+### Portable
+
+- **Sorgenti del pacchetto PortableApps.com** in `packaging/portableapps` (`appinfo.ini`, configurazione del launcher, icona, pagina di aiuto e `make_package.py`, che assembla la struttura a partire dall'archivio di release per Windows). La nuova variabile d'ambiente `OSATURA_DOCUMENTS` sposta la cartella del primo progetto (applicazione a finestra e avvio con doppio clic). Il programma launcher e l'installer devono ancora essere compilati e collaudati su Windows con gli strumenti di PortableApps.com.
+
+### Export
+
+- **`.lottie` ora è un contenitore dotLottie 2.0** ([specifica](https://dotlottie.io/spec/2.0/)): `manifest.json` ha `"version": "2"` e l'animazione è `a/animation.json`; `autoplay`/`loop` non vengono più scritti (nella 2.0 appartengono al player o a una macchina a stati). v0.1.0-alpha.4 e precedenti scrivevano dotLottie 1.0 (`animations/animation.json`). Verificato con @lottiefiles/dotlottie-web e lottie-web.
+
 ### Studio
 
 - **Demo guidata (pulsante Demo, comando `demo.panel`)**: costruisce la persona che cammina in 13 passi (scenografia, corpo, testa, braccia con cinque dita, scheletro, camminata, oscillazione delle braccia, tronco e testa, ammiccamento e sorriso, terreno in movimento, controllo, esportazione). Ogni passo carica quella fase del progetto nell'editor con una sola operazione di sostituzione completa (un solo passo di Annulla); Salva è disattivato mentre la demo è caricata e *Restore my project* riporta il tuo progetto. Le fasi sono ricavate da `osatura demo-person`; `scripts/build-studio-tour.mjs` le rigenera con il binario reale.

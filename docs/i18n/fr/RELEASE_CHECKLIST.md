@@ -42,7 +42,12 @@
 ## 6. Artefacts de publication
 
 - [x] Les binaires de release sont construits sur des runners hébergés par GitHub (`release.yml`) et `SHA256SUMS.txt` est généré dans le brouillon. **Reste ouvert :** relisez le brouillon `v0.1.0-alpha.3`, cochez « pre-release », publiez-le et étiquetez le commit (le tag est créé avec la version).
-- [ ] Décidez de la signature du code (certificat Authenticode pour Windows, Apple Developer ID et notarisation) ; d'ici là, les téléchargements sont signalés comme non signés (L-74).
+- [x] Signature de provenance : signatures Sigstore sans clé et attestations de provenance de build GitHub pour chaque fichier de release (job `sign` dans `release.yml`, vérifié en CI).
+- [x] Prérequis de la SignPath Foundation dans le dépôt : CODE_SIGNING_POLICY.md (lié depuis le README, le site et chaque release), PRIVACY.md, docs/UNINSTALL.md, pas de double licence (LICENSING.md), métadonnées de fichier Windows (`build.rs`, vérifiées dans release.yml), configuration d'artefact dans `.signpath/`, job `windows-authenticode`.
+- [ ] Propriétaire : activez l'authentification à deux facteurs sur GitHub (exigée par SignPath pour chaque membre de l'équipe).
+- [ ] Propriétaire : publiez une release (SignPath exige que le projet soit publié sous la forme qui sera signée), puis déposez votre candidature sur https://signpath.org/apply.
+- [ ] Après acceptation : dans SignPath, créez le projet `osatura`, la politique de signature `release-signing` et la configuration d'artefact `windows-zip` (collez `.signpath/artifact-configuration.xml`), puis reliez le dépôt GitHub comme système de build de confiance ; dans GitHub, ajoutez la variable de dépôt `SIGNPATH_ORGANIZATION_ID` et le secret `SIGNPATH_API_TOKEN`. La release suivante sera alors signée après approbation manuelle.
+- [ ] macOS : Apple Developer ID et notarisation (pas encore prévus) ; d'ici là, Gatekeeper avertit (L-74).
 - [ ] Joignez le code source correspondant pour les parties AGPL (l'étiquette elle-même suffit ; gardez-le disponible aussi longtemps que vous distribuez des binaires).
 - [x] `docs/THIRD_PARTY_NOTICES.md` est régénéré (24 oct. 2026) et chaque archive le contient ; régénérez-le encore avec `scripts/licence-audit.sh` avant chaque version ultérieure.
 - [ ] Crates.io / npm / registres de paquets : vérifiez que les noms sont libres et que les champs de licence correspondent à `LICENSING.md`.
