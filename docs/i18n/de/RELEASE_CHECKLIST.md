@@ -42,7 +42,12 @@
 ## 6. Release-Artefakte
 
 - [x] Die Release-Binärdateien werden auf von GitHub gehosteten Runnern gebaut (`release.yml`), und `SHA256SUMS.txt` wird im Entwurf erzeugt. **Offen:** den Entwurf `v0.1.0-alpha.3` prüfen, „pre-release“ ankreuzen, ihn veröffentlichen und den Commit taggen (der Tag wird mit dem Release angelegt).
-- [ ] Über Code-Signierung entscheiden (Authenticode-Zertifikat für Windows, Apple Developer ID und Notarisierung); bis dahin gelten die Downloads als unsigniert (L-74).
+- [x] Provenienz-Signierung: schlüssellose Sigstore-Signaturen und GitHub-Build-Provenienz-Attestierungen für jede Release-Datei (Job `sign` in `release.yml`, in CI geprüft).
+- [x] Voraussetzungen der SignPath Foundation im Repository: CODE_SIGNING_POLICY.md (vom README, von der Website und von jedem Release verlinkt), PRIVACY.md, docs/UNINSTALL.md, keine Dual-Lizenzierung (LICENSING.md), Windows-Dateimetadaten (`build.rs`, in release.yml geprüft), Artefaktkonfiguration in `.signpath/`, Job `windows-authenticode`.
+- [ ] Inhaber: Zwei-Faktor-Authentifizierung auf GitHub aktivieren (von SignPath für jedes Teammitglied verlangt).
+- [ ] Inhaber: ein Release veröffentlichen (SignPath verlangt, dass das Projekt in der Form veröffentlicht ist, die signiert wird), dann unter https://signpath.org/apply den Antrag stellen.
+- [ ] Nach der Annahme: in SignPath das Projekt `osatura`, die Signing Policy `release-signing` und die Artefaktkonfiguration `windows-zip` anlegen (`.signpath/artifact-configuration.xml` einfügen), das GitHub-Repository als vertrauenswürdiges Build-System verknüpfen; in GitHub die Repository-Variable `SIGNPATH_ORGANIZATION_ID` und das Secret `SIGNPATH_API_TOKEN` ergänzen. Das nächste Release wird dann nach manueller Freigabe signiert.
+- [ ] macOS: Apple Developer ID und Notarisierung (noch nicht geplant); bis dahin warnt Gatekeeper (L-74).
 - [ ] Den passenden Quellcode für die AGPL-Teile beilegen (der Tag selbst genügt; ihn verfügbar halten, solange du Binaries verteilst).
 - [x] `docs/THIRD_PARTY_NOTICES.md` ist neu generiert (24. Okt. 2026), und jedes Archiv enthält es; vor jedem späteren Release mit `scripts/licence-audit.sh` erneut generieren.
 - [ ] Crates.io / npm / Paketregister: prüfen, dass die Namen frei sind und die Lizenzfelder zu `LICENSING.md` passen.

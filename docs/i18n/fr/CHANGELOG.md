@@ -10,6 +10,30 @@ Versions associées qui **sont** réelles et indépendantes de ce qui précède 
 
 ## [Unreleased]
 
+### Documentation
+
+- README (anglais et roumain) : nouvelle section « Démo en ligne et exemples d'animation » : la démo en ligne hébergée est indiquée comme **prévue** (il n'en existe aucune), et les exemples d'animation présents dans le dépôt sont listés. Documentation uniquement ; aucun source Rust, manifeste ni fichier de build n'a été touché. `cargo check` n'a pas pu être exécuté dans l'environnement de revue (chaîne d'outils 1.97.0 non téléchargeable hors ligne).
+
+### Publication
+
+- **Archive Linux statique `osatura-linux-x86_64-musl.tar.gz`** pour les distributions dont la glibc est antérieure à 2.35 (RHEL/Rocky/Alma 8 et 9, Debian 10 et 11, Ubuntu 20.04) : `osatura` lié à musl, sans bibliothèque système requise. La CI exécute les tests du cœur et de la CLI sur musl et lance le binaire dans un chroot vide (`scripts/linux-static-check.sh`). Signée, attestée et listée dans `SHA256SUMS.txt` comme les autres archives.
+
+### Sécurité et build
+
+- **Workflow de release durci** : ne s'exécute que pour un tag de version dont le commit est sur `main` (ou à la main, sans créer de release) ; l'orthographe du tag est vérifiée ; Linux est construit sur ubuntu-22.04 (plancher glibc 2.35, vérifié) ; les signatures et attestations nomment le tag, et [docs/VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) fige le workflow et la référence.
+- **Chaîne d'outils figée dans `rust-toolchain.toml`** ; `rust-version = "1.97"` dans chaque crate ; les builds de release ont `overflow-checks = true` (un dépassement provoque une panique au lieu de boucler).
+- **`cargo deny` contrôle désormais aussi les avis de sécurité, les crates retirées, les versions génériques et les crates interdites** (aucune pile TLS/client HTTP) ; les workflows ont des groupes `concurrency`.
+- **Collaboration** : `--collab-host NAMES` limite l'enregistrement, le compactage et le nouveau `POST /api/collab/revoke` aux hôtes nommés (facultatif ; sans lui, rien ne change) ; une même adresse cliente peut détenir au plus 16 connexions (bouclage exempté) ; l'échéance d'un jeton de participant n'a qu'une seule graphie acceptée et la signature est vérifiée avant l'échéance.
+- **ffmpeg/ffprobe** : les fichiers son `.wav`, `.mp3` et `.ogg` sont ouverts avec un démultiplexeur imposé. Sous Windows, les octets aléatoires proviennent désormais du générateur du système plutôt que d'un repli fondé sur un hachage.
+
+### Portable
+
+- **Sources du paquet PortableApps.com** dans `packaging/portableapps` (`appinfo.ini`, configuration du lanceur, icône, page d'aide et `make_package.py`, qui assemble l'arborescence à partir de l'archive de release Windows). La nouvelle variable d'environnement `OSATURA_DOCUMENTS` déplace le dossier du premier projet (application à fenêtre et démarrage par double-clic). Le programme de lancement et l'installateur doivent encore être construits et testés sous Windows avec les outils de PortableApps.com.
+
+### Export
+
+- **`.lottie` est désormais un conteneur dotLottie 2.0** ([spécification](https://dotlottie.io/spec/2.0/)) : `manifest.json` porte `"version": "2"` et l'animation est `a/animation.json` ; `autoplay`/`loop` ne sont plus écrits (en 2.0, ils relèvent du lecteur ou d'une machine à états). v0.1.0-alpha.4 et les versions antérieures écrivaient du dotLottie 1.0 (`animations/animation.json`). Vérifié avec @lottiefiles/dotlottie-web et lottie-web.
+
 ### Studio
 
 - **Démo guidée (bouton Demo, commande `demo.panel`)** : construit la personne qui marche en 13 étapes (décor, corps, tête, bras avec cinq doigts, squelette, marche, balancement des bras, tronc et tête, clignement et sourire, sol mobile, vérification, export). Chaque étape charge ce stade du projet dans l'éditeur par une seule opération de remplacement global (une seule étape d'annulation) ; Save est désactivé tant qu'elle est chargée et *Restore my project* rétablit votre propre projet. Les stades sont extraits de `osatura demo-person` ; `scripts/build-studio-tour.mjs` les régénère avec le vrai binaire.

@@ -1516,7 +1516,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-Cu `--split`, fiecare formă devine **propriul strat**, numit după `id`-ul formei, în ordinea din fișier. O formă fără id este numită după eticheta și poziția ei (`rect1`, `circle6`), un id repetat primește `_1`, `_2`..., iar caracterele pe care un nume de strat nu le poate conține (`/`, `::`, caractere de control) devin `_`; numele sunt tăiate la 100 de caractere. Aceasta este forma de folosit când desenul urmează să fie echipat cu schelet parte cu parte; vezi [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+Cu `--split`, fiecare formă devine **propriul strat**, numit după `id`-ul formei, în ordinea din fișier. O formă fără id este numită după eticheta și poziția ei (`rect1`, `circle6`), un id repetat primește `_1`, `_2`..., iar caracterele pe care un nume de strat nu le poate conține (`/`, `::`, caractere de control) devin `_`; numele sunt tăiate la 100 de caractere. Aceasta este forma de folosit când desenul urmează să fie echipat cu schelet parte cu parte; vezi [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split

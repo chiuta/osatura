@@ -256,9 +256,9 @@ méretek színpadegységben vannak (LIMITATIONS L-23).
 
 ### dotLottie (`.lottie`)
 
-Egy zip `manifest.json` fájllal (`{"animations":[{"id":"animation"}],"generator":"OSATURA","version":"2"}`) és
+Egy [dotLottie 2.0](https://dotlottie.io/spec/2.0/) zip `manifest.json` fájllal (`{"animations":[{"id":"animation"}],"generator":"OSATURA","version":"2"}`) és
 `a/animation.json` fájllal (ugyanaz a Lottie, mint fent, deflate-tel tömörítve: 46 843 bájtból 11 515 bájtos fájl lett). A `--report` ugyanúgy
-működik. A `.lottie` **importálása** nem támogatott (az `import-lottie` JSON-t igényel; előbb csomagold ki az `a/animation.json` fájlt).
+működik. A `.lottie` **importálása** nem támogatott (az `import-lottie` JSON-t igényel; előbb csomagold ki az `a/animation.json` fájlt). A v0.1.0-alpha.4-ig a konténer dotLottie 1.0 volt (`animations/animation.json`, `autoplay`/`loop` a jegyzékben); a 2.0 elrendezést a jelenlegi dotLottie lejátszók lejátsszák (@lottiefiles/dotlottie-web-bel ellenőrizve).
 
 ### Ellenőrzés és fenntartások
 

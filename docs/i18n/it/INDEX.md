@@ -19,7 +19,9 @@ Indice: [Tutti i documenti](#tutti-i-documenti) - [Percorsi di lettura per desti
 | [ANIMATION_GUIDE.md](ANIMATION_GUIDE.md) | Chiavi, easing, clip e take, fisica, lip-sync, audio, scelte di esportazione | animatori |
 | [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md) | Da un disegno vettoriale a una GIF che cammina: importazione, rig da script, esportazione (comandi e output sono reali) | artisti |
 | [COMPARISON.md](../../COMPARISON.md) | Un confronto onesto e datato con altri strumenti di animazione 2D | valutatori |
-| [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | Verifica degli archivi di release con le somme SHA-256 | chiunque installi |
+| [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | Verifica dei file di release: firme Sigstore, provenienza della build, somme SHA-256 | chiunque installi |
+| [UNINSTALL.md](../../UNINSTALL.md) | Rimozione di OSATURA e di ogni file che può creare | chiunque installi |
+| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Politica di firma del codice (SignPath Foundation), ruoli del team, privacy | chiunque installi, maintainer |
 | [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Piccoli compiti per un primo contributo | nuovi contributori |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | Il formato di progetto JSON campo per campo | autori di strumenti, rigger che modificano il JSON |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Cosa trasporta e cosa perde ciascun formato di esportazione e importazione | autori di pipeline, integratori |
