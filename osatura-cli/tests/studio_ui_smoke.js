@@ -71,7 +71,9 @@ const stopServer = () => new Promise(r => { server.once('exit', r); server.kill(
     check('dragging the selection edits the project (undo available)', await ev(() => S.can_undo === true));
     await ev(() => $('ov').focus());
     const before = await getJson('/api/project');
+    const picBefore = await ev(() => $('img').getAttribute('src'));
     await page.keyboard.press('ArrowRight'); await sleep(500);
+    check('an edit at the same frame changes the picture address, so the picture is fetched again', (await ev(() => $('img').getAttribute('src'))) !== picBefore, picBefore);
     const after = await getJson('/api/project');
     check('arrow key nudges through the registry dispatcher', JSON.stringify(before) !== JSON.stringify(after));
     await page.keyboard.press('Control+z'); await sleep(500);
