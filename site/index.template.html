@@ -626,9 +626,9 @@ body.rd{overflow:hidden}
   <h2 class="rv" data-i="sth"></h2>
   <p class="lead rv" data-i="stp"></p>
   <div class="stats rv">
-    <div class="stat"><b data-n="1338">0</b><span data-i="k1"></span></div>
-    <div class="stat"><b data-n="78">0</b><span data-i="k2"></span></div>
-    <div class="stat"><b data-n="363">0</b><span data-i="k3"></span></div>
+    <div class="stat"><b data-n="1338">1.338</b><span data-i="k1"></span></div>
+    <div class="stat"><b data-n="78">78</b><span data-i="k2"></span></div>
+    <div class="stat"><b data-n="363">363</b><span data-i="k3"></span></div>
     <div class="stat"><b data-n="1">1</b><span data-i="k4"></span></div>
   </div>
   <div class="vs rv">
@@ -725,6 +725,7 @@ const LANGS=[['en','English'],['ro','Română'],['fr','Français'],['it','Italia
 Object.keys(T).forEach(l=>{if(l!=='en')Object.setPrototypeOf(T[l],T.en)});
 let L=(()=>{if(window.OSA_LANG&&T[window.OSA_LANG])return window.OSA_LANG;try{const s=localStorage.getItem('l');if(s&&T[s])return s}catch(e){}return'en'})();
 function applyLang(){
+  $$('.stat b[data-n]').forEach(e=>{e.textContent=fmtN(+e.dataset.n)});
   const t=T[L];document.documentElement.lang=L;
   // the build prerenders these texts in the page language; rewriting them again would only repaint (and delay LCP)
   const pre=!applyLang.ran&&(window.OSA_LANG||'en')===L;applyLang.ran=true;
@@ -767,7 +768,8 @@ $('#copy').onclick=async()=>{try{await navigator.clipboard.writeText('git clone 
 addEventListener('scroll',()=>{$('#bar').style.width=scrollY/(document.body.scrollHeight-innerHeight)*100+'%'},{passive:true});
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;e.target.classList.add('in');e.target.querySelectorAll('[data-n]').forEach(count);io.unobserve(e.target)}),{threshold:.15});
 $$('.rv').forEach(e=>io.observe(e));
-function count(el){const n=+el.dataset.n,t0=performance.now();(function f(t){const p=Math.min((t-t0)/1500,1);el.textContent=Math.round(n*(1-Math.pow(1-p,3))).toLocaleString('en-US').replace(/,/g,'.');if(p<1)requestAnimationFrame(f)})(t0)}
+function fmtN(n){const g=['ro','de','it','es','pt'].includes(L)?'.':['fr','hu'].includes(L)?'\u202f':',';return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,g)}
+function count(el){const n=+el.dataset.n;if(matchMedia('(prefers-reduced-motion:reduce)').matches){el.textContent=fmtN(n);return}const t0=performance.now();(function f(t){const p=Math.max(0,Math.min((t-t0)/1500,1));el.textContent=fmtN(Math.round(n*(1-Math.pow(1-p,3))));if(p<1)requestAnimationFrame(f)})(t0)}
 const links=$$('nav ul a');
 const so=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)links.forEach(a=>a.classList.toggle('act',a.getAttribute('href')==='#'+e.target.id))}),{rootMargin:'-45% 0px -50% 0px'});
 $$('section[id]').forEach(s=>so.observe(s));
