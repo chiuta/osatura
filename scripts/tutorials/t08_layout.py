@@ -13,4 +13,4 @@ def run(r, url, proj):
     r.key("Escape")
     r.say("c03", 7.5, lambda: (r.click(r.vis("Commands")), r.wait(1), r.pg.keyboard.type("play", delay=180)))
     r.key("Escape")
-    r.say("c04", 6.5, lambda: (r.click(r.vis("Simple view")), r.wait(2), r.click(r.vis("Simple view"))))
+    r.say("c04", 6.5, lambda: (r.click(r.vis("Simple view")), r.wait(3)))
