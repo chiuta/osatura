@@ -111,3 +111,9 @@ path = ["packaging/portableapps/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Alexandru-Ionuț Chiuță (Alexio)"
 SPDX-License-Identifier = "MPL-2.0"
+
+[[annotations]]
+path = ["tutorials/v/*.mp4"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Alexandru-Ionuț Chiuță (Alexio)"
+SPDX-License-Identifier = "CC-BY-4.0"
