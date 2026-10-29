@@ -1,0 +1,133 @@
+{
+  "_note": "Captions of tutorial 01. Keys are caption ids used by record.py; languages follow the README: en ro fr it es pt de hu. Review by native speakers is welcome.",
+  "c01": {
+    "en": "OSATURA Studio opens in your browser\nwith a project already loaded.",
+    "ro": "OSATURA Studio se deschide în browser\ncu un proiect deja încărcat.",
+    "fr": "OSATURA Studio s'ouvre dans votre navigateur\navec un projet déjà chargé.",
+    "it": "OSATURA Studio si apre nel browser\ncon un progetto già caricato.",
+    "es": "OSATURA Studio se abre en el navegador\ncon un proyecto ya cargado.",
+    "pt": "O OSATURA Studio abre no navegador\ncom um projeto já carregado.",
+    "de": "OSATURA Studio öffnet sich im Browser\nmit einem bereits geladenen Projekt.",
+    "hu": "Az OSATURA Studio a böngészőben nyílik meg,\negy már betöltött projekttel."
+  },
+  "c02": {
+    "en": "Press Play to watch the animation.\nThe timeline below shows every key.",
+    "ro": "Apasă Play ca să vezi animația.\nCronologia de jos arată fiecare cheie.",
+    "fr": "Appuyez sur Play pour voir l'animation.\nLa ligne de temps montre chaque clé.",
+    "it": "Premi Play per vedere l'animazione.\nLa timeline in basso mostra ogni chiave.",
+    "es": "Pulsa Play para ver la animación.\nLa línea de tiempo muestra cada clave.",
+    "pt": "Prima Play para ver a animação.\nA linha de tempo mostra cada chave.",
+    "de": "Mit Play startest du die Animation.\nDie Zeitleiste unten zeigt jeden Key.",
+    "hu": "A Play gombbal indítható az animáció.\nAz alsó idővonal minden kulcsot mutat."
+  },
+  "c03": {
+    "en": "Pause, then drag the slider\nto inspect any frame.",
+    "ro": "Oprește, apoi trage cursorul\nca să examinezi orice cadru.",
+    "fr": "Mettez en pause, puis faites glisser\nle curseur pour examiner une image.",
+    "it": "Metti in pausa, poi trascina il cursore\nper esaminare qualsiasi fotogramma.",
+    "es": "Pausa y arrastra el control\npara examinar cualquier fotograma.",
+    "pt": "Faça pausa e arraste o cursor\npara examinar qualquer fotograma.",
+    "de": "Pausiere und ziehe den Regler,\num ein beliebiges Bild zu prüfen.",
+    "hu": "Szüneteltess, majd húzd a csúszkát,\nhogy bármelyik képkockát megnézhesd."
+  },
+  "c04": {
+    "en": "The Layers panel lists every layer.\nClick one to select it.",
+    "ro": "Panoul Layers listează toate straturile.\nFă clic pe unul ca să-l selectezi.",
+    "fr": "Le panneau Layers liste tous les calques.\nCliquez sur l'un d'eux pour le sélectionner.",
+    "it": "Il pannello Layers elenca tutti i livelli.\nFai clic su uno per selezionarlo.",
+    "es": "El panel Layers lista todas las capas.\nHaz clic en una para seleccionarla.",
+    "pt": "O painel Layers lista todas as camadas.\nClique numa para a selecionar.",
+    "de": "Das Layers-Panel listet alle Ebenen auf.\nKlicke eine an, um sie auszuwählen.",
+    "hu": "A Layers panel felsorolja az összes réteget.\nKattints egyre a kijelöléshez."
+  },
+  "c05": {
+    "en": "Turn on \"bones\" to see the skeleton\nthat drives the character.",
+    "ro": "Bifează „bones” ca să vezi scheletul\ncare mișcă personajul.",
+    "fr": "Activez « bones » pour voir le squelette\nqui anime le personnage.",
+    "it": "Attiva «bones» per vedere lo scheletro\nche muove il personaggio.",
+    "es": "Activa «bones» para ver el esqueleto\nque mueve al personaje.",
+    "pt": "Ative «bones» para ver o esqueleto\nque move a personagem.",
+    "de": "Aktiviere „bones“, um das Skelett zu sehen,\ndas die Figur bewegt.",
+    "hu": "Kapcsold be a „bones” opciót, hogy lásd\na figurát mozgató csontvázat."
+  },
+  "c06": {
+    "en": "The Bones tab lists the bones\nand their settings.",
+    "ro": "Fila Bones listează oasele\nși setările lor.",
+    "fr": "L'onglet Bones liste les os\net leurs réglages.",
+    "it": "La scheda Bones elenca le ossa\ne le loro impostazioni.",
+    "es": "La pestaña Bones lista los huesos\ny sus ajustes.",
+    "pt": "O separador Bones lista os ossos\ne as suas definições.",
+    "de": "Der Tab Bones listet die Knochen\nund ihre Einstellungen.",
+    "hu": "A Bones fül felsorolja a csontokat\nés a beállításaikat."
+  },
+  "c07": {
+    "en": "Each diamond in the timeline is a keyframe.\nClick one to select it.",
+    "ro": "Fiecare romb din cronologie este un cadru-cheie.\nFă clic pe unul ca să-l selectezi.",
+    "fr": "Chaque losange de la ligne de temps est une image clé.\nCliquez sur l'un d'eux pour le sélectionner.",
+    "it": "Ogni rombo nella timeline è un fotogramma chiave.\nFai clic su uno per selezionarlo.",
+    "es": "Cada rombo de la línea de tiempo es un fotograma clave.\nHaz clic en uno para seleccionarlo.",
+    "pt": "Cada losango na linha de tempo é uma chave.\nClique num para o selecionar.",
+    "de": "Jede Raute in der Zeitleiste ist ein Keyframe.\nKlicke eine an, um sie auszuwählen.",
+    "hu": "Az idővonal minden rombusza egy kulcskocka.\nKattints egyre a kijelöléshez."
+  },
+  "c08": {
+    "en": "With \"auto-key\" on, moving a bone\nrecords a key by itself.",
+    "ro": "Cu „auto-key” activ, mutarea unui os\nînregistrează singură o cheie.",
+    "fr": "Avec « auto-key », déplacer un os\nenregistre une clé automatiquement.",
+    "it": "Con «auto-key» attivo, muovere un osso\nregistra una chiave da solo.",
+    "es": "Con «auto-key» activo, mover un hueso\ngraba una clave automáticamente.",
+    "pt": "Com «auto-key» ativo, mover um osso\ngrava uma chave automaticamente.",
+    "de": "Ist „auto-key“ an, legt das Bewegen\neines Knochens automatisch einen Key an.",
+    "hu": "Bekapcsolt „auto-key” mellett egy csont\nmozgatása automatikusan kulcsot rögzít."
+  },
+  "c09": {
+    "en": "The command palette finds any command\nby its name.",
+    "ro": "Paleta de comenzi găsește orice comandă\ndupă nume.",
+    "fr": "La palette de commandes trouve\nn'importe quelle commande par son nom.",
+    "it": "La palette dei comandi trova\nqualsiasi comando dal suo nome.",
+    "es": "La paleta de comandos encuentra\ncualquier comando por su nombre.",
+    "pt": "A paleta de comandos encontra\nqualquer comando pelo nome.",
+    "de": "Die Befehlspalette findet jeden Befehl\nüber seinen Namen.",
+    "hu": "A parancspaletta bármely parancsot\nmegtalál a neve alapján."
+  },
+  "c10": {
+    "en": "Export as GIF, HTML player or Lottie\nwith one click.",
+    "ro": "Exportă ca GIF, player HTML sau Lottie\ncu un singur clic.",
+    "fr": "Exportez en GIF, lecteur HTML ou Lottie\nd'un seul clic.",
+    "it": "Esporta in GIF, player HTML o Lottie\ncon un clic.",
+    "es": "Exporta como GIF, reproductor HTML o Lottie\ncon un clic.",
+    "pt": "Exporte como GIF, leitor HTML ou Lottie\ncom um clique.",
+    "de": "Exportiere als GIF, HTML-Player oder Lottie\nmit einem Klick.",
+    "hu": "Exportálj GIF-be, HTML-lejátszóba vagy Lottie-ba\negyetlen kattintással."
+  },
+  "c11": {
+    "en": "The Demo button walks you step by step\nthrough building a walking person.",
+    "ro": "Butonul Demo te ghidează pas cu pas\nîn construirea unui personaj care merge.",
+    "fr": "Le bouton Demo vous guide pas à pas\npour construire un personnage qui marche.",
+    "it": "Il pulsante Demo ti guida passo passo\nnella costruzione di un personaggio che cammina.",
+    "es": "El botón Demo te guía paso a paso\npara construir un personaje que camina.",
+    "pt": "O botão Demo guia-o passo a passo\nna construção de uma personagem que anda.",
+    "de": "Der Demo-Button führt dich Schritt für Schritt\nzu einer laufenden Figur.",
+    "hu": "A Demo gomb lépésről lépésre végigvezet\negy sétáló alak elkészítésén."
+  },
+  "c12": {
+    "en": "\"Restore my project\" brings your own\nproject back at any time.",
+    "ro": "„Restore my project” îți readuce oricând\npropriul proiect.",
+    "fr": "« Restore my project » rétablit\nvotre propre projet à tout moment.",
+    "it": "«Restore my project» ripristina\nil tuo progetto in qualsiasi momento.",
+    "es": "«Restore my project» recupera\ntu propio proyecto en cualquier momento.",
+    "pt": "«Restore my project» devolve-lhe\no seu próprio projeto a qualquer momento.",
+    "de": "„Restore my project“ bringt dein eigenes\nProjekt jederzeit zurück.",
+    "hu": "A „Restore my project” bármikor\nvisszahozza a saját projektedet."
+  },
+  "c13": {
+    "en": "Next: docs/GETTING_STARTED.md and docs/STUDIO.md\nin the repository.",
+    "ro": "Mai departe: docs/GETTING_STARTED.md și docs/STUDIO.md\ndin depozit.",
+    "fr": "Ensuite : docs/GETTING_STARTED.md et docs/STUDIO.md\ndans le dépôt.",
+    "it": "Poi: docs/GETTING_STARTED.md e docs/STUDIO.md\nnel repository.",
+    "es": "Siguiente: docs/GETTING_STARTED.md y docs/STUDIO.md\nen el repositorio.",
+    "pt": "A seguir: docs/GETTING_STARTED.md e docs/STUDIO.md\nno repositório.",
+    "de": "Weiter: docs/GETTING_STARTED.md und docs/STUDIO.md\nim Repository.",
+    "hu": "Tovább: docs/GETTING_STARTED.md és docs/STUDIO.md\na tárolóban."
+  }
+}
