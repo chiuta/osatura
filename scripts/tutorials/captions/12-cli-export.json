@@ -1,0 +1,52 @@
+{
+ "c01": {
+  "en": "We start from a finished project.",
+  "ro": "Pornim de la un proiect terminat.",
+  "fr": "Nous partons d'un projet terminé.",
+  "it": "Partiamo da un progetto finito.",
+  "es": "Partimos de un proyecto terminado.",
+  "pt": "Partimos de um projeto pronto.",
+  "de": "Wir beginnen mit einem fertigen Projekt.",
+  "hu": "Egy kész projektből indulunk."
+ },
+ "c02": {
+  "en": "render writes one frame\nas PNG or SVG.",
+  "ro": "render scrie un cadru\nca PNG sau SVG.",
+  "fr": "render écrit une image\nen PNG ou SVG.",
+  "it": "render scrive un fotogramma\ncome PNG o SVG.",
+  "es": "render escribe un fotograma\ncomo PNG o SVG.",
+  "pt": "render grava um quadro\ncomo PNG ou SVG.",
+  "de": "render schreibt ein Bild\nals PNG oder SVG.",
+  "hu": "A render egy képkockát ír\nPNG vagy SVG formában."
+ },
+ "c03": {
+  "en": "frames writes the whole sequence.",
+  "ro": "frames scrie întreaga secvență.",
+  "fr": "frames écrit toute la séquence.",
+  "it": "frames scrive l'intera sequenza.",
+  "es": "frames escribe toda la secuencia.",
+  "pt": "frames grava a sequência inteira.",
+  "de": "frames schreibt die ganze Sequenz.",
+  "hu": "A frames a teljes sorozatot kiírja."
+ },
+ "c04": {
+  "en": "export makes a GIF, a standalone\nHTML player or Lottie JSON.",
+  "ro": "export creează GIF, player HTML\nde sine stătător sau Lottie JSON.",
+  "fr": "export crée un GIF, un lecteur HTML\nautonome ou du Lottie JSON.",
+  "it": "export crea un GIF, un player HTML\nautonomo o Lottie JSON.",
+  "es": "export crea un GIF, un reproductor HTML\nautónomo o Lottie JSON.",
+  "pt": "export cria um GIF, um player HTML\nindependente ou Lottie JSON.",
+  "de": "export erzeugt ein GIF, einen eigenständigen\nHTML-Player oder Lottie-JSON.",
+  "hu": "Az export GIF-et, önálló HTML\nlejátszót vagy Lottie JSON-t készít."
+ },
+ "c05": {
+  "en": "Lint is safe to run in a script or CI job:\nit fails when it finds errors.",
+  "ro": "Lint e sigur în script sau CI:\neșuează când găsește erori.",
+  "fr": "Lint est sûr en script ou CI :\nil échoue s'il trouve des erreurs.",
+  "it": "Lint è sicuro in script o CI:\nfallisce se trova errori.",
+  "es": "Lint es seguro en scripts o CI:\nfalla si encuentra errores.",
+  "pt": "Lint é seguro em script ou CI:\nfalha quando encontra erros.",
+  "de": "Lint ist sicher in Skript oder CI:\nes schlägt bei Fehlern fehl.",
+  "hu": "A lint biztonságosan futtatható szkriptben\nvagy CI-ben: hibánál elbukik."
+ }
+}
