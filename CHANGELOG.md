@@ -10,6 +10,10 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Added
+
+- `osatura update-check`: asks GitHub whether a newer release exists. Only when you run it; downloads and installs nothing; one anonymous HTTPS request through the system `curl`. Free, ethical proxy options keep your address from GitHub: `--proxy-preset tor|tor-browser|warp` (local `socks5h://` endpoints, so the proxy resolves the name) or your own with `--proxy-url`; lists of open public proxies are deliberately not offered. SemVer comparison (`alpha.10` is newer than `alpha.9`); a build from source cannot tell which release it matches and says so.
+
 ### Documentation
 
 - README (English and Romanian): new section "Live demo and animation examples": the hosted live demo is stated as **planned** (none exists), and the animation examples that exist in the repository are listed. Documentation only; no Rust source, manifest or build file was touched. `cargo check` could not be run in the review environment (toolchain 1.97.0 not downloadable offline).

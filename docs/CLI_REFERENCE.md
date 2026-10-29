@@ -2178,6 +2178,34 @@ $ osatura lod-pick small.json --screen-px 64x48 --max-px 2 --out chosen2.json
 screen 64x48 -> scale 0.1000 px/unit; budget 2 px -> level L4 (declared 0.5310 px, 62 anchors, 0 mesh vertices, 37 keys)
 ```
 
+### `update-check`
+
+**Synopsis:** `osatura update-check [--proxy-preset tor|tor-browser|warp | --proxy-url URL] [--list-proxy-presets] [--json]`
+
+Asks GitHub whether a newer OSATURA release exists. It runs only when you type it: nothing checks in the background,
+nothing is downloaded or installed, and the only thing sent is one anonymous request for the public release list (made
+by the system `curl`, HTTPS only, 30 s, at most 2 MB). The answer compares your version with the newest published
+release using SemVer rules, so `0.1.0-alpha.5` is newer than `0.1.0-alpha.4` and `0.1.0` is newer than `0.1.0-rc.1`.
+
+`--proxy-preset` sends the request through a free proxy that runs on your own machine: `tor` (the Tor service on
+`127.0.0.1:9050`), `tor-browser` (a running Tor Browser, `127.0.0.1:9150`) or `warp` (Cloudflare WARP in proxy mode,
+`127.0.0.1:40000`). All three use `socks5h://`, so the name `api.github.com` is resolved by the proxy and not by your system. Tor
+is the recommended choice (volunteer-run, non-profit, open source); WARP is free but a commercial service with a
+closed-source client. Lists of open public proxies are deliberately not offered: they are often compromised or
+intercept traffic. `--proxy-url` takes your own `http://`, `https://`, `socks5://` or `socks5h://` proxy; the two
+options cannot be combined. `--list-proxy-presets` prints the presets and exits. (`--proxy` is a different option: the
+level-of-detail proxy level of the studio.)
+
+```
+$ osatura update-check --proxy-preset tor
+update-check: going through socks5h://127.0.0.1:9050
+You are up to date: 0.1.0-alpha.4 (newest published release: v0.1.0-alpha.4).
+$ osatura update-check --json
+{"current":"0.1.0-alpha.4","latest":"v0.1.0-alpha.5","prerelease":true,"update_available":true,"url":"https://github.com/chiuta/osatura/releases/tag/v0.1.0-alpha.5"}
+```
+**Gotcha:** only builds made by the release workflow know their release version; a build from source (version `0.1.0`) prints the newest release but cannot say whether it is newer, and `--json` then has `"current": null` and `"update_available": null`. Exit code 1 with a one-line reason when `curl` is missing or GitHub cannot be reached (Tor exits are sometimes
+blocked or rate-limited). The printed download address is always a `github.com/chiuta/osatura` link.
+
 ### `export-fit`
 
 **Synopsis:** `osatura export-fit <project.json> <out> --max-size 500KB [--format lottie|html|gif|apng|webm|project] [--min-ssim X] [--max-seconds 60] [--measure raw|gzip] [--frames N] [--search ladder|descent|grid] [--report out.json] [--pareto out.csv] [--audit] [--no-baseline]`
@@ -2885,6 +2913,7 @@ Every command with a one-line summary and the section that documents it. Sub-com
 | `trail` | motion trail of a bone, layer or point | [12](#12-effects-depth-of-field-onion-skin-trails-and-camera) |
 | `trim` | bake a trim path into a vector layer | [5](#5-rigging-skins-ik-and-layout-helpers) |
 | `ui` | studio command registry, shortcuts, layouts, search | [16](#16-studio-collaboration-mcp-agent-server-and-ui-registry) |
+| `update-check` | asks GitHub whether a newer release exists; optional free proxy | [13](#13-level-of-detail-size-reports-and-export-fit) |
 | `vcs` | version control with semantic merge for one project file | [15](#15-version-control-vcs) |
 | `view-swap` | drive a switch layer from a bone property (step function) | [5](#5-rigging-skins-ik-and-layout-helpers) |
 | `walk` | generate a walk cycle | [6](#6-animation-keys-timeline-and-generators) |

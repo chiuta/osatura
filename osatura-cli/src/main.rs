@@ -27,6 +27,7 @@ mod ci_cmd;
 mod face_cmd;
 mod fit_cmd;
 mod lod_cmd;
+mod update_cmd;
 mod studio;
 mod uiconfig;
 
