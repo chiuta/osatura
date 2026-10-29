@@ -66,6 +66,7 @@ function setRunning(on) {
 function fail(e) { setRunning(false); err.textContent = String(e && e.message ? e.message : e); }
 async function open(project, name) {
   err.textContent = '';
+  if (!String(project).trim()) { fail(t('empty')); return; }
   try { meta = await call('load', { project }); } catch (e) { fail(e); return; }
   f = 0; scrub.max = String(Math.max(0, meta.frames - 0.1));
   const label = t('info', { name, w: meta.width, h: meta.height, n: meta.frames, fps: meta.fps });

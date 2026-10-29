@@ -1115,11 +1115,12 @@ function openDoc(id,anchor){
   if(anchor){const el=document.getElementById(anchor);el&&setTimeout(()=>el.scrollIntoView({block:'start'}),30)}
   spy();
 }
-function closeReader(){rd.classList.remove('on');document.body.classList.remove('rd');cur=null;document.title=T[L].metaTitle}
+let rdOpener=null;
+function closeReader(){const wasOn=rd.classList.contains('on');rd.classList.remove('on');if(wasOn&&rdOpener&&document.contains(rdOpener)&&rdOpener!==document.body)try{rdOpener.focus({preventScroll:true})}catch(e){}rdOpener=null;document.body.classList.remove('rd');cur=null;document.title=T[L].metaTitle}
 function route(){
   if(!D)return;
   const m=location.hash.match(/^#\/d\/([^\/]+)(?:\/(.+))?$/);
-  if(m){const id=decodeURIComponent(m[1]);if(D.docs[id])return openDoc(id,m[2]&&decodeURIComponent(m[2]))}
+  if(m){if(!rd.classList.contains('on'))rdOpener=document.activeElement;const dec=x=>{try{return decodeURIComponent(x)}catch(e){return null}};const id=dec(m[1]),sec=m[2]?dec(m[2]):'';if(id!==null&&Object.prototype.hasOwnProperty.call(D.docs,id))return openDoc(id,sec||undefined)}
   if(rd.classList.contains('on'))closeReader();
 }
 addEventListener('hashchange',route);
