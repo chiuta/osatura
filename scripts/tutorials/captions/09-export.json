@@ -1,0 +1,42 @@
+{
+ "c01": {
+  "en": "OSATURA exports animations\nas GIF, HTML player or Lottie.",
+  "ro": "OSATURA exportă animații\nca GIF, player HTML sau Lottie.",
+  "fr": "OSATURA exporte les animations\nen GIF, lecteur HTML ou Lottie.",
+  "it": "OSATURA esporta animazioni\ncome GIF, player HTML o Lottie.",
+  "es": "OSATURA exporta animaciones\ncomo GIF, reproductor HTML o Lottie.",
+  "pt": "O OSATURA exporta animações\ncomo GIF, player HTML ou Lottie.",
+  "de": "OSATURA exportiert Animationen\nals GIF, HTML-Player oder Lottie.",
+  "hu": "Az OSATURA GIF-be, HTML lejátszóba\nvagy Lottie-ba exportál."
+ },
+ "c02": {
+  "en": "GIF: a small looping picture\nthat works almost everywhere.",
+  "ro": "GIF: o imagine mică în buclă\ncare merge aproape oriunde.",
+  "fr": "GIF : une petite image en boucle\nqui marche presque partout.",
+  "it": "GIF: una piccola immagine in loop\nche funziona quasi ovunque.",
+  "es": "GIF: una imagen pequeña en bucle\nque funciona casi en todas partes.",
+  "pt": "GIF: uma imagem pequena em loop\nque funciona quase em qualquer lugar.",
+  "de": "GIF: ein kleines Endlosbild,\ndas fast überall funktioniert.",
+  "hu": "GIF: kis, ismétlődő kép,\namely szinte mindenhol működik."
+ },
+ "c03": {
+  "en": "HTML player: one file you open\nin any browser, no install.",
+  "ro": "Player HTML: un singur fișier pe care\nîl deschizi în orice browser.",
+  "fr": "Lecteur HTML : un seul fichier à ouvrir\ndans n'importe quel navigateur.",
+  "it": "Player HTML: un solo file da aprire\nin qualsiasi browser.",
+  "es": "Reproductor HTML: un solo archivo\npara abrir en cualquier navegador.",
+  "pt": "Player HTML: um único arquivo para abrir\nem qualquer navegador.",
+  "de": "HTML-Player: eine Datei, die sich\nin jedem Browser öffnen lässt.",
+  "hu": "HTML lejátszó: egyetlen fájl,\namit bármely böngészőben megnyithatsz."
+ },
+ "c04": {
+  "en": "Lottie: lightweight vector animation\nfor apps and websites.",
+  "ro": "Lottie: animație vectorială ușoară\npentru aplicații și site-uri.",
+  "fr": "Lottie : animation vectorielle légère\npour applications et sites.",
+  "it": "Lottie: animazione vettoriale leggera\nper app e siti web.",
+  "es": "Lottie: animación vectorial ligera\npara apps y sitios web.",
+  "pt": "Lottie: animação vetorial leve\npara apps e sites.",
+  "de": "Lottie: leichte Vektoranimation\nfür Apps und Websites.",
+  "hu": "Lottie: könnyű vektoranimáció\nalkalmazásokhoz és weboldalakhoz."
+ }
+}
