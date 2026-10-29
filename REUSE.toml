@@ -91,3 +91,9 @@ path = ["try/demo-person.json"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Alexandru-Ionuț Chiuță (Alexio)"
 SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = ["tutorials/captions.json"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Alexandru-Ionuț Chiuță (Alexio)"
+SPDX-License-Identifier = "CC-BY-4.0"

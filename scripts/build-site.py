@@ -171,7 +171,8 @@ def prerender(html, t, lang, langs):
     html = html.replace("/*__CSP__*/", CSP.format(h=sha), 1)
     html = html.replace('<script src="site/data/app.js', f"<script>{boot}</script>\n" + '<script src="site/data/app.js', 1)
     if root:
-        html = re.sub(r'(\s(?:src|href)=")(?=(?:site|docs|try)/)', r"\1" + root, html)
+        html = re.sub(r'(\s(?:src|href)=")(?=(?:site|docs|try|tutorials)/)', r"\1" + root, html)
+    html = html.replace('href="' + root + 'tutorials/"', 'href="' + root + 'tutorials/#' + lang + '"')
     return html, filled
 
 
@@ -189,7 +190,7 @@ def write_pages(html, ui, demo):
         dest = ROOT / ("index.html" if lang == "en" else f"{lang}/index.html")
         dest.parent.mkdir(exist_ok=True)
         dest.write_text(page, encoding="utf-8")
-    urls = [SITE] + [f"{SITE}{l}/" for l in langs if l != "en"] + [f"{SITE}try/"]
+    urls = [SITE] + [f"{SITE}{l}/" for l in langs if l != "en"] + [f"{SITE}try/", f"{SITE}tutorials/"]
     (ROOT / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
                                       + "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls) + "</urlset>\n", encoding="utf-8")
 
