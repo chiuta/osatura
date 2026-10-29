@@ -12,7 +12,7 @@ function applyLang(){
   const pre=!applyLang.ran&&(window.OSA_LANG||'en')===L;applyLang.ran=true;
   if(!pre){$$('[data-i]').forEach(e=>{e.innerHTML=t[e.dataset.i]});
   $('#vy').innerHTML=t.vy.map(x=>`<li>${x}</li>`).join('');$('#vx').innerHTML=t.vx.map(x=>`<li>${x}</li>`).join('');}
-  $$('[data-ph]').forEach(e=>e.placeholder=t[e.dataset.ph]);
+  $$('[data-ph]').forEach(e=>{e.placeholder=t[e.dataset.ph];e.setAttribute('aria-label',t[e.dataset.ph])});
   $$('[data-al]').forEach(e=>{if(t[e.dataset.al])e.setAttribute('aria-label',t[e.dataset.al])});$$('.pt').forEach(e=>e.title=t.tiPartial||'partial');
   // accessible names must contain the visible text (WCAG 2.5.3)
   ['#lang','#rlang'].forEach(s=>$(s).setAttribute('aria-label',t.alLang+': '+L.toUpperCase()));
