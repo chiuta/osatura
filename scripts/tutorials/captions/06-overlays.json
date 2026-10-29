@@ -1,0 +1,32 @@
+{
+ "c01": {
+  "en": "Overlays show helpers on top of the picture.\nOpen the Overlays menu.",
+  "ro": "Suprapunerile arată ajutoare peste imagine.\nDeschide meniul Overlays.",
+  "fr": "Les surcouches affichent des aides sur l'image.\nOuvrez le menu Overlays.",
+  "it": "Gli overlay mostrano aiuti sopra l'immagine.\nApri il menu Overlays.",
+  "es": "Las superposiciones muestran ayudas sobre la imagen.\nAbre el menú Overlays.",
+  "pt": "As sobreposições mostram ajudas sobre a imagem.\nAbra o menu Overlays.",
+  "de": "Overlays zeigen Hilfen über dem Bild.\nÖffne das Overlays-Menü.",
+  "hu": "Az overlayek segédeket mutatnak a kép felett.\nNyisd meg az Overlays menüt."
+ },
+ "c02": {
+  "en": "Switch the options on and off\nto see what each one does.",
+  "ro": "Pornește și oprește opțiunile\nca să vezi ce face fiecare.",
+  "fr": "Activez et désactivez les options\npour voir l'effet de chacune.",
+  "it": "Attiva e disattiva le opzioni\nper vedere cosa fa ciascuna.",
+  "es": "Activa y desactiva las opciones\npara ver qué hace cada una.",
+  "pt": "Ative e desative as opções\npara ver o que cada uma faz.",
+  "de": "Schalte die Optionen ein und aus,\num ihre Wirkung zu sehen.",
+  "hu": "Kapcsold be és ki a lehetőségeket,\nhogy lásd, mit csinál mindegyik."
+ },
+ "c03": {
+  "en": "Overlays never change your project;\nthey only help you see.",
+  "ro": "Suprapunerile nu schimbă proiectul;\nîți ușurează doar vederea.",
+  "fr": "Les surcouches ne modifient pas le projet ;\nelles aident seulement à voir.",
+  "it": "Gli overlay non cambiano il progetto;\nti aiutano solo a vedere.",
+  "es": "Las superposiciones no cambian el proyecto;\nsolo ayudan a ver.",
+  "pt": "As sobreposições não alteram o projeto;\napenas ajudam a ver.",
+  "de": "Overlays verändern das Projekt nie;\nsie helfen nur beim Sehen.",
+  "hu": "Az overlayek nem módosítják a projektet;\ncsak a látást segítik."
+ }
+}

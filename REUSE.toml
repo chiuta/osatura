@@ -28,7 +28,7 @@ SPDX-License-Identifier = "MPL-2.0"
 
 # --- tutorial captions (CC-BY-4.0) ---
 [[annotations]]
-path = ["scripts/tutorials/captions.json"]
+path = ["scripts/tutorials/captions/*.json"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Alexandru-Ionuț Chiuță (Alexio)"
 SPDX-License-Identifier = "CC-BY-4.0"
