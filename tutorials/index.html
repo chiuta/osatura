@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en"><head>
+<link rel="canonical" href="https://osatura.chiuta.ro/tutorials/"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tutoriale OSATURA</title>
+<style>
+/* Layout: language bar on top; below it a tutorial list beside a player on wide screens, player above list on phones. */
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --fg:#14202b; --muted:#546270; --line:#d5dce5;
+  --accent:#0b6f7a; --accent-fg:#ffffff; --screen:#0c1117;
+  --display:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f151c; --panel:#18212b; --fg:#e6edf3; --muted:#93a1af; --line:#2b3947; --accent:#4cc3cf; --accent-fg:#06222a; --screen:#05080b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151c; --panel:#18212b; --fg:#e6edf3; --muted:#93a1af; --line:#2b3947; --accent:#4cc3cf; --accent-fg:#06222a; --screen:#05080b; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--display);font-size:15px;line-height:1.5;
+  padding-block:28px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:22px}
+header{display:grid;gap:6px}
+h1{margin:0;font-size:clamp(26px,4vw,38px);line-height:1.1;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+h1 span{font-family:var(--mono);font-weight:500;letter-spacing:.04em}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.langs{display:flex;flex-wrap:wrap;gap:6px}
+.langs button{font:500 13px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:7px 12px;border:1px solid var(--line);
+  background:var(--panel);color:var(--fg);border-radius:4px;cursor:pointer}
+.langs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.main{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:760px){.main{grid-template-columns:minmax(0,1fr)}.player{order:-1}}
+nav{display:grid;gap:16px;min-width:0}
+nav h2{margin:0 0 6px;font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+nav ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+nav li button{width:100%;text-align:left;display:grid;grid-template-columns:2.2em 1fr;gap:8px;align-items:baseline;
+  padding:9px 10px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--fg);font:inherit;cursor:pointer}
+nav li button:hover{background:var(--panel);border-color:var(--line)}
+nav li button[aria-current="true"]{background:var(--panel);border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+nav .n{font:500 12px var(--mono);color:var(--muted)}
+.player{display:grid;gap:10px;min-width:0}
+.screen{background:var(--screen);border:1px solid var(--line);border-radius:4px;overflow:hidden;aspect-ratio:16/9}
+video{display:block;width:100%;height:100%;background:var(--screen)}
+.cap{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;align-items:baseline}
+.cap h3{margin:0;font-size:19px;font-weight:600}
+.cap span{font:400 12px var(--mono);color:var(--muted)}
+.cap a{color:var(--accent)}
+footer{color:var(--muted);font-size:13px;max-width:70ch}
+footer a{color:var(--accent)}
+</style>
+<div class="wrap">
+  <header>
+    <h1><span>OSATURA</span> <b id="t-h" style="font-weight:600"></b></h1>
+    <p class="lede" id="t-lede"></p>
+  </header>
+  <div class="langs" id="langs" role="group" aria-label="Language"></div>
+  <div class="main">
+    <nav id="nav"></nav>
+    <section class="player">
+      <div class="screen"><video id="v" controls playsinline preload="metadata"></video></div>
+      <div class="cap"><h3 id="vt"></h3><span id="vs"></span></div>
+    </section>
+  </div>
+  <footer id="foot"></footer>
+</div>
+<script>
+const LANGS=[["en","English"],["ro","Română"],["fr","Français"],["it","Italiano"],["es","Español"],["pt","Português"],["de","Deutsch"],["hu","Magyar"]];
+const UI={
+ en:{h:"video tutorials",lede:"Twelve short screen recordings of the studio and the command line. Pick a language: the subtitles follow it. There is no voice.",studio:"In the studio",cli:"On the command line",sub:"Subtitles",foot:"Translations are not yet reviewed by native speakers; corrections are welcome. Recorded by script from the real program: "},
+ ro:{h:"tutoriale video",lede:"Douăsprezece înregistrări scurte ale studioului și ale liniei de comandă. Alege limba: subtitrările o urmează. Nu există voce.",studio:"În studio",cli:"În linia de comandă",sub:"Subtitrări",foot:"Traducerile nu au fost încă revizuite de vorbitori nativi; corecturile sunt binevenite. Înregistrate prin script din programul real: "},
+ fr:{h:"tutoriels vidéo",lede:"Douze courts enregistrements d'écran du studio et de la ligne de commande. Choisissez la langue : les sous-titres la suivent. Il n'y a pas de voix.",studio:"Dans le studio",cli:"En ligne de commande",sub:"Sous-titres",foot:"Les traductions n'ont pas encore été relues par des locuteurs natifs ; les corrections sont les bienvenues. Enregistré par script depuis le vrai programme : "},
+ it:{h:"tutorial video",lede:"Dodici brevi registrazioni dello schermo dello studio e della riga di comando. Scegli la lingua: i sottotitoli la seguono. Non c'è voce.",studio:"Nello studio",cli:"Da riga di comando",sub:"Sottotitoli",foot:"Le traduzioni non sono ancora state riviste da madrelingua; le correzioni sono benvenute. Registrato via script dal programma reale: "},
+ es:{h:"tutoriales en vídeo",lede:"Doce grabaciones de pantalla breves del estudio y de la línea de comandos. Elige el idioma: los subtítulos lo siguen. No hay voz.",studio:"En el estudio",cli:"En la línea de comandos",sub:"Subtítulos",foot:"Las traducciones aún no las han revisado hablantes nativos; las correcciones son bienvenidas. Grabado por script desde el programa real: "},
+ pt:{h:"tutoriais em vídeo",lede:"Doze gravações de tela curtas do estúdio e da linha de comando. Escolha o idioma: as legendas o acompanham. Não há voz.",studio:"No estúdio",cli:"Na linha de comando",sub:"Legendas",foot:"As traduções ainda não foram revisadas por falantes nativos; correções são bem-vindas. Gravado por script a partir do programa real: "},
+ de:{h:"Video-Tutorials",lede:"Zwölf kurze Bildschirmaufnahmen vom Studio und von der Kommandozeile. Wähle die Sprache: Die Untertitel folgen ihr. Es gibt keine Sprecherstimme.",studio:"Im Studio",cli:"In der Kommandozeile",sub:"Untertitel",foot:"Die Übersetzungen wurden noch nicht von Muttersprachlern geprüft; Korrekturen sind willkommen. Per Skript vom echten Programm aufgenommen: "},
+ hu:{h:"videós útmutatók",lede:"Tizenkét rövid képernyőfelvétel a stúdióról és a parancssorról. Válassz nyelvet: a feliratok követik. Hang nincs.",studio:"A stúdióban",cli:"A parancssorban",sub:"Feliratok",foot:"A fordításokat anyanyelvi beszélők még nem ellenőrizték; a javításokat szívesen fogadjuk. Szkripttel rögzítve a valódi programból: "}
+};
+const T=[
+ ["01-tour","Studio tour","Turul studioului","Visite du studio","Tour dello studio","Recorrido del estudio","Tour pelo estúdio","Studio-Rundgang","Stúdiókörút"],
+ ["02-select","Selecting layers","Selectarea straturilor","Sélectionner les calques","Selezionare i livelli","Seleccionar capas","Selecionar camadas","Ebenen auswählen","Rétegek kijelölése"],
+ ["03-bones","Bones and posing","Oase și poziționare","Os et poses","Ossa e pose","Huesos y poses","Ossos e poses","Knochen und Posen","Csontok és pózok"],
+ ["04-timeline","The dope sheet","Foaia de chei","La feuille d'exposition","Il dope sheet","La hoja de claves","A folha de chaves","Das Dope Sheet","A dope sheet"],
+ ["05-graph","Curves and easing","Curbe și easing","Courbes et adoucissement","Curve ed easing","Curvas y suavizado","Curvas e suavização","Kurven und Easing","Görbék és könnyítés"],
+ ["06-overlays","Overlays","Suprapuneri","Surcouches","Overlay","Superposiciones","Sobreposições","Overlays","Overlayek"],
+ ["07-suggest","Suggested poses","Poze sugerate","Poses suggérées","Pose suggerite","Poses sugeridas","Poses sugeridas","Pose-Vorschläge","Javasolt pózok"],
+ ["08-layout","Layout, keys, commands","Aranjare, taste, comenzi","Disposition, touches, commandes","Layout, tasti, comandi","Diseño, teclas, comandos","Layout, teclas, comandos","Layout, Tasten, Befehle","Elrendezés, billentyűk, parancsok"],
+ ["09-export","Exporting","Exportul","Exporter","Esportare","Exportar","Exportar","Export","Exportálás"],
+ ["10-cli-start","First steps","Primii pași","Premiers pas","Primi passi","Primeros pasos","Primeiros passos","Erste Schritte","Első lépések"],
+ ["11-cli-buddy","Building a character","Construirea unui personaj","Construire un personnage","Costruire un personaggio","Construir un personaje","Construir um personagem","Eine Figur bauen","Karakter építése"],
+ ["12-cli-export","Render and export","Randare și export","Rendu et export","Render ed esportazione","Renderizado y exportación","Renderização e exportação","Rendern und Exportieren","Renderelés és exportálás"]
+];
+const CODES=LANGS.map(l=>l[0]);
+let lang=null, cur=0;
+const $=id=>document.getElementById(id);
+function parseHash(){
+  const m=(location.hash||"").slice(1).match(/^([a-z]{2})(?:-(\d\d))?/);
+  if(m&&CODES.includes(m[1])){lang=m[1]; if(m[2]){const i=+m[2]-1; if(i>=0&&i<T.length)cur=i;}}
+  if(!lang){const n=(navigator.language||"en").slice(0,2); lang=CODES.includes(n)?n:"en";}
+}
+function title(i){return T[i][1+CODES.indexOf(lang)]}
+function renderLangs(){
+  $("langs").innerHTML="";
+  LANGS.forEach(([c,name])=>{const b=document.createElement("button");b.textContent=name;b.setAttribute("aria-pressed",c===lang);
+    b.onclick=()=>{lang=c;go()};$("langs").appendChild(b)});
+}
+function renderNav(){
+  const u=UI[lang]; $("nav").innerHTML="";
+  [[u.studio,0,9],[u.cli,9,12]].forEach(([h,a,b])=>{
+    const d=document.createElement("div"); d.innerHTML="<h2></h2><ol></ol>"; d.querySelector("h2").textContent=h;
+    for(let i=a;i<b;i++){const li=document.createElement("li"),bt=document.createElement("button");
+      bt.innerHTML='<span class="n"></span><span></span>'; bt.children[0].textContent=String(i+1).padStart(2,"0"); bt.children[1].textContent=title(i);
+      if(i===cur)bt.setAttribute("aria-current","true"); bt.onclick=()=>{cur=i;go(true)}; li.appendChild(bt); d.querySelector("ol").appendChild(li)}
+    $("nav").appendChild(d)});
+}
+let CAPS=null;
+function loadVideo(autoplay){
+  const v=$("v"), id=T[cur][0];
+  v.src="v/"+id+".mp4"; v.load();
+  const apply=()=>{
+    for(const t of Array.from(v.textTracks)){t.mode="disabled"}
+    if(!CAPS||!CAPS[id]||!CAPS[id][lang])return;
+    const tr=v.addTextTrack("subtitles",LANGS.find(l=>l[0]===lang)[1],lang);
+    CAPS[id][lang].forEach(([a,b,x])=>tr.addCue(new VTTCue(a,b,x)));
+    tr.mode="showing";
+  };
+  v.onloadedmetadata=apply;
+  if(autoplay)v.play().catch(()=>{});
+}
+function go(play){
+  const u=UI[lang]; document.documentElement.lang=lang;
+  $("t-h").textContent=u.h; $("t-lede").textContent=u.lede;
+  renderLangs(); renderNav();
+  $("vt").textContent=title(cur); $("vs").textContent=T[cur][0]+" · "+u.sub+": "+LANGS.find(l=>l[0]===lang)[1];
+  $("foot").textContent=u.foot;
+  const a=document.createElement("a"); a.href="https://github.com/chiuta/osatura/tree/main/scripts/tutorials"; a.textContent="scripts/tutorials"; $("foot").appendChild(a);
+  loadVideo(play);
+  const h=lang+"-"+String(cur+1).padStart(2,"0"); if(location.hash.slice(1)!==h)history.replaceState(null,"","#"+h);
+}
+parseHash(); go(false);
+fetch("captions.json").then(r=>r.json()).then(j=>{CAPS=j;loadVideo(false)}).catch(()=>{});
+addEventListener("hashchange",()=>{parseHash();go(false)});
+</script>
+
+</html>
