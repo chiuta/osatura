@@ -250,9 +250,12 @@ async function api(path,body){const o=body===undefined?{}:{method:'POST',body:JS
  if(COLLAB.on&&j&&typeof j.collab_index==='number'&&j.collab_index>COLLAB.base)COLLAB.base=j.collab_index;
  return j;}
 function say(r){ $('msg').textContent=r.ok===false?(r.errors||[]).join('\n'):''; }
+// Counts the edits of the shared state: part of the picture's address, so that a picture of the SAME frame is fetched again after an edit,
+// an undo or a remote change (an unchanged address makes the browser keep the picture it already has).
+let PICV=0;
 function show(){ const ps=(typeof OVS!=='undefined'&&OVS&&OVS.proxy)||{enabled:false}; const lvl=(scrubbing&&ps.enabled)?ps.level:0; const im=$('img'); im.dataset.level=lvl; OVM.t0=performance.now(); OVM.level=lvl;
  const dpr=window.devicePixelRatio||1, lod=(lvl&&ps.lod)?'&lod=1&screen='+Math.max(1,Math.round((im.clientWidth||S.width)*dpr))+'x'+Math.max(1,Math.round((im.clientHeight||S.height)*dpr))+'&lodpx='+(ps.lod_px===undefined?1:ps.lod_px):'';
- im.src='/api/frame?frame='+frame+'&proxy='+lvl+(lvl?'&kind='+ps.kind:'')+lod+($('bones').checked?'&bones=1':''); $('tl').value=frame; $('lab').textContent=frame+' / '+(S.frames-1); drawKeys(); selRefresh(); tlDraw(); ovSoon(); if(window.collabPresenceSoon)collabPresenceSoon(); }
+ im.src='/api/frame?frame='+frame+'&proxy='+lvl+(lvl?'&kind='+ps.kind:'')+lod+($('bones').checked?'&bones=1':'')+'&v='+PICV; $('tl').value=frame; $('lab').textContent=frame+' / '+(S.frames-1); drawKeys(); selRefresh(); tlDraw(); ovSoon(); if(window.collabPresenceSoon)collabPresenceSoon(); }
 function drawKeys(){ const k=$('keys'); k.innerHTML=''; if(!sel)return;
  for(const c of S.channels){ if(c.target===sel&&c.prop==='bone_angle'&&c.track) for(const key of c.track.keys){ const i=document.createElement('i'); i.style.left=(key.frame/Math.max(1,S.frames-1)*100)+'%'; k.appendChild(i);} } }
 async function waves(){ const cv=$('wf'); let r; try{ r=await api('/api/sounds'); }catch(e){ return; }
@@ -273,7 +276,7 @@ function bonesUi(){ const box=$('bonelist'); box.innerHTML='';
   s.onchange=async()=>{ sel=b.name; const r=await api('/api/key',{target:b.name,prop:'bone_angle',frame,value:+s.value,ease:{type:'smooth'}}); say(r); if(r.ok!==false){S=r;refresh(false);} };
   row.append(n,s,o); box.appendChild(row);} }
 function currentAngle(name){ for(const c of S.channels){ if(c.target===name&&c.prop==='bone_angle'&&c.track&&c.track.keys.length){ const k=c.track.keys; let a=k[0]; for(const x of k){ if(x.frame<=frame)a=x; } return Math.round(a.value);} } return 0; }
-async function refresh(full=true){ if(full){S=await api('/api/state');$('tl').max=S.frames-1;} $('undo').disabled=!COLLAB.on&&!S.can_undo; $('redo').disabled=!COLLAB.on&&!S.can_redo; bonesUi(); show();
+async function refresh(full=true){ PICV++; if(full){S=await api('/api/state');$('tl').max=S.frames-1;} $('undo').disabled=!COLLAB.on&&!S.can_undo; $('redo').disabled=!COLLAB.on&&!S.can_redo; bonesUi(); show();
  if(full){waves();layersUi();} const p=await api('/api/project'); $('json').value=JSON.stringify(p,null,1); tlLoad(); }
 $('tl').oninput=e=>{frame=+e.target.value;show();bonesUi();};
 $('tl').addEventListener('pointerdown',scrubStart); $('tl').addEventListener('pointerup',scrubEnd); $('tl').addEventListener('change',scrubEnd); window.addEventListener('blur',scrubEnd);
