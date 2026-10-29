@@ -10,6 +10,8 @@
 
 *Mit készít: a beépített sétáló alak, az `osatura demo-person` és az `osatura export` parancsokkal exportálva (az egész projekt egyetlen JSON-fájl). Kétperces kipróbálás: [docs/GETTING_STARTED.md](docs/i18n/hu/GETTING_STARTED.md).*
 
+**[Kódaláírási szabályzat](CODE_SIGNING_POLICY.md)** · [Adatvédelem](PRIVACY.md) · [Letöltés](#letöltés)
+
 ## Összefoglalás és filozófia
 
 Az OSATURA-val vektoros alakzatokból és képekből építhetsz karaktert vagy jelenetet, csontokkal és kényszerekkel riggelheted, kulcsokkal, klipekkel és fizikával animálhatod, majd GIF-ként, videóként, Lottie-ként, glTF-ként, önálló HTML-lejátszóként vagy interaktív futtatókörnyezetként exportálhatod. Kis, determinisztikus elemekből épül fel: ugyanaz a projekt és ugyanaz a seed ugyanazokat a pixeleket adja, minden eszköz egy dokumentált JSON-projektet olvas és ír, és minden parancs terminálból is működik, így az animációt úgy lehet szkriptelni, átnézni, diffelni és tesztelni, mint a forráskódot.
@@ -26,13 +28,22 @@ A projektet alakító alapelvek:
 
 *Név: a projektet 2026. okt. 24-ig ARMATURA-nak hívták, és egy védjegykeresés után nevezték át OSATURA-ra ([docs/LIMITATIONS.md](docs/i18n/hu/LIMITATIONS.md) L-78). A tárolót és az oldal címét is átneveztük (a régi tárolólinkek átirányítanak).*
 
-> **Alfa. Az első buildek előzetes kiadás-vázlatként készültek: `v0.1.0-alpha.3`.** A Windows x86-64, macOS arm64 és Linux x86-64 futtatható fájlokat, valamint a WebAssembly modult a GitHub Actions építi, és egy *vázlat* előzetes kiadáshoz csatolja a <https://github.com/chiuta/osatura/releases> oldalon (a vázlatot csak a tulajdonos látja, amíg kézzel közzé nem teszi). Minden crate verziója továbbra is `0.1.0`; a „v0.5 / v0.6 / v0.7” a történetben *funkciószintet* jelöl, nem kiadási számot ([CHANGELOG.md](docs/i18n/hu/CHANGELOG.md)).
+> **Alfa. A legutóbb közzétett előzetes kiadás: `v0.1.0-alpha.4`; a következő a `v0.1.0-alpha.5`.** A Windows x86-64, macOS arm64 és Linux x86-64 futtatható fájlokat, valamint a WebAssembly modult a GitHub Actions építi, és egy *vázlat* előzetes kiadáshoz csatolja a <https://github.com/chiuta/osatura/releases> oldalon (a vázlatot csak a tulajdonos látja, amíg kézzel közzé nem teszi). Minden crate verziója továbbra is `0.1.0`; a „v0.5 / v0.6 / v0.7” a történetben *funkciószintet* jelöl, nem kiadási számot ([CHANGELOG.md](docs/i18n/hu/CHANGELOG.md)).
 >
 > | Ellenőrizve | Nem ellenőrizve |
 > |---|---|
 > | **Helyben (Linux x86-64, 2026. okt. 24.):** a `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` 1343 tesztje és 19 doc-tesztje sikeres (a GPU crate-hez adapter, az ablak crate-hez asztali környezet kell; korábban a GPU crate-et is beleszámítva 1368 volt). **A GitHub Actionsön (2026. okt. 24., eszközlánc 1.97.0):** a tesztkészlet és a `clippy -D warnings` sikeres Linuxon, macOS-en (arm64) és Windowson; a `cargo deny` és a `reuse lint` sikeres; a WebAssembly modul lefordul `wasm32-unknown-unknown` célra, és a wrapper tesztje a valódi modul ellen sikeres Node 20 alatt; a kiadási binárisok füstteszten átmennek (`--version`, `demo`, `check`, `render`), és az `osatura-studio --selftest` lefut Windowson és macOS-en. A stúdió öt headless Chromium füstteszje helyben sikeres (a CI nem futtatja őket); a CLI-t, a Rust homlokzatot és a C ABI-t (ASan/UBSan alatt is) lefuttattuk a dokumentációban szereplő példákkal | **A futtatható fájlokat ember még nem használta valódi Windows vagy macOS asztalon**: a Windows dupla kattintásos indítóját és az `osatura-studio` ablakos alkalmazást (WebView2 / WKWebView) a CI-ben csak lefordították és önteszttel ellenőrizték; a binárisok **nincsenek kódaláírással ellátva** (SmartScreen „Ismeretlen közzétevő”, macOS Gatekeeper); a Linux binárist csak Ubuntu runneren építették; **a WebAssembly modult csak headless Chromiumban futtatták** (Firefoxot és Safarit nem próbálták; 640x480-as képkockánként kb. 73 ms GPU nélkül); a stúdiót ember még nem használta éles környezetben, és Chromiumtól eltérő böngészőben sem; valódi GPU-val (csak szoftveres adapterrel), webkamerával, fényképpel vagy mozgásrögzítő fájllal még nem próbálták; nem volt biztonsági audit, jogi felülvizsgálat és szabadalmi keresés |
 >
 > Mielőtt bármire ráépítenél, olvasd el a [docs/LIMITATIONS.md](docs/i18n/hu/LIMITATIONS.md) fájlt (78 számozott korlát súlyossággal és kerülőmegoldással).
+
+## Élő demó és animációs példák
+
+* **Élő demó (böngészőben, üzemeltetve): tervezett.** Ma nincs üzemeltetett demó, és nincs webcím, amelyre mutathatnánk. Addig kipróbálhatod a stúdiót helyben (`osatura studio demo.json --port 8080`, lásd a Gyors kezdést), kiadás megjelenése után pedig az `osatura-web.tar.gz` archívummal; a WebAssembly demóoldalt eddig csak headless Chromiumban töltötték be a `.wasm` fájl nélkül ([docs/WASM.md](docs/i18n/hu/WASM.md)), ezért ne várj ellenőrzött böngészős renderelést.
+* **A tárolóban meglévő animációs példák** (a fájllistában ellenőrizve, ebben az átnézésben nem renderelve újra):
+  * [`docs/img/walk.gif`](docs/img/walk.gif): a beépített sétáló alak, az `osatura export` valódi kimenete (az oldal tetején látható kép); [`docs/img/walk-cycle.png`](docs/img/walk-cycle.png): ugyanez a ciklus egy lapon.
+  * [`docs/examples/pip.svg`](docs/examples/pip.svg) és [`docs/examples/pip-rig.rhai`](docs/examples/pip-rig.rhai): egy rajz és a szkript, amely megrigeli és járásciklust ad neki; lépésről lépésre a [docs/TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) használja (eredmény: [`docs/img/tutorial-svg-walk.png`](docs/img/tutorial-svg-walk.png)).
+  * Az `osatura demo` (rig-demó, 48 képkocka) és az `osatura demo-fx` (folyadék, boole-műveletek, részecskék) projektfájlokat generál, amelyeket magad renderelhetsz és exportálhatsz.
+  * További animált példák: még nem kerültek be (tervezett).
 
 ## Érettség: hol érdemes kezdeni
 
@@ -46,17 +57,19 @@ Az OSATURA sokkal több funkciót tartalmaz, mint amit egy ember ellenőrizni tu
 
 ## Letöltés
 
-Az előre elkészített archívumok – miután a tulajdonos közzétette a vázlat kiadást – a projekt [Releases oldalán](https://github.com/chiuta/osatura/releases) találhatók:
+Az előre elkészített archívumok – miután a tulajdonos közzétette a vázlat kiadást – a projekt [Releases oldalán](https://github.com/chiuta/osatura/releases) találhatók. **[Kódaláírási szabályzat](CODE_SIGNING_POLICY.md)** · [Adatvédelem](PRIVACY.md) (a programok semmit sem küldenek a hálózaton, hacsak nem kéred) · [Eltávolítás](docs/UNINSTALL.md) · [Letöltés ellenőrzése](docs/VERIFY_DOWNLOADS.md)
 
 | Archívum | Tartalom |
 |---|---|
 | `osatura-windows-x86_64.zip` | `osatura.exe` (parancssor + stúdiószerver), `osatura-studio.exe` (ablakos alkalmazás), C könyvtár és fejléc, licencek, harmadik féltől származó közlemények |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (csak Apple silicon), C könyvtár és fejléc, licencek, közlemények |
-| `osatura-linux-x86_64.tar.gz` | `osatura`, C könyvtár és fejléc, licencek, közlemények (nincs ablakos alkalmazás: használd az `osatura studio` parancsot és egy böngészőt) |
+| `osatura-linux-x86_64.tar.gz` | `osatura`, C könyvtár és fejléc, licencek, közlemények (nincs ablakos alkalmazás: használd az `osatura studio` parancsot és egy böngészőt); glibc 2.35+ kell hozzá (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
+| `osatura-linux-x86_64-musl.tar.gz` | statikus `osatura` (musl libc, rendszerkönyvtárak nélkül) régebbi disztribúciókhoz, például RHEL/Rocky/Alma 8 és 9, Debian 10 és 11, Ubuntu 20.04; nincs C könyvtár; kb. 5-50 %-kal lassabb a glibc buildnél. **Az alpha.4-ben nincs benne**: a következő kiadással jelenik meg |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demó `index.html` (csak headless Chromiumban futtatva, lásd [docs/WASM.md](docs/i18n/hu/WASM.md)) |
 | `SHA256SUMS.txt` | minden letöltést ellenőrizz ezzel |
+| `*.sigstore.json` | az egyes fájlok Sigstore-aláírása ([docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md)) |
 
-* **Windows:** kattints duplán az `osatura.exe` fájlra, hogy létrejöjjön a `Documents\OSATURA\first-rig.json`, és megnyíljon a stúdió a böngésződben, vagy kattints duplán az `osatura-studio.exe` fájlra egy saját ablakért. Mindkét program aláíratlan: a SmartScreenben válaszd a *További információ*, majd a *Futtatás mindenképpen* lehetőséget. Lásd [docs/GETTING_STARTED.md](docs/i18n/hu/GETTING_STARTED.md).
+* **Windows:** kattints duplán az `osatura.exe` fájlra, hogy létrejöjjön a `Documents\OSATURA\first-rig.json`, és megnyíljon a stúdió a böngésződben, vagy kattints duplán az `osatura-studio.exe` fájlra egy saját ablakért. Mindkét program még nincs Authenticode-aláírással ellátva ([Kódaláírási szabályzat](CODE_SIGNING_POLICY.md)): a SmartScreenben válaszd a *További információ*, majd a *Futtatás mindenképpen* lehetőséget. Semmi sem települ: az OSATURA eltávolításához told ki a mappát és a [docs/UNINSTALL.md](docs/UNINSTALL.md) fájljait. Lásd [docs/GETTING_STARTED.md](docs/i18n/hu/GETTING_STARTED.md).
 * **macOS:** első alkalommal hagyd jóvá a programot a *Rendszerbeállítások > Adatvédelem és biztonság* alatt.
 * **Forrás:** minden archívum megnevezi azt a commitot, amelyből készült; az AGPL alá tartozó részekhez a forrásajánlat tartozik (`osatura --version`, `/source`).
 
@@ -153,6 +166,7 @@ Kezdd a [docs/INDEX.md](docs/i18n/hu/INDEX.md) fájlnál (minden dokumentum, cé
 | [docs/CI.md](docs/i18n/hu/CI.md) | animációs CI |
 | [docs/DEVELOPMENT.md](docs/i18n/hu/DEVELOPMENT.md) | build, teszt, konvenciók, kiadás |
 | [docs/SECURITY.md](docs/i18n/hu/SECURITY.md) | fenyegetésmodell és megerősítés |
+| [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [PRIVACY.md](PRIVACY.md) · [docs/UNINSTALL.md](docs/UNINSTALL.md) | kódaláírási szabályzat, adatvédelem, eltávolítás |
 | [docs/LIMITATIONS.md](docs/i18n/hu/LIMITATIONS.md) | ismert korlátok |
 | [docs/PATENT_NOTES.md](docs/i18n/hu/PATENT_NOTES.md), [docs/THIRD_PARTY.md](docs/i18n/hu/THIRD_PARTY.md), [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) | szabadalmak, függőségek licencei |
 | [CHANGELOG.md](docs/i18n/hu/CHANGELOG.md), [ROADMAP.md](docs/i18n/hu/ROADMAP.md), [FEATURES.md](docs/i18n/hu/FEATURES.md) | előzmények, terv és részletes állapot, funkciómátrix |
