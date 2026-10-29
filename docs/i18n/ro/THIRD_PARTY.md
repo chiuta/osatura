@@ -1,8 +1,8 @@
 # Licențe ale terților (generat)
 
-*Generat de `scripts/licence-audit.sh` din `cargo metadata --all-features` (toate țintele, dependențe normale + de build, fără dependențele de dezvoltare). Nu edita manual. Nu constituie consultanță juridică; expresiile SPDX sunt cele declarate de fiecare crate în `Cargo.toml` și nu au fost verificate independent în fișierele sursă. Crate-urile workspace-ului sunt ele însele MPL-2.0 (core, capi, wasm, gpu) și AGPL-3.0-or-later (osatura-cli); vezi LICENSE-*
+*Generat de `scripts/licence-audit.sh` din `cargo metadata --all-features` (toate țintele, dependențe normale + de build, fără dependențele de dezvoltare). Nu edita manual. Nu constituie consultanță juridică; expresiile SPDX sunt cele declarate de fiecare crate în `Cargo.toml` și nu au fost verificate independent în fișierele sursă. Crate-urile workspace-ului sunt ele însele MPL-2.0 (core, capi, wasm, gpu) și AGPL-3.0-or-later (osatura-cli); vezi LICENSE.*
 
-**363 de crate-uri terțe** (nume+versiune distincte). Grupa A (necesită verificare): 6; grupa B (licențe permisive / de domeniu public / de date, demne de reținut): 27; grupa C (stil MIT / Apache-2.0): 330.
+**364 de crate-uri terțe** (nume+versiune distincte). Grupa A (necesită verificare): 6; grupa B (licențe permisive / de domeniu public / de date, demne de reținut): 27; grupa C (stil MIT / Apache-2.0): 331.
 
 ## A. Necesită verificare: o clauză copyleft fără alternativă complet permisivă
 
@@ -303,7 +303,7 @@
 | time | 0.3.55 | MIT OR Apache-2.0 | registru crates.io | osatura-gui |  |
 | time-core | 0.1.9 | MIT OR Apache-2.0 | registru crates.io | osatura-gui |  |
 | time-macros | 0.2.32 | MIT OR Apache-2.0 | registru crates.io | osatura-gui |  |
-| tokio | 1.54.0 | MIT | registru crates.io | osatura-cli, osatura-gpu, osatura-gui |  |
+| tokio | 1.54.1 | MIT | registru crates.io | osatura-cli, osatura-gpu, osatura-gui |  |
 | toml | 0.8.2 | MIT OR Apache-2.0 | registru crates.io | osatura-gui |  |
 | toml_datetime | 0.6.3 | MIT OR Apache-2.0 | registru crates.io | osatura-gui |  |
 | toml_datetime | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 | registru crates.io | osatura-gui |  |
@@ -372,6 +372,7 @@
 | windows_x86_64_msvc | 0.42.2 | MIT OR Apache-2.0 | registru crates.io | osatura-gui |  |
 | winnow | 0.5.40 | MIT | registru crates.io | osatura-gui |  |
 | winnow | 1.0.4 | MIT | registru crates.io | osatura-gui |  |
+| winresource | 0.1.34 | MIT | registru crates.io | osatura-capi, osatura-cli, osatura-gui |  |
 | wry | 0.57.1 | Apache-2.0 OR MIT | registru crates.io | osatura-gui |  |
 | x11 | 2.21.0 | MIT | registru crates.io | osatura-gui |  |
 | x11-dl | 2.21.0 | MIT | registru crates.io | osatura-gui |  |

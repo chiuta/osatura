@@ -199,7 +199,7 @@ Nem. A lemezen lévő fájl csak a Save megnyomásakor változik. Az oldal ment�
 Csak ha nem loopback címre kötöd, és ekkor token szükséges: `refusing to listen on 0.0.0.0:8851: the studio has no accounts and no TLS, so a non-local address needs --collab-token (and still sends everything in clear text)`. A tokennek legalább 16 karakteresnek kell lennie, például az `openssl rand -hex 16` kimenete. Nincs titkosítás: használj SSH-alagutat vagy TLS-sel ellátott fordított proxyt.
 
 **52. Hová tegyem a tokent?**
-Az `X-Collab-Token` fejlécbe vagy az `arm_token` sütibe (HttpOnly, SameSite=Strict, és Secure, ha a kérés https `--public-origin` alatt érkezik). Az URL-ben soha nem fogadja el. Az ötödik sikertelen kísérlettől az adott klienscím HTTP 429-et kap növekvő késleltetéssel (2, 4 ... legfeljebb 30 mp).
+Az `X-Collab-Token` fejlécbe vagy az `osatura_token` sütibe (HttpOnly, SameSite=Strict, és Secure, ha a kérés https `--public-origin` alatt érkezik). Az URL-ben soha nem fogadja el. Az ötödik sikertelen kísérlettől az adott klienscím HTTP 429-et kap növekvő késleltetéssel (2, 4 ... legfeljebb 30 mp).
 
 **53. Mit jelentenek a 403, 415 és 421 HTTP-hibák?**
 421: a Host fejléc nem az, amit a stúdió vár. 403: idegen `Origin` vagy `Sec-Fetch-Site`. 415: nem JSON POST. Ezek védelmet jelentenek a böngésződben lévő oldalak ellen, amelyek a helyi szervert hívnák; lásd [STUDIO.md](STUDIO.md) és [SECURITY.md](SECURITY.md).

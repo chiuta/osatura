@@ -199,7 +199,7 @@ Nein. Die Datei auf der Festplatte ändert sich nur, wenn du auf Speichern klick
 Nur wenn du eine Nicht-Loopback-Adresse bindest, und dann ist ein Token erforderlich: `refusing to listen on 0.0.0.0:8851: the studio has no accounts and no TLS, so a non-local address needs --collab-token (and still sends everything in clear text)`. Das Token muss mindestens 16 Zeichen lang sein, zum Beispiel aus `openssl rand -hex 16`. Es gibt keine Verschlüsselung: Nutze einen SSH-Tunnel oder einen Reverse-Proxy mit TLS.
 
 **52. Wohin kommt das Token?**
-In den Header `X-Collab-Token` oder das Cookie `arm_token` (HttpOnly, SameSite=Strict und Secure, wenn die Anfrage unter einem https-`--public-origin` eintrifft). In der URL wird es nie akzeptiert. Ab dem fünften fehlgeschlagenen Versuch erhält diese Client-Adresse HTTP 429 mit wachsender Verzögerung (2, 4 ... bis zu 30 s).
+In den Header `X-Collab-Token` oder das Cookie `osatura_token` (HttpOnly, SameSite=Strict und Secure, wenn die Anfrage unter einem https-`--public-origin` eintrifft). In der URL wird es nie akzeptiert. Ab dem fünften fehlgeschlagenen Versuch erhält diese Client-Adresse HTTP 429 mit wachsender Verzögerung (2, 4 ... bis zu 30 s).
 
 **53. Was bedeuten die HTTP-Fehler 403, 415 und 421?**
 421: Der Host-Header ist keiner, den das Studio erwartet. 403: ein fremder `Origin` oder `Sec-Fetch-Site`. 415: ein POST, der kein JSON ist. Das sind Schutzmaßnahmen gegen Seiten in deinem Browser, die den lokalen Server aufrufen; siehe [STUDIO.md](STUDIO.md) und [SECURITY.md](SECURITY.md).

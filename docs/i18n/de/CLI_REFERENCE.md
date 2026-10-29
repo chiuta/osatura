@@ -1515,7 +1515,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-Mit `--split` wird jede Form zu **einer eigenen Ebene**, benannt nach der `id` der Form in Dateireihenfolge. Eine Form ohne id heißt nach ihrem Tag und ihrer Position (`rect1`, `circle6`), eine wiederholte id erhält `_1`, `_2`..., und Zeichen, die ein Ebenenname nicht enthalten darf (`/`, `::`, Steuerzeichen), werden zu `_`; Namen werden auf 100 Zeichen gekürzt. Das ist die Form der Wahl, wenn die Zeichnung Teil für Teil gerigged werden soll; siehe [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+Mit `--split` wird jede Form zu **einer eigenen Ebene**, benannt nach der `id` der Form in Dateireihenfolge. Eine Form ohne id heißt nach ihrem Tag und ihrer Position (`rect1`, `circle6`), eine wiederholte id erhält `_1`, `_2`..., und Zeichen, die ein Ebenenname nicht enthalten darf (`/`, `::`, Steuerzeichen), werden zu `_`; Namen werden auf 100 Zeichen gekürzt. Das ist die Form der Wahl, wenn die Zeichnung Teil für Teil gerigged werden soll; siehe [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split
@@ -2479,7 +2479,7 @@ vom Projekt referenzierte binäre Assets werden nicht versioniert.
 
 ### `studio`
 
-**Synopsis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
+**Synopsis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES] [--collab-host NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
 
 Startet den **Browser-Editor** (Rückgängig/Wiederholen, Timeline, Live- und Gesichts-Panels, VCS und agentenartige Operationen) als lokalen Webserver
 und blockiert bis Strg-C. Standardwerte: `--port 8080`, `--bind 127.0.0.1`. Das Projekt wird beim Start validiert; gespeichert wird
@@ -2501,7 +2501,11 @@ das eine gemeinsame Bearer-Token durch **Tokens pro Teilnehmer**: F enthält ein
 Unix, sonst wird es abgelehnt), und jede Person erhält ein Token von `osatura collab-token NAME`; ein Token ist an einen Namen gebunden
 (beim Beitreten wird dieser Name verwendet, niemand kann als jemand anderes beitreten), läuft ab und wird durch Neuberechnung seines HMAC-SHA-256 geprüft, sodass der
 Server keine Tabelle führt. `--collab-revoke NAMES` (kommagetrennt, erfordert `--collab-secret-file`) lehnt die Tokens dieser
-Namen ab, bevor sie ablaufen. `--collab-token` und `--collab-secret-file` lassen sich kombinieren (das gemeinsame Token wirkt dann als
+Namen ab, bevor sie ablaufen (ein laufender Server kann auch per `POST /api/collab/revoke {"names":["ana"]}` widerrufen, siehe unten). `--collab-host NAMES`
+(kommagetrennt, erfordert `--collab-secret-file`) nennt die Teilnehmenden, deren Tokens das Projekt **speichern, das Sitzungslog kompaktieren und
+Tokens widerrufen** dürfen; alle anderen mit gültigem Token können weiterhin bearbeiten, erhalten für diese drei Anfragen aber `403`. Ohne `--collab-host` darf jede
+teilnehmende Person speichern und kompaktieren (wie bisher), und über HTTP darf niemand außer dem gemeinsamen `--collab-token` / einer nicht authentifizierten lokalen Sitzung
+widerrufen; das Studio meldet beim Start, welcher Fall gilt. `--collab-token` und `--collab-secret-file` lassen sich kombinieren (das gemeinsame Token wirkt dann als
 Admin-Schlüssel); jedes von beiden erfüllt die Regel, dass eine Bind-Adresse außerhalb von Loopback eine Zugangsberechtigung braucht. `--collab-rate N` begrenzt jede Client-
 Adresse auf N Anfragen pro Sekunde (Bursts von 2N; Antwort `429` mit `Retry-After`); der Standard ist 100, wenn eine Zugangsberechtigung
 verlangt wird, und sonst kein Limit; 0 schaltet es ab. Eine Bind-Adresse außerhalb von Loopback gibt Warnungen aus (unverschlüsseltes HTTP; alle Schnittstellen bei

@@ -8,7 +8,7 @@
 
 ![Oldalnézetes figura (fej, fül, lófarok, törzs, ujjakkal ellátott kar, láb, talp) helyben jár az elúszó talajon; az osatura export valódi kimenete a beépített demóprojekten](docs/img/walk.gif)
 
-*Mit készít: a beépített sétáló alak, az `osatura demo-person` és az `osatura export` parancsokkal exportálva (az egész projekt egyetlen JSON-fájl). Kétperces kipróbálás: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
+*Mit készít: a beépített sétáló alak, az `osatura demo-person` és az `osatura export` parancsokkal exportálva (az egész projekt egyetlen JSON-fájl). Kétperces kipróbálás: [docs/GETTING_STARTED.md](docs/i18n/hu/GETTING_STARTED.md).*
 
 ## Összefoglalás és filozófia
 
@@ -36,7 +36,7 @@ A projektet alakító alapelvek:
 
 ## Érettség: hol érdemes kezdeni
 
-Az OSATURA sokkal több funkciót tartalmaz, mint amit egy ember ellenőrizni tud. A táblázat azt mutatja, hová fordítja a szerző először az erőfeszítést. **Ez szándék, nem minőségi garancia: a szerzőn kívül még egyetlen animátor sem használta semmijét** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+Az OSATURA sokkal több funkciót tartalmaz, mint amit egy ember ellenőrizni tud. A táblázat azt mutatja, hová fordítja a szerző először az erőfeszítést. **Ez szándék, nem minőségi garancia: a szerzőn kívül még egyetlen animátor sem használta semmijét** ([docs/LIMITATIONS.md](docs/i18n/hu/LIMITATIONS.md)).
 
 | Szint | Mi | Mit jelent |
 |---|---|---|

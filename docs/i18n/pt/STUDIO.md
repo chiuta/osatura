@@ -45,6 +45,8 @@ mesma mensagem. Campos desconhecidos geram um aviso (`warning: unknown field bog
 | `--collab-log LOG` | nenhum | Persiste a sessão de edição compartilhada em um arquivo e a retoma após uma reinicialização. |
 | `--collab-nosync` | desativado | Com `--collab-log`: não executa `fsync` após cada edição (mais rápido; uma queda de energia pode perder as últimas edições). Sem `--collab-log`, é recusado na inicialização (`--collab-nosync needs --collab-log`). |
 
+O aplicativo de janela e o início por duplo clique criam o primeiro projeto em `OSATURA_DOCUMENTS` quando essa variável está definida; caso contrário, em `Documents\OSATURA` (usado pelo pacote portátil).
+
 **Salvando.** As edições ficam na memória. O arquivo de projeto em disco só muda quando você pressiona **Save** (`Ctrl+S`), que grava de forma atômica
 (arquivo temporário e depois renomeação, nunca através de um link simbólico). Isso vale também durante uma sessão compartilhada (seção 8).
 
@@ -59,7 +61,7 @@ O estúdio foi feito para uma pessoa em sua própria máquina. O que o protege:
 * **Cabeçalhos de segurança** nas respostas: uma `Content-Security-Policy` restritiva (`default-src 'self'` e sem framing), `X-Frame-Options: DENY`,
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`.
 * **Token para qualquer acesso fora da máquina.** Com `--collab-token`, toda requisição precisa do token no cabeçalho `X-Collab-Token` ou no
-  cookie `arm_token` definido por `POST /api/login` (HttpOnly, SameSite=Strict). O token **nunca é aceito na URL**. Tokens errados são retardados
+  cookie `osatura_token` definido por `POST /api/login` (HttpOnly, SameSite=Strict). O token **nunca é aceito na URL**. Tokens errados são retardados
   por endereço de cliente (a partir da quinta falha seguida, esse endereço recebe **429** por 2, 4, ... até 30 segundos), mas o recuo não consegue deter um
   atacante que continue tentando: use um token aleatório longo.
 * **Segredos de participante.** Entrar em uma sessão compartilhada devolve um segredo aleatório de 128 bits; toda chamada feita como esse participante deve enviá-lo como
@@ -367,7 +369,7 @@ A página do estúdio usa estas rotas e você também pode usá-las (scripts, te
 | `POST /api/undo`, `POST /api/redo` | nenhum | `state` (por usuário em uma sessão compartilhada) |
 | `POST /api/key` | `{"target","prop","frame","value","ease"?}` (`ease` como `{"type":"smooth"}`; padrão linear) | `state` |
 | `POST /api/delete_key` | `{"target","prop","frame"}` | `state` |
-| `POST /api/save` | nenhum | `{"ok":true,"saved":"<path>"}`; grava de forma atômica |
+| `POST /api/save` | nenhum | `{"ok":true,"saved":"<path>"}`; grava de forma atômica. Somente o host, quando o estúdio roda com `--collab-host` (caso contrário, **403**) |
 | `POST /api/suggest` | `{"kind":"between"\|"complete"\|"next","a","b","t","frame","constraints","free","top","snap","prior","apply":RANK, "library"?, "model"?}` | `{ok, suggestions}`; com `apply`, também o `state` da edição. Uma requisição sem `kind` gera `bad request: missing field `kind`` |
 
 ### Seleção e gizmos (sem estado: a página guarda a seleção)
@@ -407,7 +409,7 @@ Por exemplo, `{"preview":true,"op":{"op":"delete","keys":[{"ch":0,"frame":12}]}}
 | `POST /api/face/detect` | `{"image":"<base64 PNG/JPEG or data: URI>","track":bool,"push":bool,"t"}` | `{ok, found, layout:"osatura23", size, points, box, note:"detector trained on synthetic faces only"}` |
 | `POST /api/face/synth` | `{"t","size":32-512,"seed"}` | `{ok, image:"data:image/png;base64,...", layout, size, points}` um quadro da cabeça sintética com seus landmarks exatos |
 | `POST /api/ui` | qualquer um de `{"layout":{...}\|null,"shortcuts":{...}\|null,"recents":[...],"overlays":{...},"reset":"layout"\|"shortcuts"\|"overlays"\|"all"}` | documento de `GET /api/ui`; campos desconhecidos (`unknown field 'bogus'`), conflitos e layouts incompletos são recusados e nada muda |
-| `POST /api/login` | `{"token":"..."}` | `{ok:true}` e `Set-Cookie: arm_token=...; Path=/; HttpOnly; SameSite=Strict`; token errado: 401 (429 a partir da 5ª falha); sem token configurado, `{"ok":true,"token_required":false}` |
+| `POST /api/login` | `{"token":"..."}` | `{ok:true}` e `Set-Cookie: osatura_token=...; Path=/; HttpOnly; SameSite=Strict`; token errado: 401 (429 a partir da 5ª falha); sem token configurado, `{"ok":true,"token_required":false}` |
 
 ### Colaboração
 
@@ -422,7 +424,8 @@ As chamadas feitas como participante enviam `X-Collab-Replica: <id>` e `X-Collab
 | `POST /api/collab/ops` | `{"replica","ops":[...]` ou `"op":{...}`, `"base"?}` ou `{"replica","envelopes":[...]}` | `state` + `applied`, `index`. Participante desconhecido: `unknown participant N: join first`; lista vazia: `no ops`; edições inválidas do projeto são recusadas |
 | `POST /api/collab/undo`, `.../redo` | `{"replica"}` | `state` + `collab_can_undo`, `collab_can_redo` (somente as suas próprias edições) |
 | `POST /api/collab/presence` | `{"replica","n","frame","cursor":[x,y],"selection":[names up to 64]}` | `{ok}` |
-| `POST /api/collab/compact` | `{}` | resumo da compactação (`ok`, `logged`) |
+| `POST /api/collab/compact` | `{}` | resumo da compactação (`ok`, `logged`). Somente o host, quando o estúdio roda com `--collab-host` (caso contrário, **403**) |
+| `POST /api/collab/revoke` | `{"names":["ana","bob"]}` (1 a 64 nomes) | `{ok, revoked, revoked_total}`: os tokens desses nomes passam a ser recusados e os participantes que entraram com eles são removidos. Exige tokens por participante (`--collab-secret-file`) e um token de host (`--collab-host`), ou o `--collab-token` compartilhado; caso contrário, **403**. Um fluxo de eventos já aberto termina quando o cliente se desconecta |
 | `GET /api/collab/events` | `since=N` ou `Last-Event-ID` | um fluxo de **server-sent events**: reprodução a partir de `since`, depois usuários, presença e todos os eventos seguintes; `resync` se o cliente estiver muito atrasado; no máximo 64 fluxos (`503 too many event streams`) |
 
 Em uma sessão ativa, as rotas de edição comuns (`/api/op`, `/api/undo`, `/api/redo` e as próprias edições do estúdio por nudge, key ou gizmo) também são registradas para os outros participantes.

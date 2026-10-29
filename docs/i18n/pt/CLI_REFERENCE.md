@@ -1516,7 +1516,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-Com `--split`, cada forma vira **a sua própria camada**, nomeada com o `id` da forma, na ordem do arquivo. Uma forma sem id recebe o nome de sua tag e posição (`rect1`, `circle6`), um id repetido recebe `_1`, `_2`..., e os caracteres que um nome de camada não pode conter (`/`, `::`, caracteres de controle) viram `_`; os nomes são cortados em 100 caracteres. Essa é a forma a usar quando o desenho vai ser montado parte por parte; veja [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+Com `--split`, cada forma vira **a sua própria camada**, nomeada com o `id` da forma, na ordem do arquivo. Uma forma sem id recebe o nome de sua tag e posição (`rect1`, `circle6`), um id repetido recebe `_1`, `_2`..., e os caracteres que um nome de camada não pode conter (`/`, `::`, caracteres de controle) viram `_`; os nomes são cortados em 100 caracteres. Essa é a forma a usar quando o desenho vai ser montado parte por parte; veja [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split
@@ -2480,7 +2480,7 @@ os recursos binários referenciados pelo projeto não são versionados.
 
 ### `studio`
 
-**Sinopse:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
+**Sinopse:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES] [--collab-host NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
 
 Inicia o **editor no navegador** (desfazer/refazer, timeline, painéis de live e de rosto, VCS e operações no estilo de agente) como um servidor web
 local e bloqueia até Ctrl-C. Padrões: `--port 8080`, `--bind 127.0.0.1`. O projeto é validado na inicialização; os salvamentos vão
@@ -2502,7 +2502,11 @@ o único bearer compartilhado por **tokens por participante**: F contém um segr
 Unix, caso contrário é recusado) e cada pessoa recebe um token de `osatura collab-token NAME`; um token fica vinculado a um nome
 (a entrada usa esse nome, ninguém pode entrar como outra pessoa), expira e é verificado recalculando o seu HMAC-SHA-256, de modo que o
 servidor não mantém tabela alguma. `--collab-revoke NAMES` (separados por vírgula, requer `--collab-secret-file`) recusa os tokens desses
-nomes antes de expirarem. `--collab-token` e `--collab-secret-file` podem ser combinados (o token compartilhado passa então a atuar como
+nomes antes de expirarem (um servidor em execução também pode revogar com `POST /api/collab/revoke {"names":["ana"]}`, veja abaixo). `--collab-host NAMES`
+(separados por vírgula, requer `--collab-secret-file`) indica os participantes cujos tokens podem **salvar o projeto, compactar o log da sessão e revogar
+tokens**; todos os demais com um token válido ainda podem editar, mas recebem `403` nessas três requisições. Sem `--collab-host`, todo participante pode
+salvar e compactar (como antes) e ninguém além do `--collab-token` compartilhado ou de uma sessão local sem autenticação pode revogar por HTTP; o estúdio informa qual é o caso
+na inicialização. `--collab-token` e `--collab-secret-file` podem ser combinados (o token compartilhado passa então a atuar como
 chave de administrador); qualquer um dos dois satisfaz a regra de que um bind que não seja loopback exige uma credencial. `--collab-rate N` limita cada endereço
 de cliente a N requisições por segundo (rajadas de 2N; resposta `429` com `Retry-After`); o padrão é 100 quando uma credencial é
 exigida e nenhum limite caso contrário; 0 o desativa. Um bind que não seja loopback imprime avisos (HTTP simples; todas as interfaces para

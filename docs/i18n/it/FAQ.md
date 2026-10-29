@@ -199,7 +199,7 @@ No. Il file su disco cambia solo quando premi Save. Chiudere la pagina senza sal
 Solo se colleghi un indirizzo non loopback, e in quel caso serve un token: `refusing to listen on 0.0.0.0:8851: the studio has no accounts and no TLS, so a non-local address needs --collab-token (and still sends everything in clear text)`. Il token deve avere almeno 16 caratteri, per esempio da `openssl rand -hex 16`. Non c'è crittografia: usa un tunnel SSH o un reverse proxy con TLS.
 
 **52. Dove metto il token?**
-Nell'header `X-Collab-Token` o nel cookie `arm_token` (HttpOnly, SameSite=Strict e Secure quando la richiesta arriva con un `--public-origin` https). Non viene mai accettato nell'URL. Dal quinto tentativo fallito, quell'indirizzo client riceve HTTP 429 con un ritardo crescente (2, 4 ... fino a 30 s).
+Nell'header `X-Collab-Token` o nel cookie `osatura_token` (HttpOnly, SameSite=Strict e Secure quando la richiesta arriva con un `--public-origin` https). Non viene mai accettato nell'URL. Dal quinto tentativo fallito, quell'indirizzo client riceve HTTP 429 con un ritardo crescente (2, 4 ... fino a 30 s).
 
 **53. Che cosa significano gli errori HTTP 403, 415 e 421?**
 421: l'header Host non è uno di quelli che lo studio si aspetta. 403: un `Origin` o `Sec-Fetch-Site` estraneo. 415: un POST che non è JSON. Sono protezioni contro le pagine nel tuo browser che chiamano il server locale; vedi [STUDIO.md](STUDIO.md) e [SECURITY.md](SECURITY.md).

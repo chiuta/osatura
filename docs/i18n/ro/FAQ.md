@@ -199,7 +199,7 @@ Nu. Fișierul de pe disc se schimbă doar când apeși Save. Închiderea paginii
 Doar dacă te legi la o adresă non-loopback, iar atunci este necesar un token: `refusing to listen on 0.0.0.0:8851: the studio has no accounts and no TLS, so a non-local address needs --collab-token (and still sends everything in clear text)`. Tokenul trebuie să aibă cel puțin 16 caractere, de exemplu din `openssl rand -hex 16`. Nu există criptare: folosește un tunel SSH sau un reverse proxy cu TLS.
 
 **52. Unde pun tokenul?**
-În antetul `X-Collab-Token` sau în cookie-ul `arm_token` (HttpOnly, SameSite=Strict și Secure când cererea sosește sub un `--public-origin` https). Nu este acceptat niciodată în URL. De la a cincea încercare eșuată, acea adresă de client primește HTTP 429 cu o întârziere crescătoare (2, 4 ... până la 30 s).
+În antetul `X-Collab-Token` sau în cookie-ul `osatura_token` (HttpOnly, SameSite=Strict și Secure când cererea sosește sub un `--public-origin` https). Nu este acceptat niciodată în URL. De la a cincea încercare eșuată, acea adresă de client primește HTTP 429 cu o întârziere crescătoare (2, 4 ... până la 30 s).
 
 **53. Ce înseamnă erorile HTTP 403, 415 și 421?**
 421: antetul Host nu este unul pe care studio îl așteaptă. 403: un `Origin` sau `Sec-Fetch-Site` străin. 415: un POST care nu este JSON. Acestea sunt protecții împotriva paginilor din browserul tău care apelează serverul local; vezi [STUDIO.md](STUDIO.md) și [SECURITY.md](SECURITY.md).

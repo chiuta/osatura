@@ -19,7 +19,9 @@ Cuprins: [Toate documentele](#toate-documentele) - [Trasee de lectură în func�
 | [ANIMATION_GUIDE.md](ANIMATION_GUIDE.md) | Chei, easing, clipuri și take-uri, fizică, lip-sync, audio, alegeri de export | animatori |
 | [TUTORIAL_SVG.md](TUTORIAL_SVG.md) | De la un desen vectorial la un GIF cu mers: import, rig prin script, export (comenzile și ieșirile sunt reale) | artiști |
 | [COMPARISON.md](COMPARISON.md) | O comparație sinceră, datată, cu alte instrumente de animație 2D | evaluatori |
-| [VERIFY_DOWNLOADS.md](VERIFY_DOWNLOADS.md) | Verificarea arhivelor de release cu sumele SHA-256 | oricine instalează |
+| [VERIFY_DOWNLOADS.md](VERIFY_DOWNLOADS.md) | Verificarea fișierelor de release: semnături Sigstore, proveniența build-ului, sume SHA-256 | oricine instalează |
+| [UNINSTALL.md](UNINSTALL.md) | Dezinstalarea OSATURA și a tuturor fișierelor pe care le poate crea | oricine instalează |
+| [../CODE_SIGNING_POLICY.md](../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../PRIVACY.md) | Politica de semnare a codului (SignPath Foundation), rolurile echipei, confidențialitate | oricine instalează, mentenanți |
 | [GOOD_FIRST_TASKS.md](GOOD_FIRST_TASKS.md) | Sarcini mici pentru o primă contribuție | contributori noi |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | Formatul JSON al proiectului, câmp cu câmp | constructori de instrumente, riggeri care editează JSON |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Ce transportă și ce pierde fiecare format de export și de import | constructori de pipeline-uri, integratori |

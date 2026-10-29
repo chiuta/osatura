@@ -8,7 +8,7 @@
 
 ![Un personaggio di profilo (testa, orecchio, coda di cavallo, tronco, braccia con dita, gambe, piedi) cammina sul posto su un terreno che scorre; output reale di osatura export sul progetto dimostrativo incluso](docs/img/walk.gif)
 
-*Cosa produce: la persona che cammina incorporata, esportata con `osatura demo-person` e `osatura export` (l'intero progetto è un unico file JSON). Provalo in due minuti: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
+*Cosa produce: la persona che cammina incorporata, esportata con `osatura demo-person` e `osatura export` (l'intero progetto è un unico file JSON). Provalo in due minuti: [docs/GETTING_STARTED.md](docs/i18n/it/GETTING_STARTED.md).*
 
 ## Sintesi e filosofia
 
@@ -36,7 +36,7 @@ Principi che danno forma al progetto:
 
 ## Maturità: da dove cominciare
 
-OSATURA ha molte più funzioni di quante una persona sola possa validare. La tabella indica dove l'autore concentra prima lo sforzo. **È un'intenzione, non una garanzia di qualità: nessun animatore oltre all'autore ne ha ancora usato qualcosa** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+OSATURA ha molte più funzioni di quante una persona sola possa validare. La tabella indica dove l'autore concentra prima lo sforzo. **È un'intenzione, non una garanzia di qualità: nessun animatore oltre all'autore ne ha ancora usato qualcosa** ([docs/LIMITATIONS.md](docs/i18n/it/LIMITATIONS.md)).
 
 | Livello | Cosa | Che cosa significa |
 |---|---|---|

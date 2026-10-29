@@ -381,7 +381,7 @@ hash (FNV-1a 64 bites az 1-es verzióban, SHA-256 a 2-esben), így a sérülés 
 
 **collab_srv.rs (CLI), a HTTP-oldal.** A `/api/collab/` alatti útvonalak: `join`, `leave`, `state`, `log`,
 `ops`, `undo`, `redo`, `presence`, `compact`, `events`. Hitelesítés: legalább 16 karakteres token,
-amelyet az `X-Collab-Token` fejlécben vagy az `arm_token` sütiben küldenek (a `/api/login` állítja be),
+amelyet az `X-Collab-Token` fejlécben vagy az `osatura_token` sütiben küldenek (a `/api/login` állítja be),
 állandó időben hasonlítja össze a rendszer, és sebességkorlát válaszol 429-cel. Minden résztvevő saját titkot is kap
 (`X-Collab-Secret`), hogy egy felhasználó ne járhasson el egy másik nevében. Az átvitel egyszerű HTTP TLS nélkül:
 megbízható hálózaton túli használathoz tegyél elé TLS-t lezáró proxyt.

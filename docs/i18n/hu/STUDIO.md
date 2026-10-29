@@ -38,6 +38,8 @@ Nyisd meg a címet egy böngészőben. A projektet induláskor ellenőrzi; a `ch
 | `--port N` | 8080 | TCP-port. Foglalt port esetén `cannot listen on 127.0.0.1:8861: Address already in use (os error 98)`, hibás portnál `cannot listen on 127.0.0.1:99999: invalid port value` az üzenet. |
 | `--bind ADDR` | `127.0.0.1` | A figyelt interfész. Minden, ami nem loopback cím, **megköveteli a `--collab-token` megadását**. |
 | `--ui-config F` | `$OSATURA_UI_CONFIG`, különben `$XDG_CONFIG_HOME/osatura/ui.json`, különben Windowson `%APPDATA%\OSATURA\ui.json` (az alpha.3 előtt nem volt ilyen: a beállítások csak a munkamenet idejére maradtak meg), különben `~/.config/osatura/ui.json` | Itt tárolódik az elrendezés, a gyorsbillentyűk, a legutóbbi parancsok és az overlay-beállítások. Felhasználónkénti fájl, soha nem része a projektnek. |
+
+Az ablakos alkalmazás és a dupla kattintásos indítás az első projektet az `OSATURA_DOCUMENTS` könyvtárban hozza létre, ha ez a változó be van állítva, különben a `Documents\OSATURA` mappában (ezt használja a hordozható csomag).
 | `--allow-host NAMES` | nincs | További elfogadott `Host` nevek (vesszővel elválasztva), DNS-néven való eléréshez. |
 | `--public-origin URL` | nincs | A TLS fordított proxy által bemutatott puszta origin (`https://studio.example.org`, útvonal nélkül); ennek `Host` és `Origin` értékét ezután elfogadja. |
 | `--source-url URL` | nincs; a hivatalos kiadási binárisokban az a commit, amelyből épültek (`https://github.com/chiuta/osatura/tree/<commit>`) | Innen tölthető le a *te* buildedhez tartozó forráskód (AGPL 13. szakasz); a `/source` oldalon és a `--version` kimenetében jelenik meg. Egy kifejezetten megadott érték mindig felülír. |
@@ -59,7 +61,7 @@ A stúdiót egy saját gépén dolgozó személynek szánták. Ami védi:
 * **Biztonsági fejlécek** a válaszokon: szigorú `Content-Security-Policy` (`default-src 'self'` és keretezés tiltva), `X-Frame-Options: DENY`,
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`.
 * **Token minden, a gépen kívüli eléréshez.** A `--collab-token` mellett minden kérésnek tartalmaznia kell a tokent az `X-Collab-Token` fejlécben, vagy a
-  `POST /api/login` által beállított `arm_token` sütiben (HttpOnly, SameSite=Strict). A tokent az URL-ben **soha nem fogadja el**. A hibás tokeneket
+  `POST /api/login` által beállított `osatura_token` sütiben (HttpOnly, SameSite=Strict). A tokent az URL-ben **soha nem fogadja el**. A hibás tokeneket
   klienscímenként lassítja (az egymás utáni ötödik hibától az a cím **429**-et kap 2, 4, ... legfeljebb 30 másodpercre), de a késleltetés nem tudja megállítani azt a
   támadót, aki folyamatosan próbálkozik: használj hosszú, véletlen tokent.
 * **Résztvevői titkok.** Egy közös munkamenethez való csatlakozás véletlen 128 bites titkot ad vissza; a résztvevőként tett minden hívásnak ezt kell küldenie
@@ -367,7 +369,7 @@ A stúdió oldala ezeket az útvonalakat használja, és te is használhatod ők
 | `POST /api/undo`, `POST /api/redo` | nincs | `state` (megosztott munkamenetben felhasználónként) |
 | `POST /api/key` | `{"target","prop","frame","value","ease"?}` (az `ease` például `{"type":"smooth"}`; alapértelmezés lineáris) | `state` |
 | `POST /api/delete_key` | `{"target","prop","frame"}` | `state` |
-| `POST /api/save` | nincs | `{"ok":true,"saved":"<path>"}`; atomikusan ír |
+| `POST /api/save` | nincs | `{"ok":true,"saved":"<path>"}`; atomikusan ír. Csak host végezheti, ha a stúdió `--collab-host` kapcsolóval fut (különben **403**) |
 | `POST /api/suggest` | `{"kind":"between"\|"complete"\|"next","a","b","t","frame","constraints","free","top","snap","prior","apply":RANK, "library"?, "model"?}` | `{ok, suggestions}`; `apply` esetén a szerkesztés `state`-je is. A `kind` nélküli kérés eredménye: `bad request: missing field `kind`` |
 
 ### Kijelölés és gizmók (állapotmentes: a kijelölést az oldal tartja)
@@ -407,7 +409,7 @@ Például a `{"preview":true,"op":{"op":"delete","keys":[{"ch":0,"frame":12}]}}`
 | `POST /api/face/detect` | `{"image":"<base64 PNG/JPEG or data: URI>","track":bool,"push":bool,"t"}` | `{ok, found, layout:"osatura23", size, points, box, note:"detector trained on synthetic faces only"}` |
 | `POST /api/face/synth` | `{"t","size":32-512,"seed"}` | `{ok, image:"data:image/png;base64,...", layout, size, points}` a szintetikus fej egy képkockája a pontos tájékozódási pontjaival |
 | `POST /api/ui` | bármelyik a következők közül: `{"layout":{...}\|null,"shortcuts":{...}\|null,"recents":[...],"overlays":{...},"reset":"layout"\|"shortcuts"\|"overlays"\|"all"}` | a `GET /api/ui` dokumentuma; az ismeretlen mezőket (`unknown field 'bogus'`), az ütközéseket és a hiányos elrendezéseket elutasítja, és semmi sem változik |
-| `POST /api/login` | `{"token":"..."}` | `{ok:true}` és `Set-Cookie: arm_token=...; Path=/; HttpOnly; SameSite=Strict`; hibás token: 401 (az 5. sikertelen kísérlettől 429); beállított token nélkül `{"ok":true,"token_required":false}` |
+| `POST /api/login` | `{"token":"..."}` | `{ok:true}` és `Set-Cookie: osatura_token=...; Path=/; HttpOnly; SameSite=Strict`; hibás token: 401 (az 5. sikertelen kísérlettől 429); beállított token nélkül `{"ok":true,"token_required":false}` |
 
 ### Együttműködés
 
@@ -422,7 +424,8 @@ A résztvevőként indított hívások elküldik az `X-Collab-Replica: <id>` és
 | `POST /api/collab/ops` | `{"replica","ops":[...]` vagy `"op":{...}`, `"base"?}` vagy `{"replica","envelopes":[...]}` | `state` + `applied`, `index`. Ismeretlen résztvevő: `unknown participant N: join first`; üres lista: `no ops`; az érvénytelen projektszerkesztéseket elutasítja |
 | `POST /api/collab/undo`, `.../redo` | `{"replica"}` | `state` + `collab_can_undo`, `collab_can_redo` (csak a saját szerkesztéseidre) |
 | `POST /api/collab/presence` | `{"replica","n","frame","cursor":[x,y],"selection":[names up to 64]}` | `{ok}` |
-| `POST /api/collab/compact` | `{}` | tömörítési összegzés (`ok`, `logged`) |
+| `POST /api/collab/compact` | `{}` | tömörítési összegzés (`ok`, `logged`). Csak host végezheti, ha a stúdió `--collab-host` kapcsolóval fut (különben **403**) |
+| `POST /api/collab/revoke` | `{"names":["ana","bob"]}` (1–64 név) | `{ok, revoked, revoked_total}`: ezeknek a neveknek a tokenjeit a továbbiakban elutasítja, és eltávolítja azokat a résztvevőket, akik ezek alatt csatlakoztak. Névhez kötött tokenek (`--collab-secret-file`) és host token (`--collab-host`) kell hozzá, vagy a megosztott `--collab-token`; különben **403**. A már megnyitott eseményfolyam akkor ér véget, amikor a kliense lecsatlakozik |
 | `GET /api/collab/events` | `since=N` vagy `Last-Event-ID` | egy **server-sent-events** adatfolyam: visszajátszás a `since` ponttól, majd a felhasználók, a jelenlét és minden későbbi esemény; `resync`, ha a kliens túl sokat lemaradt; legfeljebb 64 adatfolyam (`503 too many event streams`) |
 
 Aktív munkamenetben a szokásos szerkesztő útvonalak (`/api/op`, `/api/undo`, `/api/redo`, valamint a stúdió saját szerkesztései nudge, key vagy gizmo útján) a többi résztvevő számára is rögzítésre kerülnek.

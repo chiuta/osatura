@@ -10,6 +10,30 @@ Versiuni înrudite care **sunt** reale și independente de cele de mai sus: `API
 
 ## [Nepublicat]
 
+### Documentație
+
+- README (în engleză și în română): secțiune nouă „Demo live și exemple de animație”: demo-ul live găzduit este declarat **planificat** (nu există niciunul), iar exemplele de animație care există în depozit sunt listate. Doar documentație; niciun cod sursă Rust, manifest sau fișier de build nu a fost atins. `cargo check` nu a putut fi rulat în mediul de revizuire (toolchain 1.97.0 nu poate fi descărcat offline).
+
+### Lansare
+
+- **Arhiva Linux statică `osatura-linux-x86_64-musl.tar.gz`** pentru distribuțiile cu glibc mai vechi de 2.35 (RHEL/Rocky/Alma 8 și 9, Debian 10 și 11, Ubuntu 20.04): `osatura` este legat cu musl și nu are nevoie de biblioteci de sistem. CI rulează testele pentru core și CLI pe musl și rulează binarul într-un chroot gol (`scripts/linux-static-check.sh`). Semnată, atestată și listată în `SHA256SUMS.txt` ca celelalte arhive.
+
+### Securitate și build
+
+- **Workflow-ul de lansare a fost întărit**: rulează doar pentru un tag de versiune al cărui commit se află pe `main` (sau manual, fără a crea o lansare); scrierea tag-ului este verificată; build-urile Linux se fac pe ubuntu-22.04 (prag glibc 2.35, verificat); semnăturile și atestările numesc tag-ul, iar [docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md) fixează workflow-ul și referința.
+- **Toolchain fixat în `rust-toolchain.toml`**; `rust-version = "1.97"` în fiecare crate; build-urile de lansare au `overflow-checks = true` (o depășire provoacă panică în loc să se încheie circular).
+- **`cargo deny` verifică acum și advisories, crate-uri retrase (yanked), versiuni wildcard și crate-uri interzise** (fără stivă de client TLS/HTTP); workflow-urile au grupuri `concurrency`.
+- **Colaborare**: `--collab-host NAMES` limitează salvarea, compactarea și noul `POST /api/collab/revoke` la gazdele numite (opțional; fără el nu se schimbă nimic); o adresă de client poate ține cel mult 16 conexiuni (loopback este exceptat); termenul de expirare al token-ului unui participant are o singură scriere acceptată, iar semnătura este verificată înaintea termenului.
+- **ffmpeg/ffprobe**: fișierele de sunet `.wav`, `.mp3` și `.ogg` sunt deschise cu un demuxer forțat. Pe Windows, octeții aleatorii provin acum de la generatorul sistemului, nu de la o soluție de rezervă bazată pe hash.
+
+### Portabil
+
+- **Sursele pachetului PortableApps.com** în `packaging/portableapps` (`appinfo.ini`, configurația lansatorului, pictograma, pagina de ajutor și `make_package.py`, care asamblează structura din arhiva de lansare pentru Windows). Noua variabilă de mediu `OSATURA_DOCUMENTS` mută folderul primului proiect (aplicația cu fereastră și pornirea prin dublu clic). Programul de lansare și programul de instalare trebuie încă compilate și testate pe Windows cu uneltele PortableApps.com.
+
+### Export
+
+- **`.lottie` este acum un container dotLottie 2.0** ([specificație](https://dotlottie.io/spec/2.0/)): `manifest.json` are `"version": "2"`, iar animația este `a/animation.json`; `autoplay`/`loop` nu mai sunt scrise (în 2.0 ele aparțin playerului sau unei mașini de stări). v0.1.0-alpha.4 și versiunile mai vechi scriau dotLottie 1.0 (`animations/animation.json`). Verificat cu @lottiefiles/dotlottie-web și lottie-web.
+
 ### Studio
 
 - **Demo ghidat (butonul Demo, comanda `demo.panel`)**: construiește omul care merge în 13 pași (decor, corp, cap, brațe cu cinci degete, schelet, mers, balansul brațelor, trunchi și cap, clipit și zâmbet, sol în mișcare, verificare, export). Fiecare pas încarcă în editor etapa respectivă a proiectului printr-o singură operație de înlocuire totală (un singur pas de Undo); Save este dezactivat cât timp demo-ul este încărcat, iar *Restore my project* îți aduce înapoi propriul proiect. Etapele sunt tăiate din `osatura demo-person`; `scripts/build-studio-tour.mjs` le regenerează cu binarul real.

@@ -199,7 +199,7 @@ Non. Le fichier sur disque ne change que lorsque vous cliquez sur Enregistrer. F
 Seulement si vous liez une adresse autre que de bouclage, et un jeton est alors exigé : `refusing to listen on 0.0.0.0:8851: the studio has no accounts and no TLS, so a non-local address needs --collab-token (and still sends everything in clear text)`. Le jeton doit comporter au moins 16 caractères, par exemple issu de `openssl rand -hex 16`. Il n'y a pas de chiffrement : utilisez un tunnel SSH ou un reverse proxy avec TLS.
 
 **52. Où mettre le jeton ?**
-Dans l'en-tête `X-Collab-Token` ou le cookie `arm_token` (HttpOnly, SameSite=Strict, et Secure lorsque la requête arrive sous un `--public-origin` en https). Il n'est jamais accepté dans l'URL. À partir de la cinquième tentative échouée, cette adresse cliente reçoit un HTTP 429 avec un délai croissant (2, 4 ... jusqu'à 30 s).
+Dans l'en-tête `X-Collab-Token` ou le cookie `osatura_token` (HttpOnly, SameSite=Strict, et Secure lorsque la requête arrive sous un `--public-origin` en https). Il n'est jamais accepté dans l'URL. À partir de la cinquième tentative échouée, cette adresse cliente reçoit un HTTP 429 avec un délai croissant (2, 4 ... jusqu'à 30 s).
 
 **53. Que signifient les erreurs HTTP 403, 415 et 421 ?**
 421 : l'en-tête Host n'est pas de ceux qu'attend le studio. 403 : un `Origin` ou `Sec-Fetch-Site` étranger. 415 : un POST qui n'est pas du JSON. Ce sont des protections contre les pages de votre navigateur qui appelleraient le serveur local ; voir [STUDIO.md](STUDIO.md) et [SECURITY.md](SECURITY.md).

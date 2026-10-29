@@ -42,7 +42,12 @@
 ## 6. Artefatti di release
 
 - [x] I binari di release sono compilati su runner ospitati da GitHub (`release.yml`) e `SHA256SUMS.txt` viene generato nella bozza. **Aperto:** controlla la bozza `v0.1.0-alpha.3`, spunta "pre-release", pubblicala e crea il tag sul commit (il tag viene creato con la release).
-- [ ] Decidi sulla firma del codice (certificato Authenticode per Windows, Apple Developer ID e notarizzazione); fino ad allora i download sono segnalati come non firmati (L-74).
+- [x] Firma di provenienza: firme Sigstore keyless e attestazioni di provenienza della build di GitHub per ogni file di release (job `sign` in `release.yml`, verificato in CI).
+- [x] Prerequisiti della SignPath Foundation nel repository: CODE_SIGNING_POLICY.md (collegato dal README, dal sito e da ogni release), PRIVACY.md, docs/UNINSTALL.md, nessuna doppia licenza (LICENSING.md), metadati dei file Windows (`build.rs`, verificati in release.yml), configurazione degli artefatti in `.signpath/`, job `windows-authenticode`.
+- [ ] Titolare: attiva l'autenticazione a due fattori su GitHub (richiesta da SignPath per ogni membro del team).
+- [ ] Titolare: pubblica una release (SignPath richiede che il progetto sia rilasciato nella forma che verrà firmata), poi fai domanda su https://signpath.org/apply.
+- [ ] Dopo l'accettazione: in SignPath crea il progetto `osatura`, la policy di firma `release-signing`, la configurazione degli artefatti `windows-zip` (incolla `.signpath/artifact-configuration.xml`), collega il repository GitHub come sistema di build attendibile; in GitHub aggiungi la variabile di repository `SIGNPATH_ORGANIZATION_ID` e il secret `SIGNPATH_API_TOKEN`. La release successiva viene allora firmata dopo approvazione manuale.
+- [ ] macOS: Apple Developer ID e notarizzazione (non ancora previsti); fino ad allora Gatekeeper avvisa (L-74).
 - [ ] Allega il sorgente corrispondente per le parti AGPL (il tag stesso basta; tienilo disponibile finché distribuisci i binari).
 - [x] `docs/THIRD_PARTY_NOTICES.md` è rigenerato (24 ott 2026) e ogni archivio lo contiene; rigeneralo di nuovo con `scripts/licence-audit.sh` prima di ogni release successiva.
 - [ ] Crates.io / npm / registri dei pacchetti: verifica che i nomi siano liberi e che i campi di licenza corrispondano a `LICENSING.md`.

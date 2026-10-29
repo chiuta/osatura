@@ -37,6 +37,9 @@ mismo mensaje. Los campos desconocidos generan un aviso (`warning: unknown field
 | `--port N` | 8080 | Puerto TCP. Un puerto ocupado da `cannot listen on 127.0.0.1:8861: Address already in use (os error 98)`; uno incorrecto, `cannot listen on 127.0.0.1:99999: invalid port value`. |
 | `--bind ADDR` | `127.0.0.1` | Interfaz en la que escuchar. Cualquier dirección que no sea de loopback **requiere `--collab-token`**. |
 | `--ui-config F` | `$OSATURA_UI_CONFIG`, si no `$XDG_CONFIG_HOME/osatura/ui.json`, si no en Windows `%APPDATA%\OSATURA\ui.json` (antes de alpha.3 no había ninguna: los ajustes se conservaban solo durante la sesión), si no `~/.config/osatura/ui.json` | Dónde se guardan la disposición, los atajos, los comandos recientes y los ajustes de overlays. Es un archivo por usuario, nunca parte del proyecto. |
+
+La aplicación de ventana y el arranque con doble clic crean el primer proyecto en `OSATURA_DOCUMENTS` si esa variable está definida y, si no, en `Documents\OSATURA` (lo usa el paquete portátil).
+
 | `--allow-host NAMES` | ninguno | Nombres de `Host` adicionales que aceptar (separados por comas), para el acceso bajo un nombre DNS. |
 | `--public-origin URL` | ninguno | El origen simple (`https://studio.example.org`, sin ruta) que presenta un proxy inverso con TLS; entonces se aceptan su `Host` y su `Origin`. |
 | `--source-url URL` | ninguno; en los binarios oficiales de la versión, el commit desde el que se compilaron (`https://github.com/chiuta/osatura/tree/<commit>`) | Dónde se puede descargar el código fuente correspondiente de *tu* compilación (AGPL sección 13); se muestra en `/source` y con `--version`. Un valor explícito siempre prevalece. |
@@ -58,7 +61,7 @@ El estudio está pensado para una persona en su propia máquina. Lo que lo prote
 * **Cabeceras de seguridad** en las respuestas: una `Content-Security-Policy` restrictiva (`default-src 'self'` y sin enmarcado), `X-Frame-Options: DENY`,
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`.
 * **Token para todo lo que salga de la máquina.** Con `--collab-token`, cada petición necesita el token como cabecera `X-Collab-Token` o en la
-  cookie `arm_token` establecida por `POST /api/login` (HttpOnly, SameSite=Strict). El token **nunca se acepta en la URL**. Los tokens erróneos se ralentizan
+  cookie `osatura_token` establecida por `POST /api/login` (HttpOnly, SameSite=Strict). El token **nunca se acepta en la URL**. Los tokens erróneos se ralentizan
   por dirección de cliente (a partir del quinto fallo seguido, esa dirección recibe **429** durante 2, 4, ... hasta 30 segundos), pero el retardo no puede detener a un
   atacante que sigue intentándolo: usa un token aleatorio largo.
 * **Secretos de participante.** Unirse a una sesión compartida devuelve un secreto aleatorio de 128 bits; cada llamada hecha como ese participante debe enviarlo como
@@ -366,7 +369,7 @@ La página del estudio usa estas rutas y tú también puedes usarlas (scripts, p
 | `POST /api/undo`, `POST /api/redo` | ninguno | `state` (por usuario en una sesión compartida) |
 | `POST /api/key` | `{"target","prop","frame","value","ease"?}` (`ease` como `{"type":"smooth"}`; lineal por defecto) | `state` |
 | `POST /api/delete_key` | `{"target","prop","frame"}` | `state` |
-| `POST /api/save` | ninguno | `{"ok":true,"saved":"<path>"}`; escribe de forma atómica |
+| `POST /api/save` | ninguno | `{"ok":true,"saved":"<path>"}`; escribe de forma atómica. Solo para el anfitrión cuando el estudio se ejecuta con `--collab-host` (si no, **403**) |
 | `POST /api/suggest` | `{"kind":"between"\|"complete"\|"next","a","b","t","frame","constraints","free","top","snap","prior","apply":RANK, "library"?, "model"?}` | `{ok, suggestions}`; con `apply` también el `state` de la edición. Una petición sin `kind` da `bad request: missing field `kind`` |
 
 ### Selección y gizmos (sin estado: la página guarda la selección)
@@ -406,7 +409,7 @@ Por ejemplo, `{"preview":true,"op":{"op":"delete","keys":[{"ch":0,"frame":12}]}}
 | `POST /api/face/detect` | `{"image":"<base64 PNG/JPEG or data: URI>","track":bool,"push":bool,"t"}` | `{ok, found, layout:"osatura23", size, points, box, note:"detector trained on synthetic faces only"}` |
 | `POST /api/face/synth` | `{"t","size":32-512,"seed"}` | `{ok, image:"data:image/png;base64,...", layout, size, points}` un fotograma de la cabeza sintética con sus puntos de referencia exactos |
 | `POST /api/ui` | cualquiera de `{"layout":{...}\|null,"shortcuts":{...}\|null,"recents":[...],"overlays":{...},"reset":"layout"\|"shortcuts"\|"overlays"\|"all"}` | documento de `GET /api/ui`; los campos desconocidos (`unknown field 'bogus'`), los conflictos y los diseños incompletos se rechazan y no cambia nada |
-| `POST /api/login` | `{"token":"..."}` | `{ok:true}` y `Set-Cookie: arm_token=...; Path=/; HttpOnly; SameSite=Strict`; si es incorrecto: 401 (429 a partir del 5.º fallo); sin un token configurado `{"ok":true,"token_required":false}` |
+| `POST /api/login` | `{"token":"..."}` | `{ok:true}` y `Set-Cookie: osatura_token=...; Path=/; HttpOnly; SameSite=Strict`; si es incorrecto: 401 (429 a partir del 5.º fallo); sin un token configurado `{"ok":true,"token_required":false}` |
 
 ### Colaboración
 
@@ -421,7 +424,8 @@ Las llamadas hechas como participante envían `X-Collab-Replica: <id>` y `X-Coll
 | `POST /api/collab/ops` | `{"replica","ops":[...]` o `"op":{...}`, `"base"?}` o `{"replica","envelopes":[...]}` | `state` + `applied`, `index`. Participante desconocido: `unknown participant N: join first`; lista vacía: `no ops`; las ediciones de proyecto no válidas se rechazan |
 | `POST /api/collab/undo`, `.../redo` | `{"replica"}` | `state` + `collab_can_undo`, `collab_can_redo` (solo tus propias ediciones) |
 | `POST /api/collab/presence` | `{"replica","n","frame","cursor":[x,y],"selection":[names up to 64]}` | `{ok}` |
-| `POST /api/collab/compact` | `{}` | resumen de la compactación (`ok`, `logged`) |
+| `POST /api/collab/compact` | `{}` | resumen de la compactación (`ok`, `logged`). Solo para el anfitrión cuando el estudio se ejecuta con `--collab-host` (si no, **403**) |
+| `POST /api/collab/revoke` | `{"names":["ana","bob"]}` (de 1 a 64 nombres) | `{ok, revoked, revoked_total}`: los tokens de esos nombres se rechazan a partir de ese momento y los participantes que se unieron con ellos son expulsados. Requiere tokens por participante (`--collab-secret-file`) y un token de anfitrión (`--collab-host`), o bien el `--collab-token` compartido; si no, **403**. Un flujo de eventos que ya esté abierto termina cuando su cliente se desconecta |
 | `GET /api/collab/events` | `since=N` o `Last-Event-ID` | un flujo de **server-sent events**: reproducción desde `since`, y después usuarios, presencia y cada evento posterior; `resync` si el cliente va demasiado retrasado; como máximo 64 flujos (`503 too many event streams`) |
 
 En una sesión activa, las rutas de edición ordinarias (`/api/op`, `/api/undo`, `/api/redo`, y las propias ediciones del estudio mediante nudge, key o gizmo) también se registran para los demás participantes.
