@@ -256,9 +256,9 @@ dimensiunile sunt în unități de scenă (LIMITATIONS L-23).
 
 ### dotLottie (`.lottie`)
 
-Un zip cu `manifest.json` (`{"animations":[{"id":"animation"}],"generator":"OSATURA","version":"2"}`) și
+Un zip [dotLottie 2.0](https://dotlottie.io/spec/2.0/) cu `manifest.json` (`{"animations":[{"id":"animation"}],"generator":"OSATURA","version":"2"}`) și
 `a/animation.json` (același Lottie ca mai sus, comprimat deflate: 46,843 de octeți au devenit un fișier de 11,515 octeți). `--report` funcționează în același
-mod. **Importul** unui `.lottie` nu este acceptat (`import-lottie` are nevoie de JSON; dezarhivează mai întâi `a/animation.json`).
+mod. **Importul** unui `.lottie` nu este acceptat (`import-lottie` are nevoie de JSON; dezarhivează mai întâi `a/animation.json`). Până la v0.1.0-alpha.4 containerul era dotLottie 1.0 (`animations/animation.json`, `autoplay`/`loop` în manifest); structura 2.0 rulează în playerele dotLottie actuale (verificat cu @lottiefiles/dotlottie-web).
 
 ### Validare și avertizări
 

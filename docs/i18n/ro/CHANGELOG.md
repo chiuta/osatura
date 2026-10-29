@@ -10,6 +10,30 @@ Versiuni înrudite care **sunt** reale și independente de cele de mai sus: `API
 
 ## [Nepublicat]
 
+### Documentație
+
+- README (în engleză și în română): secțiune nouă „Demo live și exemple de animație”: demo-ul live găzduit este declarat **planificat** (nu există niciunul), iar exemplele de animație care există în depozit sunt listate. Doar documentație; niciun cod sursă Rust, manifest sau fișier de build nu a fost atins. `cargo check` nu a putut fi rulat în mediul de revizuire (toolchain 1.97.0 nu poate fi descărcat offline).
+
+### Lansare
+
+- **Arhiva Linux statică `osatura-linux-x86_64-musl.tar.gz`** pentru distribuțiile cu glibc mai vechi de 2.35 (RHEL/Rocky/Alma 8 și 9, Debian 10 și 11, Ubuntu 20.04): `osatura` este legat cu musl și nu are nevoie de biblioteci de sistem. CI rulează testele pentru core și CLI pe musl și rulează binarul într-un chroot gol (`scripts/linux-static-check.sh`). Semnată, atestată și listată în `SHA256SUMS.txt` ca celelalte arhive.
+
+### Securitate și build
+
+- **Workflow-ul de lansare a fost întărit**: rulează doar pentru un tag de versiune al cărui commit se află pe `main` (sau manual, fără a crea o lansare); scrierea tag-ului este verificată; build-urile Linux se fac pe ubuntu-22.04 (prag glibc 2.35, verificat); semnăturile și atestările numesc tag-ul, iar [docs/VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) fixează workflow-ul și referința.
+- **Toolchain fixat în `rust-toolchain.toml`**; `rust-version = "1.97"` în fiecare crate; build-urile de lansare au `overflow-checks = true` (o depășire provoacă panică în loc să se încheie circular).
+- **`cargo deny` verifică acum și advisories, crate-uri retrase (yanked), versiuni wildcard și crate-uri interzise** (fără stivă de client TLS/HTTP); workflow-urile au grupuri `concurrency`.
+- **Colaborare**: `--collab-host NAMES` limitează salvarea, compactarea și noul `POST /api/collab/revoke` la gazdele numite (opțional; fără el nu se schimbă nimic); o adresă de client poate ține cel mult 16 conexiuni (loopback este exceptat); termenul de expirare al token-ului unui participant are o singură scriere acceptată, iar semnătura este verificată înaintea termenului.
+- **ffmpeg/ffprobe**: fișierele de sunet `.wav`, `.mp3` și `.ogg` sunt deschise cu un demuxer forțat. Pe Windows, octeții aleatorii provin acum de la generatorul sistemului, nu de la o soluție de rezervă bazată pe hash.
+
+### Portabil
+
+- **Sursele pachetului PortableApps.com** în `packaging/portableapps` (`appinfo.ini`, configurația lansatorului, pictograma, pagina de ajutor și `make_package.py`, care asamblează structura din arhiva de lansare pentru Windows). Noua variabilă de mediu `OSATURA_DOCUMENTS` mută folderul primului proiect (aplicația cu fereastră și pornirea prin dublu clic). Programul de lansare și programul de instalare trebuie încă compilate și testate pe Windows cu uneltele PortableApps.com.
+
+### Export
+
+- **`.lottie` este acum un container dotLottie 2.0** ([specificație](https://dotlottie.io/spec/2.0/)): `manifest.json` are `"version": "2"`, iar animația este `a/animation.json`; `autoplay`/`loop` nu mai sunt scrise (în 2.0 ele aparțin playerului sau unei mașini de stări). v0.1.0-alpha.4 și versiunile mai vechi scriau dotLottie 1.0 (`animations/animation.json`). Verificat cu @lottiefiles/dotlottie-web și lottie-web.
+
 ### Studio
 
 - **Demo ghidat (butonul Demo, comanda `demo.panel`)**: construiește omul care merge în 13 pași (decor, corp, cap, brațe cu cinci degete, schelet, mers, balansul brațelor, trunchi și cap, clipit și zâmbet, sol în mișcare, verificare, export). Fiecare pas încarcă în editor etapa respectivă a proiectului printr-o singură operație de înlocuire totală (un singur pas de Undo); Save este dezactivat cât timp demo-ul este încărcat, iar *Restore my project* îți aduce înapoi propriul proiect. Etapele sunt tăiate din `osatura demo-person`; `scripts/build-studio-tour.mjs` le regenerează cu binarul real.
@@ -23,7 +47,7 @@ Pregătită din marcajul de commit `[release v0.1.0-alpha.3]`; înlocuiește cio
 * **Reparat: exporturile din studioul din browser păreau blocate.** Un GIF se randează câteva secunde, iar pagina nu afișa nimic în acest timp, iar un clic rapid pe cele trei linkuri de export putea declanșa protecția Chrome împotriva descărcărilor multiple. În Chrome și Edge, studioul deschide acum imediat dialogul „Save as” (File System Access API), afișează „Rendering...” și apoi „Saved ...” și rulează un singur export la un moment dat; celelalte browsere primesc o descărcare obișnuită, cu aceleași mesaje. Aplicația cu fereastră rămâne neschimbată.
 * **Nou: demo-ul cu persoana care merge** (`osatura demo-person`, acum primul proiect al ambelor lansatoare Windows): vedere laterală cu cap, ureche și coadă de cal, trunchi, brațe cu mâini și cinci degete, picioare cu labe și degetele piciorului; un mers în buclă de 32 de cadre, cu lovirea călcâiului și desprinderea de sol pe vârf, balansul bazinului, brațe care se mișcă în contrasens și mișcare întârziată a mâinilor, degetelor, urechii și cozii de cal; piciorul sprijinit este testat să nu alunece. Este și noul ultim pas al demo-ului de pe site. `osatura demo` rămâne neschimbat.
 * **Modificat: antetul studioului are aceleași două rânduri în browser și în fereastră** (unelte de editare și butoane de panou pe primul rând, colaborare și exporturi pe al doilea), indiferent de lățime.
-* **Nou: `import-svg --split`** creează câte un strat pentru fiecare formă SVG, numit după id-ul ei, astfel încât un desen să poată fi echipat cu schelet parte cu parte. Noul [TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) parcurge desenul exemplu `docs/examples/pip.svg` prin import, un rig scriptat (`pip-rig.rhai`) și exportul GIF, cu ieșirile reale ale comenzilor.
+* **Nou: `import-svg --split`** creează câte un strat pentru fiecare formă SVG, numit după id-ul ei, astfel încât un desen să poată fi echipat cu schelet parte cu parte. Noul [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md) parcurge desenul exemplu `docs/examples/pip.svg` prin import, un rig scriptat (`pip-rig.rhai`) și exportul GIF, cu ieșirile reale ale comenzilor.
 * **Nou: butonul Simple view** din studio ascunde controalele de editare și păstrează undo, save, panourile și exporturile (reținut pentru fiecare browser).
 * **Remediat: pachetul web** (`osatura-web.tar.gz`) își deschidea pagina demo cu o cale de import greșită și nu avea niciun proiect; `index.html` al său importă acum corect și încarcă `demo-person.json` (generat în fluxul de lucru de release). Noul `osatura-wasm/js/browser-check.js` rulează modulul într-un browser real; rezultatele sunt în WASM.md și LIMITATIONS L-01.
 * **Documentație:** COMPARISON.md nou (o comparație sinceră, datată, cu alte instrumente), VERIFY_DOWNLOADS.md (verificarea SHA-256), GOOD_FIRST_TASKS.md; numele de pachete `osatura` sunt libere pe crates.io, npm și PyPI, iar o marcă apropiată (OSATRA) a fost găsită (L-78).

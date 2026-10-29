@@ -256,9 +256,9 @@ le dimensioni sono in unità di scena (LIMITATIONS L-23).
 
 ### dotLottie (`.lottie`)
 
-Uno zip con `manifest.json` (`{"animations":[{"id":"animation"}],"generator":"OSATURA","version":"2"}`) e
+Uno zip [dotLottie 2.0](https://dotlottie.io/spec/2.0/) con `manifest.json` (`{"animations":[{"id":"animation"}],"generator":"OSATURA","version":"2"}`) e
 `a/animation.json` (lo stesso Lottie di sopra, compresso con deflate: 46,843 byte sono diventati un file di 11,515 byte). `--report` funziona allo stesso
-modo. **Importare** un `.lottie` non è supportato (`import-lottie` richiede il JSON; decomprimi prima `a/animation.json`).
+modo. **Importare** un `.lottie` non è supportato (`import-lottie` richiede il JSON; decomprimi prima `a/animation.json`). Fino a v0.1.0-alpha.4 il contenitore era dotLottie 1.0 (`animations/animation.json`, `autoplay`/`loop` nel manifest); il layout 2.0 funziona nei player dotLottie attuali (verificato con @lottiefiles/dotlottie-web).
 
 ### Convalida e avvertenze
 

@@ -42,7 +42,12 @@
 ## 6. Artefacte de lansare
 
 - [x] Binarele de lansare sunt construite pe runnere găzduite de GitHub (`release.yml`), iar `SHA256SUMS.txt` este generat în ciornă. **Deschis:** verifică ciorna `v0.1.0-alpha.3`, bifează „pre-release”, publică-o și etichetează commit-ul (tag-ul este creat odată cu lansarea).
-- [ ] Decide asupra semnării codului (certificat Windows Authenticode, Apple Developer ID și notarizare); până atunci descărcările sunt marcate ca nesemnate (L-74).
+- [x] Semnarea de proveniență: semnături Sigstore fără chei (keyless) și atestări GitHub de proveniență a build-ului pentru fiecare fișier de lansare (jobul `sign` din `release.yml`, verificat în CI).
+- [x] Cerințele SignPath Foundation din depozit: CODE_SIGNING_POLICY.md (legat din README, de pe site și din fiecare lansare), PRIVACY.md, docs/UNINSTALL.md, fără licențiere duală (LICENSING.md), metadatele fișierelor Windows (`build.rs`, verificate în release.yml), configurația artefactului în `.signpath/`, jobul `windows-authenticode`.
+- [ ] Proprietar: activează autentificarea în doi factori pe GitHub (cerută de SignPath pentru fiecare membru al echipei).
+- [ ] Proprietar: publică o lansare (SignPath cere ca proiectul să fie lansat în forma care va fi semnată), apoi aplică la https://signpath.org/apply.
+- [ ] După acceptare: în SignPath creează proiectul `osatura`, politica de semnare `release-signing`, configurația de artefact `windows-zip` (lipește `.signpath/artifact-configuration.xml`) și leagă depozitul GitHub ca sistem de build de încredere; în GitHub adaugă variabila de depozit `SIGNPATH_ORGANIZATION_ID` și secretul `SIGNPATH_API_TOKEN`. Următoarea lansare este apoi semnată după aprobare manuală.
+- [ ] macOS: Apple Developer ID și notarizare (încă neplanificate); până atunci Gatekeeper avertizează (L-74).
 - [ ] Atașează codul sursă corespunzător pentru părțile AGPL (eticheta în sine este suficientă; păstrează-l disponibil cât timp distribui binare).
 - [x] `docs/THIRD_PARTY_NOTICES.md` este regenerat (24 oct. 2026), iar fiecare arhivă îl conține; regenerează-l din nou cu `scripts/licence-audit.sh` înainte de fiecare lansare ulterioară.
 - [ ] Crates.io / npm / registre de pachete: verifică dacă numele sunt libere și dacă câmpurile de licență corespund cu `LICENSING.md`.

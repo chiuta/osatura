@@ -17,10 +17,12 @@ Contenido: [Todos los documentos](#todos-los-documentos) - [Rutas de lectura por
 | [STUDIO.md](STUDIO.md) | El editor en el navegador: paneles, atajos, colaboración, vistas previas de scrub | animadores, riggers |
 | [RIGGING_GUIDE.md](RIGGING_GUIDE.md) | Construcción de un rig: huesos, IK, skinning, deformadores, drivers, máquinas de estados, maquetación | riggers, artistas técnicos |
 | [ANIMATION_GUIDE.md](ANIMATION_GUIDE.md) | Claves, suavizado, clips y takes, física, lip-sync, audio, elección de exportación | animadores |
-| [TUTORIAL_SVG.md](TUTORIAL_SVG.md) | De un dibujo vectorial a un GIF caminando: importar, preparar el rig por script, exportar (los comandos y las salidas son reales) | artistas |
-| [COMPARISON.md](COMPARISON.md) | Una comparación honesta y fechada con otras herramientas de animación 2D | evaluadores |
-| [VERIFY_DOWNLOADS.md](VERIFY_DOWNLOADS.md) | Comprobación de los archivos de las versiones con las sumas SHA-256 | todos los que instalan |
-| [GOOD_FIRST_TASKS.md](GOOD_FIRST_TASKS.md) | Tareas pequeñas para una primera contribución | colaboradores nuevos |
+| [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md) | De un dibujo vectorial a un GIF caminando: importar, preparar el rig por script, exportar (los comandos y las salidas son reales) | artistas |
+| [COMPARISON.md](../../COMPARISON.md) | Una comparación honesta y fechada con otras herramientas de animación 2D | evaluadores |
+| [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | Comprobación de los archivos de las versiones: firmas Sigstore, procedencia de la compilación, sumas SHA-256 | todos los que instalan |
+| [UNINSTALL.md](../../UNINSTALL.md) | Cómo quitar OSATURA y todos los archivos que puede crear | todos los que instalan |
+| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Política de firma de código (SignPath Foundation), roles del equipo, privacidad | todos los que instalan, mantenedores |
+| [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Tareas pequeñas para una primera contribución | colaboradores nuevos |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | El formato de proyecto JSON campo por campo | creadores de herramientas, riggers que editan JSON |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Qué conserva y qué descarta cada formato de exportación e importación | creadores de pipelines, integradores |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Crates, módulos, flujo de datos, diseño de la evaluación y del renderizado | colaboradores, revisores |
@@ -56,7 +58,7 @@ Cada ruta es un orden, no un requisito. Detente cuando tengas lo que necesitas.
 
 **Revisor de seguridad o responsable de despliegue.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) sección 3 (qué se prueba) -> LIMITATIONS secciones 2 y 11 -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> límites de [CI.md](CI.md).
 
-**Licenciatario, empaquetador o abogado.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../COPYRIGHT) y [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> lista de comprobación de publicación en [DEVELOPMENT.md](DEVELOPMENT.md) sección 7.
+**Licenciatario, empaquetador o abogado.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../../../../COPYRIGHT) y [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> lista de comprobación de publicación en [DEVELOPMENT.md](DEVELOPMENT.md) sección 7.
 
 **Mantenedor que prepara una publicación.** DEVELOPMENT sección 7 -> [../CHANGELOG.md](CHANGELOG.md) -> LIMITATIONS (actualizar) -> cuadro de estado del README.
 
@@ -70,7 +72,7 @@ Cada ruta es un orden, no un requisito. Detente cuando tengas lo que necesitas.
 | [../FEATURES.md](FEATURES.md) | Matriz de funciones frente a otras herramientas (partes desactualizadas, véase LIMITATIONS) |
 | [../CLEANROOM.md](CLEANROOM.md) | Registro de procedencia y reglas de la implementación independiente |
 | [../CONTRIBUTING.md](CONTRIBUTING.md) | Normas de contribución, licencia de entrada = licencia de salida, DCO 1.1 |
-| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Decisión de licencia (Variante A), textos |
+| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Decisión de licencia (Variante A), textos |
 | [../TRADEMARK.md](TRADEMARK.md) | Política del nombre y del logotipo |
 | `../REUSE.toml`, `../deny.toml` | Metadatos de licencia de los archivos que no son código fuente; política de dependencias |
 

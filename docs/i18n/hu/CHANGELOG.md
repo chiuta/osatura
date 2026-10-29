@@ -10,6 +10,30 @@ Kapcsolódó verziók, amelyek **valódiak**, és függetlenek a fentiektől: a 
 
 ## [Unreleased]
 
+### Dokumentáció
+
+- README (angol és román): új szakasz „Live demo and animation examples”: az üzemeltetett élő demó **tervezettként** szerepel (még nincs ilyen), és fel vannak sorolva a tárolóban meglévő animációs példák. Csak dokumentáció; Rust-forráshoz, manifesthez vagy build-fájlhoz nem nyúltunk. A `cargo check` nem futtatható az átnézési környezetben (az 1.97.0 eszközlánc offline nem tölthető le).
+
+### Kiadás
+
+- **Statikus Linux archívum, `osatura-linux-x86_64-musl.tar.gz`** a 2.35-nél régebbi glibc-t használó disztribúciókhoz (RHEL/Rocky/Alma 8 és 9, Debian 10 és 11, Ubuntu 20.04): az `osatura` musl ellen linkelve, rendszerkönyvtárak nélkül. A CI lefuttatja a core és a CLI tesztjeit musl alatt, és a binárist egy üres chrootban is futtatja (`scripts/linux-static-check.sh`). Aláírt, igazolt, és a többi archívumhoz hasonlóan szerepel a `SHA256SUMS.txt` fájlban.
+
+### Biztonság és build
+
+- **Megerősített kiadási munkafolyamat**: csak olyan verziócímkére fut le, amelynek a commitja a `main` ágon van (vagy kézzel, kiadás létrehozása nélkül); a címke írásmódját ellenőrzi; a Linux build az ubuntu-22.04-en készül (glibc 2.35 alsó határ, ellenőrizve); az aláírások és igazolások a címkét nevezik meg, a [docs/VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) pedig rögzíti a munkafolyamatot és a hivatkozást.
+- **Az eszközlánc a `rust-toolchain.toml` fájlban rögzítve**; minden crate-ben `rust-version = "1.97"`; a release buildekben `overflow-checks = true` (a túlcsordulás pánikot okoz, nem körbefordul).
+- **A `cargo deny` mostantól a biztonsági figyelmeztetéseket, a visszavont (yanked) crate-eket, a helyettesítő karakteres verziókat és a tiltott crate-eket is ellenőrzi** (nincs TLS/HTTP-kliens-stack); a munkafolyamatok `concurrency` csoportokat használnak.
+- **Együttműködés**: a `--collab-host NAMES` a mentést, a tömörítést és az új `POST /api/collab/revoke` hívást a megnevezett hostokra korlátozza (opcionális; nélküle semmi sem változik); egy kliens címe legfeljebb 16 kapcsolatot tarthat nyitva (a loopback mentesül); a résztvevői token határidejének egyetlen elfogadott írásmódja van, és az aláírást a határidő előtt ellenőrzi.
+- **ffmpeg/ffprobe**: a `.wav`, `.mp3` és `.ogg` hangfájlokat kényszerített demuxerrel nyitja meg. Windowson a véletlen bájtok mostantól a rendszergenerátorból jönnek a hash alapú tartalék helyett.
+
+### Hordozható
+
+- **PortableApps.com csomag forrásai** a `packaging/portableapps` mappában (`appinfo.ini`, indítókonfiguráció, ikon, súgóoldal és a `make_package.py`, amely a Windows kiadási archívumból állítja össze az elrendezést). Az új `OSATURA_DOCUMENTS` környezeti változó áthelyezi az első projekt mappáját (ablakos alkalmazás és dupla kattintásos indítás). Az indítóprogramot és a telepítőt még Windowson, a PortableApps.com eszközeivel kell megépíteni és tesztelni.
+
+### Export
+
+- **A `.lottie` mostantól dotLottie 2.0 konténer** ([specifikáció](https://dotlottie.io/spec/2.0/)): a `manifest.json` `"version": "2"` értéket tartalmaz, az animáció pedig `a/animation.json`; az `autoplay`/`loop` már nem íródik ki (a 2.0-ban ezek a lejátszóhoz vagy egy állapotgéphez tartoznak). A v0.1.0-alpha.4 és a régebbiek dotLottie 1.0-t írtak (`animations/animation.json`). Ellenőrizve a @lottiefiles/dotlottie-web és a lottie-web segítségével.
+
 ### Stúdió
 
 - **Vezetett demó (Demo gomb, `demo.panel` parancs)**: 13 lépésben építi fel a sétáló személyt (díszlet, test, fej, karok öt ujjal, váz, séta, karlendítés, törzs és fej, pislogás és mosoly, mozgó talaj, ellenőrzés, export). Minden lépés egyetlen mindent-lecserélő művelettel tölti be a projekt adott állapotát a szerkesztőbe (egy Undo-lépés); amíg be van töltve, a Mentés le van tiltva, és a *Restore my project* visszahozza a saját projektedet. Az állapotok az `osatura demo-person` kimenetéből vannak kivágva; a `scripts/build-studio-tour.mjs` a valódi bináris segítségével újragenerálja őket.
@@ -23,7 +47,7 @@ A `[release v0.1.0-alpha.3]` commitjelölőből készült; felváltja a `v0.1.0-
 * **Javítva: az exportok a böngészős stúdióban blokkoltnak tűntek.** Egy GIF renderelése néhány másodpercig tart, és az oldal közben semmit sem mutatott, a három exportlinkre gyorsan egymás után kattintva pedig be tudott lépni a Chrome többszörös letöltés elleni védelme. Chrome-ban és Edge-ben a stúdió mostantól azonnal megnyitja a „Mentés másként” párbeszédablakot (File System Access API), kiírja, hogy „Rendering...”, majd „Saved ...”, és egyszerre csak egy exportot futtat; más böngészők normál letöltést kapnak ugyanezekkel az üzenetekkel. Az ablakos alkalmazás változatlan.
 * **Új: a sétáló személy demó** (`osatura demo-person`, mostantól mindkét Windows-indító első projektje): oldalnézet fejjel, füllel és lófarokkal, törzzsel, karokkal kézzel és öt ujjal, lábakkal lábfejjel és lábujjakkal; ismétlődő, 32 képkockás járás sarokérintéssel és elrugaszkodással, medencelengéssel, ellentétesen lengő karokkal, valamint a kezek, ujjak, fül és lófarok átfedő mozgásával; a talajon álló lábról teszt igazolja, hogy nem csúszik. Ez az oldal-demó új utolsó lépése is. Az `osatura demo` változatlan.
 * **Módosítva: a stúdió fejlécének ugyanaz a két sora van a böngészőben és az ablakban** (az első sorban a szerkesztőeszközök és a panelgombok, a másodikban az együttműködés és az exportok), a szélességtől függetlenül.
-* **Új: az `import-svg --split`** SVG-alakzatonként egy réteget hoz létre, az alakzat id-jéről elnevezve, így a rajz részenként riggelhető. Az új [TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) a `docs/examples/pip.svg` példarajzot vezeti végig az importáláson, egy szkriptelt rigen (`pip-rig.rhai`) és a GIF-exporton, a valódi parancskimenetekkel.
+* **Új: az `import-svg --split`** SVG-alakzatonként egy réteget hoz létre, az alakzat id-jéről elnevezve, így a rajz részenként riggelhető. Az új [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md) a `docs/examples/pip.svg` példarajzot vezeti végig az importáláson, egy szkriptelt rigen (`pip-rig.rhai`) és a GIF-exporton, a valódi parancskimenetekkel.
 * **Új: Simple view** gomb a stúdióban elrejti a szerkesztővezérlőket, és meghagyja a visszavonást, a mentést, a paneleket és az exportokat (böngészőnként megjegyzi).
 * **Javítva: a webcsomag** (`osatura-web.tar.gz`) demóoldala rossz importútvonallal nyílt meg, és nem volt projektje; az `index.html` fájlja mostantól helyesen importál, és betölti a `demo-person.json` fájlt (a kiadási workflow generálja). Az új `osatura-wasm/js/browser-check.js` valódi böngészőben futtatja a modult; az eredmények a WASM.md-ben és a LIMITATIONS L-01 tételében.
 * **Dokumentáció:** új COMPARISON.md (őszinte, dátumozott összehasonlítás más eszközökkel), VERIFY_DOWNLOADS.md (SHA-256-ellenőrzés), GOOD_FIRST_TASKS.md; az `osatura` csomagnevek szabadok a crates.io-n, az npm-en és a PyPI-n, és találtak egy közeli védjegyet (OSATRA) (L-78).

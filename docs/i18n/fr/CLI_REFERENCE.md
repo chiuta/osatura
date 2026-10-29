@@ -1516,7 +1516,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-Avec `--split`, chaque forme devient **son propre calque**, nommé d'après l'`id` de la forme, dans l'ordre du fichier. Une forme sans id est nommée d'après sa balise et sa position (`rect1`, `circle6`), un id répété reçoit `_1`, `_2`..., et les caractères qu'un nom de calque ne peut pas contenir (`/`, `::`, caractères de contrôle) deviennent `_` ; les noms sont tronqués à 100 caractères. C'est la forme à utiliser lorsque le dessin va être rigué partie par partie ; voir [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+Avec `--split`, chaque forme devient **son propre calque**, nommé d'après l'`id` de la forme, dans l'ordre du fichier. Une forme sans id est nommée d'après sa balise et sa position (`rect1`, `circle6`), un id répété reçoit `_1`, `_2`..., et les caractères qu'un nom de calque ne peut pas contenir (`/`, `::`, caractères de contrôle) deviennent `_` ; les noms sont tronqués à 100 caractères. C'est la forme à utiliser lorsque le dessin va être rigué partie par partie ; voir [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split
@@ -2480,7 +2480,7 @@ les ressources binaires référencées par le projet ne sont pas versionnées.
 
 ### `studio`
 
-**Synopsis :** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
+**Synopsis :** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES] [--collab-host NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
 
 Démarre l'**éditeur dans le navigateur** (annuler/rétablir, timeline, panneaux live et visage, VCS et opérations de type agent) sous forme de serveur web
 local et reste bloqué jusqu'à Ctrl-C. Valeurs par défaut : `--port 8080`, `--bind 127.0.0.1`. Le projet est validé au démarrage ; les enregistrements vont
@@ -2502,7 +2502,11 @@ le jeton porteur unique partagé par des **jetons par participant** : F contient
 Unix, sinon il est refusé) et chaque personne reçoit un jeton via `osatura collab-token NAME` ; un jeton est lié à un seul nom
 (la connexion utilise ce nom, personne ne peut se connecter sous le nom d'un autre), expire, et est vérifié en recalculant son HMAC-SHA-256, de sorte que le
 serveur ne conserve aucune table. `--collab-revoke NAMES` (séparés par des virgules, nécessite `--collab-secret-file`) refuse les jetons de ces
-noms avant leur expiration. `--collab-token` et `--collab-secret-file` peuvent être combinés (le jeton partagé joue alors le rôle de
+noms avant leur expiration (un serveur en cours d'exécution peut aussi révoquer avec `POST /api/collab/revoke {"names":["ana"]}`, voir plus bas).
+`--collab-host NAMES` (séparés par des virgules, nécessite `--collab-secret-file`) désigne les participants dont les jetons peuvent **enregistrer le
+projet, compacter le journal de session et révoquer des jetons** ; toute autre personne munie d'un jeton valide peut toujours éditer, mais reçoit `403`
+pour ces trois requêtes. Sans `--collab-host`, chaque participant peut enregistrer et compacter (comme auparavant), et seul le `--collab-token` partagé
+ou une session locale non authentifiée peut révoquer par HTTP ; le studio indique lequel de ces cas s'applique au démarrage. `--collab-token` et `--collab-secret-file` peuvent être combinés (le jeton partagé joue alors le rôle de
 clé d'administration) ; l'un ou l'autre satisfait la règle selon laquelle un bind non loopback exige un identifiant. `--collab-rate N` limite chaque adresse
 cliente à N requêtes par seconde (rafales de 2N ; réponse `429` avec `Retry-After`) ; la valeur par défaut est 100 lorsqu'un identifiant est
 requis et aucune limite sinon ; 0 la désactive. Un bind non loopback affiche des avertissements (HTTP en clair ; toutes les interfaces pour

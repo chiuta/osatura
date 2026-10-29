@@ -38,6 +38,8 @@ mesaj. Câmpurile necunoscute sunt semnalate cu avertisment (`warning: unknown f
 | `--port N` | 8080 | Port TCP. Un port ocupat dă `cannot listen on 127.0.0.1:8861: Address already in use (os error 98)`; unul greșit dă `cannot listen on 127.0.0.1:99999: invalid port value`. |
 | `--bind ADDR` | `127.0.0.1` | Interfața pe care se ascultă. Orice adresă care nu este loopback **necesită `--collab-token`**. |
 | `--ui-config F` | `$OSATURA_UI_CONFIG`, altfel `$XDG_CONFIG_HOME/osatura/ui.json`, altfel pe Windows `%APPDATA%\OSATURA\ui.json` (înainte de alpha.3 nu exista niciuna: setările erau păstrate doar pe durata sesiunii), altfel `~/.config/osatura/ui.json` | Unde sunt păstrate layoutul, scurtăturile, comenzile recente și setările overlay-urilor. Este un fișier per utilizator, niciodată parte a proiectului. |
+
+Aplicația cu fereastră și pornirea prin dublu clic creează primul proiect în `OSATURA_DOCUMENTS`, dacă această variabilă este setată, altfel în `Documents\OSATURA` (folosit de pachetul portabil).
 | `--allow-host NAMES` | niciuna | Nume `Host` suplimentare de acceptat (separate prin virgulă), pentru accesul sub un nume DNS. |
 | `--public-origin URL` | niciuna | Originea simplă (`https://studio.example.org`, fără cale) pe care o prezintă un reverse proxy TLS; `Host` și `Origin` ale ei sunt atunci acceptate. |
 | `--source-url URL` | niciuna; în binarele oficiale de lansare, commit-ul din care au fost construite (`https://github.com/chiuta/osatura/tree/<commit>`) | Locul de unde poate fi descărcat codul sursă corespunzător build-ului *tău* (AGPL secțiunea 13); afișat pe `/source` și de `--version`. O valoare explicită câștigă întotdeauna. |
@@ -59,7 +61,7 @@ Studio este construit pentru o persoană pe propria mașină. Ce îl protejează
 * **Antete de securitate** în răspunsuri: un `Content-Security-Policy` restrictiv (`default-src 'self'` și fără framing), `X-Frame-Options: DENY`,
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`.
 * **Token pentru orice în afara mașinii.** Cu `--collab-token`, fiecare cerere are nevoie de token ca antet `X-Collab-Token` sau în cookie-ul
-  `arm_token` setat de `POST /api/login` (HttpOnly, SameSite=Strict). Tokenul **nu este acceptat niciodată în URL**. Tokenurile greșite sunt încetinite
+  `osatura_token` setat de `POST /api/login` (HttpOnly, SameSite=Strict). Tokenul **nu este acceptat niciodată în URL**. Tokenurile greșite sunt încetinite
   per adresă de client (de la a cincea eșuare consecutivă, acea adresă primește **429** timp de 2, 4, ... până la 30 de secunde), dar această amânare nu poate opri un
   atacator care continuă să încerce: folosește un token lung și aleatoriu.
 * **Secretele participanților.** Intrarea într-o sesiune partajată returnează un secret aleatoriu de 128 de biți; fiecare apel făcut ca acel participant trebuie să îl trimită ca
@@ -365,7 +367,7 @@ Pagina studioului folosește aceste rute și le poți folosi și tu (scripturi, 
 | `POST /api/undo`, `POST /api/redo` | niciunul | `state` (per utilizator într-o sesiune partajată) |
 | `POST /api/key` | `{"target","prop","frame","value","ease"?}` (`ease` de forma `{"type":"smooth"}`; implicit liniar) | `state` |
 | `POST /api/delete_key` | `{"target","prop","frame"}` | `state` |
-| `POST /api/save` | niciunul | `{"ok":true,"saved":"<path>"}`; scrie atomic |
+| `POST /api/save` | niciunul | `{"ok":true,"saved":"<path>"}`; scrie atomic. Doar gazda, când studioul rulează cu `--collab-host` (altfel **403**) |
 | `POST /api/suggest` | `{"kind":"between"\|"complete"\|"next","a","b","t","frame","constraints","free","top","snap","prior","apply":RANK, "library"?, "model"?}` | `{ok, suggestions}`; cu `apply` și `state` al editării. O cerere fără `kind` dă `bad request: missing field `kind`` |
 
 ### Selecție și gizmo-uri (fără stare: pagina păstrează selecția)
@@ -405,7 +407,7 @@ De exemplu, `{"preview":true,"op":{"op":"delete","keys":[{"ch":0,"frame":12}]}}`
 | `POST /api/face/detect` | `{"image":"<base64 PNG/JPEG or data: URI>","track":bool,"push":bool,"t"}` | `{ok, found, layout:"osatura23", size, points, box, note:"detector trained on synthetic faces only"}` |
 | `POST /api/face/synth` | `{"t","size":32-512,"seed"}` | `{ok, image:"data:image/png;base64,...", layout, size, points}` un cadru al capului sintetic cu reperele lui exacte |
 | `POST /api/ui` | oricare dintre `{"layout":{...}\|null,"shortcuts":{...}\|null,"recents":[...],"overlays":{...},"reset":"layout"\|"shortcuts"\|"overlays"\|"all"}` | documentul `GET /api/ui`; câmpurile necunoscute (`unknown field 'bogus'`), conflictele și aranjamentele incomplete sunt refuzate și nu se schimbă nimic |
-| `POST /api/login` | `{"token":"..."}` | `{ok:true}` și `Set-Cookie: arm_token=...; Path=/; HttpOnly; SameSite=Strict`; token greșit: 401 (429 de la a 5-a eșuare); fără un token configurat `{"ok":true,"token_required":false}` |
+| `POST /api/login` | `{"token":"..."}` | `{ok:true}` și `Set-Cookie: osatura_token=...; Path=/; HttpOnly; SameSite=Strict`; token greșit: 401 (429 de la a 5-a eșuare); fără un token configurat `{"ok":true,"token_required":false}` |
 
 ### Colaborare
 
@@ -420,7 +422,8 @@ Apelurile făcute ca participant trimit `X-Collab-Replica: <id>` și `X-Collab-S
 | `POST /api/collab/ops` | `{"replica","ops":[...]` sau `"op":{...}`, `"base"?}` sau `{"replica","envelopes":[...]}` | `state` + `applied`, `index`. Participant necunoscut: `unknown participant N: join first`; listă goală: `no ops`; editările invalide ale proiectului sunt refuzate |
 | `POST /api/collab/undo`, `.../redo` | `{"replica"}` | `state` + `collab_can_undo`, `collab_can_redo` (doar propriile tale editări) |
 | `POST /api/collab/presence` | `{"replica","n","frame","cursor":[x,y],"selection":[names up to 64]}` | `{ok}` |
-| `POST /api/collab/compact` | `{}` | rezumatul compactării (`ok`, `logged`) |
+| `POST /api/collab/compact` | `{}` | rezumatul compactării (`ok`, `logged`). Doar gazda, când studioul rulează cu `--collab-host` (altfel **403**) |
+| `POST /api/collab/revoke` | `{"names":["ana","bob"]}` (1 până la 64 de nume) | `{ok, revoked, revoked_total}`: token-urile acelor nume sunt refuzate de acum încolo, iar participanții care s-au alăturat sub ele sunt eliminați. Necesită token-uri per participant (`--collab-secret-file`) și un token de gazdă (`--collab-host`), sau token-ul partajat `--collab-token`; altfel **403**. Un flux de evenimente deja deschis se încheie când clientul se deconectează |
 | `GET /api/collab/events` | `since=N` sau `Last-Event-ID` | un flux **server-sent-events**: redă de la `since`, apoi utilizatorii, prezența și fiecare eveniment ulterior; `resync` dacă clientul este prea în urmă; cel mult 64 de fluxuri (`503 too many event streams`) |
 
 Într-o sesiune activă, rutele obișnuite de editare (`/api/op`, `/api/undo`, `/api/redo`, precum și editările proprii ale studioului prin nudge, key sau gizmo) sunt înregistrate și pentru ceilalți participanți.

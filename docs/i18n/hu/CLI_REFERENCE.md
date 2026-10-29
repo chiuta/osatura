@@ -1513,7 +1513,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-A `--split` kapcsolóval minden alakzat **saját réteg** lesz, az alakzat `id`-jéről elnevezve, a fájlbeli sorrendben. Az id nélküli alakzat a címkéjéről és a pozíciójáról kapja a nevét (`rect1`, `circle6`), az ismétlődő id `_1`, `_2`... utótagot kap, a rétegnévben nem megengedett karakterek (`/`, `::`, vezérlőkarakterek) `_`-ra cserélődnek; a nevek 100 karakteresre vannak vágva. Ezt az alakot használd, ha a rajzot részenként fogod riggelni; lásd [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+A `--split` kapcsolóval minden alakzat **saját réteg** lesz, az alakzat `id`-jéről elnevezve, a fájlbeli sorrendben. Az id nélküli alakzat a címkéjéről és a pozíciójáról kapja a nevét (`rect1`, `circle6`), az ismétlődő id `_1`, `_2`... utótagot kap, a rétegnévben nem megengedett karakterek (`/`, `::`, vezérlőkarakterek) `_`-ra cserélődnek; a nevek 100 karakteresre vannak vágva. Ezt az alakot használd, ha a rajzot részenként fogod riggelni; lásd [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split
@@ -2476,7 +2476,7 @@ a projekt által hivatkozott bináris erőforrások nincsenek verziózva.
 
 ### `studio`
 
-**Szintaxis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
+**Szintaxis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES] [--collab-host NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
 
 Elindítja a **böngészős szerkesztőt** (visszavonás/újra, idővonal, élő és arc panelek, VCS és ügynökstílusú műveletek) helyi webszerverként, és
 Ctrl-C-ig blokkol. Alapértelmezések: `--port 8080`, `--bind 127.0.0.1`. A projektet indításkor ellenőrzi; a mentés ugyanabba a fájlba történik
@@ -2495,7 +2495,8 @@ tartósítja a megosztott munkamenetet, és újraindítás után folytatja (a `-
 
 **Keményítési opciók** (7. hullám; a részletek és a fenyegetésmodell a [SECURITY.md](SECURITY.md) fájlban): a `--collab-secret-file F` az egyetlen megosztott bearer helyett
 **résztvevőnkénti tokeneket** vezet be: az F egy véletlen titkot tartalmaz (első sor, legalább 16 karakter, Unixon 600-as mód, különben elutasítja), és mindenki az `osatura collab-token NAME` paranccsal kap egy tokent; a token egyetlen névhez kötött (a belépés ezt a nevet használja, senki sem léphet be más néven), lejár, és a HMAC-SHA-256 újraszámításával ellenőrzik, így a
-szerver nem tart fenn táblázatot. A `--collab-revoke NAMES` (vesszővel elválasztva, a `--collab-secret-file` kell hozzá) a megnevezett nevek tokenjeit lejárat előtt is elutasítja.
+szerver nem tart fenn táblázatot. A `--collab-revoke NAMES` (vesszővel elválasztva, a `--collab-secret-file` kell hozzá) a megnevezett nevek tokenjeit lejárat előtt is elutasítja (futó szerveren a `POST /api/collab/revoke {"names":["ana"]}` hívással is lehet visszavonni, lásd lent). A `--collab-host NAMES`
+(vesszővel elválasztva, a `--collab-secret-file` kell hozzá) azokat a résztvevőket nevezi meg, akiknek a tokenjével **menthető a projekt, tömöríthető a munkamenet-napló és visszavonhatók tokenek**; mindenki más, érvényes tokennel továbbra is szerkeszthet, de erre a három kérésre `403` választ kap. `--collab-host` nélkül minden résztvevő menthet és tömöríthet (a korábbiak szerint), HTTP-n át pedig csak a megosztott `--collab-token` vagy egy hitelesítés nélküli helyi munkamenet vonhat vissza tokent; a stúdió indításkor kiírja, melyik eset áll fenn.
 A `--collab-token` és a `--collab-secret-file` kombinálható (ilyenkor a megosztott token admin kulcsként működik); bármelyik kielégíti azt a szabályt, hogy a nem loopback bind hitelesítő adatot kíván. A `--collab-rate N` minden kliensciméhez
 másodpercenként N kérést enged (2N-es löketekkel; a válasz `429` `Retry-After` fejléccel); az alapértelmezés 100, ha hitelesítő adat
 kötelező, egyébként nincs korlát; a 0 kikapcsolja. A nem loopback bind figyelmeztetéseket ír ki (sima HTTP; a `0.0.0.0` / `::` esetén minden interfész; a megosztott token nem hordoz nevet és nem jár le).

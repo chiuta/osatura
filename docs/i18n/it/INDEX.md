@@ -17,10 +17,12 @@ Indice: [Tutti i documenti](#tutti-i-documenti) - [Percorsi di lettura per desti
 | [STUDIO.md](STUDIO.md) | L'editor nel browser: pannelli, scorciatoie, collaborazione, anteprime di scrub | animatori, rigger |
 | [RIGGING_GUIDE.md](RIGGING_GUIDE.md) | Costruire un rig: ossa, IK, skinning, deformatori, driver, macchine a stati, layout | rigger, technical artist |
 | [ANIMATION_GUIDE.md](ANIMATION_GUIDE.md) | Chiavi, easing, clip e take, fisica, lip-sync, audio, scelte di esportazione | animatori |
-| [TUTORIAL_SVG.md](TUTORIAL_SVG.md) | Da un disegno vettoriale a una GIF che cammina: importazione, rig da script, esportazione (comandi e output sono reali) | artisti |
-| [COMPARISON.md](COMPARISON.md) | Un confronto onesto e datato con altri strumenti di animazione 2D | valutatori |
-| [VERIFY_DOWNLOADS.md](VERIFY_DOWNLOADS.md) | Verifica degli archivi di release con le somme SHA-256 | chiunque installi |
-| [GOOD_FIRST_TASKS.md](GOOD_FIRST_TASKS.md) | Piccoli compiti per un primo contributo | nuovi contributori |
+| [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md) | Da un disegno vettoriale a una GIF che cammina: importazione, rig da script, esportazione (comandi e output sono reali) | artisti |
+| [COMPARISON.md](../../COMPARISON.md) | Un confronto onesto e datato con altri strumenti di animazione 2D | valutatori |
+| [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | Verifica dei file di release: firme Sigstore, provenienza della build, somme SHA-256 | chiunque installi |
+| [UNINSTALL.md](../../UNINSTALL.md) | Rimozione di OSATURA e di ogni file che può creare | chiunque installi |
+| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Politica di firma del codice (SignPath Foundation), ruoli del team, privacy | chiunque installi, maintainer |
+| [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Piccoli compiti per un primo contributo | nuovi contributori |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | Il formato di progetto JSON campo per campo | autori di strumenti, rigger che modificano il JSON |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Cosa trasporta e cosa perde ciascun formato di esportazione e importazione | autori di pipeline, integratori |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Crate, moduli, flusso dei dati, progettazione della valutazione e del rendering | contributori, revisori |
@@ -56,7 +58,7 @@ Ogni percorso è un ordine, non un obbligo. Fermati quando hai ciò che ti serve
 
 **Revisore della sicurezza o chi installa in produzione.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) sezione 3 (cosa viene testato) -> LIMITATIONS sezioni 2 e 11 -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> limiti di [CI.md](CI.md).
 
-**Licenziatario, packager o avvocato.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../COPYRIGHT) e [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> checklist di release in [DEVELOPMENT.md](DEVELOPMENT.md) sezione 7.
+**Licenziatario, packager o avvocato.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../../../../COPYRIGHT) e [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> checklist di release in [DEVELOPMENT.md](DEVELOPMENT.md) sezione 7.
 
 **Maintainer che prepara una release.** DEVELOPMENT sezione 7 -> [../CHANGELOG.md](CHANGELOG.md) -> LIMITATIONS (aggiorna) -> riquadro di stato del README.
 
@@ -70,7 +72,7 @@ Ogni percorso è un ordine, non un obbligo. Fermati quando hai ciò che ti serve
 | [../FEATURES.md](FEATURES.md) | Matrice delle funzionalità rispetto ad altri strumenti (parti sono superate, vedi LIMITATIONS) |
 | [../CLEANROOM.md](CLEANROOM.md) | Registro della provenienza e regole per l'implementazione indipendente |
 | [../CONTRIBUTING.md](CONTRIBUTING.md) | Regole per i contributi, licenza in ingresso = licenza in uscita, DCO 1.1 |
-| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Decisione sulla licenza (Variante A), testi |
+| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Decisione sulla licenza (Variante A), testi |
 | [../TRADEMARK.md](TRADEMARK.md) | Politica sul nome e sul logo |
 | `../REUSE.toml`, `../deny.toml` | Metadati di licenza per i file non sorgente; politica sulle dipendenze |
 

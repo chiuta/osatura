@@ -17,10 +17,12 @@ Cuprins: [Toate documentele](#toate-documentele) - [Trasee de lectură în func�
 | [STUDIO.md](STUDIO.md) | Editorul din browser: panouri, scurtături, colaborare, previzualizări scrub | animatori, riggeri |
 | [RIGGING_GUIDE.md](RIGGING_GUIDE.md) | Construirea unui rig: oase, IK, skinning, deformatori, drivere, mașini de stări, layout | riggeri, artiști tehnici |
 | [ANIMATION_GUIDE.md](ANIMATION_GUIDE.md) | Chei, easing, clipuri și take-uri, fizică, lip-sync, audio, alegeri de export | animatori |
-| [TUTORIAL_SVG.md](TUTORIAL_SVG.md) | De la un desen vectorial la un GIF cu mers: import, rig prin script, export (comenzile și ieșirile sunt reale) | artiști |
-| [COMPARISON.md](COMPARISON.md) | O comparație sinceră, datată, cu alte instrumente de animație 2D | evaluatori |
-| [VERIFY_DOWNLOADS.md](VERIFY_DOWNLOADS.md) | Verificarea arhivelor de release cu sumele SHA-256 | oricine instalează |
-| [GOOD_FIRST_TASKS.md](GOOD_FIRST_TASKS.md) | Sarcini mici pentru o primă contribuție | contributori noi |
+| [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md) | De la un desen vectorial la un GIF cu mers: import, rig prin script, export (comenzile și ieșirile sunt reale) | artiști |
+| [COMPARISON.md](../../COMPARISON.md) | O comparație sinceră, datată, cu alte instrumente de animație 2D | evaluatori |
+| [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | Verificarea fișierelor de release: semnături Sigstore, proveniența build-ului, sume SHA-256 | oricine instalează |
+| [UNINSTALL.md](../../UNINSTALL.md) | Dezinstalarea OSATURA și a tuturor fișierelor pe care le poate crea | oricine instalează |
+| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Politica de semnare a codului (SignPath Foundation), rolurile echipei, confidențialitate | oricine instalează, mentenanți |
+| [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Sarcini mici pentru o primă contribuție | contributori noi |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | Formatul JSON al proiectului, câmp cu câmp | constructori de instrumente, riggeri care editează JSON |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Ce transportă și ce pierde fiecare format de export și de import | constructori de pipeline-uri, integratori |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Crate-uri, module, flux de date, designul evaluării și al randării | contribuitori, recenzenți |
@@ -56,7 +58,7 @@ Fiecare traseu este o ordine, nu o cerință. Oprește-te când ai găsit ce î�
 
 **Recenzor de securitate sau cel care face deploy.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) secțiunea 3 (ce este testat) -> LIMITATIONS secțiunile 2 și 11 -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> limitele din [CI.md](CI.md).
 
-**Licențiat, împachetător sau avocat.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../COPYRIGHT) și [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> lista de verificare pentru lansare din [DEVELOPMENT.md](DEVELOPMENT.md) secțiunea 7.
+**Licențiat, împachetător sau avocat.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../../../../COPYRIGHT) și [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> lista de verificare pentru lansare din [DEVELOPMENT.md](DEVELOPMENT.md) secțiunea 7.
 
 **Maintainer care face o lansare.** DEVELOPMENT secțiunea 7 -> [../CHANGELOG.md](CHANGELOG.md) -> LIMITATIONS (actualizare) -> caseta de stare din README.
 
@@ -70,7 +72,7 @@ Fiecare traseu este o ordine, nu o cerință. Oprește-te când ai găsit ce î�
 | [../FEATURES.md](FEATURES.md) | Matricea de funcționalități în comparație cu alte instrumente (părți sunt depășite, vezi LIMITATIONS) |
 | [../CLEANROOM.md](CLEANROOM.md) | Jurnal de proveniență și reguli pentru implementarea independentă |
 | [../CONTRIBUTING.md](CONTRIBUTING.md) | Reguli de contribuție, licență de intrare = licență de ieșire, DCO 1.1 |
-| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Decizia privind licența (Varianta A), texte |
+| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Decizia privind licența (Varianta A), texte |
 | [../TRADEMARK.md](TRADEMARK.md) | Politica privind numele și logoul |
 | `../REUSE.toml`, `../deny.toml` | Metadate de licență pentru fișierele care nu sunt sursă; politica dependențelor |
 

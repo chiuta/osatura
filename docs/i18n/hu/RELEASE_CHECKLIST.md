@@ -42,7 +42,12 @@
 ## 6. Kiadási artefaktumok
 
 - [x] A kiadási binárisokat GitHub-hosztolt runnerek építik (`release.yml`), és a `SHA256SUMS.txt` a vázlatban generálódik. **Nyitott:** nézd át a `v0.1.0-alpha.3` vázlatot, jelöld be az „előzetes kiadás” mezőt, tedd közzé, és címkézd fel a commitot (a címke a kiadással jön létre).
-- [ ] Döntsd el a kódaláírást (Windows Authenticode tanúsítvány, Apple Developer ID és hitelesítés); addig a letöltéseket aláíratlanként jelöli a rendszer (L-74).
+- [x] Eredetigazolás aláírással: Sigstore kulcs nélküli aláírások és GitHub build-eredet igazolások minden kiadási fájlhoz (a `sign` job a `release.yml`-ben, a CI-ben ellenőrizve).
+- [x] A SignPath Foundation előfeltételei a repóban: CODE_SIGNING_POLICY.md (a README-ből, az oldalról és minden kiadásból linkelve), PRIVACY.md, docs/UNINSTALL.md, nincs kettős licencelés (LICENSING.md), Windows-fájlmetaadatok (`build.rs`, a release.yml-ben ellenőrizve), artifact-konfiguráció a `.signpath/` mappában, `windows-authenticode` job.
+- [ ] Tulajdonos: kapcsold be a kétlépcsős hitelesítést a GitHubon (a SignPath minden csapattagtól megköveteli).
+- [ ] Tulajdonos: tegyél közzé egy kiadást (a SignPath megköveteli, hogy a projekt abban a formában legyen kiadva, amelyet alá fognak írni), majd jelentkezz a https://signpath.org/apply címen.
+- [ ] Az elfogadás után: a SignPathban hozd létre az `osatura` projektet, a `release-signing` aláírási szabályzatot és a `windows-zip` artifact-konfigurációt (illeszd be a `.signpath/artifact-configuration.xml` tartalmát), kapcsold össze a GitHub repót megbízható build-rendszerként; a GitHubon add hozzá a `SIGNPATH_ORGANIZATION_ID` repository-változót és a `SIGNPATH_API_TOKEN` titkot. A következő kiadást ezután kézi jóváhagyás után írják alá.
+- [ ] macOS: Apple Developer ID és hitelesítés (notarisation) (egyelőre nincs tervben); addig a Gatekeeper figyelmeztet (L-74).
 - [ ] Mellékeld az AGPL-es részekhez tartozó forrást (maga a címke elég; tartsd elérhetően, amíg binárisokat terjesztesz).
 - [x] A `docs/THIRD_PARTY_NOTICES.md` újragenerálva (2026. okt. 24.), és minden archívum tartalmazza; minden későbbi kiadás előtt generáld újra a `scripts/licence-audit.sh`-val.
 - [ ] Crates.io / npm / csomagnyilvántartók: ellenőrizd, hogy a nevek szabadok, és a licencmezők egyeznek a `LICENSING.md`-vel.

@@ -8,7 +8,9 @@
 
 ![Un personaje de perfil (cabeza, oreja, coleta, tronco, brazos con dedos, piernas, pies) camina en el sitio sobre un suelo que se desplaza; salida real de osatura export con el proyecto de demostración incorporado](docs/img/walk.gif)
 
-*Lo que produce: la persona que camina incluida, exportada con `osatura demo-person` y `osatura export` (todo el proyecto es un archivo JSON). Pruébalo en dos minutos: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
+*Lo que produce: la persona que camina incluida, exportada con `osatura demo-person` y `osatura export` (todo el proyecto es un archivo JSON). Pruébalo en dos minutos: [docs/GETTING_STARTED.md](docs/i18n/es/GETTING_STARTED.md).*
+
+**[Política de firma de código](CODE_SIGNING_POLICY.md)** · [Privacidad](PRIVACY.md) · [Descarga](#descarga)
 
 ## Resumen y filosofía
 
@@ -26,7 +28,7 @@ Principios que dan forma al proyecto:
 
 *Nombre: el proyecto se llamó ARMATURA hasta el 24 oct 2026 y pasó a llamarse OSATURA tras una búsqueda de marca ([docs/LIMITATIONS.md](docs/i18n/es/LIMITATIONS.md) L-78). También se cambiaron el nombre del repositorio y la dirección del sitio (los enlaces antiguos al repositorio redirigen).*
 
-> **Alfa. Primeras compilaciones preparadas como versión preliminar en borrador: `v0.1.0-alpha.3`.** Los ejecutables para Windows x86-64, macOS arm64 y Linux x86-64 y el módulo WebAssembly los compila GitHub Actions y se adjuntan a una versión preliminar *en borrador* en <https://github.com/chiuta/osatura/releases> (un borrador solo lo ve el propietario hasta que lo publica a mano). Todos los crates siguen en la versión `0.1.0`; "v0.5 / v0.6 / v0.7" son *niveles de funciones* del historial, no números de versión ([CHANGELOG.md](docs/i18n/es/CHANGELOG.md)).
+> **Alfa. Última versión preliminar publicada: `v0.1.0-alpha.4`; la siguiente será `v0.1.0-alpha.5`.** Los ejecutables para Windows x86-64, macOS arm64 y Linux x86-64 y el módulo WebAssembly los compila GitHub Actions y se adjuntan a una versión preliminar *en borrador* en <https://github.com/chiuta/osatura/releases> (un borrador solo lo ve el propietario hasta que lo publica a mano). Todos los crates siguen en la versión `0.1.0`; "v0.5 / v0.6 / v0.7" son *niveles de funciones* del historial, no números de versión ([CHANGELOG.md](docs/i18n/es/CHANGELOG.md)).
 >
 > | Verificado | No verificado |
 > |---|---|
@@ -34,9 +36,18 @@ Principios que dan forma al proyecto:
 >
 > Lee [docs/LIMITATIONS.md](docs/i18n/es/LIMITATIONS.md) (78 limitaciones numeradas con su gravedad y alternativa) antes de depender de cualquier cosa.
 
+## Demo en vivo y ejemplos de animación
+
+* **Demo en vivo (en el navegador, alojada): prevista.** Hoy no hay ninguna demo alojada ni una dirección web a la que remitir. Mientras tanto puedes probar el estudio en local (`osatura studio demo.json --port 8080`, véase el inicio rápido) o, cuando exista una versión publicada, con el archivo `osatura-web.tar.gz`; la página de demostración de WebAssembly solo se ha cargado hasta ahora en Chromium sin interfaz y sin el archivo `.wasm` ([docs/WASM.md](docs/i18n/es/WASM.md)), así que no esperes un renderizado verificado en el navegador.
+* **Ejemplos de animación que existen en este repositorio** (comprobados en la lista de archivos, no vueltos a renderizar en esta revisión):
+  * [`docs/img/walk.gif`](docs/img/walk.gif): la persona que camina incluida, salida real de `osatura export` (la imagen al principio de esta página); [`docs/img/walk-cycle.png`](docs/img/walk-cycle.png): el mismo ciclo como hoja.
+  * [`docs/examples/pip.svg`](docs/examples/pip.svg) y [`docs/examples/pip-rig.rhai`](docs/examples/pip-rig.rhai): un dibujo y el script que le añade un rig y un ciclo de caminata, usados paso a paso en [docs/TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) (resultado: [`docs/img/tutorial-svg-walk.png`](docs/img/tutorial-svg-walk.png)).
+  * `osatura demo` (demo de rig, 48 fotogramas) y `osatura demo-fx` (líquido, booleanas, partículas) generan archivos de proyecto que puedes renderizar y exportar tú mismo.
+  * Más ejemplos animados: aún sin añadir (previstos).
+
 ## Madurez: por dónde empezar
 
-OSATURA tiene muchas más funciones de las que una sola persona puede validar. La tabla indica dónde pone el autor el esfuerzo primero. **Es una intención, no una garantía de calidad: ningún animador aparte del autor ha usado nada de esto todavía** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+OSATURA tiene muchas más funciones de las que una sola persona puede validar. La tabla indica dónde pone el autor el esfuerzo primero. **Es una intención, no una garantía de calidad: ningún animador aparte del autor ha usado nada de esto todavía** ([docs/LIMITATIONS.md](docs/i18n/es/LIMITATIONS.md)).
 
 | Nivel | Qué | Qué significa |
 |---|---|---|
@@ -46,17 +57,19 @@ OSATURA tiene muchas más funciones de las que una sola persona puede validar. L
 
 ## Descarga
 
-Los archivos precompilados, una vez que el propietario haya publicado la versión en borrador, están en la [página de Releases](https://github.com/chiuta/osatura/releases) del proyecto:
+Los archivos precompilados, una vez que el propietario haya publicado la versión en borrador, están en la [página de Releases](https://github.com/chiuta/osatura/releases) del proyecto. **[Política de firma de código](CODE_SIGNING_POLICY.md)** · [Privacidad](PRIVACY.md) (los programas no envían nada por la red salvo que se lo pidas) · [Desinstalar](docs/UNINSTALL.md) · [Verificar una descarga](docs/VERIFY_DOWNLOADS.md)
 
 | Archivo | Contenido |
 |---|---|
 | `osatura-windows-x86_64.zip` | `osatura.exe` (línea de comandos + servidor del estudio), `osatura-studio.exe` (aplicación de ventana), biblioteca y cabecera de C, licencias, avisos de terceros |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (solo Apple silicon), biblioteca y cabecera de C, licencias, avisos |
-| `osatura-linux-x86_64.tar.gz` | `osatura`, biblioteca y cabecera de C, licencias, avisos (sin aplicación de ventana: usa `osatura studio` y un navegador) |
+| `osatura-linux-x86_64.tar.gz` | `osatura`, biblioteca y cabecera de C, licencias, avisos (sin aplicación de ventana: usa `osatura studio` y un navegador); necesita glibc 2.35+ (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
+| `osatura-linux-x86_64-musl.tar.gz` | `osatura` estático (musl libc, sin bibliotecas del sistema), para distribuciones más antiguas como RHEL/Rocky/Alma 8 y 9, Debian 10 y 11, Ubuntu 20.04; sin biblioteca de C; entre un 5 y un 50 % más lento que la compilación con glibc. **No está en alpha.4**: llega con la próxima versión |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, `index.html` de demostración (ejecutado solo en Chromium sin interfaz, véase [docs/WASM.md](docs/i18n/es/WASM.md)) |
 | `SHA256SUMS.txt` | comprueba cada descarga con él |
+| `*.sigstore.json` | firma Sigstore de cada archivo ([docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md)) |
 
-* **Windows:** haz doble clic en `osatura.exe` para crear `Documents\OSATURA\first-rig.json` y abrir el estudio en tu navegador, o haz doble clic en `osatura-studio.exe` para tener una ventana propia. Ambos programas no están firmados: en SmartScreen elige *Más información* y después *Ejecutar de todas formas*. Véase [docs/GETTING_STARTED.md](docs/i18n/es/GETTING_STARTED.md).
+* **Windows:** haz doble clic en `osatura.exe` para crear `Documents\OSATURA\first-rig.json` y abrir el estudio en tu navegador, o haz doble clic en `osatura-studio.exe` para tener una ventana propia. Ambos programas aún no están firmados con Authenticode ([Política de firma de código](CODE_SIGNING_POLICY.md)): en SmartScreen elige *Más información* y después *Ejecutar de todas formas*. No se instala nada: para quitar OSATURA borra la carpeta y los archivos indicados en [docs/UNINSTALL.md](docs/UNINSTALL.md). Véase [docs/GETTING_STARTED.md](docs/i18n/es/GETTING_STARTED.md).
 * **macOS:** aprueba el programa en *Ajustes del Sistema > Privacidad y seguridad* la primera vez.
 * **Código fuente:** cada archivo indica el commit a partir del cual se compiló; las partes AGPL se sirven con su oferta de código fuente (`osatura --version`, `/source`).
 
@@ -153,6 +166,7 @@ Empieza en [docs/INDEX.md](docs/i18n/es/INDEX.md) (todos los documentos, destina
 | [docs/CI.md](docs/i18n/es/CI.md) | CI de animación |
 | [docs/DEVELOPMENT.md](docs/i18n/es/DEVELOPMENT.md) | compilación, pruebas, convenciones, publicación |
 | [docs/SECURITY.md](docs/i18n/es/SECURITY.md) | modelo de amenazas y refuerzo de la seguridad |
+| [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [PRIVACY.md](PRIVACY.md) · [docs/UNINSTALL.md](docs/UNINSTALL.md) | política de firma de código, privacidad, desinstalación |
 | [docs/LIMITATIONS.md](docs/i18n/es/LIMITATIONS.md) | limitaciones conocidas |
 | [docs/PATENT_NOTES.md](docs/i18n/es/PATENT_NOTES.md), [docs/THIRD_PARTY.md](docs/i18n/es/THIRD_PARTY.md), [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) | patentes, licencias de las dependencias |
 | [CHANGELOG.md](docs/i18n/es/CHANGELOG.md), [ROADMAP.md](docs/i18n/es/ROADMAP.md), [FEATURES.md](docs/i18n/es/FEATURES.md) | historial, plan y estado detallado, matriz de funciones |

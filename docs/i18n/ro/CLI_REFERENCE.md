@@ -1516,7 +1516,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-Cu `--split`, fiecare formă devine **propriul strat**, numit după `id`-ul formei, în ordinea din fișier. O formă fără id este numită după eticheta și poziția ei (`rect1`, `circle6`), un id repetat primește `_1`, `_2`..., iar caracterele pe care un nume de strat nu le poate conține (`/`, `::`, caractere de control) devin `_`; numele sunt tăiate la 100 de caractere. Aceasta este forma de folosit când desenul urmează să fie echipat cu schelet parte cu parte; vezi [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+Cu `--split`, fiecare formă devine **propriul strat**, numit după `id`-ul formei, în ordinea din fișier. O formă fără id este numită după eticheta și poziția ei (`rect1`, `circle6`), un id repetat primește `_1`, `_2`..., iar caracterele pe care un nume de strat nu le poate conține (`/`, `::`, caractere de control) devin `_`; numele sunt tăiate la 100 de caractere. Aceasta este forma de folosit când desenul urmează să fie echipat cu schelet parte cu parte; vezi [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split
@@ -2480,7 +2480,7 @@ resursele binare referite de proiect nu sunt versionate.
 
 ### `studio`
 
-**Sinopsis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
+**Sinopsis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES] [--collab-host NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
 
 Pornește **editorul din browser** (anulare/refacere, timeline, panouri live și facial, VCS și operații în stil agent) ca server web
 local și rămâne blocat până la Ctrl-C. Valori implicite: `--port 8080`, `--bind 127.0.0.1`. Proiectul este validat la pornire; salvările merg
@@ -2502,7 +2502,11 @@ singurul bearer partajat cu **token-uri pentru fiecare participant**: F conține
 Unix, altfel este refuzat) și fiecare persoană primește un token de la `osatura collab-token NAME`; un token este legat de un singur nume
 (la alăturare se folosește acel nume, nimeni nu se poate alătura sub numele altcuiva), expiră și este verificat prin recalcularea HMAC-SHA-256 al său, astfel încât
 serverul nu ține niciun tabel. `--collab-revoke NAMES` (separate prin virgulă, necesită `--collab-secret-file`) refuză token-urile acelor
-nume înainte de expirare. `--collab-token` și `--collab-secret-file` pot fi combinate (token-ul partajat acționează atunci ca
+nume înainte de expirare (un server pornit poate revoca și prin `POST /api/collab/revoke {"names":["ana"]}`, vezi mai jos). `--collab-host NAMES`
+(separate prin virgulă, necesită `--collab-secret-file`) numește participanții ale căror token-uri pot **salva proiectul, compacta jurnalul sesiunii și revoca
+token-uri**; ceilalți, cu un token valid, pot edita în continuare, dar primesc `403` la aceste trei cereri. Fără `--collab-host`, fiecare participant poate
+salva și compacta (ca înainte), iar prin HTTP poate revoca doar token-ul partajat `--collab-token` sau o sesiune locală neautentificată; studioul spune care
+este cazul la pornire. `--collab-token` și `--collab-secret-file` pot fi combinate (token-ul partajat acționează atunci ca
 cheie de administrator); oricare dintre ele satisface regula conform căreia un bind non-loopback necesită o credențială. `--collab-rate N` limitează fiecare adresă de
 client la N cereri pe secundă (rafale de 2N; răspuns `429` cu `Retry-After`); valoarea implicită este 100 când se cere o credențială
 și nicio limită în caz contrar; 0 o dezactivează. Un bind non-loopback afișează avertismente (HTTP simplu; toate interfețele pentru

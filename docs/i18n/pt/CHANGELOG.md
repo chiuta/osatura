@@ -10,6 +10,30 @@ Versões relacionadas que **são** reais e independentes das acima: o `API_VERSI
 
 ## [Unreleased]
 
+### Documentação
+
+- README (inglês e romeno): nova seção "Live demo and animation examples" (demo ao vivo e exemplos de animação): a demo ao vivo hospedada é declarada como **planejada** (não existe nenhuma), e os exemplos de animação que existem no repositório são listados. Somente documentação; nenhum código-fonte Rust, manifesto ou arquivo de build foi tocado. O `cargo check` não pôde ser executado no ambiente de revisão (a toolchain 1.97.0 não pode ser baixada offline).
+
+### Lançamento
+
+- **Arquivo Linux estático `osatura-linux-x86_64-musl.tar.gz`** para distribuições com glibc anterior à 2.35 (RHEL/Rocky/Alma 8 e 9, Debian 10 e 11, Ubuntu 20.04): `osatura` ligado ao musl, sem necessidade de bibliotecas do sistema. A CI executa os testes do núcleo e da CLI no musl e roda o binário dentro de um chroot vazio (`scripts/linux-static-check.sh`). Assinado, atestado e listado em `SHA256SUMS.txt` como os demais arquivos.
+
+### Segurança e build
+
+- **Workflow de lançamento reforçado**: roda somente para uma tag de versão cujo commit esteja em `main` (ou manualmente, sem criar um lançamento); a grafia da tag é verificada; o Linux é compilado no ubuntu-22.04 (piso de glibc 2.35, verificado); assinaturas e atestações citam a tag, e [docs/VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) fixa o workflow e a referência.
+- **Toolchain fixada em `rust-toolchain.toml`**; `rust-version = "1.97"` em todos os crates; os builds de release têm `overflow-checks = true` (um estouro causa panic em vez de dar a volta).
+- **O `cargo deny` agora também verifica advisories, crates yanked, versões curinga e crates banidos** (nenhuma pilha de cliente TLS/HTTP); os workflows têm grupos `concurrency`.
+- **Colaboração**: `--collab-host NAMES` limita salvar, compactar e o novo `POST /api/collab/revoke` a hosts nomeados (opcional; sem ele nada muda); um endereço de cliente pode manter no máximo 16 conexões (loopback isento); o prazo do token de um participante tem uma única grafia aceita e a assinatura é verificada antes do prazo.
+- **ffmpeg/ffprobe**: os arquivos de som `.wav`, `.mp3` e `.ogg` são abertos com um demuxer forçado. No Windows, os bytes aleatórios agora vêm do gerador do sistema em vez de uma alternativa baseada em hash.
+
+### Portátil
+
+- **Fontes do pacote PortableApps.com** em `packaging/portableapps` (`appinfo.ini`, configuração do inicializador, ícone, página de ajuda e `make_package.py`, que monta o layout a partir do arquivo de release para Windows). A nova variável de ambiente `OSATURA_DOCUMENTS` muda a pasta do primeiro projeto (aplicativo de janela e início por duplo clique). O programa inicializador e o instalador ainda precisam ser compilados e testados no Windows com as ferramentas do PortableApps.com.
+
+### Exportação
+
+- **O `.lottie` agora é um contêiner dotLottie 2.0** ([especificação](https://dotlottie.io/spec/2.0/)): `manifest.json` tem `"version": "2"` e a animação é `a/animation.json`; `autoplay`/`loop` deixam de ser gravados (no 2.0 eles pertencem ao player ou a uma máquina de estados). O v0.1.0-alpha.4 e os anteriores gravavam dotLottie 1.0 (`animations/animation.json`). Verificado com @lottiefiles/dotlottie-web e lottie-web.
+
 ### Studio
 
 - **Demonstração guiada (botão Demo, comando `demo.panel`)**: constrói a pessoa caminhando em 13 passos (cenário, corpo, cabeça, braços com cinco dedos, esqueleto, caminhada, balanço dos braços, tronco e cabeça, piscada e sorriso, chão em movimento, verificação, exportação). Cada passo carrega essa etapa do projeto no editor por uma única operação de substituição total (um passo de Desfazer); Salvar fica desativado enquanto ela está carregada e *Restore my project* devolve o seu próprio projeto. As etapas são recortadas de `osatura demo-person`; `scripts/build-studio-tour.mjs` as regenera com o binário real.
@@ -23,7 +47,7 @@ Preparado a partir do marcador de commit `[release v0.1.0-alpha.3]`; ele substit
 * **Corrigido: as exportações no estúdio do navegador pareciam bloqueadas.** Um GIF leva alguns segundos para ser renderizado e a página não mostrava nada nesse intervalo, e clicar rapidamente nos três links de exportação podia acionar a proteção do Chrome contra downloads múltiplos. No Chrome e no Edge o estúdio agora abre a caixa de diálogo "Salvar como" de imediato (File System Access API), mostra "Rendering..." e depois "Saved ...", e executa uma exportação por vez; os outros navegadores recebem um download normal com as mesmas mensagens. O aplicativo em janela não muda.
 * **Novo: a demonstração da pessoa caminhando** (`osatura demo-person`, agora o primeiro projeto dos dois inicializadores do Windows): vista lateral com cabeça, orelha e rabo de cavalo, tronco, braços com mãos e cinco dedos, pernas com pés e dedos dos pés; uma caminhada em loop de 32 quadros com apoio do calcanhar e saída da ponta do pé, oscilação vertical da pelve, braços em contrabalanço e movimento sobreposto de mãos, dedos, orelha e rabo de cavalo; o teste garante que o pé apoiado não desliza. É também o novo último passo da demonstração do site. `osatura demo` não muda.
 * **Alterado: o cabeçalho do estúdio tem as mesmas duas linhas no navegador e na janela** (ferramentas de edição e botões de painel na primeira linha, colaboração e exportações na segunda), seja qual for a largura.
-* **Novo: `import-svg --split`** cria uma camada por forma do SVG, nomeada com o seu id, para que um desenho possa ser montado parte por parte. O novo [TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) leva o desenho de exemplo `docs/examples/pip.svg` pela importação, por uma montagem em script (`pip-rig.rhai`) e pela exportação em GIF, com as saídas reais dos comandos.
+* **Novo: `import-svg --split`** cria uma camada por forma do SVG, nomeada com o seu id, para que um desenho possa ser montado parte por parte. O novo [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md) leva o desenho de exemplo `docs/examples/pip.svg` pela importação, por uma montagem em script (`pip-rig.rhai`) e pela exportação em GIF, com as saídas reais dos comandos.
 * **Novo:** o botão **Simple view** no estúdio oculta os controles de edição e mantém desfazer, salvar, painéis e exportações (lembrado por navegador).
 * **Corrigido: o pacote web** (`osatura-web.tar.gz`) abria sua página de demonstração com um caminho de importação errado e não tinha projeto; seu `index.html` agora importa corretamente e carrega `demo-person.json` (gerado no workflow de release). O novo `osatura-wasm/js/browser-check.js` executa o módulo em um navegador real; resultados em WASM.md e LIMITATIONS L-01.
 * **Documentação:** novos COMPARISON.md (uma comparação honesta e datada com outras ferramentas), VERIFY_DOWNLOADS.md (verificação SHA-256), GOOD_FIRST_TASKS.md; os nomes de pacote `osatura` estão livres no crates.io, npm e PyPI, e foi encontrada uma marca próxima (OSATRA) (L-78).

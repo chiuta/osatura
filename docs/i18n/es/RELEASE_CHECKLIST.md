@@ -42,7 +42,12 @@
 ## 6. Artefactos de la versión
 
 - [x] Los binarios de la versión se compilan en runners alojados en GitHub (`release.yml`) y `SHA256SUMS.txt` se genera en el borrador. **Pendiente:** revisar el borrador `v0.1.0-alpha.3`, marcar "pre-release", publicarlo y etiquetar el commit (la etiqueta se crea con la publicación).
-- [ ] Decide sobre la firma de código (certificado Authenticode de Windows, Apple Developer ID y notarización); hasta entonces las descargas se marcan como sin firmar (L-74).
+- [x] Firma de procedencia: firmas Sigstore sin clave y atestaciones de procedencia de compilación de GitHub para cada archivo de la versión (trabajo `sign` en `release.yml`, verificado en la CI).
+- [x] Requisitos previos de SignPath Foundation en el repositorio: CODE_SIGNING_POLICY.md (enlazado desde el README, el sitio y cada versión), PRIVACY.md, docs/UNINSTALL.md, sin doble licencia (LICENSING.md), metadatos de archivo de Windows (`build.rs`, comprobados en release.yml), configuración de artefactos en `.signpath/`, trabajo `windows-authenticode`.
+- [ ] Propietario: activar la autenticación en dos pasos en GitHub (SignPath la exige a todos los miembros del equipo).
+- [ ] Propietario: publicar una versión (SignPath exige que el proyecto se haya publicado en la forma que se va a firmar) y después presentar la solicitud en https://signpath.org/apply.
+- [ ] Tras la aceptación: en SignPath, crear el proyecto `osatura`, la política de firma `release-signing` y la configuración de artefactos `windows-zip` (pegar `.signpath/artifact-configuration.xml`), y vincular el repositorio de GitHub como sistema de compilación de confianza; en GitHub, añadir la variable de repositorio `SIGNPATH_ORGANIZATION_ID` y el secreto `SIGNPATH_API_TOKEN`. La siguiente versión se firmará entonces tras una aprobación manual.
+- [ ] macOS: Apple Developer ID y notarización (aún no previstos); hasta entonces Gatekeeper avisa (L-74).
 - [ ] Adjunta el código fuente correspondiente de las partes AGPL (basta con la propia etiqueta; mantenla disponible mientras distribuyas binarios).
 - [x] `docs/THIRD_PARTY_NOTICES.md` está regenerado (24 oct 2026) y cada archivo lo incluye; regenéralo de nuevo con `scripts/licence-audit.sh` antes de cada versión posterior.
 - [ ] Crates.io / npm / registros de paquetes: comprueba que los nombres estén libres y que los campos de licencia coincidan con `LICENSING.md`.

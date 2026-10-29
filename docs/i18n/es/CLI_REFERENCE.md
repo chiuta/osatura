@@ -1516,7 +1516,7 @@ wrote svg.json (3 paths)
 $ osatura check svg.json
 ok: 's' 200×100 @ 24 fps, 24 frames, 0 bones, 0 ik, 1 layers, 0 channels
 ```
-Con `--split` cada forma se convierte en **su propia capa**, con el nombre del `id` de la forma, en el orden del archivo. Una forma sin id recibe el nombre de su etiqueta y su posición (`rect1`, `circle6`), un id repetido recibe `_1`, `_2`..., y los caracteres que un nombre de capa no puede contener (`/`, `::`, caracteres de control) se convierten en `_`; los nombres se cortan a 100 caracteres. Es la forma que conviene usar cuando el dibujo se va a preparar con huesos parte por parte; véase [TUTORIAL_SVG.md](TUTORIAL_SVG.md).
+Con `--split` cada forma se convierte en **su propia capa**, con el nombre del `id` de la forma, en el orden del archivo. Una forma sin id recibe el nombre de su etiqueta y su posición (`rect1`, `circle6`), un id repetido recibe `_1`, `_2`..., y los caracteres que un nombre de capa no puede contener (`/`, `::`, caracteres de control) se convierten en `_`; los nombres se cortan a 100 caracteres. Es la forma que conviene usar cuando el dibujo se va a preparar con huesos parte por parte; véase [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md).
 
 ```
 $ osatura import-svg pip.svg pip.json --split
@@ -2478,7 +2478,7 @@ los recursos binarios a los que hace referencia el proyecto no se versionan.
 
 ### `studio`
 
-**Sinopsis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
+**Sinopsis:** `osatura studio <project.json> [--port N] [--ui-config F] [--bind ADDR] [--allow-host NAMES] [--public-origin URL] [--source-url URL] [--collab-token T (16+ characters)] [--collab-secret-file F [--collab-revoke NAMES] [--collab-host NAMES]] [--collab-rate N] [--collab-log LOG [--collab-nosync]]`
 
 Inicia el **editor de navegador** (deshacer/rehacer, línea de tiempo, paneles en vivo y de rostro, VCS y operaciones al estilo de agente) como un servidor web
 local y se bloquea hasta Ctrl-C. Valores por defecto: `--port 8080`, `--bind 127.0.0.1`. El proyecto se valida al arrancar; los guardados van
@@ -2500,7 +2500,11 @@ el único bearer compartido por **tokens por participante**: F contiene un secre
 Unix, de lo contrario se rechaza) y cada persona obtiene un token con `osatura collab-token NAME`; un token está ligado a un nombre
 (al unirse se usa ese nombre, nadie puede unirse como otra persona), caduca y se comprueba recalculando su HMAC-SHA-256, de modo que el
 servidor no guarda ninguna tabla. `--collab-revoke NAMES` (separados por comas, requiere `--collab-secret-file`) rechaza los tokens de esos
-nombres antes de que caduquen. `--collab-token` y `--collab-secret-file` se pueden combinar (el token compartido actúa entonces como
+nombres antes de que caduquen (un servidor en marcha también puede revocar con `POST /api/collab/revoke {"names":["ana"]}`, véase más abajo). `--collab-host NAMES`
+(separados por comas, requiere `--collab-secret-file`) nombra a los participantes cuyos tokens pueden **guardar el proyecto, compactar el registro de sesión y revocar
+tokens**; el resto de quienes tengan un token válido pueden seguir editando, pero reciben `403` en esas tres peticiones. Sin `--collab-host` todos los participantes pueden
+guardar y compactar (como antes) y solo el `--collab-token` compartido o una sesión local sin autenticar puede revocar por HTTP; el estudio indica cuál es el caso
+al arrancar. `--collab-token` y `--collab-secret-file` se pueden combinar (el token compartido actúa entonces como
 clave de administración); cualquiera de los dos satisface la regla de que un bind que no sea loopback necesita una credencial. `--collab-rate N` limita cada dirección
 de cliente a N peticiones por segundo (ráfagas de 2N; respuesta `429` con `Retry-After`); el valor por defecto es 100 cuando se exige una credencial
 y sin límite en caso contrario; 0 lo desactiva. Un bind que no sea loopback imprime advertencias (HTTP sin cifrar; todas las interfaces con

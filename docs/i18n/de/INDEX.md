@@ -17,10 +17,12 @@ Inhalt: [Alle Dokumente](#alle-dokumente) - [Lesepfade nach Zielgruppe](#lesepfa
 | [STUDIO.md](STUDIO.md) | Der Browser-Editor: Panels, Tastenkürzel, Zusammenarbeit, Scrub-Vorschauen | Animatoren, Rigger |
 | [RIGGING_GUIDE.md](RIGGING_GUIDE.md) | Ein Rig bauen: Knochen, IK, Skinning, Deformer, Driver, Zustandsautomaten, Layout | Rigger, Technical Artists |
 | [ANIMATION_GUIDE.md](ANIMATION_GUIDE.md) | Keys, Easing, Clips und Takes, Physik, Lip-Sync, Audio, Wahl des Exports | Animatoren |
-| [TUTORIAL_SVG.md](TUTORIAL_SVG.md) | Von einer Vektorzeichnung zu einem laufenden GIF: Import, Rig per Skript, Export (Befehle und Ausgaben sind echt) | Künstler |
-| [COMPARISON.md](COMPARISON.md) | Ein ehrlicher, datierter Vergleich mit anderen 2D-Animationswerkzeugen | Evaluierende |
-| [VERIFY_DOWNLOADS.md](VERIFY_DOWNLOADS.md) | Release-Archive anhand der SHA-256-Summen prüfen | alle, die installieren |
-| [GOOD_FIRST_TASKS.md](GOOD_FIRST_TASKS.md) | Kleine Aufgaben für einen ersten Beitrag | neue Mitwirkende |
+| [TUTORIAL_SVG.md](../../TUTORIAL_SVG.md) | Von einer Vektorzeichnung zu einem laufenden GIF: Import, Rig per Skript, Export (Befehle und Ausgaben sind echt) | Künstler |
+| [COMPARISON.md](../../COMPARISON.md) | Ein ehrlicher, datierter Vergleich mit anderen 2D-Animationswerkzeugen | Evaluierende |
+| [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | Release-Dateien prüfen: Sigstore-Signaturen, Build-Provenienz, SHA-256-Summen | alle, die installieren |
+| [UNINSTALL.md](../../UNINSTALL.md) | OSATURA und alle Dateien entfernen, die es anlegen kann | alle, die installieren |
+| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Code-Signing-Richtlinie (SignPath Foundation), Rollen im Team, Datenschutz | alle, die installieren, Maintainer |
+| [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Kleine Aufgaben für einen ersten Beitrag | neue Mitwirkende |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | Das JSON-Projektformat Feld für Feld | Werkzeugentwickler, Rigger, die JSON bearbeiten |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Was jedes Export- und Importformat enthält und weglässt | Pipeline-Entwickler, Integratoren |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Crates, Module, Datenfluss, Entwurf von Auswertung und Rendering | Mitwirkende, Reviewer |
@@ -56,7 +58,7 @@ Jeder Pfad ist eine Reihenfolge, keine Vorschrift. Hör auf, wenn du hast, was d
 
 **Sicherheits-Reviewer oder Betreiber.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) Abschnitt 3 (was getestet wird) -> LIMITATIONS Abschnitt 2 und 11 -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> [CI.md](CI.md) Einschränkungen.
 
-**Lizenznehmer, Paketierer oder Jurist.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../COPYRIGHT) und [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> Release-Checkliste in [DEVELOPMENT.md](DEVELOPMENT.md) Abschnitt 7.
+**Lizenznehmer, Paketierer oder Jurist.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../../../../COPYRIGHT) und [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> Release-Checkliste in [DEVELOPMENT.md](DEVELOPMENT.md) Abschnitt 7.
 
 **Maintainer, der ein Release erstellt.** DEVELOPMENT Abschnitt 7 -> [../CHANGELOG.md](CHANGELOG.md) -> LIMITATIONS (aktualisieren) -> Statuskasten der README.
 
@@ -70,7 +72,7 @@ Jeder Pfad ist eine Reihenfolge, keine Vorschrift. Hör auf, wenn du hast, was d
 | [../FEATURES.md](FEATURES.md) | Funktionsmatrix im Vergleich mit anderen Werkzeugen (Teile sind veraltet, siehe LIMITATIONS) |
 | [../CLEANROOM.md](CLEANROOM.md) | Herkunftslog und Regeln für unabhängige Implementierung |
 | [../CONTRIBUTING.md](CONTRIBUTING.md) | Beitragsregeln, Inbound = Outbound-Lizenz, DCO 1.1 |
-| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Lizenzentscheidung (Variante A), Texte |
+| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Lizenzentscheidung (Variante A), Texte |
 | [../TRADEMARK.md](TRADEMARK.md) | Richtlinie zu Name und Logo |
 | `../REUSE.toml`, `../deny.toml` | Lizenz-Metadaten für Nicht-Quelldateien; Dependency-Richtlinie |
 

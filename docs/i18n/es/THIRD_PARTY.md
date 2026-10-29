@@ -303,7 +303,7 @@
 | time | 0.3.55 | MIT OR Apache-2.0 | registro crates.io | osatura-gui |  |
 | time-core | 0.1.9 | MIT OR Apache-2.0 | registro crates.io | osatura-gui |  |
 | time-macros | 0.2.32 | MIT OR Apache-2.0 | registro crates.io | osatura-gui |  |
-| tokio | 1.54.0 | MIT | registro crates.io | osatura-cli, osatura-gpu, osatura-gui |  |
+| tokio | 1.54.1 | MIT | registro crates.io | osatura-cli, osatura-gpu, osatura-gui |  |
 | toml | 0.8.2 | MIT OR Apache-2.0 | registro crates.io | osatura-gui |  |
 | toml_datetime | 0.6.3 | MIT OR Apache-2.0 | registro crates.io | osatura-gui |  |
 | toml_datetime | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 | registro crates.io | osatura-gui |  |
@@ -372,6 +372,7 @@
 | windows_x86_64_msvc | 0.42.2 | MIT OR Apache-2.0 | registro crates.io | osatura-gui |  |
 | winnow | 0.5.40 | MIT | registro crates.io | osatura-gui |  |
 | winnow | 1.0.4 | MIT | registro crates.io | osatura-gui |  |
+| winresource | 0.1.34 | MIT | registro crates.io | osatura-capi, osatura-cli, osatura-gui |  |
 | wry | 0.57.1 | Apache-2.0 OR MIT | registro crates.io | osatura-gui |  |
 | x11 | 2.21.0 | MIT | registro crates.io | osatura-gui |  |
 | x11-dl | 2.21.0 | MIT | registro crates.io | osatura-gui |  |

@@ -379,7 +379,7 @@ hash (FNV-1a 64 bits en version 1, SHA-256 en version 2) afin que tout dommage s
 
 **collab_srv.rs (CLI), le côté HTTP.** Routes sous `/api/collab/` : `join`, `leave`, `state`, `log`,
 `ops`, `undo`, `redo`, `presence`, `compact`, `events`. Authentification : un jeton d'au moins 16
-caractères, envoyé dans l'en-tête `X-Collab-Token` ou le cookie `arm_token` (défini par `/api/login`),
+caractères, envoyé dans l'en-tête `X-Collab-Token` ou le cookie `osatura_token` (défini par `/api/login`),
 comparé en temps constant, avec une limitation de débit qui répond 429. Chaque participant reçoit aussi un secret
 (`X-Collab-Secret`) afin qu'un utilisateur ne puisse pas agir à la place d'un autre. Le transport est du HTTP simple sans TLS :
 placez un proxy terminant le TLS devant pour tout usage au-delà d'un réseau de confiance.
