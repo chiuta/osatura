@@ -5,3 +5,4 @@ out/
 demo-ci.json
 osatura-wasm/osatura_wasm.wasm
 *.plain
+__pycache__/
