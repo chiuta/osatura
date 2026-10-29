@@ -2,8 +2,9 @@
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 <!-- Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio) -->
 <html lang="en"><head>
-<link rel="canonical" href="https://osatura.chiuta.ro/tutorials/"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tutoriale OSATURA</title>
+<link rel="canonical" href="https://osatura.chiuta.ro/tutorials/"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-MpTI2esHpOSXDEwSFF8fqB91ZZTi/uni6waDBPpJyMs='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSATURA video tutorials</title>
+<meta name="description" content="Twelve short screen recordings of the OSATURA studio and command line, with subtitles in English, Romanian, French, Italian, Spanish, Portuguese, German and Hungarian.">
 <style>
 /* Layout: language bar on top; below it a tutorial list beside a player on wide screens, player above list on phones. */
 :root{
@@ -126,7 +127,7 @@ function loadVideo(autoplay){
   if(autoplay)v.play().catch(()=>{});
 }
 function go(play){
-  const u=UI[lang]; document.documentElement.lang=lang;
+  const u=UI[lang]; document.documentElement.lang=lang; document.title="OSATURA · "+u.h;
   $("t-h").textContent=u.h; $("t-lede").textContent=u.lede;
   renderLangs(); renderNav();
   $("vt").textContent=title(cur); $("vs").textContent=T[cur][0]+" · "+u.sub+": "+LANGS.find(l=>l[0]===lang)[1];
