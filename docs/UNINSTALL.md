@@ -24,6 +24,8 @@ Files in a synced folder (OneDrive, iCloud, Dropbox) are also in that service's 
 
 The `Documents\OSATURA` folder may also contain your own projects; look before deleting it.
 
+**Portable use.** The studio settings path can be set with `OSATURA_UI_CONFIG`, and the folder of the first project with `OSATURA_DOCUMENTS` (instead of `Documents\OSATURA`); the window application's web component keeps its data where `WEBVIEW2_USER_DATA_FOLDER` says. The PortableApps.com package ([packaging/portableapps](../packaging/portableapps/README.md)) sets all three to its own `Data` folder, so nothing is left in the user profile.
+
 Everything else (renders, exports, projects) is written only to the paths you give the commands.
 
 ## 3. Optional
