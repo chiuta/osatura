@@ -303,7 +303,7 @@
 | time | 0.3.55 | MIT OR Apache-2.0 | registry crates.io | osatura-gui |  |
 | time-core | 0.1.9 | MIT OR Apache-2.0 | registry crates.io | osatura-gui |  |
 | time-macros | 0.2.32 | MIT OR Apache-2.0 | registry crates.io | osatura-gui |  |
-| tokio | 1.54.0 | MIT | registry crates.io | osatura-cli, osatura-gpu, osatura-gui |  |
+| tokio | 1.54.1 | MIT | registry crates.io | osatura-cli, osatura-gpu, osatura-gui |  |
 | toml | 0.8.2 | MIT OR Apache-2.0 | registry crates.io | osatura-gui |  |
 | toml_datetime | 0.6.3 | MIT OR Apache-2.0 | registry crates.io | osatura-gui |  |
 | toml_datetime | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 | registry crates.io | osatura-gui |  |

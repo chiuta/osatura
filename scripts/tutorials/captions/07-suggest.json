@@ -1,0 +1,42 @@
+{
+ "c01": {
+  "en": "Suggest proposes in-between poses\nfor you.",
+  "ro": "Suggest propune poze intermediare\npentru tine.",
+  "fr": "Suggest propose des poses intermédiaires\npour vous.",
+  "it": "Suggest propone pose intermedie\nper te.",
+  "es": "Suggest propone poses intermedias\npara ti.",
+  "pt": "Suggest propõe poses intermediárias\npara você.",
+  "de": "Suggest schlägt Zwischenposen\nfür dich vor.",
+  "hu": "A Suggest köztes pózokat javasol\nneked."
+ },
+ "c02": {
+  "en": "Open it and look at the candidates\nbetween two keyed frames.",
+  "ro": "Deschide-l și privește candidații\ndintre două cadre cheie.",
+  "fr": "Ouvrez-le et regardez les candidats\nentre deux images clés.",
+  "it": "Aprilo e guarda i candidati\ntra due fotogrammi chiave.",
+  "es": "Ábrelo y mira los candidatos\nentre dos fotogramas clave.",
+  "pt": "Abra e veja os candidatos\nentre dois quadros-chave.",
+  "de": "Öffne es und sieh dir die Kandidaten\nzwischen zwei Keyframes an.",
+  "hu": "Nyisd meg, és nézd meg a jelölteket\nkét kulcskép között."
+ },
+ "c03": {
+  "en": "Press Apply on the one you like;\nit becomes a normal key.",
+  "ro": "Apasă Apply pe cea care îți place;\ndevine o cheie obișnuită.",
+  "fr": "Appuyez sur Apply pour celui que vous aimez ;\nil devient une clé normale.",
+  "it": "Premi Apply su quello che preferisci;\ndiventa una chiave normale.",
+  "es": "Pulsa Apply en el que prefieras;\nse convierte en una clave normal.",
+  "pt": "Pressione Apply na que preferir;\nela vira uma chave normal.",
+  "de": "Drücke Apply beim gewünschten;\ner wird ein normaler Key.",
+  "hu": "Nyomd meg az Apply-t a tetszőnél;\nközönséges kulcs lesz belőle."
+ },
+ "c04": {
+  "en": "Undo removes it if you change your mind.",
+  "ro": "Undo îl elimină dacă te răzgândești.",
+  "fr": "Undo l'annule si vous changez d'avis.",
+  "it": "Undo lo rimuove se cambi idea.",
+  "es": "Undo lo quita si cambias de opinión.",
+  "pt": "Undo remove se você mudar de ideia.",
+  "de": "Undo entfernt ihn, falls du es dir anders überlegst.",
+  "hu": "Az Undo eltávolítja, ha meggondolod magad."
+ }
+}

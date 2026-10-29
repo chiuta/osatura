@@ -70,7 +70,9 @@ pub fn clip_peaks(p: &Project, base: &Path, idx: usize, buckets: usize) -> Resul
     let dir = osatura_core::fsutil::private_temp_dir("osatura-snd")?;
     let tmp = dir.join("peaks.wav");
     let r = run(Command::new("ffmpeg")
-        .args(["-y", "-loglevel", "error", "-protocol_whitelist", "file", "-i"])
+        .args(["-y", "-loglevel", "error", "-protocol_whitelist", "file"])
+        .args(soundtrack::forced_demuxer(&path).map(|f| ["-f", f]).unwrap_or(["-hide_banner", "-hide_banner"]))
+        .arg("-i")
         .arg(&path)
         .args(["-filter_complex", &chain, "-map", "[w]", "-ac", "1", "-ar", "8000", "-t", "3600", "-c:a", "pcm_s16le"])
         .arg(&tmp))

@@ -261,14 +261,14 @@ function sse(port, p, headers) {
   const r3 = await J(TP, 'GET', `/?token=${TOK}`);
   check('the token in the URL is NOT accepted', r3.status === 401 && !r3.headers['set-cookie'], r3.status);
   const r3b = await J(TP, 'POST', '/api/login', { token: TOK });
-  check('POST /api/login sets an HttpOnly SameSite=Strict cookie', r3b.status === 200 && new RegExp('arm_token=' + TOK + '; Path=/; HttpOnly; SameSite=Strict').test(String(r3b.headers['set-cookie'])), r3b.headers['set-cookie']);
-  const r3c = await J(TP, 'GET', '/', undefined, { Cookie: 'arm_token=' + TOK });
+  check('POST /api/login sets an HttpOnly SameSite=Strict cookie', r3b.status === 200 && new RegExp('osatura_token=' + TOK + '; Path=/; HttpOnly; SameSite=Strict').test(String(r3b.headers['set-cookie'])), r3b.headers['set-cookie']);
+  const r3c = await J(TP, 'GET', '/', undefined, { Cookie: 'osatura_token=' + TOK });
   check('the page opens with the cookie', r3c.status === 200 && /<title>/.test(r3c.text));
-  const r4 = await J(TP, 'POST', '/api/collab/join', { name: 'x' }, { Cookie: 'arm_token=' + TOK });
+  const r4 = await J(TP, 'POST', '/api/collab/join', { name: 'x' }, { Cookie: 'osatura_token=' + TOK });
   check('the cookie authorises API calls', r4.status === 200 && r4.body.ok);
   const r4b = await J(TP, 'GET', '/api/state', undefined, { 'X-Collab-Token': TOK });
   check('the X-Collab-Token header authorises API calls', r4b.status === 200);
-  const s2 = sse(TP, '/api/collab/events', { Cookie: 'arm_token=' + TOK });
+  const s2 = sse(TP, '/api/collab/events', { Cookie: 'osatura_token=' + TOK });
   const s3 = sse(TP, '/api/collab/events');
   await sleep(300);
   check('the event stream needs the token too', s2.status === 200 && s3.status === 401, [s2.status, s3.status]);

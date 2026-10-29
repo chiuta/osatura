@@ -1,0 +1,102 @@
+{
+  "c01": {
+    "en": "Hide the timeline with Alt+T to give the picture\nthe whole window.",
+    "ro": "Ascunde cronologia cu Alt+T ca imaginea\nsă ocupe toată fereastra.",
+    "fr": "Masquez la ligne de temps avec Alt+T pour donner\ntoute la fenêtre à l'image.",
+    "it": "Nascondi la timeline con Alt+T per dare\ntutta la finestra all'immagine.",
+    "es": "Oculta la línea de tiempo con Alt+T para dar\ntoda la ventana a la imagen.",
+    "pt": "Oculte a linha de tempo com Alt+T para dar\na janela toda à imagem.",
+    "de": "Blende die Zeitleiste mit Alt+T aus, damit\ndas Bild das ganze Fenster bekommt.",
+    "hu": "Az Alt+T elrejti az idővonalat, így a kép\naz egész ablakot használhatja."
+  },
+  "c02": {
+    "en": "Click the picture to select the topmost thing\nunder the pointer.",
+    "ro": "Fă clic pe imagine ca să selectezi elementul\nde deasupra de sub cursor.",
+    "fr": "Cliquez sur l'image pour sélectionner l'élément\nle plus haut sous le pointeur.",
+    "it": "Fai clic sull'immagine per selezionare l'elemento\npiù in alto sotto il puntatore.",
+    "es": "Haz clic en la imagen para seleccionar lo que\nesté más arriba bajo el puntero.",
+    "pt": "Clique na imagem para selecionar o elemento\nmais acima sob o ponteiro.",
+    "de": "Klicke ins Bild, um das oberste Element\nunter dem Zeiger auszuwählen.",
+    "hu": "Kattints a képre, hogy a mutató alatti\nlegfelső elemet kijelöld."
+  },
+  "c03": {
+    "en": "Shift-click adds another layer to the selection.",
+    "ro": "Shift+clic adaugă încă un strat la selecție.",
+    "fr": "Maj+clic ajoute un autre calque à la sélection.",
+    "it": "Maiusc+clic aggiunge un altro livello alla selezione.",
+    "es": "Mayús+clic añade otra capa a la selección.",
+    "pt": "Shift+clique adiciona outra camada à seleção.",
+    "de": "Umschalt+Klick fügt der Auswahl eine Ebene hinzu.",
+    "hu": "Shift+kattintás újabb réteget ad a kijelöléshez."
+  },
+  "c04": {
+    "en": "The Selection panel names what is selected\nand repeats the mouse rules.",
+    "ro": "Panoul Selection numește ce e selectat\nși repetă regulile mouse-ului.",
+    "fr": "Le panneau Selection nomme la sélection\net rappelle les règles de la souris.",
+    "it": "Il pannello Selection indica cosa è selezionato\ne ripete le regole del mouse.",
+    "es": "El panel Selection nombra lo seleccionado\ny repite las reglas del ratón.",
+    "pt": "O painel Selection nomeia o que está selecionado\ne repete as regras do rato.",
+    "de": "Das Selection-Panel nennt die Auswahl\nund wiederholt die Mausregeln.",
+    "hu": "A Selection panel megnevezi a kijelöltet,\nés összefoglalja az egérszabályokat."
+  },
+  "c05": {
+    "en": "Drag inside the box to move.\nOne drag is one undo step.",
+    "ro": "Trage în interiorul casetei ca să muți.\nO tragere este un singur pas de undo.",
+    "fr": "Faites glisser dans la boîte pour déplacer.\nUn glissement = une étape d'annulation.",
+    "it": "Trascina dentro il riquadro per spostare.\nUn trascinamento è un solo passo di annullamento.",
+    "es": "Arrastra dentro del cuadro para mover.\nUn arrastre es un solo paso de deshacer.",
+    "pt": "Arraste dentro da caixa para mover.\nUm arrasto é um único passo de anular.",
+    "de": "Ziehe innerhalb des Rahmens zum Verschieben.\nEin Ziehen ist ein Undo-Schritt.",
+    "hu": "A kereten belül húzva mozgathatsz.\nEgy húzás egyetlen visszavonási lépés."
+  },
+  "c06": {
+    "en": "Arrow keys nudge by one unit;\nShift makes it ten.",
+    "ro": "Săgețile mută cu o unitate;\ncu Shift, cu zece.",
+    "fr": "Les flèches déplacent d'une unité ;\navec Maj, de dix.",
+    "it": "Le frecce spostano di un'unità;\ncon Maiusc, di dieci.",
+    "es": "Las flechas mueven una unidad;\ncon Mayús, diez.",
+    "pt": "As setas movem uma unidade;\ncom Shift, dez.",
+    "de": "Die Pfeiltasten verschieben um eine Einheit,\nmit Umschalt um zehn.",
+    "hu": "A nyilak egy egységet mozgatnak,\nShifttel tízet."
+  },
+  "c07": {
+    "en": "Ctrl+Z undoes the last operation,\nCtrl+Y does it again.",
+    "ro": "Ctrl+Z anulează ultima operație,\nCtrl+Y o refă.",
+    "fr": "Ctrl+Z annule la dernière opération,\nCtrl+Y la rétablit.",
+    "it": "Ctrl+Z annulla l'ultima operazione,\nCtrl+Y la ripete.",
+    "es": "Ctrl+Z deshace la última operación,\nCtrl+Y la rehace.",
+    "pt": "Ctrl+Z anula a última operação,\nCtrl+Y refá-la.",
+    "de": "Strg+Z macht den letzten Vorgang rückgängig,\nStrg+Y stellt ihn wieder her.",
+    "hu": "A Ctrl+Z visszavonja az utolsó műveletet,\na Ctrl+Y újra végrehajtja."
+  },
+  "c08": {
+    "en": "In Layers, the first box shows or hides a layer,\nthe second locks it.",
+    "ro": "În Layers, prima casetă arată sau ascunde stratul,\na doua îl blochează.",
+    "fr": "Dans Layers, la première case affiche ou masque le calque,\nla seconde le verrouille.",
+    "it": "In Layers, la prima casella mostra o nasconde il livello,\nla seconda lo blocca.",
+    "es": "En Layers, la primera casilla muestra u oculta la capa,\nla segunda la bloquea.",
+    "pt": "Em Layers, a primeira caixa mostra ou oculta a camada,\na segunda bloqueia-a.",
+    "de": "In Layers blendet das erste Kästchen eine Ebene ein oder aus,\ndas zweite sperrt sie.",
+    "hu": "A Layers panelen az első négyzet megjeleníti vagy elrejti a réteget,\na második zárolja."
+  },
+  "c09": {
+    "en": "Locked layers are skipped by clicks\nand refuse edits.",
+    "ro": "Straturile blocate sunt ocolite de clicuri\nși refuză modificările.",
+    "fr": "Les calques verrouillés sont ignorés par les clics\net refusent les modifications.",
+    "it": "I livelli bloccati vengono saltati dai clic\ne rifiutano le modifiche.",
+    "es": "Las capas bloqueadas se saltan con los clics\ny rechazan ediciones.",
+    "pt": "As camadas bloqueadas são ignoradas pelos cliques\ne recusam edições.",
+    "de": "Gesperrte Ebenen werden von Klicks übersprungen\nund lehnen Änderungen ab.",
+    "hu": "A zárolt rétegeket a kattintás átugorja,\nés nem engednek szerkesztést."
+  },
+  "c10": {
+    "en": "Esc clears the selection.",
+    "ro": "Esc golește selecția.",
+    "fr": "Échap efface la sélection.",
+    "it": "Esc cancella la selezione.",
+    "es": "Esc borra la selección.",
+    "pt": "Esc limpa a seleção.",
+    "de": "Esc hebt die Auswahl auf.",
+    "hu": "Az Esc megszünteti a kijelölést."
+  }
+}

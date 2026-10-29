@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
+#
+# The one place that fixes the Rust version for local builds and for every CI and release job (the workflows run
+# `rustup toolchain install`, which reads this file). Bump it deliberately, together with `rust-version` in the
+# workspace manifest and the "Rust 1.97" mentions in docs/DEVELOPMENT.md.
+[toolchain]
+channel = "1.97.0"
+profile = "minimal"
+components = ["clippy"]

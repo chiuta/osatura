@@ -10,9 +10,25 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Documentation
+
+- README (English and Romanian): new section "Live demo and animation examples": the hosted live demo is stated as **planned** (none exists), and the animation examples that exist in the repository are listed. Documentation only; no Rust source, manifest or build file was touched. `cargo check` could not be run in the review environment (toolchain 1.97.0 not downloadable offline).
+
 ### Release
 
 - **Static Linux archive `osatura-linux-x86_64-musl.tar.gz`** for distributions with glibc older than 2.35 (RHEL/Rocky/Alma 8 and 9, Debian 10 and 11, Ubuntu 20.04): `osatura` linked against musl, no system libraries needed. CI runs the core and CLI tests on musl and runs the binary inside an empty chroot (`scripts/linux-static-check.sh`). Signed, attested and listed in `SHA256SUMS.txt` like the other archives.
+
+### Security and build
+
+- **Release workflow hardened**: runs only for a version tag whose commit is on `main` (or by hand, without creating a release); the tag spelling is checked; Linux builds on ubuntu-22.04 (glibc 2.35 floor, checked); signatures and attestations name the tag, and [docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md) pins workflow and reference.
+- **Toolchain pinned in `rust-toolchain.toml`**; `rust-version = "1.97"` in every crate; release builds have `overflow-checks = true` (an overflow panics instead of wrapping).
+- **`cargo deny` now also checks advisories, yanked crates, wildcard versions and banned crates** (no TLS/HTTP client stack); workflows have `concurrency` groups.
+- **Collaboration**: `--collab-host NAMES` limits save, compact and the new `POST /api/collab/revoke` to named hosts (opt-in; without it nothing changes); one client address may hold at most 16 connections (loopback exempt); a participant token's deadline has one accepted spelling and the signature is checked before the deadline.
+- **ffmpeg/ffprobe**: `.wav`, `.mp3` and `.ogg` sound files are opened with a forced demuxer. On Windows random bytes now come from the system generator instead of a hash-based fallback.
+
+### Portable
+
+- **PortableApps.com package sources** in `packaging/portableapps` (`appinfo.ini`, launcher configuration, icon, help page and `make_package.py`, which assembles the layout from the Windows release archive). The new environment variable `OSATURA_DOCUMENTS` moves the folder of the first project (window application and double-click start). The launcher program and installer still have to be built and tested on Windows with the PortableApps.com tools.
 
 ### Export
 

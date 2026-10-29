@@ -199,7 +199,7 @@ No. The file on disk changes only when you press Save. Closing the page without 
 Only if you bind a non-loopback address, and then a token is required: `refusing to listen on 0.0.0.0:8851: the studio has no accounts and no TLS, so a non-local address needs --collab-token (and still sends everything in clear text)`. The token must be at least 16 characters, for example from `openssl rand -hex 16`. There is no encryption: use an SSH tunnel or a reverse proxy with TLS.
 
 **52. Where do I put the token?**
-In the `X-Collab-Token` header or the `arm_token` cookie (HttpOnly, SameSite=Strict, and Secure when the request arrives under an https `--public-origin`). It is never accepted in the URL. From the fifth failed attempt, that client address gets HTTP 429 with a growing delay (2, 4 ... up to 30 s).
+In the `X-Collab-Token` header or the `osatura_token` cookie (HttpOnly, SameSite=Strict, and Secure when the request arrives under an https `--public-origin`). It is never accepted in the URL. From the fifth failed attempt, that client address gets HTTP 429 with a growing delay (2, 4 ... up to 30 s).
 
 **53. What do the HTTP errors 403, 415 and 421 mean?**
 421: the Host header is not one the studio expects. 403: a foreign `Origin` or `Sec-Fetch-Site`. 415: a POST that is not JSON. These are protections against pages in your browser calling the local server; see [STUDIO.md](STUDIO.md) and [SECURITY.md](SECURITY.md).

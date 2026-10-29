@@ -2,6 +2,8 @@
 name = "osatura-gpu"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.97"
+publish = false
 description = "OSATURA optional GPU renderer (wgpu): stencil-then-cover fills, tessellated strokes, WGSL gradients and blend modes"
 license = "MPL-2.0"
 

@@ -1,0 +1,82 @@
+{
+ "c01": {
+  "en": "Let's build a character from scratch,\nusing only commands.",
+  "ro": "Să construim un personaj de la zero,\ndoar cu comenzi.",
+  "fr": "Construisons un personnage de zéro,\navec de simples commandes.",
+  "it": "Costruiamo un personaggio da zero,\nsolo con comandi.",
+  "es": "Construyamos un personaje desde cero,\nsolo con comandos.",
+  "pt": "Vamos construir um personagem do zero,\nsó com comandos.",
+  "de": "Bauen wir eine Figur von Grund auf,\nnur mit Befehlen.",
+  "hu": "Építsünk karaktert a semmiből,\ncsak parancsokkal."
+ },
+ "c02": {
+  "en": "An empty project needs only\na few header fields.",
+  "ro": "Un proiect gol are nevoie doar\nde câteva câmpuri de antet.",
+  "fr": "Un projet vide n'a besoin que\nde quelques champs d'en-tête.",
+  "it": "Un progetto vuoto richiede solo\nqualche campo di intestazione.",
+  "es": "Un proyecto vacío solo necesita\nunos campos de cabecera.",
+  "pt": "Um projeto vazio precisa apenas\nde alguns campos de cabeçalho.",
+  "de": "Ein leeres Projekt braucht nur\nein paar Kopfzeilen-Felder.",
+  "hu": "Egy üres projekthez csak\nnéhány fejlécmező kell."
+ },
+ "c03": {
+  "en": "A small script adds the shapes.",
+  "ro": "Un script mic adaugă formele.",
+  "fr": "Un petit script ajoute les formes.",
+  "it": "Un piccolo script aggiunge le forme.",
+  "es": "Un pequeño script añade las formas.",
+  "pt": "Um pequeno script adiciona as formas.",
+  "de": "Ein kleines Skript fügt die Formen hinzu.",
+  "hu": "Egy kis szkript hozzáadja az alakzatokat."
+ },
+ "c04": {
+  "en": "Another script adds bones\nand attaches the art to them.",
+  "ro": "Alt script adaugă oasele\nși le leagă de desene.",
+  "fr": "Un autre script ajoute les os\net y attache le dessin.",
+  "it": "Un altro script aggiunge le ossa\ne vi collega il disegno.",
+  "es": "Otro script añade los huesos\ny les une el dibujo.",
+  "pt": "Outro script adiciona os ossos\ne liga o desenho a eles.",
+  "de": "Ein weiteres Skript fügt Knochen hinzu\nund bindet die Grafik an.",
+  "hu": "Másik szkript csontokat ad hozzá,\nés rájuk köti a rajzot."
+ },
+ "c05": {
+  "en": "Render a still with the bones shown\nto check the rig.",
+  "ro": "Randează o imagine cu oasele vizibile\nca să verifici scheletul.",
+  "fr": "Rendez une image avec les os visibles\npour vérifier le squelette.",
+  "it": "Renderizza un'immagine con le ossa visibili\nper controllare lo scheletro.",
+  "es": "Renderiza una imagen con los huesos visibles\npara revisar el esqueleto.",
+  "pt": "Renderize uma imagem com os ossos visíveis\npara conferir o esqueleto.",
+  "de": "Rendere ein Bild mit sichtbaren Knochen,\num das Rig zu prüfen.",
+  "hu": "Renderelj képet látható csontokkal\na váz ellenőrzéséhez."
+ },
+ "c06": {
+  "en": "Inverse kinematics lets the hand\nlead and the arm follow.",
+  "ro": "Cinematica inversă lasă mâna să conducă\niar brațul o urmează.",
+  "fr": "La cinématique inverse laisse la main guider\net le bras suit.",
+  "it": "La cinematica inversa fa guidare la mano\ne il braccio la segue.",
+  "es": "La cinemática inversa deja que la mano guíe\ny el brazo la siga.",
+  "pt": "A cinemática inversa deixa a mão guiar\ne o braço acompanhar.",
+  "de": "Inverse Kinematik lässt die Hand führen\nund den Arm folgen.",
+  "hu": "A fordított kinematika a kezet vezeti,\na kar követi."
+ },
+ "c07": {
+  "en": "Keys with easing bring it to life.",
+  "ro": "Cheile cu easing îi dau viață.",
+  "fr": "Des clés avec adoucissement lui donnent vie.",
+  "it": "Le chiavi con easing gli danno vita.",
+  "es": "Las claves con suavizado le dan vida.",
+  "pt": "Chaves com suavização dão vida a ele.",
+  "de": "Keys mit Easing erwecken es zum Leben.",
+  "hu": "A könnyítéses kulcsok életre keltik."
+ },
+ "c08": {
+  "en": "loop-solve makes the ends match;\nlint checks for mistakes.",
+  "ro": "loop-solve potrivește capetele;\nlint caută greșeli.",
+  "fr": "loop-solve raccorde les extrémités ;\nlint cherche les erreurs.",
+  "it": "loop-solve fa combaciare gli estremi;\nlint cerca errori.",
+  "es": "loop-solve une los extremos;\nlint busca errores.",
+  "pt": "loop-solve faz as pontas coincidirem;\nlint procura erros.",
+  "de": "loop-solve gleicht die Enden an;\nlint sucht nach Fehlern.",
+  "hu": "A loop-solve illeszti a végeket;\na lint hibákat keres."
+ }
+}

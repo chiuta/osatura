@@ -1096,14 +1096,21 @@ fn wait_for_enter(msg: &str) {
 fn double_click_launcher() -> ExitCode {
     println!("OSATURA {}  -  command-line tool and browser studio", env!("CARGO_PKG_VERSION"));
     println!("This window runs the studio. Close it (or press Ctrl+C) to stop. For the commands, open a terminal: osatura --help\n");
-    let home = env::var("USERPROFILE").unwrap_or_else(|_| ".".into());
-    let dir = std::path::Path::new(&home).join("Documents").join("OSATURA");
+    // OSATURA_DOCUMENTS (set by the portable package) replaces `Documents\OSATURA`.
+    let dir = match env::var_os("OSATURA_DOCUMENTS").filter(|v| !v.is_empty()) {
+        Some(d) => std::path::PathBuf::from(d),
+        None => {
+            let home = env::var("USERPROFILE").unwrap_or_else(|_| ".".into());
+            std::path::Path::new(&home).join("Documents").join("OSATURA")
+        }
+    };
     if let Err(e) = std::fs::create_dir_all(&dir) {
         wait_for_enter(&format!("cannot create {}: {e}\nPress Enter to close.", dir.display()));
         return ExitCode::FAILURE;
     }
     let project = dir.join("first-rig.json").to_string_lossy().into_owned();
     if !std::path::Path::new(&project).exists() {
+        println!("Creating your first project: {project}\n(OSATURA installs nothing; to remove it, delete that folder and see docs/UNINSTALL.md)");
         if let Err(e) = run(&["demo-person".to_string(), project.clone()]) {
             wait_for_enter(&format!("{e}\nPress Enter to close."));
             return ExitCode::FAILURE;

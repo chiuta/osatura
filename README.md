@@ -10,6 +10,8 @@
 
 *What it makes: the built-in walking person, exported with `osatura demo-person` and `osatura export` (the whole project is one JSON file). Try it in two minutes: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).*
 
+**[Code signing policy](CODE_SIGNING_POLICY.md)** · [Privacy](PRIVACY.md) · [Download](#download)
+
 ## Summary and philosophy
 
 OSATURA lets you build a character or a scene from vector shapes and images, rig it with bones and constraints, animate it with keys, clips and physics, and send it out as GIF, video, Lottie, glTF, a self-contained HTML player or an interactive runtime. It is made of small, deterministic pieces: the same project and the same seed give the same pixels, every tool reads and writes a documented JSON project, and every command works from a terminal, so animation can be scripted, reviewed, diffed and tested like source code.
@@ -26,13 +28,22 @@ Principles that shape the project:
 
 *Name: the project was called ARMATURA until 24 Oct 2026 and was renamed OSATURA after a trademark search ([docs/LIMITATIONS.md](docs/LIMITATIONS.md) L-78). The repository and the site address were renamed too (old repository links redirect).*
 
-> **Alpha. First builds prepared as a draft pre-release: `v0.1.0-alpha.3`.** The executables for Windows x86-64, macOS arm64 and Linux x86-64 and the WebAssembly module are built by GitHub Actions and attached to a *draft* pre-release on <https://github.com/chiuta/osatura/releases> (a draft is visible only to the owner until it is published by hand). All crates are still version `0.1.0`; "v0.5 / v0.6 / v0.7" are *feature levels* in the history, not release numbers ([CHANGELOG.md](CHANGELOG.md)).
+> **Alpha. Latest published pre-release: `v0.1.0-alpha.4`; the next one is `v0.1.0-alpha.5`.** The executables for Windows x86-64, macOS arm64 and Linux x86-64 and the WebAssembly module are built by GitHub Actions and attached to a *draft* pre-release on <https://github.com/chiuta/osatura/releases> (a draft is visible only to the owner until it is published by hand). All crates are still version `0.1.0`; "v0.5 / v0.6 / v0.7" are *feature levels* in the history, not release numbers ([CHANGELOG.md](CHANGELOG.md)).
 >
 > | Verified | Not verified |
 > |---|---|
 > | **Local (Linux x86-64, 24 Oct 2026):** 1343 tests of `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` plus 19 doc-tests pass (the GPU crate needs an adapter and the window crate a desktop; before this the count including the GPU crate was 1368). **On GitHub Actions (24 Oct 2026, toolchain 1.97.0):** the test suite and `clippy -D warnings` pass on Linux, macOS (arm64) and Windows; `cargo deny` and `reuse lint` pass; the WebAssembly module builds for `wasm32-unknown-unknown` and the wrapper's test passes against the real module under Node 20; the release binaries pass a smoke test (`--version`, `demo`, `check`, `render`) and `osatura-studio --selftest` runs on Windows and macOS. Five headless-Chromium smoke tests of the studio pass locally (CI does not run them); the CLI, the Rust facade and the C ABI (also under ASan/UBSan) were run with the examples in the docs | **No person has used the executables on a real Windows or macOS desktop**: the Windows double-click launcher and the `osatura-studio` window app (WebView2 / WKWebView) were only compiled and self-tested in CI; the binaries are **not code-signed** (SmartScreen "Unknown publisher", macOS Gatekeeper); the Linux binary was built on an Ubuntu runner only; **the WebAssembly module was run only in headless Chromium** (Firefox and Safari were not tried; about 73 ms per 640x480 frame without a GPU); the studio was never used by a person in production, nor in a browser other than Chromium; no real GPU (only a software adapter), webcam, photograph or motion-capture file was ever used; no security audit, lawyer review or patent search |
 >
 > Read [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (78 numbered limits with severity and workaround) before you depend on anything.
+
+## Live demo and animation examples
+
+* **Live demo (in the browser, hosted): planned.** There is no hosted demo today and no web address to point to. Until then you can try the studio locally (`osatura studio demo.json --port 8080`, see Quick start) or, when a release exists, with the `osatura-web.tar.gz` archive; the WebAssembly demo page has so far only been loaded in headless Chromium without the `.wasm` file ([docs/WASM.md](docs/WASM.md)), so do not expect a verified in-browser rendering.
+* **Animation examples that exist in this repository** (checked in the file list, not re-rendered in this review):
+  * [`docs/img/walk.gif`](docs/img/walk.gif): the built-in walking person, real output of `osatura export` (the image at the top of this page); [`docs/img/walk-cycle.png`](docs/img/walk-cycle.png): the same cycle as a sheet.
+  * [`docs/examples/pip.svg`](docs/examples/pip.svg) and [`docs/examples/pip-rig.rhai`](docs/examples/pip-rig.rhai): a drawing and the script that rigs it and gives it a walk cycle, used step by step in [docs/TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) (result: [`docs/img/tutorial-svg-walk.png`](docs/img/tutorial-svg-walk.png)).
+  * `osatura demo` (rig demo, 48 frames) and `osatura demo-fx` (liquid, booleans, particles) generate project files you can render and export yourself.
+  * More animated examples: not yet added (planned).
 
 ## Maturity: where to start
 
@@ -46,18 +57,19 @@ OSATURA has far more features than one person can validate. This table says wher
 
 ## Download
 
-Prebuilt archives, once the owner has published the draft release, are on the project's [Releases page](https://github.com/chiuta/osatura/releases):
+Prebuilt archives, once the owner has published the draft release, are on the project's [Releases page](https://github.com/chiuta/osatura/releases). **[Code signing policy](CODE_SIGNING_POLICY.md)** · [Privacy](PRIVACY.md) (the programs send nothing over the network unless you ask them to) · [Uninstall](docs/UNINSTALL.md) · [Verify a download](docs/VERIFY_DOWNLOADS.md)
 
 | Archive | Contents |
 |---|---|
 | `osatura-windows-x86_64.zip` | `osatura.exe` (command line + studio server), `osatura-studio.exe` (window app), C library and header, licences, third-party notices |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (Apple-silicon only), C library and header, licences, notices |
 | `osatura-linux-x86_64.tar.gz` | `osatura`, C library and header, licences, notices (no window app: use `osatura studio` and a browser); needs glibc 2.35+ (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
-| `osatura-linux-x86_64-musl.tar.gz` | static `osatura` (musl libc, no system libraries needed) for older distributions such as RHEL/Rocky/Alma 8 and 9, Debian 10 and 11, Ubuntu 20.04; no C library; about 5-50 % slower than the glibc build |
+| `osatura-linux-x86_64-musl.tar.gz` | static `osatura` (musl libc, no system libraries needed) for older distributions such as RHEL/Rocky/Alma 8 and 9, Debian 10 and 11, Ubuntu 20.04; no C library; about 5-50 % slower than the glibc build. **Not in alpha.4**: it starts with the next release |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (run only in headless Chromium, see [docs/WASM.md](docs/WASM.md)) |
 | `SHA256SUMS.txt` | check every download against it |
+| `*.sigstore.json` | Sigstore signature of each file ([docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md)) |
 
-* **Windows:** double-click `osatura.exe` to create `Documents\OSATURA\first-rig.json` (the walking-person demo: head with ear, hands with fingers, feet with toes) and open the studio in your browser, or double-click `osatura-studio.exe` for a window of its own. Both programs are unsigned: choose *More info* then *Run anyway* in SmartScreen. See [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
+* **Windows:** double-click `osatura.exe` to create `Documents\OSATURA\first-rig.json` (the walking-person demo: head with ear, hands with fingers, feet with toes) and open the studio in your browser, or double-click `osatura-studio.exe` for a window of its own. Both programs are not Authenticode-signed yet ([Code signing policy](CODE_SIGNING_POLICY.md)): choose *More info* then *Run anyway* in SmartScreen. Nothing is installed: to remove OSATURA delete the folder and the files in [docs/UNINSTALL.md](docs/UNINSTALL.md). See [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
 * **macOS:** approve the program in *System Settings > Privacy & Security* the first time.
 * **Source:** each archive names the commit it was built from; the AGPL parts are served with their source offer (`osatura --version`, `/source`).
 
@@ -154,6 +166,7 @@ Start at [docs/INDEX.md](docs/INDEX.md) (all documents, audiences, reading paths
 | [docs/CI.md](docs/CI.md) | animation CI |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | build, test, conventions, release |
 | [docs/SECURITY.md](docs/SECURITY.md) | threat model and hardening |
+| [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [PRIVACY.md](PRIVACY.md) · [docs/UNINSTALL.md](docs/UNINSTALL.md) | code signing policy, privacy, uninstalling |
 | [docs/LIMITATIONS.md](docs/LIMITATIONS.md) | known limits |
 | [docs/PATENT_NOTES.md](docs/PATENT_NOTES.md), [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md), [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) | patents, dependency licences |
 | [CHANGELOG.md](CHANGELOG.md), [ROADMAP.md](ROADMAP.md), [FEATURES.md](FEATURES.md) | history, plan and detailed status, feature matrix |

@@ -1,0 +1,42 @@
+{
+ "c01": {
+  "en": "The Layout menu rearranges the panels\nto suit your work.",
+  "ro": "Meniul Layout reorganizează panourile\nîn funcție de munca ta.",
+  "fr": "Le menu Layout réorganise les panneaux\nselon votre travail.",
+  "it": "Il menu Layout riorganizza i pannelli\nsecondo il tuo lavoro.",
+  "es": "El menú Layout reorganiza los paneles\nsegún tu trabajo.",
+  "pt": "O menu Layout reorganiza os painéis\nconforme seu trabalho.",
+  "de": "Das Layout-Menü ordnet die Panels\nnach deiner Arbeit an.",
+  "hu": "A Layout menü a munkádhoz igazítja\na paneleket."
+ },
+ "c02": {
+  "en": "Keys lists every keyboard shortcut.",
+  "ro": "Keys listează toate scurtăturile de tastatură.",
+  "fr": "Keys liste tous les raccourcis clavier.",
+  "it": "Keys elenca tutte le scorciatoie da tastiera.",
+  "es": "Keys enumera todos los atajos de teclado.",
+  "pt": "Keys lista todos os atalhos de teclado.",
+  "de": "Keys listet alle Tastenkürzel auf.",
+  "hu": "A Keys felsorolja az összes billentyűparancsot."
+ },
+ "c03": {
+  "en": "Commands is a palette:\ntype a few letters to find any action.",
+  "ro": "Commands este o paletă:\nscrie câteva litere ca să găsești orice acțiune.",
+  "fr": "Commands est une palette :\ntapez quelques lettres pour trouver une action.",
+  "it": "Commands è una palette:\nscrivi qualche lettera per trovare un'azione.",
+  "es": "Commands es una paleta:\nescribe unas letras para hallar una acción.",
+  "pt": "Commands é uma paleta:\ndigite algumas letras para achar uma ação.",
+  "de": "Commands ist eine Palette:\ntippe ein paar Buchstaben, um Aktionen zu finden.",
+  "hu": "A Commands egy paletta:\nírj be pár betűt bármely művelet megtalálásához."
+ },
+ "c04": {
+  "en": "Simple view hides the advanced tools\nfor a calmer workspace.",
+  "ro": "Simple view ascunde uneltele avansate\npentru un spațiu de lucru mai calm.",
+  "fr": "Simple view masque les outils avancés\npour un espace plus calme.",
+  "it": "Simple view nasconde gli strumenti avanzati\nper uno spazio più sereno.",
+  "es": "Simple view oculta las herramientas avanzadas\npara un espacio más tranquilo.",
+  "pt": "Simple view oculta as ferramentas avançadas\npara um espaço mais calmo.",
+  "de": "Simple view blendet erweiterte Werkzeuge aus\nfür einen ruhigeren Arbeitsplatz.",
+  "hu": "A Simple view elrejti a haladó eszközöket\na nyugodtabb munkához."
+ }
+}

@@ -28,8 +28,8 @@ The project currently has a single maintainer, who holds all three roles:
 | Approvers | [Alexandru-Ionuț Chiuță (Alexio), @chiuta](https://github.com/chiuta) |
 
 * Changes from anyone without write access arrive as pull requests and are reviewed by a committer before they are merged ([CONTRIBUTING.md](CONTRIBUTING.md)).
-* A signing request is created only by the release workflow for a version tag (`v*`) or a release commit on `main`, and each request is approved by hand in SignPath by an approver.
-* Everyone with one of these roles uses multi-factor authentication for GitHub and SignPath.
+* A signing request is created only by the release workflow for a version tag (`vMAJOR.MINOR.PATCH[-pre]`) whose commit is on `main`, and each request is approved by hand in SignPath by an approver.
+* Everyone with one of these roles is required to use multi-factor authentication for GitHub and SignPath (a SignPath Foundation condition; the maintainer confirms it for each account when the certificate is granted).
 * Any change to these roles is recorded in this file.
 
 ## Privacy policy

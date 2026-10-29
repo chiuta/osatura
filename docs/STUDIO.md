@@ -38,6 +38,8 @@ same message. Unknown fields are warned about (`warning: unknown field bogus (ig
 | `--port N` | 8080 | TCP port. An occupied port gives `cannot listen on 127.0.0.1:8861: Address already in use (os error 98)`; a bad one `cannot listen on 127.0.0.1:99999: invalid port value`. |
 | `--bind ADDR` | `127.0.0.1` | Interface to listen on. Anything that is not a loopback address **requires `--collab-token`**. |
 | `--ui-config F` | `$OSATURA_UI_CONFIG`, else `$XDG_CONFIG_HOME/osatura/ui.json`, else on Windows `%APPDATA%\OSATURA\ui.json` (before alpha.3 there was none: settings were kept for the session only), else `~/.config/osatura/ui.json` | Where layout, shortcuts, recent commands and overlay settings are kept. It is a per-user file, never part of the project. |
+
+The window application and the double-click start create the first project in `OSATURA_DOCUMENTS` when that variable is set, else in `Documents\OSATURA` (used by the portable package).
 | `--allow-host NAMES` | none | Extra `Host` names to accept (comma separated), for access under a DNS name. |
 | `--public-origin URL` | none | The bare origin (`https://studio.example.org`, no path) that a TLS reverse proxy presents; its `Host` and `Origin` are then accepted. |
 | `--source-url URL` | none; in the official release binaries the commit they were built from (`https://github.com/chiuta/osatura/tree/<commit>`) | Where the corresponding source of *your* build can be downloaded (AGPL section 13); shown on `/source` and by `--version`. An explicit value always wins. |
@@ -59,7 +61,7 @@ The studio is built for a person on their own machine. What protects it:
 * **Security headers** on responses: a restrictive `Content-Security-Policy` (`default-src 'self'` and no framing), `X-Frame-Options: DENY`,
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`.
 * **Token for anything off-machine.** With `--collab-token`, every request needs the token as the `X-Collab-Token` header, or in the
-  `arm_token` cookie set by `POST /api/login` (HttpOnly, SameSite=Strict). The token is **never accepted in the URL**. Wrong tokens are slowed
+  `osatura_token` cookie set by `POST /api/login` (HttpOnly, SameSite=Strict). The token is **never accepted in the URL**. Wrong tokens are slowed
   down per client address (from the fifth failure in a row that address gets **429** for 2, 4, ... up to 30 seconds), but the back-off cannot stop an
   attacker who keeps trying: use a long random token.
 * **Participant secrets.** Joining a shared session returns a random 128-bit secret; every call made as that participant must send it as
@@ -367,7 +369,7 @@ The studio's page uses these routes and you may too (scripts, tests). All bodies
 | `POST /api/undo`, `POST /api/redo` | none | `state` (per user in a shared session) |
 | `POST /api/key` | `{"target","prop","frame","value","ease"?}` (`ease` like `{"type":"smooth"}`; default linear) | `state` |
 | `POST /api/delete_key` | `{"target","prop","frame"}` | `state` |
-| `POST /api/save` | none | `{"ok":true,"saved":"<path>"}`; writes atomically |
+| `POST /api/save` | none | `{"ok":true,"saved":"<path>"}`; writes atomically. Host only when the studio runs with `--collab-host` (otherwise **403**) |
 | `POST /api/suggest` | `{"kind":"between"\|"complete"\|"next","a","b","t","frame","constraints","free","top","snap","prior","apply":RANK, "library"?, "model"?}` | `{ok, suggestions}`; with `apply` also `state` of the edit. A request without `kind` gives `bad request: missing field `kind`` |
 
 ### Selection and gizmos (stateless: the page holds the selection)
@@ -407,7 +409,7 @@ For instance `{"preview":true,"op":{"op":"delete","keys":[{"ch":0,"frame":12}]}}
 | `POST /api/face/detect` | `{"image":"<base64 PNG/JPEG or data: URI>","track":bool,"push":bool,"t"}` | `{ok, found, layout:"osatura23", size, points, box, note:"detector trained on synthetic faces only"}` |
 | `POST /api/face/synth` | `{"t","size":32-512,"seed"}` | `{ok, image:"data:image/png;base64,...", layout, size, points}` one frame of the synthetic head with its exact landmarks |
 | `POST /api/ui` | any of `{"layout":{...}\|null,"shortcuts":{...}\|null,"recents":[...],"overlays":{...},"reset":"layout"\|"shortcuts"\|"overlays"\|"all"}` | `GET /api/ui` document; unknown fields (`unknown field 'bogus'`), conflicts and incomplete layouts are refused and nothing changes |
-| `POST /api/login` | `{"token":"..."}` | `{ok:true}` and `Set-Cookie: arm_token=...; Path=/; HttpOnly; SameSite=Strict`; wrong: 401 (429 from the 5th failure); without a configured token `{"ok":true,"token_required":false}` |
+| `POST /api/login` | `{"token":"..."}` | `{ok:true}` and `Set-Cookie: osatura_token=...; Path=/; HttpOnly; SameSite=Strict`; wrong: 401 (429 from the 5th failure); without a configured token `{"ok":true,"token_required":false}` |
 
 ### Collaboration
 
@@ -422,7 +424,8 @@ Calls made as a participant send `X-Collab-Replica: <id>` and `X-Collab-Secret: 
 | `POST /api/collab/ops` | `{"replica","ops":[...]` or `"op":{...}`, `"base"?}` or `{"replica","envelopes":[...]}` | `state` + `applied`, `index`. Unknown participant: `unknown participant N: join first`; empty list: `no ops`; invalid project edits are refused |
 | `POST /api/collab/undo`, `.../redo` | `{"replica"}` | `state` + `collab_can_undo`, `collab_can_redo` (your own edits only) |
 | `POST /api/collab/presence` | `{"replica","n","frame","cursor":[x,y],"selection":[names up to 64]}` | `{ok}` |
-| `POST /api/collab/compact` | `{}` | compaction summary (`ok`, `logged`) |
+| `POST /api/collab/compact` | `{}` | compaction summary (`ok`, `logged`). Host only when the studio runs with `--collab-host` (otherwise **403**) |
+| `POST /api/collab/revoke` | `{"names":["ana","bob"]}` (1 to 64 names) | `{ok, revoked, revoked_total}`: the tokens of those names are refused from now on and participants who joined under them are removed. Needs per-participant tokens (`--collab-secret-file`) and a host token (`--collab-host`), or the shared `--collab-token`; otherwise **403**. An event stream that is already open ends when its client disconnects |
 | `GET /api/collab/events` | `since=N` or `Last-Event-ID` | a **server-sent-events** stream: replay from `since`, then users, presence and every later event; `resync` if the client is too far behind; at most 64 streams (`503 too many event streams`) |
 
 In an active session the ordinary editing routes (`/api/op`, `/api/undo`, `/api/redo`, and the studio's own edits through nudge, key or gizmo) are recorded for the other participants too.

@@ -1,0 +1,52 @@
+{
+ "c01": {
+  "en": "The command line does everything\nthe studio does, and can be scripted.",
+  "ro": "Linia de comandă face tot ce face studioul\nși poate fi automatizată.",
+  "fr": "La ligne de commande fait tout ce que fait\nle studio, et s'automatise.",
+  "it": "La riga di comando fa tutto ciò che fa lo studio\ned è automatizzabile.",
+  "es": "La línea de comandos hace todo lo del estudio\ny se puede automatizar.",
+  "pt": "A linha de comando faz tudo o que o estúdio faz\ne pode ser automatizada.",
+  "de": "Die Kommandozeile kann alles, was das Studio kann,\nund lässt sich automatisieren.",
+  "hu": "A parancssor mindent tud, amit a stúdió,\nés automatizálható."
+ },
+ "c02": {
+  "en": "osatura demo-person writes a ready-made\ncharacter project.",
+  "ro": "osatura demo-person scrie un proiect\nde personaj gata făcut.",
+  "fr": "osatura demo-person écrit un projet\nde personnage prêt à l'emploi.",
+  "it": "osatura demo-person scrive un progetto\ndi personaggio già pronto.",
+  "es": "osatura demo-person escribe un proyecto\nde personaje ya hecho.",
+  "pt": "osatura demo-person grava um projeto\nde personagem pronto.",
+  "de": "osatura demo-person schreibt ein fertiges\nCharakterprojekt.",
+  "hu": "Az osatura demo-person kész\nkarakterprojektet ír."
+ },
+ "c03": {
+  "en": "check validates it and prints a summary.",
+  "ro": "check îl validează și afișează un rezumat.",
+  "fr": "check le valide et affiche un résumé.",
+  "it": "check lo convalida e mostra un riepilogo.",
+  "es": "check lo valida y muestra un resumen.",
+  "pt": "check o valida e mostra um resumo.",
+  "de": "check prüft es und zeigt eine Zusammenfassung.",
+  "hu": "A check érvényesíti, és összegzést ír ki."
+ },
+ "c04": {
+  "en": "timeline lists every animated channel\nand its keys.",
+  "ro": "timeline listează fiecare canal animat\nși cheile lui.",
+  "fr": "timeline liste chaque canal animé\net ses clés.",
+  "it": "timeline elenca ogni canale animato\ne le sue chiavi.",
+  "es": "timeline lista cada canal animado\ny sus claves.",
+  "pt": "timeline lista cada canal animado\ne suas chaves.",
+  "de": "timeline listet jeden animierten Kanal\nmit seinen Keys auf.",
+  "hu": "A timeline kilistázza az animált\ncsatornákat és kulcsaikat."
+ },
+ "c05": {
+  "en": "render draws any frame to a PNG.",
+  "ro": "render desenează orice cadru într-un PNG.",
+  "fr": "render dessine n'importe quelle image en PNG.",
+  "it": "render disegna qualsiasi fotogramma in PNG.",
+  "es": "render dibuja cualquier fotograma en PNG.",
+  "pt": "render desenha qualquer quadro em PNG.",
+  "de": "render zeichnet jedes Bild als PNG.",
+  "hu": "A render bármely képkockát PNG-be rajzol."
+ }
+}
