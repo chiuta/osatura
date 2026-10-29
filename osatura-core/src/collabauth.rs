@@ -131,6 +131,10 @@ pub fn verify_token(secret: &str, token: &str, now: u64) -> Result<Claims, Token
         return Err(TokenError::Malformed);
     }
     let expires: u64 = exp.parse().map_err(|_| TokenError::Malformed)?;
+    // one spelling per token: "0100" and "100" would otherwise carry the same signature
+    if exp != expires.to_string() {
+        return Err(TokenError::Malformed);
+    }
     if !ct_eq_bytes(sig.as_bytes(), mac(secret, name, expires).as_bytes()) {
         return Err(TokenError::BadSignature);
     }
@@ -232,6 +236,36 @@ mod tests {
         }
         // the shared bearer of the old scheme is not a participant token
         assert_eq!(verify_token(SECRET, SECRET, 1), Err(TokenError::Malformed));
+    }
+
+    /// The signature is checked before the deadline or any revocation list is consulted: whoever does not hold a
+    /// correctly signed token learns nothing about names, deadlines or revocations from the answer.
+    #[test]
+    fn the_signature_is_judged_before_the_deadline() {
+        let t = mint_token(SECRET, "ana", 1000, 600).unwrap();
+        // long past its deadline AND forged: the answer is "bad signature", never "expired"
+        let forged = t.replacen("ana", "bob", 1);
+        assert_eq!(verify_token(SECRET, &forged, 9_999_999), Err(TokenError::BadSignature));
+        assert_eq!(verify_token("ffffffffffffffffffffffffffffffff", &t, 9_999_999), Err(TokenError::BadSignature));
+        // the genuine token past its deadline is the only "expired" answer
+        assert_eq!(verify_token(SECRET, &t, 9_999_999), Err(TokenError::Expired { expires: 1600 }));
+    }
+
+    /// `.` separates the fields and cannot occur inside a name, so no token can be read in two ways.
+    #[test]
+    fn separators_cannot_hide_in_a_name_and_the_deadline_has_one_spelling() {
+        let mac_of = |name: &str, exp: u64| mac(SECRET, name, exp);
+        // a name with a dot is refused when minting, and a token built by hand with one is malformed (6 fields)
+        assert!(mint_token(SECRET, "j.doe", 0, 60).is_err());
+        assert_eq!(verify_token(SECRET, &format!("ap1.j.doe.1600.{}", mac_of("j.doe", 1600)), 1001), Err(TokenError::Malformed));
+        assert_eq!(verify_token(SECRET, "ap1.x.9999999999.deadbeef", 1001), Err(TokenError::Malformed));
+        // the same deadline written with a leading zero is a different string and is refused, although the MAC would match
+        let t = mint_token(SECRET, "ana", 1000, 600).unwrap();
+        assert!(verify_token(SECRET, &t, 1001).is_ok());
+        let padded = t.replacen(".1600.", ".01600.", 1);
+        assert_eq!(verify_token(SECRET, &padded, 1001), Err(TokenError::Malformed));
+        // a newline in the name cannot shift the fields of the signed text (name and deadline are separated by "\n")
+        assert_eq!(verify_token(SECRET, &format!("ap1.ana\n1600.1600.{}", mac_of("ana", 1600)), 1001), Err(TokenError::Malformed));
     }
 
     #[test]

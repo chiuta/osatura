@@ -1,0 +1,29 @@
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+<!-- Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio) -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>terminal</title>
+<style>
+html,body{margin:0;height:100%;background:#0f1419;overflow:hidden}
+#t{position:absolute;left:0;right:0;top:0;bottom:0;box-sizing:border-box;padding:22px 28px 120px;display:flex;flex-direction:column;justify-content:flex-end;
+  font:19px/1.38 "DejaVu Sans Mono",monospace;color:#d8dee9;white-space:pre-wrap;word-break:break-all}
+#bar{position:absolute;left:0;right:0;top:0;height:30px;background:#1c232b;color:#8a99a8;font:13px/30px "DejaVu Sans",sans-serif;padding-left:14px;z-index:2}
+.p{color:#7ec699}.c{color:#ffffff}.o{color:#aab7c4}.d{color:#6b7c8c}.e{color:#e06c75}
+#cur{display:inline-block;width:11px;height:20px;background:#ffc300;vertical-align:text-bottom;margin-left:1px}
+#img{position:absolute;right:28px;top:52px;max-width:470px;max-height:380px;border:2px solid #34414d;border-radius:6px;display:none;background:#fff;z-index:2}
+#imgcap{position:absolute;right:28px;top:436px;font:13px "DejaVu Sans",sans-serif;color:#8a99a8;display:none}
+</style></head><body>
+<div id="bar">OSATURA - terminal</div>
+<div id="t"></div>
+<img id="img"><div id="imgcap"></div>
+<script>
+const T = document.getElementById('t');
+let cur = null;
+function line(cls, text){ const d=document.createElement('div'); d.className=cls; d.textContent=text; T.appendChild(d); trim(); return d; }
+function trim(){ while (T.scrollHeight > T.clientHeight + 2 && T.children.length > 1) T.removeChild(T.firstChild); }
+function prompt(){ const d=document.createElement('div'); d.innerHTML='<span class="p">$ </span><span class="c" id="typed"></span><span id="cur"></span>'; T.appendChild(d); trim(); }
+function typeChar(ch){ document.getElementById('typed').textContent += ch; }
+function endCmd(){ const c=document.getElementById('cur'); if (c) c.remove(); const t=document.getElementById('typed'); if (t) t.removeAttribute('id'); }
+function out(text, cls){ text.split('\n').forEach(l => line(cls||'o', l)); }
+function showImg(src, cap){ const i=document.getElementById('img'); i.src=src; i.style.display='block'; const c=document.getElementById('imgcap'); c.textContent=cap||''; c.style.display=cap?'block':'none'; }
+function hideImg(){ document.getElementById('img').style.display='none'; document.getElementById('imgcap').style.display='none'; }
+</script></body></html>

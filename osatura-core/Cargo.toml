@@ -2,6 +2,8 @@
 name = "osatura-core"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.97"
+publish = false
 description = "Independently implemented 2D vector rigging and animation core (from public specifications and papers; no third-party source copied)"
 license = "MPL-2.0"
 

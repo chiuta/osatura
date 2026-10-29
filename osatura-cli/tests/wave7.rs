@@ -281,6 +281,41 @@ fn e_studio_with_a_secret_file_accepts_only_valid_participant_tokens_and_rate_li
 }
 
 #[test]
+fn e_studio_with_named_hosts_keeps_save_compact_and_revoke_for_them() {
+    let s = ScratchDir::new("osatura-w7-hosts");
+    demo(&s);
+    secret_file(&s);
+    // the names come from per-participant tokens: --collab-host needs the secret file and a name
+    let (ok, t) = run_in(&s, &["studio", "d.json", "--collab-host", "alexio", "--port", "0"]);
+    assert!(!ok && t.contains("--collab-host") && t.contains("--collab-secret-file"), "{t}");
+    let now = osatura_core::clock::unix_seconds();
+    let host = osatura_core::collabauth::mint_token(SECRET, "alexio", now, 600).unwrap();
+    let ana = osatura_core::collabauth::mint_token(SECRET, "ana", now, 600).unwrap();
+    let port = free_port();
+    let _k = start_studio(&s, port, &["--collab-secret-file", "collab.secret", "--collab-host", "alexio", "--collab-rate", "0"]);
+    // an ordinary participant can read and edit ...
+    assert!(request(port, "GET", "/api/state", Some(&ana), "").starts_with("HTTP/1.1 200"));
+    // ... but save, compact and revoke are refused (403) and nothing is written
+    for (path, body) in [("/api/save", "{}"), ("/api/collab/compact", "{}"), ("/api/collab/revoke", "{\"names\":[\"alexio\"]}")] {
+        let r = request(port, "POST", path, Some(&ana), body);
+        assert!(r.starts_with("HTTP/1.1 403") && r.contains("--collab-host"), "{path}: {r}");
+    }
+    let before = std::fs::read_to_string(s.join("d.json")).unwrap();
+    // the host may
+    let r = request(port, "POST", "/api/save", Some(&host), "{}");
+    assert!(r.starts_with("HTTP/1.1 200") && r.contains("\"ok\":true"), "{r}");
+    assert!(std::fs::metadata(s.join("d.json")).is_ok() && !before.is_empty());
+    let r = request(port, "POST", "/api/collab/compact", Some(&host), "{}");
+    assert!(r.starts_with("HTTP/1.1 200"), "{r}");
+    // revoking takes effect at once for the next request of that name, and the host's own token keeps working
+    let r = request(port, "POST", "/api/collab/revoke", Some(&host), "{\"names\":[\"ana\"]}");
+    assert!(r.starts_with("HTTP/1.1 200") && r.contains("\"revoked\":[\"ana\"]"), "{r}");
+    let r = request(port, "GET", "/api/state", Some(&ana), "");
+    assert!(r.starts_with("HTTP/1.1 401") && r.contains("revoked"), "{r}");
+    assert!(request(port, "GET", "/api/state", Some(&host), "").starts_with("HTTP/1.1 200"));
+}
+
+#[test]
 fn h_frame_range_is_checked_by_dof_render_hdr_and_fx() {
     let s = ScratchDir::new("osatura-w7-frames");
     demo(&s);

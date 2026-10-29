@@ -166,6 +166,19 @@ pub fn track_chain(s: &SoundTrack, fps: f32, idx: usize, label: &str, file_len: 
     Ok(format!("[{idx}:a]{}[{label}]", f.join(",")))
 }
 
+/// The demuxer to force for a file whose extension names one of the formats the studio accepts (`.wav`, `.mp3`, `.ogg`).
+/// Without it ffmpeg probes the content and will open any container it knows (playlists, `concat` scripts, image
+/// sequences) under an audio name; with it a file that is not what its name says is refused. Other extensions keep
+/// ffmpeg's own detection. Used by every ffmpeg/ffprobe call that reads a sound file.
+pub fn forced_demuxer(path: &std::path::Path) -> Option<&'static str> {
+    match path.extension().and_then(|x| x.to_str()).map(|x| x.to_ascii_lowercase()).as_deref() {
+        Some("wav") => Some("wav"),
+        Some("mp3") => Some("mp3"),
+        Some("ogg") => Some("ogg"),
+        _ => None,
+    }
+}
+
 /// The whole mix as a pure function. `first_input` is the ffmpeg input number of the first audio
 /// file (1 when a video input comes first, 0 for audio only). `file_lens[i]` is the length of
 /// track i's file if known. `pad_to` (seconds) pads the result with silence to at least that length.
@@ -180,6 +193,10 @@ pub fn mux_plan(p: &Project, base_dir: &std::path::Path, first_input: usize, fil
         // only the plain file protocol: a file name such as http://... or concat:... is never fetched
         inputs.push("-protocol_whitelist".to_string());
         inputs.push("file".to_string());
+        if let Some(f) = forced_demuxer(&path) {
+            inputs.push("-f".to_string());
+            inputs.push(f.to_string());
+        }
         inputs.push("-i".to_string());
         inputs.push(path.to_string_lossy().into_owned());
         parts.push(track_chain(s, p.fps, first_input + i, &format!("a{i}"), file_lens.get(i).copied().flatten(), true)?);
@@ -209,7 +226,9 @@ pub fn file_duration(path: &std::path::Path) -> Option<f32> {
     // an absolute or ./-prefixed path never reads as a URL; only the file protocol is allowed
     let path = if path.is_absolute() || path.starts_with(".") { path.to_path_buf() } else { std::path::Path::new(".").join(path) };
     let out = std::process::Command::new("ffprobe")
-        .args(["-v", "error", "-protocol_whitelist", "file", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", "-i"])
+        .args(["-v", "error", "-protocol_whitelist", "file"])
+        .args(forced_demuxer(&path).map(|f| ["-f", f]).unwrap_or(["-hide_banner", "-hide_banner"]))
+        .args(["-show_entries", "format=duration", "-of", "default=nw=1:nk=1", "-i"])
         .arg(&path)
         .output()
         .ok()?;
@@ -228,7 +247,9 @@ pub fn check_file(base_dir: &std::path::Path, file: &str) -> Result<(), String> 
     }
     let arg = if path.is_absolute() || path.starts_with(".") { path.clone() } else { std::path::Path::new(".").join(&path) };
     match std::process::Command::new("ffprobe")
-        .args(["-v", "error", "-protocol_whitelist", "file", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", "-i"])
+        .args(["-v", "error", "-protocol_whitelist", "file"])
+        .args(forced_demuxer(&path).map(|f| ["-f", f]).unwrap_or(["-hide_banner", "-hide_banner"]))
+        .args(["-show_entries", "format=duration", "-of", "default=nw=1:nk=1", "-i"])
         .arg(&arg)
         .output()
     {
@@ -297,6 +318,19 @@ mod tests {
         assert!(!j.contains("sounds"), "empty list is not serialised");
     }
 
+    #[test]
+    fn the_demuxer_is_forced_only_for_the_three_accepted_extensions() {
+        let d = |f: &str| forced_demuxer(Path::new(f));
+        assert_eq!(d("a.wav"), Some("wav"));
+        assert_eq!(d("dir/B.WAV"), Some("wav"));
+        assert_eq!(d("a.Mp3"), Some("mp3"));
+        assert_eq!(d("a.ogg"), Some("ogg"));
+        assert_eq!(d("a.flac"), None);
+        assert_eq!(d("a.m3u"), None);
+        assert_eq!(d("wav"), None);
+        assert_eq!(d("a.wav.txt"), None);
+    }
+
     #[cfg(unix)] // asserts POSIX path separators
     #[test]
     fn filter_graph() {
@@ -304,11 +338,11 @@ mod tests {
         assert!(mux_plan(&p, Path::new("."), 1, &[], None).unwrap().is_none());
         add(&mut p, "a", "x.wav", 12.0, 0.5).unwrap();
         let m = mux_plan(&p, Path::new("/d"), 1, &[], None).unwrap().unwrap();
-        assert_eq!(m.inputs, vec!["-protocol_whitelist", "file", "-i", "/d/x.wav"]);
+        assert_eq!(m.inputs, vec!["-protocol_whitelist", "file", "-f", "wav", "-i", "/d/x.wav"]);
         assert!(m.filter.contains("adelay=500|500") && m.filter.contains("volume=0.5") && m.filter.ends_with("[aout]"));
         add(&mut p, "b", "sub/y.wav", 0.0, 1.0).unwrap();
         let m = mux_plan(&p, Path::new("/d"), 1, &[], None).unwrap().unwrap();
-        assert!(m.filter.contains("amix=inputs=2") && m.inputs[7] == "/d/sub/y.wav");
+        assert!(m.filter.contains("amix=inputs=2") && m.inputs[11] == "/d/sub/y.wav");
     }
 
     #[cfg(unix)] // asserts POSIX path separators
@@ -323,7 +357,7 @@ mod tests {
         // a project given as `p.json` has an empty parent: the URL must not reach ffmpeg as a bare string
         p.sounds[0].file = "http://example.invalid/a.wav".into();
         let m = mux_plan(&p, Path::new(""), 1, &[], None).unwrap().unwrap();
-        let input = &m.inputs[3];
+        let input = &m.inputs[5];
         assert!(input.starts_with("./"), "{input}");
         assert_eq!(&m.inputs[..2], ["-protocol_whitelist", "file"]);
     }

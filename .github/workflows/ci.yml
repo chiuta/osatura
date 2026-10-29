@@ -3,7 +3,10 @@
 #
 # Continuous integration for OSATURA. First fully green run: 2026-10-24 (ubuntu, windows, macos tests and
 # clippy with -D warnings, wasm32 build + Node test, cargo-deny, REUSE; gpu parity jobs are informational).
-# The toolchain is pinned so that new clippy lints do not break the build; bump it deliberately.
+# The toolchain is pinned in rust-toolchain.toml (single source of the version) so that new clippy lints do not break
+# the build; bump it deliberately. Linux jobs run on ubuntu-22.04 (glibc 2.35) so that the CI binaries have the same
+# floor as the release (docs/LIMITATIONS.md L-77).
+# There is deliberately no `paths-ignore`: a workflow that is skipped leaves a required status check pending forever.
 # See docs/DEVELOPMENT.md ("Continuous integration").
 name: ci
 
@@ -14,6 +17,11 @@ on:
 
 permissions:
   contents: read
+
+# A newer push to the same branch or pull request supersedes the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -26,13 +34,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-22.04, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.97.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v2
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       # osatura-gpu is outside the default members on purpose (it needs a GPU adapter); the workspace
       # commands below therefore cover core, cli, capi and wasm (host build).
       - name: Tests
@@ -63,20 +73,22 @@ jobs:
 
   wasm32:
     name: wasm32 build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.97.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
         with:
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install && rustup target add wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       - name: Build the wasm module
         run: cargo build --target wasm32-unknown-unknown -p osatura-wasm --locked
       - name: Put the module where the Node test looks for it (it then also runs its real-module part)
         run: cp target/wasm32-unknown-unknown/debug/osatura_wasm.wasm osatura-wasm/osatura_wasm.wasm
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 20
+          node-version: 22
       - name: JavaScript wrapper tests (host-side mock of the module)
         shell: bash
         run: |
@@ -84,36 +96,72 @@ jobs:
           cargo run -q -p osatura-cli --locked -- demo demo-ci.json
           node osatura-wasm/js/test.mjs demo-ci.json 2>&1 | tee js.log
           code=${PIPESTATUS[0]}
-          head -30 js.log | while IFS= read -r l; do echo "::error title=js-test::${l:0:900}"; done
+          if [ "$code" != 0 ]; then head -30 js.log | while IFS= read -r l; do echo "::error title=js-test::${l:0:900}"; done; fi
           exit $code
 
+  linux-static:
+    # The static (musl) Linux build of the release: core and CLI tests on musl, then the empty-chroot check.
+    name: linux static (musl)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+        with:
+          targets: x86_64-unknown-linux-musl
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install && rustup target add x86_64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: musl C toolchain
+        run: sudo apt-get install -y -qq musl-tools >/dev/null
+      - name: Tests on musl (osatura-core, osatura-cli)
+        run: cargo test --locked -p osatura-core -p osatura-cli --target x86_64-unknown-linux-musl
+      - name: Static binary runs with no system libraries
+        run: |
+          cargo build --locked -p osatura-cli --target x86_64-unknown-linux-musl
+          bash scripts/linux-static-check.sh target/x86_64-unknown-linux-musl/debug/osatura
+
   gpu-parity:
+    # Linux runs the tests against Mesa's software Vulkan (lavapipe) and treats "no adapter" as a failure
+    # (OSATURA_GPU_REQUIRE=1); the thresholds are in osatura-gpu/tests/parity.rs. macOS and Windows runners usually have
+    # no usable adapter: those legs stay informational. Remove continue-on-error for Linux after the first green run.
     name: gpu parity (${{ matrix.os }}, informational)
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-22.04, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.97.0
-      - uses: Swatinem/rust-cache@v2
-      - name: GPU parity tests (skip when no adapter is available)
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: Software Vulkan (lavapipe)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y -qq mesa-vulkan-drivers libvulkan1 >/dev/null
+      - name: GPU parity tests
         shell: bash
+        env:
+          OSATURA_GPU_REQUIRE: ${{ runner.os == 'Linux' && '1' || '' }}
         run: |
           set +e
           cargo test -p osatura-gpu --locked --no-fail-fast -- --nocapture 2>&1 | tee gpu.log
           code=${PIPESTATUS[0]}
-          grep -E -A3 'adapter|FAILED|panicked at|SKIP' gpu.log | grep -v '^--$' | head -60 | while IFS= read -r l; do echo "::warning title=gpu::${l:0:900}"; done
+          # The log goes to the job summary; annotations only for real failures.
+          { echo '### GPU parity'; echo '```'; grep -E 'adapter|SKIP|test result|FAILED|panicked' gpu.log | head -60; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" != 0 ]; then grep -E 'FAILED|panicked at|SKIP' gpu.log | head -20 | while IFS= read -r l; do echo "::warning title=gpu::${l:0:900}"; done; fi
           exit $code
 
   licences:
     name: cargo-deny and REUSE
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.97.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       - name: cargo-deny
         shell: bash
         run: |

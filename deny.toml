@@ -3,8 +3,12 @@
 [graph]
 all-features = true
 # The window toolkit (wry / tao) is only a dependency on Windows and macOS (see osatura-gui/Cargo.toml); its Linux-only
-# GTK dependencies are therefore not part of what ships. Judge the three platforms that are built.
-targets = ["x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc", "aarch64-apple-darwin"]
+# GTK dependencies are therefore not part of what ships. Judge every target that is built and shipped: the three
+# platform archives, the static Linux (musl) archive and the WebAssembly module.
+targets = [
+  "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc", "aarch64-apple-darwin",
+  "x86_64-unknown-linux-musl", "wasm32-unknown-unknown",
+]
 
 [licenses]
 confidence-threshold = 0.9
@@ -31,8 +35,25 @@ exceptions = [
 # Anything else (GPL, LGPL, AGPL, EUPL, ...) is denied by default because it is not in `allow`.
 
 [bans]
+# Two versions of one crate are common in a tree this size and are not a risk by themselves.
 multiple-versions = "allow"
-wildcards = "allow"
+# A path dependency inside the workspace is fine; `*` requirements on registry crates are not.
+wildcards = "deny"
+allow-wildcard-paths = true
+# The programs send nothing over the network unless the user asks (PRIVACY.md); the studio and the collaboration server
+# use the standard library's sockets and a small HTTP/1.1 parser of our own (docs/SECURITY.md). An HTTP client or
+# a TLS stack must not enter the tree by accident: adding one is a deliberate change that removes its line here and
+# updates PRIVACY.md and docs/SECURITY.md in the same pull request.
+deny = [
+  { name = "reqwest" },
+  { name = "ureq" },
+  { name = "hyper" },
+  { name = "openssl" },
+  { name = "openssl-sys" },
+  { name = "native-tls" },
+  { name = "rustls" },
+  { name = "tokio-native-tls" },
+]
 
 [sources]
 unknown-registry = "deny"
@@ -40,9 +61,15 @@ unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 
 [advisories]
-# RUSTSEC-2026-0249: `smartstring` is unmaintained (repository archived 2026-05-03); it is a dependency of
-# `rhai`, the optional scripting engine (cargo feature `scripting`, default-on, can be disabled). It is a
-# maintenance notice, not a vulnerability. Revisit when rhai drops it or when the scripting feature is replaced.
-# RUSTSEC-2024-0370: `proc-macro-error` is unmaintained; it is a build-time proc-macro dependency of the window
-# toolkit stack (wry / tao), not a vulnerability and not linked into the binaries. Revisit on toolkit upgrades.
-ignore = ["RUSTSEC-2026-0249", "RUSTSEC-2024-0370"]
+# A yanked release is withdrawn by its author, usually because of a defect or a vulnerability: refuse it.
+yanked = "deny"
+# Unmaintained crates are judged for the workspace's own direct dependencies only. Known transitive notices (not
+# vulnerabilities), reviewed by 2026-12-01 or on the related upgrade, and therefore not listed as ignores because
+# `workspace` mode does not report them: RUSTSEC-2026-0249 (`smartstring`, via rhai, optional `scripting` feature) and
+# RUSTSEC-2024-0370 (`proc-macro-error`, build-time only, via the window toolkit wry/tao). If the mode is ever changed
+# to `all`, add them here with a reason and a review date.
+unmaintained = "workspace"
+# An ignore that no longer matches anything is a stale entry: fail so that it is removed.
+unused-ignored-advisory = "deny"
+# Each ignore carries its reason and a review date. None at present.
+ignore = []

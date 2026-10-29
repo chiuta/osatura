@@ -26,7 +26,7 @@ fn ctx() -> Option<&'static GpuContext> {
             None
         }
     });
-    if c.is_none() && std::env::var("OSATURA_GPU_REQUIRE").is_ok() {
+    if c.is_none() && std::env::var("OSATURA_GPU_REQUIRE").map(|v| !v.is_empty() && v != "0").unwrap_or(false) {
         panic!("OSATURA_GPU_REQUIRE is set but no adapter is available");
     }
     c.as_ref()
