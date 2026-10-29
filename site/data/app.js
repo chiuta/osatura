@@ -12,7 +12,7 @@ function applyLang(){
   const pre=!applyLang.ran&&(window.OSA_LANG||'en')===L;applyLang.ran=true;
   if(!pre){$$('[data-i]').forEach(e=>{e.innerHTML=t[e.dataset.i]});
   $('#vy').innerHTML=t.vy.map(x=>`<li>${x}</li>`).join('');$('#vx').innerHTML=t.vx.map(x=>`<li>${x}</li>`).join('');}
-  $$('[data-ph]').forEach(e=>e.placeholder=t[e.dataset.ph]);
+  $$('[data-ph]').forEach(e=>{e.placeholder=t[e.dataset.ph];e.setAttribute('aria-label',t[e.dataset.ph])});
   $$('[data-al]').forEach(e=>{if(t[e.dataset.al])e.setAttribute('aria-label',t[e.dataset.al])});$$('.pt').forEach(e=>e.title=t.tiPartial||'partial');
   // accessible names must contain the visible text (WCAG 2.5.3)
   ['#lang','#rlang'].forEach(s=>$(s).setAttribute('aria-label',t.alLang+': '+L.toUpperCase()));
@@ -396,11 +396,12 @@ function openDoc(id,anchor){
   if(anchor){const el=document.getElementById(anchor);el&&setTimeout(()=>el.scrollIntoView({block:'start'}),30)}
   spy();
 }
-function closeReader(){rd.classList.remove('on');document.body.classList.remove('rd');cur=null;document.title=T[L].metaTitle}
+let rdOpener=null;
+function closeReader(){const wasOn=rd.classList.contains('on');rd.classList.remove('on');if(wasOn&&rdOpener&&document.contains(rdOpener)&&rdOpener!==document.body)try{rdOpener.focus({preventScroll:true})}catch(e){}rdOpener=null;document.body.classList.remove('rd');cur=null;document.title=T[L].metaTitle}
 function route(){
   if(!D)return;
   const m=location.hash.match(/^#\/d\/([^\/]+)(?:\/(.+))?$/);
-  if(m){const id=decodeURIComponent(m[1]);if(D.docs[id])return openDoc(id,m[2]&&decodeURIComponent(m[2]))}
+  if(m){if(!rd.classList.contains('on'))rdOpener=document.activeElement;const dec=x=>{try{return decodeURIComponent(x)}catch(e){return null}};const id=dec(m[1]),sec=m[2]?dec(m[2]):'';if(id!==null&&Object.prototype.hasOwnProperty.call(D.docs,id))return openDoc(id,sec||undefined)}
   if(rd.classList.contains('on'))closeReader();
 }
 addEventListener('hashchange',route);
