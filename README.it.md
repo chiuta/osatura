@@ -10,6 +10,8 @@
 
 *Cosa produce: la persona che cammina incorporata, esportata con `osatura demo-person` e `osatura export` (l'intero progetto è un unico file JSON). Provalo in due minuti: [docs/GETTING_STARTED.md](docs/i18n/it/GETTING_STARTED.md).*
 
+**[Politica di firma del codice](CODE_SIGNING_POLICY.md)** · [Privacy](PRIVACY.md) · [Download](#download)
+
 ## Sintesi e filosofia
 
 OSATURA permette di costruire un personaggio o una scena a partire da forme vettoriali e immagini, di dotarlo di rig con ossa e vincoli, di animarlo con chiavi, clip e fisica e di esportarlo come GIF, video, Lottie, glTF, un player HTML autonomo o un runtime interattivo. È composto da piccoli elementi deterministici: lo stesso progetto e lo stesso seed producono gli stessi pixel, ogni strumento legge e scrive un progetto JSON documentato e ogni comando funziona da terminale, quindi l'animazione può essere scritta in script, rivista, confrontata con diff e testata come il codice sorgente.
@@ -26,13 +28,22 @@ Principi che danno forma al progetto:
 
 *Nome: il progetto si chiamava ARMATURA fino al 24 ott 2026 ed è stato rinominato OSATURA dopo una ricerca di marchio ([docs/LIMITATIONS.md](docs/i18n/it/LIMITATIONS.md) L-78). Sono stati rinominati anche il repository e l'indirizzo del sito (i vecchi link al repository reindirizzano).*
 
-> **Alpha. Prime build preparate come pre-release in bozza: `v0.1.0-alpha.3`.** Gli eseguibili per Windows x86-64, macOS arm64 e Linux x86-64 e il modulo WebAssembly sono compilati da GitHub Actions e allegati a una pre-release *in bozza* su <https://github.com/chiuta/osatura/releases> (una bozza è visibile solo al proprietario finché non viene pubblicata a mano). Tutti i crate sono ancora alla versione `0.1.0`; "v0.5 / v0.6 / v0.7" sono *livelli di funzionalità* nella cronologia, non numeri di release ([CHANGELOG.md](docs/i18n/it/CHANGELOG.md)).
+> **Alpha. Ultima pre-release pubblicata: `v0.1.0-alpha.4`; la prossima è `v0.1.0-alpha.5`.** Gli eseguibili per Windows x86-64, macOS arm64 e Linux x86-64 e il modulo WebAssembly sono compilati da GitHub Actions e allegati a una pre-release *in bozza* su <https://github.com/chiuta/osatura/releases> (una bozza è visibile solo al proprietario finché non viene pubblicata a mano). Tutti i crate sono ancora alla versione `0.1.0`; "v0.5 / v0.6 / v0.7" sono *livelli di funzionalità* nella cronologia, non numeri di release ([CHANGELOG.md](docs/i18n/it/CHANGELOG.md)).
 >
 > | Verificato | Non verificato |
 > |---|---|
 > | **In locale (Linux x86-64, 24 ott 2026):** 1343 test di `cargo test --workspace --exclude osatura-gpu --exclude osatura-gui` più 19 doc-test superati (il crate GPU richiede un adattatore e il crate della finestra un desktop; prima il conteggio che includeva il crate GPU era 1368). **Su GitHub Actions (24 ott 2026, toolchain 1.97.0):** la suite di test e `clippy -D warnings` passano su Linux, macOS (arm64) e Windows; `cargo deny` e `reuse lint` passano; il modulo WebAssembly viene compilato per `wasm32-unknown-unknown` e il test del wrapper passa sul modulo reale con Node 20; i binari di release superano uno smoke test (`--version`, `demo`, `check`, `render`) e `osatura-studio --selftest` viene eseguito su Windows e macOS. Cinque smoke test dello studio in Chromium headless superati in locale (la CI non li esegue); la CLI, la facciata Rust e la C ABI (anche con ASan/UBSan) sono state eseguite con gli esempi della documentazione | **Nessuna persona ha usato gli eseguibili su un vero desktop Windows o macOS**: il launcher a doppio clic di Windows e l'app a finestra `osatura-studio` (WebView2 / WKWebView) sono stati solo compilati e auto-testati in CI; i binari **non sono firmati** (SmartScreen "Editore sconosciuto", Gatekeeper di macOS); il binario Linux è stato compilato solo su un runner Ubuntu; **il modulo WebAssembly è stato eseguito solo in Chromium headless** (Firefox e Safari non sono stati provati; circa 73 ms per fotogramma 640x480 senza GPU); lo studio non è mai stato usato in produzione da una persona né in un browser diverso da Chromium; non è mai stata usata una vera GPU (solo un adattatore software), né una webcam, una fotografia o un file di motion capture reali; nessun audit di sicurezza, revisione legale o ricerca di brevetti |
 >
 > Leggi [docs/LIMITATIONS.md](docs/i18n/it/LIMITATIONS.md) (78 limiti numerati, con gravità e soluzione alternativa) prima di fare affidamento su qualsiasi cosa.
+
+## Demo online ed esempi di animazione
+
+* **Demo online (nel browser, ospitata): prevista.** Oggi non esiste alcuna demo ospitata e quindi nessun indirizzo web da indicare. Fino ad allora puoi provare lo studio in locale (`osatura studio demo.json --port 8080`, vedi Avvio rapido) oppure, quando esisterà una release, con l'archivio `osatura-web.tar.gz`; la pagina demo WebAssembly finora è stata caricata solo in Chromium headless senza il file `.wasm` ([docs/WASM.md](docs/i18n/it/WASM.md)), quindi non aspettarti un rendering nel browser verificato.
+* **Esempi di animazione presenti in questo repository** (controllati nell'elenco dei file, non rigenerati in questa revisione):
+  * [`docs/img/walk.gif`](docs/img/walk.gif): la persona che cammina incorporata, output reale di `osatura export` (l'immagine in cima a questa pagina); [`docs/img/walk-cycle.png`](docs/img/walk-cycle.png): lo stesso ciclo come sheet.
+  * [`docs/examples/pip.svg`](docs/examples/pip.svg) e [`docs/examples/pip-rig.rhai`](docs/examples/pip-rig.rhai): un disegno e lo script che ne fa il rig e gli dà un ciclo di camminata, usati passo per passo in [docs/TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) (risultato: [`docs/img/tutorial-svg-walk.png`](docs/img/tutorial-svg-walk.png)).
+  * `osatura demo` (demo del rig, 48 fotogrammi) e `osatura demo-fx` (liquido, booleane, particelle) generano file di progetto che puoi renderizzare ed esportare da solo.
+  * Altri esempi animati: non ancora aggiunti (previsti).
 
 ## Maturità: da dove cominciare
 
@@ -46,17 +57,19 @@ OSATURA ha molte più funzioni di quante una persona sola possa validare. La tab
 
 ## Download
 
-Gli archivi precompilati, una volta che il proprietario avrà pubblicato la release in bozza, si trovano nella [pagina Releases](https://github.com/chiuta/osatura/releases) del progetto:
+Gli archivi precompilati, una volta che il proprietario avrà pubblicato la release in bozza, si trovano nella [pagina Releases](https://github.com/chiuta/osatura/releases) del progetto. **[Politica di firma del codice](CODE_SIGNING_POLICY.md)** · [Privacy](PRIVACY.md) (i programmi non inviano nulla in rete se non glielo chiedi) · [Disinstallazione](docs/UNINSTALL.md) · [Verificare un download](docs/VERIFY_DOWNLOADS.md)
 
 | Archivio | Contenuto |
 |---|---|
 | `osatura-windows-x86_64.zip` | `osatura.exe` (riga di comando + server dello studio), `osatura-studio.exe` (app a finestra), libreria C e header, licenze, avvisi di terze parti |
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (solo Apple silicon), libreria C e header, licenze, avvisi |
-| `osatura-linux-x86_64.tar.gz` | `osatura`, libreria C e header, licenze, avvisi (nessuna app a finestra: usa `osatura studio` e un browser) |
+| `osatura-linux-x86_64.tar.gz` | `osatura`, libreria C e header, licenze, avvisi (nessuna app a finestra: usa `osatura studio` e un browser); richiede glibc 2.35+ (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
+| `osatura-linux-x86_64-musl.tar.gz` | `osatura` statico (musl libc, nessuna libreria di sistema necessaria) per distribuzioni più vecchie come RHEL/Rocky/Alma 8 e 9, Debian 10 e 11, Ubuntu 20.04; senza libreria C; circa 5-50 % più lento della build glibc. **Non presente in alpha.4**: parte con la prossima release |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, `index.html` demo (eseguito solo in Chromium headless, vedi [docs/WASM.md](docs/i18n/it/WASM.md)) |
 | `SHA256SUMS.txt` | verifica ogni download con questo file |
+| `*.sigstore.json` | firma Sigstore di ciascun file ([docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md)) |
 
-* **Windows:** fai doppio clic su `osatura.exe` per creare `Documents\OSATURA\first-rig.json` e aprire lo studio nel browser, oppure doppio clic su `osatura-studio.exe` per una finestra tutta sua. Entrambi i programmi non sono firmati: in SmartScreen scegli *Ulteriori informazioni* e poi *Esegui comunque*. Vedi [docs/GETTING_STARTED.md](docs/i18n/it/GETTING_STARTED.md).
+* **Windows:** fai doppio clic su `osatura.exe` per creare `Documents\OSATURA\first-rig.json` (la demo della persona che cammina: testa con orecchio, mani con dita, piedi con dita dei piedi) e aprire lo studio nel browser, oppure doppio clic su `osatura-studio.exe` per una finestra tutta sua. Entrambi i programmi non sono ancora firmati con Authenticode ([Politica di firma del codice](CODE_SIGNING_POLICY.md)): in SmartScreen scegli *Ulteriori informazioni* e poi *Esegui comunque*. Non viene installato nulla: per rimuovere OSATURA elimina la cartella e i file indicati in [docs/UNINSTALL.md](docs/UNINSTALL.md). Vedi [docs/GETTING_STARTED.md](docs/i18n/it/GETTING_STARTED.md).
 * **macOS:** la prima volta approva il programma in *Impostazioni di Sistema > Privacy e sicurezza*.
 * **Sorgenti:** ogni archivio indica il commit da cui è stato compilato; le parti AGPL sono servite con la relativa offerta dei sorgenti (`osatura --version`, `/source`).
 
@@ -153,6 +166,7 @@ Parti da [docs/INDEX.md](docs/i18n/it/INDEX.md) (tutti i documenti, i destinatar
 | [docs/CI.md](docs/i18n/it/CI.md) | CI dell'animazione |
 | [docs/DEVELOPMENT.md](docs/i18n/it/DEVELOPMENT.md) | build, test, convenzioni, release |
 | [docs/SECURITY.md](docs/i18n/it/SECURITY.md) | modello delle minacce e hardening |
+| [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [PRIVACY.md](PRIVACY.md) · [docs/UNINSTALL.md](docs/UNINSTALL.md) | politica di firma del codice, privacy, disinstallazione |
 | [docs/LIMITATIONS.md](docs/i18n/it/LIMITATIONS.md) | limiti noti |
 | [docs/PATENT_NOTES.md](docs/i18n/it/PATENT_NOTES.md), [docs/THIRD_PARTY.md](docs/i18n/it/THIRD_PARTY.md), [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) | brevetti, licenze delle dipendenze |
 | [CHANGELOG.md](docs/i18n/it/CHANGELOG.md), [ROADMAP.md](docs/i18n/it/ROADMAP.md), [FEATURES.md](docs/i18n/it/FEATURES.md) | cronologia, piano e stato dettagliato, matrice delle funzionalità |
