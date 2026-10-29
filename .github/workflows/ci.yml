@@ -36,7 +36,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
         with:
           components: clippy
@@ -75,7 +75,7 @@ jobs:
     name: wasm32 build
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
         with:
           targets: wasm32-unknown-unknown
@@ -86,7 +86,7 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown -p osatura-wasm --locked
       - name: Put the module where the Node test looks for it (it then also runs its real-module part)
         run: cp target/wasm32-unknown-unknown/debug/osatura_wasm.wasm osatura-wasm/osatura_wasm.wasm
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
       - name: JavaScript wrapper tests (host-side mock of the module)
@@ -104,7 +104,7 @@ jobs:
     name: linux static (musl)
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
         with:
           targets: x86_64-unknown-linux-musl
@@ -132,7 +132,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
       - name: Toolchain from rust-toolchain.toml
         run: rustup toolchain install
@@ -157,7 +157,7 @@ jobs:
     name: cargo-deny and REUSE
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
       - name: Toolchain from rust-toolchain.toml
         run: rustup toolchain install

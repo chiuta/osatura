@@ -38,7 +38,7 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -77,7 +77,7 @@ jobs:
           - { name: macos-arm64, os: macos-latest, exe: osatura, lib: libosatura_capi.dylib, slib: libosatura_capi.a }
           - { name: windows-x86_64, os: windows-latest, exe: osatura.exe, lib: osatura_capi.dll, slib: osatura_capi.lib }
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
       - name: Toolchain from rust-toolchain.toml
         run: rustup toolchain install
@@ -142,7 +142,7 @@ jobs:
           printf 'OSATURA binaries: osatura (CLI + studio) is AGPL-3.0-or-later; the C library is MPL-2.0.\nCorresponding source: https://github.com/chiuta/osatura at the commit/tag of this build (%s).\n' "$GITHUB_SHA" > $d/SOURCE.txt
           if [ "${{ runner.os }}" = "Windows" ]; then 7z a $d.zip $d >/dev/null; else tar czf $d.tar.gz $d; fi
           ls -la $d.*
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: osatura-${{ matrix.name }}
           path: |
@@ -158,7 +158,7 @@ jobs:
     needs: [guard]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
         with:
           targets: x86_64-unknown-linux-musl
@@ -193,7 +193,7 @@ jobs:
           cp /usr/share/doc/musl/copyright $d/MUSL-COPYRIGHT.txt
           tar czf $d.tar.gz $d
           ls -la $d.tar.gz
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: osatura-linux-x86_64-musl
           path: osatura-linux-x86_64-musl.tar.gz
@@ -205,7 +205,7 @@ jobs:
     needs: [guard]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
         with:
           targets: wasm32-unknown-unknown
@@ -225,7 +225,7 @@ jobs:
           printf 'Module: MPL-2.0. Source: https://github.com/chiuta/osatura at %s\n' "$GITHUB_SHA" > $d/SOURCE.txt
           ls -la $d/osatura_wasm.wasm | tee wasm-size.txt
           tar czf osatura-web.tar.gz $d
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: osatura-web
           path: osatura-web.tar.gz
@@ -270,7 +270,7 @@ jobs:
           ls -la signed
           cd signed && unzip -q osatura-windows-x86_64.zip && sudo apt-get install -y -qq osslsigncode >/dev/null
           for f in osatura.exe osatura-studio.exe lib/osatura_capi.dll; do osslsigncode verify -in "osatura-windows-x86_64/$f" | grep -E "Signer|Subject:" | head -2; done
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: osatura-windows-x86_64
           path: signed/osatura-windows-x86_64.zip
@@ -292,11 +292,11 @@ jobs:
       id-token: write       # mint the OIDC token for the Sigstore certificate
       attestations: write   # store the build-provenance attestations on GitHub
     steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: dist
           merge-multiple: true
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: src
           persist-credentials: false
@@ -341,7 +341,7 @@ jobs:
             echo "verified: $f"
           done
           sha256sum -c SHA256SUMS.txt
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: osatura-signed
           path: dist/
@@ -356,7 +356,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: osatura-signed
           path: dist
