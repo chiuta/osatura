@@ -222,7 +222,8 @@ const GROUPS=['start','use','build','trust','project'];
 const gname=g=>T[L]['g'+g[0].toUpperCase()+g.slice(1)];
 const gcol=g=>`var(--g-${g})`;
 let D=null,IDX=[],EDGES=[];
-const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nocmt=s=>{let p;do{p=s;s=s.replace(/<!--[\s\S]*?-->/g,'')}while(s!==p);return s};
 const plain=s=>s.replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/[`*]/g,'').replace(/(^|\W)_(.+?)_(?=\W|$)/g,'$1$2').trim();
 const slugify=s=>s.toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu,'').trim().replace(/\s/g,'-');
 const uniq=(seen,s)=>{const n=seen[s]=(seen[s]??-1)+1;return n?s+'-'+n:s};
@@ -242,7 +243,7 @@ function emph(s){return s.replace(/\*\*([\s\S]+?)\*\*/g,'<strong>$1</strong>').r
 function inline(s,ctx){
   const st=[],stash=h=>{st.push(h);return '\u0000'+(st.length-1)+'\u0000'};
   s=s.replace(/(`+)([\s\S]*?[^`])\1(?!`)/g,(m,a,c)=>stash('<code>'+esc(c.trim())+'</code>'));
-  s=esc(s.replace(/<!--[\s\S]*?-->/g,''));
+  s=esc(nocmt(s));
   s=s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;[^)]*&quot;)?\)/g,(m,alt,src)=>{
     const n=src.split('/').pop();return stash(picture(n,alt,'loading="lazy" decoding="async"'))});
   s=s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(m,t,h)=>{
@@ -433,7 +434,7 @@ function buildIndex(){
   IDX=[];
   D.order.forEach(id=>{
     const d=D.docs[id],lines=d.md.split('\n'),o=outline(d.md);
-    const mk=(h,a,from,to)=>{const tx=lines.slice(from,to).join('\n').replace(/<!--[\s\S]*?-->/g,'');IDX.push({id,h,a,tx,tl:tx.toLowerCase(),hl:h.toLowerCase()})};
+    const mk=(h,a,from,to)=>{const tx=nocmt(lines.slice(from,to).join('\n'));IDX.push({id,h,a,tx,tl:tx.toLowerCase(),hl:h.toLowerCase()})};
     if(!o.length)mk(d.t,'',0,lines.length);
     else{if(o[0].i>0)mk(d.t,'',0,o[0].i);o.forEach((s,k)=>mk(s.t,s.a,s.i+1,k+1<o.length?o[k+1].i:lines.length))}
   });
@@ -811,13 +812,13 @@ const el={dv:$('#dv'),steps:$('#dsteps'),play:$('#dplay'),scrub:$('#dscrub'),fr:
   tabT:$('#dtabT'),tabS:$('#dtabS'),term:$('#dterm'),prev:$('#dprev'),next:$('#dnext'),auto:$('#dauto'),note:$('#dnote')};
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const framesOf=s=>s.frames||(s.same?S.find(x=>x.id===s.same).frames:null);
-const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let si=0,fi=0,playing=false,auto=false,tab='t',raf=0,last=0,typeTok=0,autoTimer=0,seen=new Set([0]),vis=false,intro=false;
 const tt=k=>T[L][k];
 const fmt=(k,o)=>tt(k).replace(/\{(\w+)\}/g,(_,x)=>o[x]);
 
 function showFrame(i){const f=framesOf(S[si]);fi=i;
-  el.dv.innerHTML=f?f[i]:S[si].still||'';
+  el.dv.replaceChildren(...new DOMParser().parseFromString(f?f[i]:S[si].still||'','text/html').body.childNodes);
   el.scrub.value=i;el.fr.textContent=f?fmt('dFrame',{n:i,m:f.length-1}):'';}
 function stopAnim(){playing=false;cancelAnimationFrame(raf);el.play.textContent=tt('dPlay');el.play.setAttribute('aria-pressed','false')}
 function startAnim(){const f=framesOf(S[si]);if(!f)return;playing=true;last=0;el.play.textContent=tt('dPause');el.play.setAttribute('aria-pressed','true');
