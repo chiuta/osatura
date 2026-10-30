@@ -37,6 +37,7 @@ input[type=range]{flex:1;min-width:160px;accent-color:var(--a)}
 <header><div><h1 data-t="h1">Try OSATURA in your browser</h1>
 <p class="mut" data-t="lead">The real engine compiled to WebAssembly: every frame below is rendered by it, on your machine. Nothing is uploaded.</p></div>
 <a href="../" id="home">← osatura.chiuta.ro</a></header>
+<main>
 <div class="stage" id="stage" aria-live="polite"><p class="mut" id="loading" data-t="loading">Loading the engine (≈ 3 MB)…</p></div>
 <div class="bar">
 <button class="pri" id="play" disabled>Pause</button>
@@ -46,6 +47,7 @@ input[type=range]{flex:1;min-width:160px;accent-color:var(--a)}
 </div>
 <p id="info"></p><p id="perf" class="mut"></p><p id="err" role="alert"></p>
 <p class="note" data-th="note">Experimental. This page runs the <code>osatura-web</code> package of the <a href="https://github.com/chiuta/osatura/releases">latest prerelease</a>; speed and memory use have not been measured. To create projects use the command-line tool or the studio (<a href="https://github.com/chiuta/osatura/blob/main/docs/GETTING_STARTED.md">getting started</a>). Module licence MPL-2.0, <a href="SOURCE.txt">source</a>; demo character CC-BY-4.0.</p>
+</main>
 </div>
 <script type="module" src="try.js"></script>
 </body></html>
