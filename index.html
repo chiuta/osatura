@@ -457,9 +457,9 @@ body.rd{overflow:hidden}
     <li><a href="#studio" data-i="nStudio">Studio</a></li><li><a href="#cli" data-i="nCli">CLI</a></li><li><a href="#status" data-i="n5">Status</a></li>
   </ul>
   <div class="tools">
-    <button class="ib" id="navsearch"><span class="sr" data-i="alSearch">Search the documentation</span> Ctrl K</button>
-    <button class="ib" id="lang" aria-haspopup="true" aria-label="Language: EN" data-al="alLang">EN ▾</button>
-    <button class="ib" id="theme" aria-label="Theme" data-al="alTheme">◐</button>
+    <button type="button" class="ib" id="navsearch"><span class="sr" data-i="alSearch">Search the documentation</span> Ctrl K</button>
+    <button type="button" class="ib" id="lang" aria-haspopup="true" aria-label="Language: EN" data-al="alLang">EN ▾</button>
+    <button type="button" class="ib" id="theme" aria-label="Theme" data-al="alTheme">◐</button>
     <a class="ib gh" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" aria-label="OSATURA on GitHub" data-al="alGh">GitHub</a>
   </div>
 </div></nav>
@@ -476,10 +476,11 @@ body.rd{overflow:hidden}
       <a class="btn" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" data-i="cta2">View on GitHub</a>
       <a class="btn" href="#docs" data-i="cta3">Read the docs</a>
     </div>
-    <div class="install"><small data-i="instSrc">or build from source:</small><span><b>$</b> git clone https://github.com/chiuta/osatura &amp;&amp; cargo build -p osatura-cli</span><button id="copy" data-i="copy">copy</button></div>
+    <div class="install"><small data-i="instSrc">or build from source:</small><span><b>$</b> git clone https://github.com/chiuta/osatura &amp;&amp; cargo build -p osatura-cli</span><button type="button" id="copy" data-i="copy">copy</button></div>
   </div>
   <div class="hint" data-i="hint">MOVE THE CURSOR · THE RIG FOLLOWS</div>
 </header>
+<main id="main">
 
 <section id="play"><div class="wrap">
   <div class="eyebrow rv" data-i="pe">Interactive playground</div>
@@ -488,10 +489,10 @@ body.rd{overflow:hidden}
   <div class="stage rv">
     <canvas id="pg" role="img" aria-label="Interactive FABRIK inverse-kinematics chain that follows the pointer" data-al="alFabrik"></canvas>
     <div class="panel">
-      <div class="seg" id="mode"><button data-m="skin" data-i="mSkin">skin</button><button data-m="both" class="on" data-i="mBoth">skin + bones</button><button data-m="bones" data-i="mBones">bones</button></div>
+      <div class="seg" id="mode"><button type="button" data-m="skin" data-i="mSkin">skin</button><button type="button" data-m="both" class="on" data-i="mBoth">skin + bones</button><button type="button" data-m="bones" data-i="mBones">bones</button></div>
       <div class="sl"><span data-i="lBones">bones</span><input type="range" id="nb" aria-label="Number of bones" data-al="alBones" min="2" max="9" value="5"><b id="nbv">5</b></div>
-      <div class="seg" id="spring"><button data-s="0" data-i="sDirect">direct</button><button data-s="1" class="on" data-i="sSpring">spring</button></div>
-      <div class="seg" id="auto"><button data-a="1" data-i="aAuto">auto</button><button data-a="0" class="on" data-i="aMouse">pointer</button></div>
+      <div class="seg" id="spring"><button type="button" data-s="0" data-i="sDirect">direct</button><button type="button" data-s="1" class="on" data-i="sSpring">spring</button></div>
+      <div class="seg" id="auto"><button type="button" data-a="1" data-i="aAuto">auto</button><button type="button" data-a="0" class="on" data-i="aMouse">pointer</button></div>
     </div>
     <div class="note" data-i="pn">drag or hover on the canvas</div>
   </div>
@@ -568,7 +569,7 @@ body.rd{overflow:hidden}
     <div class="stat"><b id="sS">–</b><span data-i="dsS">searchable sections</span></div>
     <div class="stat"><b id="sL">–</b><span data-i="dsL">cross-references between docs</span></div>
   </div>
-  <button class="sbtn rv" id="openpal"><span>⌕</span><span data-i="dsearch">Search every document, command and limitation…</span><kbd>Ctrl K</kbd></button>
+  <button type="button" class="sbtn rv" id="openpal"><span>⌕</span><span data-i="dsearch">Search every document, command and limitation…</span><kbd>Ctrl K</kbd></button>
 
   <h3 class="h3s rv" data-i="cstH">The documentation constellation</h3>
   <p class="lead rv" data-i="cstP">Each star is a document, sized by how many others point to it; lines are real links found in the Markdown. Hover to see neighbours, drag to rearrange, click to read.</p>
@@ -608,7 +609,7 @@ body.rd{overflow:hidden}
   <p class="lead rv" data-i="op">Open formats first: no proprietary file format is read or written, by design.</p>
   <div class="flow rv">
     <div class="node"><small>01</small><h3 data-i="f1h">Project</h3><p data-i="f1p">A documented JSON file. Diffable, reviewable, scriptable.</p></div>
-    <div class="node"><small>02</small><h3 data-i="f2h">Check & lint</h3><p data-i="f2p">Static rig and animation checks, safety checks for flashing and motion.</p></div>
+    <div class="node"><small>02</small><h3 data-i="f2h">Check &amp; lint</h3><p data-i="f2p">Static rig and animation checks, safety checks for flashing and motion.</p></div>
     <div class="node"><small>03</small><h3 data-i="f3h">Evaluate</h3><p data-i="f3p">A pure evaluate(frame): same project and seed, same pixels.</p></div>
     <div class="node"><small>04</small><h3 data-i="f4h">Export</h3><p data-i="f4p">Images, video, vector, web and 3D interchange.</p></div>
   </div>
@@ -652,7 +653,7 @@ body.rd{overflow:hidden}
   <input class="srch" id="lsrch" type="search" autocomplete="off" data-ph="lxph" placeholder="search limits…">
   <div class="cnt" id="lcnt"></div>
   <div id="llist"></div>
-  <button class="btn more" id="lmore" style="display:none"></button>
+  <button type="button" class="btn more" id="lmore" style="display:none"></button>
 
 </div></section>
 
@@ -695,6 +696,7 @@ body.rd{overflow:hidden}
     <a href="mailto:alexio@trom.tf">alexio@trom.tf</a><small class="who" data-i="supWho">Both donation pages and the address belong to the author, Alexio.</small></div>
 </div></section>
 
+</main>
 <footer><div class="wrap">
   <p>© 2026 Alexandru-Ionuț Chiuță (Alexio) · OSATURA</p>
   <p><a href="https://github.com/chiuta/osatura/blob/main/CODE_SIGNING_POLICY.md" target="_blank" rel="noopener">Code signing policy</a> · <a href="https://github.com/chiuta/osatura/blob/main/PRIVACY.md" target="_blank" rel="noopener">Privacy</a> · <a href="https://github.com/chiuta/osatura/blob/main/docs/UNINSTALL.md" target="_blank" rel="noopener">Uninstall</a></p>
@@ -709,23 +711,23 @@ body.rd{overflow:hidden}
 <div id="reader">
   <div id="rbar"></div>
   <div class="rh">
-    <button class="ib" id="rmenu" aria-label="Menu" data-al="alMenu">☰</button>
+    <button type="button" class="ib" id="rmenu" aria-label="Menu" data-al="alMenu">☰</button>
     <a class="logo" href="#top"><svg viewBox="0 0 32 32" style="width:22px;height:22px"><path d="M6 26L14 16L26 8" stroke="var(--a)" stroke-width="3" stroke-linecap="round" fill="none"/><g fill="var(--c)"><circle cx="6" cy="26" r="3.2"/><circle cx="14" cy="16" r="3.2"/><circle cx="26" cy="8" r="3.2"/></g></svg>DOCS</a>
     <span class="path" id="rpath"></span><span class="sp"></span>
-    <button class="ib" id="rsearch"><span class="sr" data-i="alSearch">Search the documentation</span> Ctrl K</button>
-    <button class="ib" id="rlang" aria-haspopup="true" aria-label="Language: EN" data-al="alLang">EN ▾</button>
-    <button class="ib" id="rtheme" aria-label="Theme" data-al="alTheme">◐</button>
-    <button class="ib" id="rclose" aria-label="Close" data-al="alClose">✕</button>
+    <button type="button" class="ib" id="rsearch"><span class="sr" data-i="alSearch">Search the documentation</span> Ctrl K</button>
+    <button type="button" class="ib" id="rlang" aria-haspopup="true" aria-label="Language: EN" data-al="alLang">EN ▾</button>
+    <button type="button" class="ib" id="rtheme" aria-label="Theme" data-al="alTheme">◐</button>
+    <button type="button" class="ib" id="rclose" aria-label="Close" data-al="alClose">✕</button>
   </div>
   <div class="rb">
-    <aside id="rside"><input id="rfilter" type="search" autocomplete="off" data-ph="rfph" placeholder="filter documents…"><div id="rnav"></div></aside>
-    <main id="rmain"><article class="art" id="art"></article></main>
-    <aside id="rtoc"></aside>
+    <aside id="rside" aria-label="Documents"><input id="rfilter" type="search" autocomplete="off" data-ph="rfph" placeholder="filter documents…"><div id="rnav"></div></aside>
+    <div id="rmain"><article class="art" id="art"></article></div>
+    <aside id="rtoc" aria-label="On this page"></aside>
   </div>
 </div>
 <div id="lmenu"></div>
 <div id="lb" role="dialog" aria-label="Image" data-al="alImage"></div>
 <script>window.OSA_ROOT=''</script>
-<script src="site/data/app.js?v=c625c0f537" defer></script>
+<script src="site/data/app.js?v=0a0af270a1" defer></script>
 </body>
 </html>

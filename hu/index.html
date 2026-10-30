@@ -457,9 +457,9 @@ body.rd{overflow:hidden}
     <li><a href="#studio" data-i="nStudio">Stúdió</a></li><li><a href="#cli" data-i="nCli">CLI</a></li><li><a href="#status" data-i="n5">Állapot</a></li>
   </ul>
   <div class="tools">
-    <button class="ib" id="navsearch"><span class="sr" data-i="alSearch">Keresés a dokumentációban</span> Ctrl K</button>
-    <button class="ib" id="lang" aria-haspopup="true" aria-label="Nyelv: HU" data-al="alLang">HU ▾</button>
-    <button class="ib" id="theme" aria-label="Téma" data-al="alTheme">◐</button>
+    <button type="button" class="ib" id="navsearch"><span class="sr" data-i="alSearch">Keresés a dokumentációban</span> Ctrl K</button>
+    <button type="button" class="ib" id="lang" aria-haspopup="true" aria-label="Nyelv: HU" data-al="alLang">HU ▾</button>
+    <button type="button" class="ib" id="theme" aria-label="Téma" data-al="alTheme">◐</button>
     <a class="ib gh" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" aria-label="Az OSATURA a GitHubon" data-al="alGh">GitHub</a>
   </div>
 </div></nav>
@@ -476,10 +476,11 @@ body.rd{overflow:hidden}
       <a class="btn" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" data-i="cta2">Megtekintés a GitHubon</a>
       <a class="btn" href="#docs" data-i="cta3">Dokumentáció olvasása</a>
     </div>
-    <div class="install"><small data-i="instSrc">vagy fordítsd forrásból:</small><span><b>$</b> git clone https://github.com/chiuta/osatura &amp;&amp; cargo build -p osatura-cli</span><button id="copy" data-i="copy">másolás</button></div>
+    <div class="install"><small data-i="instSrc">vagy fordítsd forrásból:</small><span><b>$</b> git clone https://github.com/chiuta/osatura &amp;&amp; cargo build -p osatura-cli</span><button type="button" id="copy" data-i="copy">másolás</button></div>
   </div>
   <div class="hint" data-i="hint">MOZGASD A KURZORT · A RIG KÖVET</div>
 </header>
+<main id="main">
 
 <section id="play"><div class="wrap">
   <div class="eyebrow rv" data-i="pe">Interaktív játszótér</div>
@@ -488,10 +489,10 @@ body.rd{overflow:hidden}
   <div class="stage rv">
     <canvas id="pg" role="img" aria-label="Interaktív FABRIK inverz kinematikai lánc, amely követi az egérmutatót" data-al="alFabrik"></canvas>
     <div class="panel">
-      <div class="seg" id="mode"><button data-m="skin" data-i="mSkin">skin</button><button data-m="both" class="on" data-i="mBoth">skin + csontok</button><button data-m="bones" data-i="mBones">csontok</button></div>
+      <div class="seg" id="mode"><button type="button" data-m="skin" data-i="mSkin">skin</button><button type="button" data-m="both" class="on" data-i="mBoth">skin + csontok</button><button type="button" data-m="bones" data-i="mBones">csontok</button></div>
       <div class="sl"><span data-i="lBones">csontok</span><input type="range" id="nb" aria-label="Csontok száma" data-al="alBones" min="2" max="9" value="5"><b id="nbv">5</b></div>
-      <div class="seg" id="spring"><button data-s="0" data-i="sDirect">közvetlen</button><button data-s="1" class="on" data-i="sSpring">rugó</button></div>
-      <div class="seg" id="auto"><button data-a="1" data-i="aAuto">auto</button><button data-a="0" class="on" data-i="aMouse">egér</button></div>
+      <div class="seg" id="spring"><button type="button" data-s="0" data-i="sDirect">közvetlen</button><button type="button" data-s="1" class="on" data-i="sSpring">rugó</button></div>
+      <div class="seg" id="auto"><button type="button" data-a="1" data-i="aAuto">auto</button><button type="button" data-a="0" class="on" data-i="aMouse">egér</button></div>
     </div>
     <div class="note" data-i="pn">húzd vagy vidd az egeret a vászon fölé</div>
   </div>
@@ -568,7 +569,7 @@ body.rd{overflow:hidden}
     <div class="stat"><b id="sS">–</b><span data-i="dsS">kereshető szakasz</span></div>
     <div class="stat"><b id="sL">–</b><span data-i="dsL">kereszthivatkozás a dokumentumok között</span></div>
   </div>
-  <button class="sbtn rv" id="openpal"><span>⌕</span><span data-i="dsearch">Keresés minden dokumentumban, parancsban és korlátozásban…</span><kbd>Ctrl K</kbd></button>
+  <button type="button" class="sbtn rv" id="openpal"><span>⌕</span><span data-i="dsearch">Keresés minden dokumentumban, parancsban és korlátozásban…</span><kbd>Ctrl K</kbd></button>
 
   <h3 class="h3s rv" data-i="cstH">A dokumentáció csillagképe</h3>
   <p class="lead rv" data-i="cstP">Minden csillag egy dokumentum, a mérete attól függ, hány másik hivatkozik rá; a vonalak a Markdownban talált valódi hivatkozások. Az egér fölé víve látod a szomszédokat, húzással átrendezheted, kattintással elolvashatod.</p>
@@ -652,7 +653,7 @@ body.rd{overflow:hidden}
   <input class="srch" id="lsrch" type="search" autocomplete="off" data-ph="lxph" placeholder="keresés a korlátozásokban…">
   <div class="cnt" id="lcnt"></div>
   <div id="llist"></div>
-  <button class="btn more" id="lmore" style="display:none"></button>
+  <button type="button" class="btn more" id="lmore" style="display:none"></button>
 
 </div></section>
 
@@ -695,6 +696,7 @@ body.rd{overflow:hidden}
     <a href="mailto:alexio@trom.tf">alexio@trom.tf</a><small class="who" data-i="supWho">Mindkét adományoldal és a cím a szerzőé, Alexióé.</small></div>
 </div></section>
 
+</main>
 <footer><div class="wrap">
   <p>© 2026 Alexandru-Ionuț Chiuță (Alexio) · OSATURA</p>
   <p><a href="https://github.com/chiuta/osatura/blob/main/CODE_SIGNING_POLICY.md" target="_blank" rel="noopener">Code signing policy</a> · <a href="https://github.com/chiuta/osatura/blob/main/PRIVACY.md" target="_blank" rel="noopener">Privacy</a> · <a href="https://github.com/chiuta/osatura/blob/main/docs/UNINSTALL.md" target="_blank" rel="noopener">Uninstall</a></p>
@@ -709,23 +711,23 @@ body.rd{overflow:hidden}
 <div id="reader">
   <div id="rbar"></div>
   <div class="rh">
-    <button class="ib" id="rmenu" aria-label="Menü" data-al="alMenu">☰</button>
+    <button type="button" class="ib" id="rmenu" aria-label="Menü" data-al="alMenu">☰</button>
     <a class="logo" href="#top"><svg viewBox="0 0 32 32" style="width:22px;height:22px"><path d="M6 26L14 16L26 8" stroke="var(--a)" stroke-width="3" stroke-linecap="round" fill="none"/><g fill="var(--c)"><circle cx="6" cy="26" r="3.2"/><circle cx="14" cy="16" r="3.2"/><circle cx="26" cy="8" r="3.2"/></g></svg>DOCS</a>
     <span class="path" id="rpath"></span><span class="sp"></span>
-    <button class="ib" id="rsearch"><span class="sr" data-i="alSearch">Keresés a dokumentációban</span> Ctrl K</button>
-    <button class="ib" id="rlang" aria-haspopup="true" aria-label="Nyelv: HU" data-al="alLang">HU ▾</button>
-    <button class="ib" id="rtheme" aria-label="Téma" data-al="alTheme">◐</button>
-    <button class="ib" id="rclose" aria-label="Bezárás" data-al="alClose">✕</button>
+    <button type="button" class="ib" id="rsearch"><span class="sr" data-i="alSearch">Keresés a dokumentációban</span> Ctrl K</button>
+    <button type="button" class="ib" id="rlang" aria-haspopup="true" aria-label="Nyelv: HU" data-al="alLang">HU ▾</button>
+    <button type="button" class="ib" id="rtheme" aria-label="Téma" data-al="alTheme">◐</button>
+    <button type="button" class="ib" id="rclose" aria-label="Bezárás" data-al="alClose">✕</button>
   </div>
   <div class="rb">
-    <aside id="rside"><input id="rfilter" type="search" autocomplete="off" data-ph="rfph" placeholder="dokumentumok szűrése…"><div id="rnav"></div></aside>
-    <main id="rmain"><article class="art" id="art"></article></main>
-    <aside id="rtoc"></aside>
+    <aside id="rside" aria-label="Documents"><input id="rfilter" type="search" autocomplete="off" data-ph="rfph" placeholder="dokumentumok szűrése…"><div id="rnav"></div></aside>
+    <div id="rmain"><article class="art" id="art"></article></div>
+    <aside id="rtoc" aria-label="On this page"></aside>
   </div>
 </div>
 <div id="lmenu"></div>
 <div id="lb" role="dialog" aria-label="Kép" data-al="alImage"></div>
 <script>window.OSA_ROOT='../';window.OSA_LANG='hu'</script>
-<script src="../site/data/app.js?v=c625c0f537" defer></script>
+<script src="../site/data/app.js?v=0a0af270a1" defer></script>
 </body>
 </html>
