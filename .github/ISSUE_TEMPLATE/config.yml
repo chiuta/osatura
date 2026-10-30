@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: CC-BY-4.0
+# Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/chiuta/osatura/blob/main/docs/SECURITY.md
+    about: Please do not open a public issue; follow the reporting steps in docs/SECURITY.md.
+  - name: Question or idea
+    url: https://github.com/chiuta/osatura/blob/main/docs/FAQ.md
+    about: Check the FAQ first.

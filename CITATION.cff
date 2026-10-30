@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: CC-BY-4.0
+# Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
+cff-version: 1.2.0
+message: "If you use OSATURA in your work, please cite it as below."
+title: "OSATURA"
+abstract: "A clean-room 2D rigging and animation engine in Rust, with a command-line tool, a browser studio and a WebAssembly module."
+type: software
+authors:
+  - family-names: "Chiuță"
+    given-names: "Alexandru-Ionuț"
+    alias: "Alexio"
+repository-code: "https://github.com/chiuta/osatura"
+url: "https://osatura.chiuta.ro"
+license:
+  - AGPL-3.0-or-later
+  - MPL-2.0
+version: "0.1.0-alpha.4"
+keywords:
+  - animation
+  - rigging
+  - 2D
+  - Rust
+  - WebAssembly
