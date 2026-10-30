@@ -70,6 +70,9 @@ jobs:
           msg=$( { sed 's/\x1b\[[0-9;]*m//g' clippy.log > clippy.plain; grep -E -A6 '^(error|warning)' clippy.plain | head -70; } | head -c 6000 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
           if [ "$code" != 0 ]; then echo "::error title=clippy::$msg"; fi
           exit $code
+      - name: Rustdoc (broken links and bad markup are errors)
+        shell: bash
+        run: RUSTDOCFLAGS="-D warnings" cargo doc --workspace --exclude osatura-gpu --no-deps --locked
 
   wasm32:
     name: wasm32 build

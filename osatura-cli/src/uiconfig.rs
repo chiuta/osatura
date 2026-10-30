@@ -1060,7 +1060,7 @@ fn parse_ignoring_unknown(mut v: Value) -> Result<(UiConfig, Vec<String>), Strin
     Err("too many unknown keys".into())
 }
 
-/// Like [`load_config`], but keys this version does not know (a newer version's settings, a typo) are ignored and
+/// Like `load_config`, but keys this version does not know (a newer version's settings, a typo) are ignored and
 /// listed instead of discarding the whole file. Values that are invalid are still an error.
 pub fn load_config_tolerant(path: &Path) -> Result<(UiConfig, Vec<String>), String> {
     let t = std::fs::read_to_string(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
