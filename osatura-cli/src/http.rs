@@ -535,8 +535,17 @@ mod tests {
             s
         }).collect();
         std::thread::sleep(Duration::from_millis(100));
-        let r = roundtrip(a, b"GET /ok HTTP/1.1\r\n\r\n");
-        assert!(r.starts_with("HTTP/1.1 503") && r.contains("from this address"), "{r}");
+        // the refusal is written without reading the request, so on Windows a reset can cut the reply after its head
+        // (seen on CI): ask again until the body arrives, the refusal itself must stay a 503 every time
+        let mut r = String::new();
+        for _ in 0..5 {
+            r = roundtrip(a, b"GET /ok HTTP/1.1\r\n\r\n");
+            assert!(r.starts_with("HTTP/1.1 503"), "{r}");
+            if r.contains("from this address") {
+                break;
+            }
+        }
+        assert!(r.contains("from this address"), "{r}");
         // the slots come back when the stalled connections end (408 after the head deadline), and nothing leaks
         std::thread::sleep(Duration::from_millis(700));
         drop(holders);

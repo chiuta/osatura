@@ -73,6 +73,7 @@ fn option_read_sites() -> Vec<(String, Option<Vec<String>>, String)> {
     let face: Vec<&str> = vec!["face-synth", "face-train", "face-eval", "face-detect", "face-track", "face-calibrate", "face-bake"];
     let mut out = vec![
         ("lod_cmd.rs".to_string(), cmds(&["lod", "lod-pick"]), strip(include_str!("lod_cmd.rs"))),
+        ("update_cmd.rs".to_string(), cmds(&["update-check"]), strip(include_str!("update_cmd.rs"))),
         ("fit_cmd.rs".to_string(), cmds(&["export-fit", "size-report"]), strip(include_str!("fit_cmd.rs"))),
         ("fuzz_cmd.rs".to_string(), cmds(&["fuzz", "fuzz-grid"]), strip(include_str!("fuzz_cmd.rs"))),
         ("vcs_cmd.rs".to_string(), cmds(&["vcs"]), strip(include_str!("vcs_cmd.rs"))),

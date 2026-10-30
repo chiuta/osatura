@@ -41,7 +41,7 @@ pub(super) fn round_doc(v: &mut Value, d: u8, cd: u8, colour: bool) {
 /// Reduce a baked Lottie document ([`crate::export::lottie_json_mapped`]) with the lottie settings:
 /// `decimals`, `path_eps` (spatial simplification over all frames, same vertices removed everywhere),
 /// `key_tol` (0 = hold keyframes at every changed frame; > 0 = linear interpolation with the bound of
-/// [`select_keys`]) and `frame_step`. Repeated frames are always merged and constant tracks become static.
+/// `select_keys`) and `frame_step`. Repeated frames are always merged and constant tracks become static.
 pub fn lottie_reduce(base: &Value, s: &Settings) -> Value {
     let mut doc = base.clone();
     let n = doc.get("op").and_then(Value::as_f64).unwrap_or(1.0).max(1.0) as usize;
