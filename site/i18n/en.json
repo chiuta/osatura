@@ -57,7 +57,7 @@
  "op": "Open formats first: no proprietary file format is read or written, by design.",
  "f1h": "Project",
  "f1p": "A documented JSON file. Diffable, reviewable, scriptable.",
- "f2h": "Check & lint",
+ "f2h": "Check &amp; lint",
  "f2p": "Static rig and animation checks, safety checks for flashing and motion.",
  "f3h": "Evaluate",
  "f3p": "A pure evaluate(frame): same project and seed, same pixels.",

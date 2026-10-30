@@ -48,6 +48,8 @@ video{display:block;width:100%;height:100%;background:var(--screen)}
 footer{color:var(--muted);font-size:13px;max-width:70ch}
 footer a{color:var(--accent)}
 </style>
+</head>
+<body>
 <div class="wrap">
   <header>
     <h1><span>OSATURA</span> <b id="t-h" style="font-weight:600"></b></h1>
@@ -55,10 +57,10 @@ footer a{color:var(--accent)}
   </header>
   <nav class="langs" id="langs" aria-label="Language"></nav>
   <main class="main">
-    <nav id="nav"></nav>
+    <nav id="nav" aria-label="Tutorials"></nav>
     <section class="player">
       <div class="screen"><video id="v" controls playsinline preload="metadata"></video></div>
-      <div class="cap"><h3 id="vt"></h3><span id="vs"></span></div>
+      <div class="cap"><h3 id="vt">Studio tour</h3><span id="vs"></span></div>
     </section>
   </main>
   <footer id="foot"></footer>
@@ -140,5 +142,5 @@ parseHash(); go(false);
 fetch("captions.json").then(r=>r.json()).then(j=>{CAPS=j;loadVideo(false)}).catch(()=>{});
 addEventListener("hashchange",()=>{parseHash();go(false)});
 </script>
-
+</body>
 </html>
