@@ -817,8 +817,12 @@ let si=0,fi=0,playing=false,auto=false,tab='t',raf=0,last=0,typeTok=0,autoTimer=
 const tt=k=>T[L][k];
 const fmt=(k,o)=>tt(k).replace(/\{(\w+)\}/g,(_,x)=>o[x]);
 
+function safeNodes(h){const d=new DOMParser().parseFromString(String(h),'text/html');
+  d.querySelectorAll('script,iframe,object,embed,link,meta,foreignObject,base').forEach(n=>n.remove());
+  d.querySelectorAll('*').forEach(n=>{for(const a of [...n.attributes]){const v=a.value.trim().toLowerCase();if(/^on/i.test(a.name)||(/^(href|src|xlink:href|action|formaction)$/i.test(a.name)&&/^(javascript|data):/.test(v)))n.removeAttribute(a.name)}});
+  return [...d.body.childNodes].map(n=>document.importNode(n,true))}
 function showFrame(i){const f=framesOf(S[si]);fi=i;
-  el.dv.replaceChildren(...new DOMParser().parseFromString(f?f[i]:S[si].still||'','text/html').body.childNodes);
+  el.dv.replaceChildren(...safeNodes(f?f[i]:S[si].still||''));
   el.scrub.value=i;el.fr.textContent=f?fmt('dFrame',{n:i,m:f.length-1}):'';}
 function stopAnim(){playing=false;cancelAnimationFrame(raf);el.play.textContent=tt('dPlay');el.play.setAttribute('aria-pressed','false')}
 function startAnim(){const f=framesOf(S[si]);if(!f)return;playing=true;last=0;el.play.textContent=tt('dPause');el.play.setAttribute('aria-pressed','true');
