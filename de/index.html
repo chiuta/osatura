@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSATURA — 2D-Vektor-Rigging und -Animation in Rust</title>
+<meta name="description" content="OSATURA: eine 2D-Vektor-Rigging- und Animations-Engine in Rust. Knochen, IK, Skinning, Deformer, Zustandsautomaten-Laufzeit, CLI, Browser-Studio und Bibliotheken.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-mcl1goS6NOoCfaiG1cqH1e0QCbZXZN9v8jx2yvTWJuc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<link rel="alternate" hreflang="en" href="https://osatura.chiuta.ro/">
+<link rel="alternate" hreflang="de" href="https://osatura.chiuta.ro/de/">
+<link rel="alternate" hreflang="es" href="https://osatura.chiuta.ro/es/">
+<link rel="alternate" hreflang="fr" href="https://osatura.chiuta.ro/fr/">
+<link rel="alternate" hreflang="hu" href="https://osatura.chiuta.ro/hu/">
+<link rel="alternate" hreflang="it" href="https://osatura.chiuta.ro/it/">
+<link rel="alternate" hreflang="pt" href="https://osatura.chiuta.ro/pt/">
+<link rel="alternate" hreflang="ro" href="https://osatura.chiuta.ro/ro/">
+<link rel="alternate" hreflang="x-default" href="https://osatura.chiuta.ro/">
+<link rel="canonical" href="https://osatura.chiuta.ro/de/">
+<meta name="theme-color" content="#080b11">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OSATURA">
+<meta property="og:url" content="https://osatura.chiuta.ro/de/">
+<meta property="og:title" content="OSATURA — 2D-Vektor-Rigging und -Animation in Rust">
+<meta property="og:description" content="OSATURA: eine 2D-Vektor-Rigging- und Animations-Engine in Rust. Knochen, IK, Skinning, Deformer, Zustandsautomaten-Laufzeit, CLI, Browser-Studio und Bibliotheken.">
+<meta property="og:image" content="https://osatura.chiuta.ro/site/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A walking character rigged and rendered by the OSATURA engine">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OSATURA — 2D-Vektor-Rigging und -Animation in Rust">
+<meta name="twitter:description" content="OSATURA: eine 2D-Vektor-Rigging- und Animations-Engine in Rust. Knochen, IK, Skinning, Deformer, Zustandsautomaten-Laufzeit, CLI, Browser-Studio und Bibliotheken.">
+<meta name="twitter:image" content="https://osatura.chiuta.ro/site/og.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%230b0e14'/%3E%3Cpath%20d='M8%2024L15%2015L23%209'%20stroke='%235ef0c1'%20stroke-width='3'%20stroke-linecap='round'%20fill='none'/%3E%3Ccircle%20cx='8'%20cy='24'%20r='3'%20fill='%23ffb86b'/%3E%3Ccircle%20cx='15'%20cy='15'%20r='3'%20fill='%23ffb86b'/%3E%3Ccircle%20cx='23'%20cy='9'%20r='3'%20fill='%23ffb86b'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#080b11;--bg2:#0d1119;--card:#111723;--line:#1f2838;--tx:#e9eef7;--mut:#8f9bb3;
+  --a:#5ef0c1;--b:#8493ff;--c:#ffb86b;--bad:#ff6b7a;--ok:#5ef0c1;--r:20px;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+:root[data-theme=light]{
+  --bg:#f5f6fa;--bg2:#eceef5;--card:#fff;--line:#d9dde9;--tx:#0e1320;--mut:#566079;
+  --a:#00a77a;--b:#4455e0;--c:#d9780f;--bad:#d62c42;--ok:#00946c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{background:var(--bg);color:var(--tx);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+code,kbd{font-family:var(--mono);font-size:.88em}
+p code,li code,.card code{background:var(--bg2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+section{padding:110px 0;position:relative}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--a);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:26px;height:2px;background:var(--a)}
+h1,h2,h3{line-height:1.08;letter-spacing:-.025em}
+h2{font-size:clamp(2rem,4.8vw,3.4rem);margin-bottom:20px;max-width:20ch}
+.lead{color:var(--mut);font-size:1.12rem;max-width:62ch}
+.grad{padding-right:.06em;background:linear-gradient(100deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#navsearch::before,#rsearch::before{content:"⌕\00a0" / ""}
+.rv{opacity:0;transform:translateY(30px);transition:opacity .8s,transform .8s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+
+/* nav */
+#bar{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--a),var(--b));z-index:80}
+nav{position:fixed;inset:0 0 auto 0;z-index:70;backdrop-filter:blur(16px);background:color-mix(in srgb,var(--bg) 72%,transparent);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:22px;height:62px}
+.logo{font-weight:800;letter-spacing:.14em;text-decoration:none;display:flex;align-items:center;gap:10px;font-size:14px}
+.logo svg{width:26px;height:26px}
+nav ul{display:flex;gap:22px;list-style:none;font-size:14px;margin-left:auto}
+nav ul a{text-decoration:none;color:var(--mut);transition:.2s}
+nav ul a:hover,nav ul a.act{color:var(--tx)}
+.tools{display:flex;gap:8px;align-items:center}
+.ib{background:none;border:1px solid var(--line);color:var(--tx);height:36px;min-width:36px;padding:0 12px;border-radius:99px;cursor:pointer;font:600 12px var(--mono);transition:.2s}
+.ib:hover{border-color:var(--a)}
+.gh{background:var(--tx);color:var(--bg);border-color:var(--tx);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+@media(max-width:900px){nav ul{display:none}.tools{margin-left:auto}}
+
+/* hero */
+#top{min-height:100vh;padding:120px 0 0;display:flex;align-items:flex-start;overflow:hidden}
+#hero{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+#top .wrap{position:relative;z-index:2;pointer-events:none;width:100%;min-width:0}
+#top .wrap a,#top .wrap button,#top .wrap .install{pointer-events:auto}
+.pill{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:color-mix(in srgb,var(--card) 80%,transparent);border-radius:99px;padding:7px 14px;font:12px var(--mono);color:var(--mut);margin-bottom:26px}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 12px var(--c)}
+#top h1{font-size:clamp(3.2rem,11vw,8.6rem);font-weight:900;letter-spacing:-.055em;line-height:.9}
+#top .sub{font-size:clamp(1.1rem,2.2vw,1.45rem);color:var(--mut);max-width:40ch;margin:26px 0 32px}
+.btns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px}
+.btn{padding:14px 26px;border-radius:99px;font-weight:600;text-decoration:none;border:1px solid var(--line);background:color-mix(in srgb,var(--card) 70%,transparent);transition:.25s;display:inline-block;cursor:pointer;color:var(--tx);font-size:1rem}
+.btn.p{background:linear-gradient(100deg,var(--a),var(--b));color:#06100d;border:0}
+.btn:hover{transform:translateY(-3px);box-shadow:0 12px 34px -12px var(--a)}
+.install{display:inline-flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px 10px 16px;font:13px var(--mono);max-width:100%}
+.install span{overflow:auto;white-space:nowrap;scrollbar-width:none;min-width:0}
+.install b{color:var(--a);font-weight:400}
+.install button{background:var(--bg2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:5px 10px;font:12px var(--mono);cursor:pointer;flex:none}
+.hint{position:absolute;bottom:18px;left:50%;translate:-50% 0;font:11px var(--mono);letter-spacing:.2em;color:var(--mut);z-index:2}
+@media(max-width:600px){.pill{border-radius:18px;line-height:1.5;max-width:100%}.pill span{min-width:0;overflow-wrap:anywhere}#top .btns .btn{flex:1 1 auto;text-align:center}}
+@media(hover:none){.hint{display:none}}
+
+/* playground */
+#play{background:var(--bg2)}
+.stage{position:relative;margin-top:40px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:radial-gradient(120% 90% at 50% 100%,color-mix(in srgb,var(--b) 14%,var(--card)),var(--card))}
+#pg{width:100%;height:520px;display:block;touch-action:none;cursor:crosshair}
+.panel{position:absolute;left:14px;right:14px;top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;pointer-events:none}
+.panel>*{pointer-events:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(8px)}
+.seg button{background:none;border:0;color:var(--mut);padding:8px 14px;font:12px var(--mono);cursor:pointer}
+.seg button.on{background:var(--a);color:#04120d;font-weight:700}
+.sl{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:99px;padding:5px 14px;font:12px var(--mono);color:var(--mut);background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(8px)}
+.sl input{accent-color:var(--a);width:110px}
+.note{position:absolute;bottom:12px;left:16px;font:12px var(--mono);color:var(--mut)}
+
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:46px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:28px;position:relative;overflow:hidden;transition:.3s;grid-column:span 2}
+.card.w3{grid-column:span 3}.card.w4{grid-column:span 4}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(400px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--a) 14%,transparent),transparent 60%);opacity:0;transition:.3s;pointer-events:none}
+.card:hover{border-color:color-mix(in srgb,var(--a) 60%,var(--line));transform:translateY(-4px)}
+.card:hover::before{opacity:1}
+.card .n{font:600 11px var(--mono);color:var(--c);letter-spacing:.15em;margin-bottom:14px}
+.card h3{font-size:1.45rem;margin-bottom:10px}
+.card p{color:var(--mut);font-size:.95rem}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+.tags span{font:11px var(--mono);border:1px solid var(--line);border-radius:99px;padding:3px 10px;color:var(--mut)}
+@media(max-width:900px){.bento{grid-template-columns:1fr 1fr}.card,.card.w3,.card.w4{grid-column:span 2}}
+@media(max-width:600px){.bento{grid-template-columns:1fr}.card,.card.w3,.card.w4{grid-column:auto}}
+.tl{margin-top:20px;display:grid;gap:6px}
+.tl div{height:14px;background:var(--bg2);border-radius:5px;position:relative}
+.tl i{position:absolute;top:3px;width:8px;height:8px;background:var(--c);rotate:45deg;border-radius:1px}
+.tl u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--a);left:0;animation:ph 5s linear infinite}
+@keyframes ph{to{left:100%}}
+.tl{position:relative}
+
+/* terminal */
+#demo{background:var(--bg2)}
+.cols{display:grid;grid-template-columns:1.25fr 1fr;gap:34px;align-items:center}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.term{background:#05080d;border:1px solid #1f2838;border-radius:16px;overflow:hidden;box-shadow:0 30px 80px -30px rgba(0,0,0,.6);color:#d7dff0}
+.term header{display:flex;gap:7px;padding:12px 16px;background:#0c121b;border-bottom:1px solid #1f2838;align-items:center}
+.term header i{width:11px;height:11px;border-radius:50%;background:#2a3547}
+.term header span{margin-left:10px;font:12px var(--mono);color:#6d7a93}
+.term pre{padding:20px;font:13px/1.8 var(--mono);min-height:420px;white-space:pre-wrap;word-break:break-word}
+.term .p{color:#5ef0c1}.term .cm{color:#5e6b85}.term .o{color:#9fb0cf}.term .ok{color:#7be6a6}
+.caret{display:inline-block;width:8px;height:15px;background:#5ef0c1;vertical-align:-2px;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+.steps{list-style:none;counter-reset:s;display:grid;gap:18px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:14px}
+.steps li::before{content:counter(s);width:44px;height:44px;border-radius:50%;border:1px solid var(--a);color:var(--a);display:grid;place-items:center;font:700 15px var(--mono)}
+.steps b{display:block;margin-bottom:2px}
+.steps span{color:var(--mut);font-size:.93rem}
+
+/* formats */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:46px 0 38px;position:relative}
+.node{border:1px solid var(--line);background:var(--card);border-radius:var(--r);padding:22px;margin-right:34px;position:relative}
+.node:last-child{margin-right:0}
+.node:not(:last-child)::after{content:"";position:absolute;right:-35px;top:50%;width:34px;height:2px;background:repeating-linear-gradient(90deg,var(--a) 0 6px,transparent 6px 12px);background-size:24px 2px;animation:dash 1s linear infinite}
+@keyframes dash{to{background-position:24px 0}}
+.node small{font:11px var(--mono);color:var(--c);letter-spacing:.15em}
+.node h3{font-size:1.2rem;margin:6px 0}
+.node p{font-size:.88rem;color:var(--mut)}
+@media(max-width:900px){.flow{grid-template-columns:1fr 1fr;gap:16px}.node{margin:0}.node::after{display:none!important}}
+@media(max-width:520px){.flow{grid-template-columns:1fr}}
+.chipbox{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+@media(max-width:800px){.chipbox{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chips span{font:13px var(--mono);border:1px solid var(--line);background:var(--bg2);border-radius:10px;padding:7px 12px;transition:.2s}
+.chips span:hover{border-color:var(--a);color:var(--a);transform:translateY(-2px)}
+.chipbox h3{font-size:1.1rem}
+
+/* determinism */
+#det{background:var(--bg2)}
+.dbox{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:40px}
+@media(max-width:700px){.dbox{grid-template-columns:1fr}}
+.run{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.run canvas{width:100%;height:240px;display:block;border-radius:12px;background:var(--bg)}
+.run .row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;font:13px var(--mono);color:var(--mut)}
+.run input{width:110px;padding:7px 10px;border-radius:8px;background:var(--bg2);border:1px solid var(--line);color:var(--tx);font:13px var(--mono)}
+.run b{color:var(--c);font-weight:600}
+#match{margin-top:18px;padding:14px 18px;border-radius:14px;border:1px solid var(--line);font:600 14px var(--mono);transition:.3s;text-align:center}
+#match.y{border-color:var(--ok);color:var(--ok)}#match.n{border-color:var(--bad);color:var(--bad)}
+
+/* stats / status */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin:44px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px}
+.stat b{display:block;font-size:clamp(2.4rem,5vw,3.4rem);font-weight:800;letter-spacing:-.04em}
+.stat span{color:var(--mut);font-size:.92rem}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.vs{grid-template-columns:1fr}}
+.vs .card{grid-column:auto}
+.vs h3{display:flex;gap:10px;align-items:center}
+.vs ul{list-style:none;display:grid;gap:10px;margin-top:14px;color:var(--mut);font-size:.93rem}
+.vs li{padding-left:24px;position:relative}
+.vs .y li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:700}
+.vs .x li::before{content:"△";position:absolute;left:0;color:var(--c);font-weight:700}
+.warn{margin-top:18px;border:1px solid color-mix(in srgb,var(--c) 50%,var(--line));border-radius:14px;padding:16px 20px;color:var(--mut);font-size:.93rem}
+.warn b{color:var(--c)}
+
+/* arch & license */
+.arch{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:40px}
+.crate{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;transition:.25s}
+.crate:hover{border-color:var(--b);transform:translateY(-3px)}
+.crate code{color:var(--a);font-weight:600;background:none;border:0;padding:0;font-size:.95rem}
+.crate p{font-size:.88rem;color:var(--mut);margin:6px 0 12px}
+.crate em{font:normal 11px var(--mono);border:1px solid var(--line);padding:2px 9px;border-radius:99px;color:var(--c)}
+.lic{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+@media(max-width:800px){.lic{grid-template-columns:1fr}}
+.lic .card{grid-column:auto}
+.lic h3{font-family:var(--mono);color:var(--a);font-size:1.15rem}
+
+/* cta */
+#start{text-align:center}
+#start h2{margin:0 auto 20px;max-width:16ch}
+#start .lead{margin:0 auto 34px}
+#start .btns{justify-content:center}
+.sup{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:40px;font-size:.92rem;color:var(--mut)}
+.sup a{border-bottom:1px solid var(--line);text-decoration:none}
+.sup a:hover{border-color:var(--a);color:var(--a)}
+footer{border-top:1px solid var(--line);padding:36px 0;color:var(--mut);font-size:.85rem;text-align:center}
+footer p+p{margin-top:6px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+
+/* ===== docs atlas ===== */
+.gc{--g-start:var(--a);--g-use:var(--b);--g-build:var(--c);--g-trust:#ff7a90;--g-project:#b48cff}
+.stats4{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:34px 0}
+.stats4 .stat{padding:20px}.stats4 .stat b{font-size:2.2rem}
+.sbtn{display:flex;align-items:center;gap:14px;width:100%;max-width:640px;background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:16px;padding:16px 20px;font:15px var(--mono);cursor:pointer;transition:.25s;text-align:left}
+.sbtn:hover{border-color:var(--a);box-shadow:0 0 0 4px color-mix(in srgb,var(--a) 14%,transparent)}
+.sbtn kbd{margin-left:auto;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--tx)}
+.cst{position:relative;margin-top:30px;border:1px solid var(--line);border-radius:var(--r);background:radial-gradient(90% 100% at 50% 0%,color-mix(in srgb,var(--b) 10%,var(--card)),var(--card));overflow:hidden}
+#cst{width:100%;height:560px;display:block;touch-action:pan-y}
+.cst .tip{position:absolute;pointer-events:none;max-width:290px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px;opacity:0;transition:opacity .15s;z-index:3}
+.cst .tip b{display:block;margin-bottom:4px;font-size:14px}
+.cst .tip span{color:var(--mut)}
+.cst .lg{position:absolute;left:14px;bottom:12px;display:flex;gap:14px;flex-wrap:wrap;font:11px var(--mono);color:var(--mut)}
+.cst .lg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.h3s{font-size:1.5rem;margin:64px 0 8px}
+.roles{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 28px}
+.roles button,.fchips button{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:99px;padding:8px 16px;font:13px var(--mono);cursor:pointer;transition:.2s}
+.roles button:hover,.fchips button:hover{border-color:var(--a);color:var(--tx)}
+.roles button.on,.fchips button.on{background:var(--a);border-color:var(--a);color:#04120d;font-weight:700}
+.metro{display:flex;gap:0;overflow-x:auto;padding:30px 4px 14px;position:relative;scrollbar-width:thin}
+.metro a{flex:none;min-width:150px;max-width:190px;text-decoration:none;position:relative;padding:0 10px;text-align:center;opacity:0;transform:translateY(12px);animation:st .5s forwards}
+@keyframes st{to{opacity:1;transform:none}}
+.metro a::before{content:"";position:absolute;top:-17px;left:0;right:0;height:4px;background:var(--a);opacity:.5}
+.metro a:first-child::before{left:50%}.metro a:last-child::before{right:50%}
+.metro a::after{content:attr(data-n);position:absolute;top:-26px;left:50%;translate:-50% 0;width:22px;height:22px;border-radius:50%;background:var(--bg);border:3px solid var(--a);font:700 10px/16px var(--mono);color:var(--tx);display:grid;place-items:center}
+.metro b{display:block;font-size:.95rem;line-height:1.25;margin-top:12px}
+.metro span{display:block;font:11px var(--mono);color:var(--mut);margin-top:4px}
+.metro a:hover b{color:var(--a)}
+.fchips{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.dc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;text-decoration:none;display:flex;flex-direction:column;gap:8px;transition:.25s;position:relative;overflow:hidden}
+.dc:hover{transform:translateY(-4px);border-color:var(--gc,var(--a))}
+.dc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gc,var(--a))}
+.dc small{font:11px var(--mono);color:var(--mut);display:flex;justify-content:space-between;gap:10px}.dc small span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dc small span:last-child{flex:none}
+.dc h4{font-size:1.05rem;line-height:1.25}
+.dc p{font-size:.86rem;color:var(--mut);flex:1}
+.dc em{font:normal 11px var(--mono);color:var(--gc,var(--a))}
+/* gallery */
+#studio{background:var(--bg2)}
+.gal{margin-top:36px;display:grid;grid-template-columns:1fr;gap:14px}
+.gal .big{position:relative;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--card);cursor:zoom-in}
+.gal .big img{width:100%;height:auto;max-height:560px;object-fit:contain;display:block;background:#05080d}
+.gal .cap{padding:16px 20px;font-size:.92rem;color:var(--mut);display:flex;gap:16px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.gal .cap a{font:12px var(--mono);color:var(--a);white-space:nowrap}
+.thumbs{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+.thumbs img{flex:none;width:130px;height:84px;object-fit:cover;border-radius:10px;border:2px solid var(--line);cursor:pointer;opacity:.6;transition:.2s}
+.thumbs img.on,.thumbs img:hover{opacity:1;border-color:var(--a)}
+#lb{position:fixed;inset:0;z-index:200;background:rgba(3,5,9,.92);display:none;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+#lb.on{display:flex}#lb img{max-width:100%;max-height:100%;border-radius:10px}
+/* cli atlas */
+.atl{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:20px}
+.cmd{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-decoration:none;transition:.2s;display:block}
+.cmd:hover{border-color:var(--a);transform:translateY(-2px)}
+.cmd code{color:var(--a);font-weight:600;font-size:.95rem}
+.cmd span{display:block;font-size:.8rem;color:var(--mut);margin-top:6px;line-height:1.45}
+.srch{width:100%;max-width:420px;padding:12px 16px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--tx);font:14px var(--mono);margin-top:18px}
+.srch:focus{outline:none;border-color:var(--a);box-shadow:0 0 0 3px color-mix(in srgb,var(--a) 35%,transparent)}
+.cnt{font:12px var(--mono);color:var(--mut);margin-top:12px}
+/* limits explorer */
+.lbars{display:grid;gap:8px;margin:30px 0 14px}
+.lbar{display:grid;grid-template-columns:minmax(120px,260px) 1fr 34px;gap:12px;align-items:center;font-size:.85rem;cursor:pointer;padding:3px 6px;border-radius:8px}
+.lbar:hover,.lbar.on{background:var(--card)}
+.lbar .tr{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--bg2)}
+.lbar .tr i{display:block;height:100%;transition:width 1s}
+.lbar b{font:12px var(--mono);text-align:right}
+.sev-High{--s:var(--bad)}.sev-Medium{--s:var(--c)}.sev-Low{--s:var(--a)}
+.lim{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--s,var(--line));border-radius:12px;padding:14px 18px;margin-top:10px}
+.lim summary{cursor:pointer;display:flex;gap:12px;align-items:baseline;list-style:none;font-size:.93rem}
+.lim summary::-webkit-details-marker{display:none}
+.lim summary i{font:normal 12px var(--mono);color:var(--s)}
+.lim .bd{color:var(--mut);font-size:.88rem;margin-top:12px;display:grid;gap:8px}
+.lim .bd b{color:var(--tx)}
+.lim .bd a{color:var(--a)}
+.more{margin-top:14px}
+/* palette */
+#pal{position:fixed;inset:0;z-index:300;background:rgba(3,5,9,.6);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:9vh 16px 0}
+#pal.on{display:flex}
+#pal .box{width:100%;max-width:720px;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 40px 100px -20px rgba(0,0,0,.6)}
+#pal input{width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:20px 24px;color:var(--tx);font:17px var(--mono);outline:none}
+#pr{max-height:56vh;overflow-y:auto}
+#pr a{display:block;padding:12px 24px;text-decoration:none;border-left:3px solid transparent;cursor:pointer}
+#pr a.on{background:var(--bg2);border-left-color:var(--a)}
+#pr b{font-size:.92rem;display:flex;gap:10px;align-items:center}
+#pr b small{font:11px var(--mono);color:var(--mut);font-weight:400}
+#pr span{display:block;font-size:.82rem;color:var(--mut);margin-top:3px;line-height:1.45;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#pr mark{background:color-mix(in srgb,var(--a) 28%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+#pal .ft{display:flex;gap:16px;padding:10px 24px;border-top:1px solid var(--line);font:11px var(--mono);color:var(--mut)}
+.empty{padding:30px 24px;color:var(--mut);text-align:center}
+/* reader */
+#reader{position:fixed;inset:0;z-index:150;background:var(--bg);display:none;grid-template-rows:56px 1fr}
+#reader.on{display:grid}
+body.rd{overflow:hidden}
+#rbar{position:absolute;top:56px;left:0;height:2px;background:linear-gradient(90deg,var(--a),var(--b));width:0;z-index:2}
+.rh{display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.rh .logo{font-size:13px}
+.rh .path{font:12px var(--mono);color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rh .sp{flex:1}
+#rmenu{display:none}
+.rb{display:grid;grid-template-columns:290px minmax(0,1fr) 250px;min-height:0}
+#rside{border-right:1px solid var(--line);overflow-y:auto;padding:16px 12px 40px;background:var(--bg2)}
+#rside input{width:100%;padding:9px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);color:var(--tx);font:13px var(--mono);margin-bottom:14px}
+#rside h5{font:600 10px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin:18px 8px 6px}
+#rside a{display:flex;gap:9px;align-items:center;padding:7px 10px;border-radius:8px;text-decoration:none;font-size:.88rem;color:var(--mut)}
+#rside a:hover{background:var(--card);color:var(--tx)}
+#rside a.on{background:var(--card);color:var(--tx);font-weight:600}
+#rside a i{width:8px;height:8px;border-radius:50%;background:var(--gc);flex:none}
+#rmain{overflow-y:auto;scroll-behavior:smooth;padding:44px 40px 120px}
+#rtoc{border-left:1px solid var(--line);overflow-y:auto;padding:44px 18px 40px;font-size:.8rem}
+#rtoc h5{font:600 10px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
+#rtoc a{display:block;padding:4px 0 4px 10px;border-left:2px solid transparent;color:var(--mut);text-decoration:none;line-height:1.35}
+#rtoc a.l3{padding-left:22px;font-size:.76rem}
+#rtoc a:hover{color:var(--tx)}
+#rtoc a.on{color:var(--a);border-left-color:var(--a)}
+.art{max-width:820px;margin:0 auto}
+.art .meta{display:flex;gap:10px;flex-wrap:wrap;font:12px var(--mono);color:var(--mut);margin-bottom:26px}
+.art .meta span,.art .meta a{border:1px solid var(--line);border-radius:99px;padding:3px 12px;text-decoration:none;color:var(--mut)}
+.art .meta a:hover{border-color:var(--a);color:var(--a)}
+.art h1{font-size:clamp(2rem,4vw,2.9rem);margin:0 0 16px}
+.art h2{font-size:1.8rem;margin:56px 0 16px;padding-top:30px;border-top:1px solid var(--line)}
+.art h3{font-size:1.28rem;margin:36px 0 12px}
+.art h4,.art h5,.art h6{font-size:1.02rem;margin:26px 0 10px}
+.art h1,.art h2,.art h3,.art h4{position:relative;scroll-margin-top:20px;max-width:none}
+.art .ha{position:absolute;left:-1.1em;color:var(--a);text-decoration:none;opacity:0;font-weight:400}
+.art :is(h1,h2,h3,h4):hover .ha{opacity:.9}
+.art p,.art li{color:color-mix(in srgb,var(--tx) 88%,var(--bg));line-height:1.75}
+.art p{margin:14px 0}
+.art ul,.art ol{margin:12px 0 12px 26px}.art li{margin:5px 0}.art li>ul,.art li>ol{margin-top:5px;margin-bottom:5px}
+.art a{color:var(--a)}
+.art code{font-family:var(--mono);font-size:.86em;background:var(--bg2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+.art strong{color:var(--tx)}
+.art blockquote{border-left:3px solid var(--c);background:color-mix(in srgb,var(--c) 7%,var(--bg));padding:6px 20px;margin:20px 0;border-radius:0 12px 12px 0}
+.art hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+.art img{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);display:block;margin:20px 0;cursor:zoom-in}
+.art .tw{overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:12px}
+.art table{border-collapse:collapse;width:100%;font-size:.85rem}
+.art th{background:var(--bg2);text-align:left;font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.art th,.art td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.art td{min-width:90px}.art tr:last-child td{border-bottom:0}
+.art tbody tr:hover td{background:color-mix(in srgb,var(--a) 4%,transparent)}
+.cb{position:relative;margin:20px 0}
+.cb pre{background:#05080d;color:#d7dff0;border:1px solid #1f2838;border-radius:12px;padding:18px 20px;overflow-x:auto;font:13px/1.65 var(--mono)}
+.cb pre code{background:none;border:0;padding:0;font-size:inherit;color:inherit}
+.cb button{position:absolute;right:10px;top:10px;background:#101826;color:#9fb0cf;border:1px solid #243049;border-radius:8px;padding:3px 10px;font:11px var(--mono);cursor:pointer;opacity:0;transition:.2s}
+.cb:hover button{opacity:1}
+.cb .k{color:#c792ea}.cb .s{color:#9bd88a}.cb .n{color:#f0a96b}.cb .c{color:#5e6b85;font-style:italic}
+.pn{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:70px}
+.pn a{border:1px solid var(--line);border-radius:14px;padding:16px 20px;text-decoration:none;color:var(--tx);display:block;transition:.2s}
+.pn a:hover{border-color:var(--a)}.pn a:last-child{text-align:right}
+.pn small{display:block;font:11px var(--mono);color:var(--mut);margin-bottom:4px}
+@media(max-width:1200px){.rb{grid-template-columns:270px minmax(0,1fr)}#rtoc{display:none}}
+@media(max-width:820px){
+  .rb{grid-template-columns:1fr}
+  #rmenu{display:inline-flex}
+  #rside{position:fixed;top:56px;bottom:0;left:0;width:84%;max-width:320px;z-index:5;transform:translateX(-100%);transition:transform .3s;box-shadow:20px 0 60px rgba(0,0,0,.5)}
+  #rside.open{transform:none}
+  #rmain{padding:26px 18px 100px}
+  .rh .path{display:none}
+  .art .ha{display:none}
+  .pn{grid-template-columns:1fr}
+  #cst{height:560px}
+  #rsearch{font-size:0}#rsearch::before{content:"⌕" / "";font-size:15px}
+}
+@media(max-width:600px){#navsearch,.gh{font-size:0;min-width:36px;padding:0}#navsearch::before{content:"⌕" / "";font-size:15px}.gh::before{content:"↗";font-size:15px}.gh{gap:0;justify-content:center}nav .wrap{gap:10px}}
+@media(max-width:400px){.tools{gap:5px}.ib{min-width:34px;height:34px}#lang{padding:0 9px}.logo{letter-spacing:.08em;gap:8px}}
+@media(max-width:350px){.logo{font-size:0;gap:0}.logo::after{content:none}}
+:root{--g-start:var(--a);--g-use:var(--b);--g-build:var(--c);--g-trust:#ff7a90;--g-project:#b48cff}
+.tags span.pt::after{content:" ◐";color:var(--c)}
+.ptnote{margin-top:14px;font:12px/1.5 var(--mono);color:var(--mut)}
+.install small{font:12px var(--mono);color:var(--mut);flex:none}
+.sup .who{flex-basis:100%;margin-top:8px;font-size:13px;color:var(--mut)}
+#lmenu{position:fixed;z-index:500;display:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 20px 60px -10px rgba(0,0,0,.55);min-width:180px}
+#lmenu.on{display:block}
+#lmenu button{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;color:var(--tx);padding:9px 12px;border-radius:9px;font:14px system-ui;cursor:pointer;text-align:left}
+#lmenu button b{font:600 11px var(--mono);color:var(--a);width:22px}
+#lmenu button:hover,#lmenu button.on{background:var(--bg2)}
+.trn{border:1px solid var(--line);background:var(--bg2);border-radius:12px;padding:10px 16px;margin:0 0 22px;font-size:.85rem;color:var(--mut)}
+.trn a{color:var(--a);margin-left:6px}
+/*demo:css*/
+/* demo pas cu pas */
+.demo{margin-top:40px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:18px;overflow:hidden}
+.dsteps{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 14px;scrollbar-width:thin}
+.dsteps button{flex:none;display:flex;align-items:center;gap:8px;background:none;border:1px solid var(--line);color:var(--mut);border-radius:99px;padding:7px 14px 7px 8px;font:600 12px var(--mono);cursor:pointer;white-space:nowrap;transition:.2s}
+.dsteps button i{font-style:normal;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--bg2);color:var(--tx);font-size:11px}
+.dsteps button:hover{border-color:var(--a);color:var(--tx)}
+.dsteps button[aria-selected=true]{border-color:var(--a);color:var(--tx);background:color-mix(in srgb,var(--a) 12%,transparent)}
+.dsteps button[aria-selected=true] i{background:var(--a);color:#04120d}
+.dsteps button.done i{background:color-mix(in srgb,var(--a) 35%,var(--bg2))}
+.dview,.dside{min-width:0}
+.dgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:18px;align-items:start}
+.dview{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg2)}
+.dcanvas{aspect-ratio:400/360;width:100%;line-height:0}
+.dcanvas svg{width:100%;height:100%;display:block}
+.dbar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);background:var(--card)}
+.dbar input{flex:1;min-width:0;accent-color:var(--a)}
+.dfr{font:12px var(--mono);color:var(--mut);min-width:5.5em;text-align:right}
+.dbar.off{visibility:hidden}
+.dbtn{background:var(--bg2);border:1px solid var(--line);color:var(--tx);border-radius:99px;padding:8px 16px;font:600 13px var(--mono);cursor:pointer;min-height:36px;transition:.2s}
+.dbtn:hover:not(:disabled){border-color:var(--a)}
+.dbtn:disabled{opacity:.4;cursor:default}
+.dbtn.p{background:linear-gradient(100deg,var(--a),var(--b));color:#06100d;border:0}
+.dhead .dnum{font:600 12px var(--mono);color:color-mix(in srgb,var(--a) 55%,var(--tx));letter-spacing:.14em;text-transform:uppercase}
+.dhead h3{font-size:1.5rem;margin:4px 0 6px}
+.dhead p{color:var(--mut);font-size:.98rem;line-height:1.55;min-height:3.1em}
+.dtabs{display:flex;gap:6px;margin:14px 0 8px}
+.dtabs button{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px 8px 0 0;padding:6px 14px;font:12px var(--mono);cursor:pointer}
+.dtabs button[aria-selected=true]{color:var(--tx);border-color:var(--a)}
+.dtabs button[hidden]{display:none}
+.dterm{margin:0;background:#05080d;color:#d7dff0;border:1px solid #1f2838;border-radius:0 12px 12px 12px;padding:14px 16px;font:12.5px/1.6 var(--mono);height:19.5rem;overflow:auto;white-space:pre;tab-size:2}
+.dterm .pr{color:var(--a)}
+.dterm .out{color:#8f9bb3}
+.dterm .cur{display:inline-block;width:.6em;height:1.05em;background:var(--a);vertical-align:text-bottom;animation:dcur 1s steps(1) infinite}
+@keyframes dcur{50%{opacity:0}}
+.dnav{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.dnote{margin-top:14px;font:12px var(--mono);color:var(--mut)}
+@media(max-width:860px){.dgrid{grid-template-columns:minmax(0,1fr)}.dterm{height:15rem}}
+@media(max-width:600px){.demo{padding:12px}.dhead h3{font-size:1.25rem}.dnav .dbtn{flex:1 1 auto;text-align:center}.dfr{min-width:4.6em}}
+@media(prefers-reduced-motion:reduce){.dterm .cur{animation:none}}
+/* contrast în tema luminoasă (verde #00a77a pe #f5f6fa = 2,85:1): valabil pentru toate etichetele de secțiune */
+:root[data-theme=light] .eyebrow{color:color-mix(in srgb,var(--a) 55%,var(--tx))}
+/*/demo:css*/
+</style>
+</head>
+<body>
+<noscript><div style="max-width:760px;margin:0 auto;padding:96px 22px 24px;font:16px/1.6 system-ui,sans-serif">
+<h2 style="font-size:26px;line-height:1.3;margin-bottom:10px">OSATURA — 2D vector rigging and animation in Rust</h2>
+<p>Bones, FK/FABRIK IK, skinning, lattice and cage deformers, state machines, blend trees, a command-line tool, a browser studio and embeddable libraries (C ABI, WASM). This page needs JavaScript for the interactive demos and the documentation atlas.</p>
+<p><a href="https://github.com/chiuta/osatura">Source code on GitHub</a> · <a href="https://github.com/chiuta/osatura/blob/main/docs/GETTING_STARTED.md">Getting started</a> · <a href="https://github.com/chiuta/osatura/blob/main/docs/LIMITATIONS.md">Limitations</a> · <a href="https://github.com/chiuta/osatura/releases">Releases</a></p>
+</div></noscript>
+<div id="bar"></div>
+<nav><div class="wrap">
+  <a class="logo" href="#top" aria-label="OSATURA">
+    <svg viewBox="0 0 32 32"><path d="M6 26L14 16L26 8" stroke="var(--a)" stroke-width="3" stroke-linecap="round" fill="none"/><g fill="var(--c)"><circle cx="6" cy="26" r="3.2"/><circle cx="14" cy="16" r="3.2"/><circle cx="26" cy="8" r="3.2"/></g></svg>OSATURA
+  </a>
+  <ul>
+    <li><a href="#play" data-i="n1">Playground</a></li><li><a href="#demo" data-i="nDemo">Demo</a></li><li><a href="#features" data-i="n2">Funktionen</a></li><li><a href="#docs" data-i="nDocs">Doku</a></li><li><a href="../tutorials/#de" data-i="nTutorials">Tutorials</a></li>
+    <li><a href="#studio" data-i="nStudio">Studio</a></li><li><a href="#cli" data-i="nCli">CLI</a></li><li><a href="#status" data-i="n5">Status</a></li>
+  </ul>
+  <div class="tools">
+    <button type="button" class="ib" id="navsearch"><span class="sr" data-i="alSearch">Dokumentation durchsuchen</span> Ctrl K</button>
+    <button type="button" class="ib" id="lang" aria-haspopup="true" aria-label="Sprache: DE" data-al="alLang">DE ▾</button>
+    <button type="button" class="ib" id="theme" aria-label="Design" data-al="alTheme">◐</button>
+    <a class="ib gh" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" aria-label="OSATURA auf GitHub" data-al="alGh">GitHub</a>
+  </div>
+</div></nav>
+
+<header id="top">
+  <canvas id="hero" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="pill"><i></i><span data-i="pill">Alpha · Vorabversion v0.1.0-alpha.4 · Rust · offene Formate</span></div>
+    <h1>OSA<span class="grad">TURA</span></h1>
+    <p class="sub" data-i="sub">2D-Vektor-Rigging und -Animation als Code: Knochen, IK, Skinning, Deformer, eine Laufzeitumgebung und ein Studio im Browser — deterministisch und skriptbar.</p>
+    <div class="btns">
+      <a class="btn p" href="../try/" data-i="ctaTry">Im Browser ausprobieren</a>
+      <a class="btn" href="https://github.com/chiuta/osatura/releases" target="_blank" rel="noopener" data-i="cta4">Herunterladen (Releases)</a>
+      <a class="btn" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" data-i="cta2">Auf GitHub ansehen</a>
+      <a class="btn" href="#docs" data-i="cta3">Dokumentation lesen</a>
+    </div>
+    <div class="install"><small data-i="instSrc">oder aus dem Quellcode bauen:</small><span><b>$</b> git clone https://github.com/chiuta/osatura &amp;&amp; cargo build -p osatura-cli</span><button type="button" id="copy" data-i="copy">kopieren</button></div>
+  </div>
+  <div class="hint" data-i="hint">CURSOR BEWEGEN · DAS RIG FOLGT</div>
+</header>
+<main id="main">
+
+<section id="play"><div class="wrap">
+  <div class="eyebrow rv" data-i="pe">Interaktiver Playground</div>
+  <h2 class="rv" data-i="ph">Ein Rig, live in deinem Browser</h2>
+  <p class="lead rv" data-i="pp">Eine FABRIK-Inverskinematik-Kette mit „bekleidetem“ Körper (Skin). Ziehe über die Zeichenfläche, und der Solver biegt das ganze Skelett zum Mauszeiger. Das ist eine JavaScript-Veranschaulichung der Idee, nicht die Rust-Engine selbst.</p>
+  <div class="stage rv">
+    <canvas id="pg" role="img" aria-label="Interaktive FABRIK-Kette (inverse Kinematik), die dem Mauszeiger folgt" data-al="alFabrik"></canvas>
+    <div class="panel">
+      <div class="seg" id="mode"><button type="button" data-m="skin" data-i="mSkin">Skin</button><button type="button" data-m="both" class="on" data-i="mBoth">Skin + Knochen</button><button type="button" data-m="bones" data-i="mBones">Knochen</button></div>
+      <div class="sl"><span data-i="lBones">Knochen</span><input type="range" id="nb" aria-label="Anzahl der Knochen" data-al="alBones" min="2" max="9" value="5"><b id="nbv">5</b></div>
+      <div class="seg" id="spring"><button type="button" data-s="0" data-i="sDirect">direkt</button><button type="button" data-s="1" class="on" data-i="sSpring">Feder</button></div>
+      <div class="seg" id="auto"><button type="button" data-a="1" data-i="aAuto">auto</button><button type="button" data-a="0" class="on" data-i="aMouse">Zeiger</button></div>
+    </div>
+    <div class="note" data-i="pn">auf der Zeichenfläche ziehen oder darüberfahren</div>
+  </div>
+</div></section>
+
+
+
+
+
+
+
+
+<!--demo:section-->
+<section id="demo"><div class="wrap">
+  <div class="eyebrow rv" data-i="dEy">Schritt-für-Schritt-Demo</div>
+  <h2 class="rv" data-i="dH">Eine Figur bauen, von der leeren Datei zum exportierten Film</h2>
+  <p class="lead rv" data-i="dP">Das ist die gehende Person, mit der sich das Studio beim ersten Start öffnet. Wir bauen sie in elf Stufen; jede Stufe ist dasselbe Projekt, nach diesem Schritt abgeschnitten, und osatura demo-person schreibt das fertige. Die Befehle liefen auf dem echten osatura-Binary, und jedes Bild ist ein von der Engine gerendertes Frame.</p>
+  <div class="demo rv" id="demoapp">
+    <div class="dsteps" id="dsteps" role="tablist" aria-label="Demo" data-al="alDemo"></div>
+    <div class="dgrid" id="dpanel" role="tabpanel" aria-labelledby="dtitle">
+      <div class="dview">
+        <div class="dcanvas" id="dv" role="img" aria-labelledby="dtitle"></div>
+        <div class="dbar">
+          <button class="dbtn" id="dplay" type="button" data-i="dPlay">Abspielen</button>
+          <input type="range" id="dscrub" min="0" max="23" value="0" aria-label="Bild" data-al="alFrame">
+          <span class="dfr" id="dfr"></span>
+        </div>
+      </div>
+      <div class="dside">
+        <div class="dhead">
+          <div class="dnum" id="dnum"></div>
+          <h3 id="dtitle" aria-live="polite" data-i="dS1">Ein leeres Projekt</h3>
+          <p id="ddesc" data-i="dD1">Ein paar JSON-Schlüssel sind ein ganzes Projekt: 640×480, 24 Bilder pro Sekunde, 32 Bilder. check bestätigt, dass es gültig ist.</p>
+        </div>
+        <div class="dtabs" role="tablist"><button type="button" id="dtabT" role="tab" aria-controls="dterm" aria-selected="true" data-i="dTerm">Terminal</button><button type="button" id="dtabS" role="tab" aria-controls="dterm" aria-selected="false" data-i="dScript">Skript</button></div>
+        <pre class="dterm" id="dterm" role="tabpanel" aria-labelledby="dtabT" tabindex="0" aria-live="off"></pre>
+        <div class="dnav">
+          <button class="dbtn" id="dprev" type="button" data-i="dPrev">Zurück</button>
+          <button class="dbtn p" id="dnext" type="button" data-i="dNext">Weiter</button>
+          <button class="dbtn" id="dauto" type="button" data-i="dAuto">Alles ausführen</button>
+        </div>
+      </div>
+    </div>
+    <p class="dnote" id="dnote"></p>
+  </div>
+</div></section>
+<script type="application/json" id="demo-data"></script>
+<!--/demo:section-->
+
+<section id="features"><div class="wrap">
+  <div class="eyebrow rv" data-i="fe">Was es kann</div>
+  <h2 class="rv" data-i="fh">Alles zwischen einer Vektorform und einer fertigen Animation</h2>
+  <p class="lead rv" data-i="fp">Ein Workspace, kleine deterministische Bausteine. Jedes Werkzeug liest und schreibt ein dokumentiertes JSON-Projekt, und jeder Befehl funktioniert im Terminal.</p>
+  <div class="bento">
+    <div class="card w4 rv"><div class="n">01 · DRAW</div><h3 data-i="c1h">Zeichenmodell</h3><p data-i="c1p">Vektorpfade, Füllungen, Konturen mit Strichelung und variabler Breite, lineare und radiale Verläufe, Masken, Füllmethoden, Effekte pro Ebene, Bildebenen mit Mesh-Warp, flüssige Metaballs, Polygon-Booleans, deterministische Partikel und eine Multiplane-Kamera mit Tiefenschärfe.</p><div class="tags"><span>Bézier</span><span>gradients</span><span>masks</span><span>blend modes</span><span>metaballs</span><span>booleans</span><span>particles</span><span>multiplane camera</span></div></div>
+    <div class="card rv"><div class="n">02 · RIG</div><h3 data-i="c2h">Rigging</h3><p data-i="c2p">Knochen mit FK, Zwei-Knochen-, weicher, Stretch- und FABRIK-IK. Grenzen, Constraints, Federn, Gewichtswerkzeuge, Lattice-, Spine-, Morph- und Cage-Deformer, Auto-Rig aus Ebenennamen.</p><div class="tags"><span>FK</span><span>FABRIK IK</span><span>skinning</span><span>lattice</span><span>pin warp</span></div></div>
+    <div class="card w3 rv"><div class="n">03 · ANIMATE</div><h3 data-i="c3h">Animation</h3><p data-i="c3p">Keys mit Bézier-, Stufen-, Feder- und Bounce-Easing; Ausdrücke; geschichteter Clip-Stapel; Fußfixierung; Ketten-, Haar- und Stoffphysik; Lippensynchronisation aus Audio oder Transkript; BVH-Retargeting; Eingabe per MIDI, Maus, Gamepad und Webcam-Landmarken.</p>
+      <div class="tl" aria-hidden="true"><div><i style="left:6%"></i><i style="left:34%"></i><i style="left:71%"></i></div><div><i style="left:12%"></i><i style="left:48%"></i><i style="left:90%"></i></div><div><i style="left:22%"></i><i style="left:58%"></i></div><u></u></div></div>
+    <div class="card w3 rv"><div class="n">04 · RUN</div><h3 data-i="c4h">Laufzeitumgebung</h3><p data-i="c4p">Zustandsautomaten mit 1-D-Blend-Trees, Datenbindung, Scroll-Physik, Detailstufen mit Fehlergrenze, eine Rhai-Skript-Sandbox und ein MCP-Agentenserver über Patch-Operationen.</p><div class="tags"><span>state machines</span><span>blend trees</span><span class="pt" title="teilweise">Rhai</span><span class="pt" title="teilweise">LOD</span><span>MCP agent</span></div></div>
+    <div class="card rv"><div class="n">05 · EXPORT</div><h3 data-i="c5h">Ausgabe</h3><p data-i="c5p">Von SVG und PNG über GIF und Video bis Lottie, glTF und einen eigenständigen HTML-Player.</p><div class="tags"><span>GIF</span><span class="pt" title="teilweise">Lottie</span><span class="pt" title="teilweise">glTF</span><span>HTML</span></div></div>
+    <div class="card rv"><div class="n">06 · VERIFY</div><h3 data-i="c6h">Qualitätswerkzeuge</h3><p data-i="c6p">check, lint, semantischer Diff, Pose-Fuzzing, Animations-CI mit Referenzbildern, Versionskontrolle mit semantischem Merge.</p><div class="tags"><span>lint</span><span>diff</span><span>CI</span><span>fuzz</span></div></div>
+    <div class="card rv"><div class="n">07 · STUDIO</div><h3 data-i="c7h">Studio im Browser</h3><p data-i="c7p">Gizmos, Timeline, Dope Sheet, Kurveneditor, Befehlspalette, Rückgängig/Wiederholen und Mehrbenutzerbearbeitung in Echtzeit.</p><div class="tags"><span class="pt" title="teilweise">timeline</span><span class="pt" title="teilweise">graph editor</span><span class="pt" title="teilweise">collab</span></div></div>
+  </div>
+  <p class="ptnote" data-i="ptNote">◐ teilweise: funktioniert, mit den Grenzen aus FEATURES.md und LIMITATIONS.md</p>
+</div></section>
+
+<section id="docs"><div class="wrap">
+  <div class="eyebrow rv" data-i="doe">Dokumentation</div>
+  <h2 class="rv" data-i="doh">Die gesamte Dokumentation, direkt in der Seite</h2>
+  <p class="lead rv" data-i="dop">Jedes Markdown-Dokument des Repositorys — Anleitungen, Referenzen, API, Sicherheit, Roadmap — ist hier eingebettet, gerendert und durchsuchbar, offline. Nichts wird aus dem Netz geladen.</p>
+  <div class="stats4 rv">
+    <div class="stat"><b id="sD">–</b><span data-i="dsD">eingebettete Dokumente</span></div>
+    <div class="stat"><b id="sW">–</b><span data-i="dsW">Wörter</span></div>
+    <div class="stat"><b id="sS">–</b><span data-i="dsS">durchsuchbare Abschnitte</span></div>
+    <div class="stat"><b id="sL">–</b><span data-i="dsL">Querverweise zwischen Dokumenten</span></div>
+  </div>
+  <button type="button" class="sbtn rv" id="openpal"><span>⌕</span><span data-i="dsearch">Alle Dokumente, Befehle und Einschränkungen durchsuchen…</span><kbd>Ctrl K</kbd></button>
+
+  <h3 class="h3s rv" data-i="cstH">Die Dokumentations-Konstellation</h3>
+  <p class="lead rv" data-i="cstP">Jeder Stern ist ein Dokument, dessen Größe davon abhängt, wie viele andere auf es verweisen; die Linien sind echte Links aus dem Markdown. Darüberfahren zeigt Nachbarn, Ziehen ordnet um, Klicken öffnet.</p>
+  <div class="cst gc rv"><canvas id="cst"></canvas><div class="tip" id="tip"></div>
+    <div class="lg" id="clg"></div></div>
+
+  <h3 class="h3s rv" data-i="pathH">Wähle deinen Leseweg</h3>
+  <p class="lead rv" data-i="pathP">Der Dokumentationsindex empfiehlt je nach Zielgruppe eine Reihenfolge. Wähle, wer du bist, und folge der Linie.</p>
+  <div class="roles rv" id="roles"></div>
+  <div class="metro" id="metro"></div>
+
+  <h3 class="h3s rv" data-i="libH">Die Bibliothek</h3>
+  <div class="fchips" id="gchips"></div>
+  <div class="lib gc" id="lib"></div>
+</div></section>
+
+<section id="studio"><div class="wrap">
+  <div class="eyebrow rv" data-i="soe">Das Studio</div>
+  <h2 class="rv" data-i="soh">Echte Screenshots, direkt aus der Dokumentation</h2>
+  <p class="lead rv" data-i="sop">Das Studio im Browser, wie es in der Dokumentation des Repositorys aussieht: Ebenen, Dope Sheet, Kurveneditor, Onion Skin, Befehlspalette, Zusammenarbeit.</p>
+  <div class="gal rv" id="gal"></div>
+</div></section>
+
+<section id="cli"><div class="wrap">
+  <div class="eyebrow rv" data-i="cle">Befehlsatlas</div>
+  <h2 class="rv" data-i="clh">Jeder Befehl, eine Suche entfernt</h2>
+  <p class="lead rv" data-i="clp">Live aus der CLI-Referenz ausgelesen. Klicke auf einen Befehl, um zu seinem Abschnitt zu springen.</p>
+  <div class="fchips" id="cchips"></div>
+  <input class="srch" id="csrch" type="search" autocomplete="off" data-ph="clph" placeholder="Befehle filtern…">
+  <div class="cnt" id="ccnt"></div>
+  <div class="atl" id="atl"></div>
+</div></section>
+
+<section id="formats"><div class="wrap">
+  <div class="eyebrow rv" data-i="oe">Pipeline</div>
+  <h2 class="rv" data-i="oh">Vom JSON-Projekt zu jedem Format</h2>
+  <p class="lead rv" data-i="op">Offene Formate zuerst: Es wird bewusst kein proprietäres Dateiformat gelesen oder geschrieben.</p>
+  <div class="flow rv">
+    <div class="node"><small>01</small><h3 data-i="f1h">Projekt</h3><p data-i="f1p">Eine dokumentierte JSON-Datei. Vergleichbar, prüfbar, skriptbar.</p></div>
+    <div class="node"><small>02</small><h3 data-i="f2h">Check und Lint</h3><p data-i="f2p">Statische Rig- und Animationsprüfungen, Sicherheitsprüfungen für Blitze und Bewegung.</p></div>
+    <div class="node"><small>03</small><h3 data-i="f3h">Auswertung</h3><p data-i="f3p">Ein reines evaluate(frame): gleiches Projekt und gleicher Seed, gleiche Pixel.</p></div>
+    <div class="node"><small>04</small><h3 data-i="f4h">Export</h3><p data-i="f4p">Bilder, Video, Vektor, Web und 3D-Austausch.</p></div>
+  </div>
+  <div class="chipbox rv">
+    <div class="card" style="grid-column:auto"><h3 data-i="exh">Export</h3><div class="chips"><span>SVG</span><span>PNG</span><span>PNG sequence</span><span>sprite sheet</span><span>GIF</span><span>APNG</span><span>MP4 · WebM (ffmpeg)</span><span>HTML player</span><span>Lottie</span><span>dotLottie</span><span>glTF 2.0</span><span>OpenEXR</span><span>16-bit PNG</span><span>OCA</span></div></div>
+    <div class="card" style="grid-column:auto"><h3 data-i="imh">Import</h3><div class="chips"><span>SVG</span><span>OpenRaster</span><span>Lottie</span><span>BVH</span><span>PNG/GIF/APNG seq.</span></div></div>
+  </div>
+</div></section>
+
+<section id="det"><div class="wrap">
+  <div class="eyebrow rv" data-i="de">Determinismus</div>
+  <h2 class="rv" data-i="dh">Gleicher Seed, gleiche Pixel</h2>
+  <p class="lead rv" data-i="dp">Ändere den Seed von Lauf B: Der Hash ändert sich. Setze ihn wieder gleich A: Sie stimmen erneut überein. Auf dieser Eigenschaft beruht die Engine, und sie macht CI mit Referenzbildern möglich.</p>
+  <div class="dbox rv">
+    <div class="run"><canvas id="ca"></canvas><div class="row"><span>seed</span><input id="sa" type="number" aria-label="Seed, Lauf A" data-al="alSeedA" value="42"><span>hash@48</span><b id="ha"></b></div></div>
+    <div class="run"><canvas id="cb"></canvas><div class="row"><span>seed</span><input id="sb" type="number" aria-label="Seed, Lauf B" data-al="alSeedB" value="42"><span>hash@48</span><b id="hb"></b></div></div>
+  </div>
+  <div id="match" class="y"></div>
+  <p class="lead" style="margin-top:14px;font-size:.88rem" data-i="dn">Veranschaulichung: ein Partikelausbruch mit Seed in JavaScript, keine Ausgabe der Rust-Engine.</p>
+</div></section>
+
+<section id="status"><div class="wrap">
+  <div class="eyebrow rv" data-i="ste">Ehrlicher Status</div>
+  <h2 class="rv" data-i="sth">Was geprüft ist und was nicht</h2>
+  <p class="lead rv" data-i="stp">Das Projekt nennt seine Grenzen neben seinen Funktionen. Lies LIMITATIONS.md, bevor du dich auf etwas verlässt.</p>
+  <div class="stats rv">
+    <div class="stat"><b data-n="1338">1.338</b><span data-i="k1">Tests in cargo test --workspace ohne die GPU- und Fenster-Crates (plus 19 Doc-Tests), 24. Okt. 2026, Linux x86-64; die CI läuft auch auf macOS und Windows durch</span></div>
+    <div class="stat"><b data-n="78">78</b><span data-i="k2">nummerierte Einschränkungen, mit Schweregrad und Umgehung</span></div>
+    <div class="stat"><b data-n="363">363</b><span data-i="k3">Drittanbieter-Crates im Inventar vom 24. Okt. 2026 (alle Plattformen zusammen)</span></div>
+    <div class="stat"><b data-n="1">1</b><span data-i="k4">bisher veröffentlichtes Release: v0.1.0-alpha.4, eine Vorabversion; „0.7“ ist eine Funktionsstufe, keine Version</span></div>
+  </div>
+  <div class="vs rv">
+    <div class="card y"><h3 data-i="vyh">Geprüft</h3><ul id="vy"><li>1338 Tests plus 19 Doc-Tests laufen lokal durch (24. Okt. 2026, Linux x86-64); dieselbe Suite und clippy laufen auf GitHub Actions für Linux, macOS und Windows durch</li><li>Das WebAssembly-Modul wird in der CI gebaut und der Test des Wrappers läuft darauf unter Node durch; cargo-deny und REUSE bestehen</li><li>4 Headless-Chromium-Smoke-Tests des Studios bestehen (124, 60, 89 und 35 Prüfungen)</li><li>CLI, Rust-Fassade und C-ABI wurden mit den dokumentierten Beispielen ausgeführt, auch unter ASan/UBSan</li></ul></div>
+    <div class="card x"><h3 data-i="vxh">Nicht geprüft</h3><ul id="vx"><li>Das WebAssembly-Modul läuft in Headless-Chromium (die Seite „Ausprobieren“); Geschwindigkeit und Speicher sind nicht gemessen, in anderen Browsern hat es niemand getestet</li><li>Nur eine Person hat den Windows-Starter und die Fenster-App ausprobiert (Windows 11, alpha.2); unter macOS hat sie niemand benutzt; die Binärdateien haben Sigstore-Signaturen, aber keine Windows- oder macOS-Codesignatur</li><li>Das Studio wurde nie von einer Person produktiv benutzt, auch nicht in einem anderen Browser als Chromium</li><li>Nie wurde eine echte GPU, Webcam, Fotografie oder Motion-Capture-Datei benutzt; kein Sicherheitsaudit, keine Rechtsprüfung, keine Patentrecherche</li><li>Der Name OSATURA wurde nur beim EUIPO recherchiert; OSIM, WIPO und eine anwaltliche Einschätzung stehen noch aus</li></ul></div>
+  </div>
+  <div class="warn rv" data-i="ai"><b>Offenlegung:</b> Der Code wurde größtenteils mit einem KI-Modell geschrieben, und das Projekt ist eine unabhängige Implementierung nach öffentlichen Spezifikationen; siehe CLEANROOM.md. Es ist weder mit einem kommerziellen Animationsprodukt verbunden noch davon abgeleitet oder dazu kompatibel.</div>
+  <h3 class="h3s rv" data-i="lxH">Einschränkungs-Explorer</h3>
+  <p class="lead rv" data-i="lxP">Alle nummerierten Einschränkungen aus LIMITATIONS.md, live ausgelesen. Die Balken zeigen den Schweregrad je Bereich; klicke auf einen Bereich zum Filtern.</p>
+  <div class="lbars rv" id="lbars"></div>
+  <div class="fchips" id="lchips"></div>
+  <input class="srch" id="lsrch" type="search" autocomplete="off" data-ph="lxph" placeholder="Einschränkungen durchsuchen…">
+  <div class="cnt" id="lcnt"></div>
+  <div id="llist"></div>
+  <button type="button" class="btn more" id="lmore" style="display:none"></button>
+
+</div></section>
+
+<section id="arch" style="background:var(--bg2)"><div class="wrap">
+  <div class="eyebrow rv" data-i="ae">Architektur</div>
+  <h2 class="rv" data-i="ah">Sechs Crates, ein Workspace</h2>
+  <div class="arch rv">
+    <div class="crate"><code>osatura-core</code><p data-i="a1">Engine, Formate, Werkzeuge und die stabile Rust-Fassade.</p><em>MPL-2.0</em></div>
+    <div class="crate"><code>osatura-cli</code><p data-i="a2">Die Binärdatei osatura, das Studio im Browser und der Kollaborationsserver.</p><em>AGPL-3.0+</em></div>
+    <div class="crate"><code>osatura-capi</code><p data-i="a3">C-ABI: Header, dynamische und statische Bibliothek; auch unter ASan/UBSan ausgeführt.</p><em>MPL-2.0</em></div>
+    <div class="crate"><code>osatura-wasm</code><p data-i="a4">WebAssembly-ABI und JS-Wrapper. In der CI gebaut und unter Node getestet; läuft in Headless-Chromium auf der Seite „Ausprobieren“.</p><em>MPL-2.0</em></div>
+    <div class="crate"><code>osatura-gpu</code><p data-i="a5">Optionaler wgpu-Renderer, kein Standardmitglied.</p><em>MPL-2.0</em></div>
+    <div class="crate"><code>osatura-gui</code><p data-i="a6">Das Studio in einem nativen Fenster (Windows, macOS). In der CI kompiliert und selbstgetestet; Fenster und Exporte hat eine Person unter Windows 11 ausprobiert (alpha.2); der Dialog „Speichern unter“ ist ungetestet.</p><em>AGPL-3.0+</em></div>
+  </div>
+</div></section>
+
+<section id="license"><div class="wrap">
+  <div class="eyebrow rv" data-i="le">Lizenzierung</div>
+  <h2 class="rv" data-i="lh">Bibliotheken zum Einbinden, ein Studio, das offen bleibt</h2>
+  <div class="lic">
+    <div class="card rv"><h3>MPL-2.0</h3><p data-i="l1">Bibliotheken: core, capi, wasm, gpu. Binde sie in offene oder geschlossene Programme ein; Änderungen an diesen Dateien bleiben unter der MPL.</p></div>
+    <div class="card rv"><h3>AGPL-3.0+</h3><p data-i="l2">Die CLI und das Studio. Wenn du sie änderst und anderen über ein Netzwerk anbietest, verlangt Abschnitt 13, ihnen deinen Quellcode anzubieten.</p></div>
+    <div class="card rv"><h3>CC-BY-4.0</h3><p data-i="l3">Dokumentation und synthetische Ressourcen, einschließlich des synthetischen Gesichtserkennungsmodells.</p></div>
+  </div>
+  <p class="lead rv" style="margin-top:24px" data-i="l4">Deine Projekte und Renderings bleiben dein Eigentum. Name und Logo fallen nicht unter diese Lizenzen. Keine Rechtsberatung; eine Prüfung durch einen Anwalt steht noch aus.</p>
+</div></section>
+
+<section id="start"><div class="wrap">
+  <div class="eyebrow rv" style="justify-content:center" data-i="gse">Loslegen</div>
+  <h2 class="rv" data-i="gsh">Baue heute Abend ein Rig</h2>
+  <p class="lead rv" data-i="gsp">Klone es, führe osatura demo aus und öffne das Studio mit dem Ergebnis.</p>
+  <div class="btns rv">
+    <a class="btn p" href="https://github.com/chiuta/osatura" target="_blank" rel="noopener" data-i="g1">Repository öffnen</a>
+    <a class="btn" href="https://github.com/chiuta/osatura/blob/main/docs/GETTING_STARTED.md" target="_blank" rel="noopener" data-i="g2">Erste Schritte</a>
+    <a class="btn" href="https://github.com/chiuta/osatura/blob/main/docs/LIMITATIONS.md" target="_blank" rel="noopener" data-i="g3">Einschränkungen lesen</a>
+  </div>
+  <div class="sup rv"><span data-i="sup">Wenn es dir nützt:</span>
+    <a href="https://buymeacoffee.com/echo.of.the.strings" target="_blank" rel="noopener">Buy Me a Coffee</a>
+    <a href="https://patreon.com/c/alexio_tf" target="_blank" rel="noopener">Patreon</a>
+    <a href="mailto:alexio@trom.tf">alexio@trom.tf</a><small class="who" data-i="supWho">Beide Spendenseiten und die Adresse gehören dem Autor, Alexio.</small></div>
+</div></section>
+
+</main>
+<footer><div class="wrap">
+  <p>© 2026 Alexandru-Ionuț Chiuță (Alexio) · OSATURA</p>
+  <p><a href="https://github.com/chiuta/osatura/blob/main/CODE_SIGNING_POLICY.md" target="_blank" rel="noopener">Code signing policy</a> · <a href="https://github.com/chiuta/osatura/blob/main/PRIVACY.md" target="_blank" rel="noopener">Privacy</a> · <a href="https://github.com/chiuta/osatura/blob/main/docs/UNINSTALL.md" target="_blank" rel="noopener">Uninstall</a></p>
+  <p data-i="foot">Präsentationsseite des Projekts OSATURA. Name und Logo: siehe TRADEMARK.md.</p>
+</div></footer>
+
+<div id="pal" role="dialog" aria-modal="true"><div class="box">
+  <input id="pin" type="text" autocomplete="off" spellcheck="false" data-ph="palph" placeholder="Doku, Befehle, Einschränkungen durchsuchen — oder tippen, um zu springen…">
+  <div id="pr"></div>
+  <div class="ft"><span>↑↓ <span data-i="palNav">navigieren</span></span><span>↵ <span data-i="palOpen">öffnen</span></span><span>esc <span data-i="palClose">schließen</span></span></div>
+</div></div>
+<div id="reader">
+  <div id="rbar"></div>
+  <div class="rh">
+    <button type="button" class="ib" id="rmenu" aria-label="Menü" data-al="alMenu">☰</button>
+    <a class="logo" href="#top"><svg viewBox="0 0 32 32" style="width:22px;height:22px"><path d="M6 26L14 16L26 8" stroke="var(--a)" stroke-width="3" stroke-linecap="round" fill="none"/><g fill="var(--c)"><circle cx="6" cy="26" r="3.2"/><circle cx="14" cy="16" r="3.2"/><circle cx="26" cy="8" r="3.2"/></g></svg>DOCS</a>
+    <span class="path" id="rpath"></span><span class="sp"></span>
+    <button type="button" class="ib" id="rsearch"><span class="sr" data-i="alSearch">Dokumentation durchsuchen</span> Ctrl K</button>
+    <button type="button" class="ib" id="rlang" aria-haspopup="true" aria-label="Sprache: DE" data-al="alLang">DE ▾</button>
+    <button type="button" class="ib" id="rtheme" aria-label="Design" data-al="alTheme">◐</button>
+    <button type="button" class="ib" id="rclose" aria-label="Schließen" data-al="alClose">✕</button>
+  </div>
+  <div class="rb">
+    <aside id="rside" aria-label="Documents"><input id="rfilter" type="search" autocomplete="off" data-ph="rfph" placeholder="Dokumente filtern…"><div id="rnav"></div></aside>
+    <div id="rmain"><article class="art" id="art"></article></div>
+    <aside id="rtoc" aria-label="On this page"></aside>
+  </div>
+</div>
+<div id="lmenu"></div>
+<div id="lb" role="dialog" aria-label="Bild" data-al="alImage"></div>
+<script>window.OSA_ROOT='../';window.OSA_LANG='de'</script>
+<script src="../site/data/app.js?v=067e3a5b38" defer></script>
+</body>
+</html>
