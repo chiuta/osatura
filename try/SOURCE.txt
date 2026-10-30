@@ -1,0 +1,1 @@
+Module: MPL-2.0. Source: https://github.com/chiuta/osatura at bf768e0e8788f27774ab8624552d41851626a3ca

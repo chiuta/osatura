@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title data-t="title">Try OSATURA in your browser (WebAssembly)</title>
+<meta name="description" content="The OSATURA engine compiled to WebAssembly, running in your browser: play the demo character, scrub frames, show bones, or open your own project file.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%230b0e14'/%3E%3Cpath%20d='M8%2024L15%2015L23%209'%20stroke='%235ef0c1'%20stroke-width='3'%20stroke-linecap='round'%20fill='none'/%3E%3Ccircle%20cx='8'%20cy='24'%20r='3'%20fill='%23ffb86b'/%3E%3Ccircle%20cx='15'%20cy='15'%20r='3'%20fill='%23ffb86b'/%3E%3Ccircle%20cx='23'%20cy='9'%20r='3'%20fill='%23ffb86b'/%3E%3C/svg%3E">
+<link rel="canonical" href="https://osatura.chiuta.ro/try/">
+<meta property="og:title" content="Try OSATURA in your browser">
+<meta property="og:image" content="https://osatura.chiuta.ro/site/og.png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<style>
+:root{--bg:#080b11;--card:#111723;--line:#1f2838;--tx:#e9eef7;--mut:#8f9bb3;--a:#5ef0c1;--b:#8493ff;--bad:#ff6b7a}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 18px 60px}
+.wrap{max-width:980px;margin:0 auto}
+a{color:var(--a)}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+h1{font-size:clamp(24px,4vw,34px);line-height:1.2}
+.mut{color:var(--mut)}
+.stage{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;place-items:center;min-height:240px}
+.stage canvas,.stage .svg{max-width:100%;height:auto;border-radius:10px;background:#fff}
+.stage .svg svg{display:block;max-width:100%;height:auto}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0}
+button,label.btn{font:600 14px system-ui,sans-serif;background:#1a2232;color:var(--tx);border:1px solid var(--line);border-radius:999px;padding:9px 16px;cursor:pointer}
+button.pri{background:linear-gradient(90deg,var(--a),var(--b));color:#06110d;border:0}
+button:focus-visible,label.btn:focus-within,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+input[type=range]{flex:1;min-width:160px;accent-color:var(--a)}
+#info{font:13px ui-monospace,Menlo,Consolas,monospace;color:var(--mut)}
+#err{color:var(--bad);white-space:pre-wrap;font:13px ui-monospace,Menlo,monospace}
+.note{margin-top:22px;font-size:14px;color:var(--mut)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head><body><div class="wrap">
+<header><div><h1 data-t="h1">Try OSATURA in your browser</h1>
+<p class="mut" data-t="lead">The real engine compiled to WebAssembly: every frame below is rendered by it, on your machine. Nothing is uploaded.</p></div>
+<a href="../" id="home">← osatura.chiuta.ro</a></header>
+<main>
+<div class="stage" id="stage" aria-live="polite"><p class="mut" id="loading" data-t="loading">Loading the engine (≈ 3 MB)…</p></div>
+<div class="bar">
+<button type="button" class="pri" id="play" disabled>Pause</button>
+<label class="sr" for="scrub" data-t="frame">Frame</label><input type="range" id="scrub" min="0" max="0" step="0.1" value="0" disabled>
+<button type="button" id="bones" aria-pressed="false" disabled data-t="show">Show bones</button>
+<label class="btn"><span data-t="openf">Open a project (.json)</span><input type="file" id="file" accept=".json,application/json" class="sr"></label>
+</div>
+<p id="info"></p><p id="perf" class="mut"></p><p id="err" role="alert"></p>
+<p class="note" data-th="note">Experimental. This page runs the <code>osatura-web</code> package of the <a href="https://github.com/chiuta/osatura/releases">latest prerelease</a>; speed and memory use have not been measured. To create projects use the command-line tool or the studio (<a href="https://github.com/chiuta/osatura/blob/main/docs/GETTING_STARTED.md">getting started</a>). Module licence MPL-2.0, <a href="SOURCE.txt">source</a>; demo character CC-BY-4.0.</p>
+</main>
+</div>
+<script type="module" src="try.js"></script>
+</body></html>
