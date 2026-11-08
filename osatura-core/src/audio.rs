@@ -136,7 +136,7 @@ pub fn exposures(v: &[Viseme], mapping: &[usize; 5]) -> Vec<(f32, usize)> {
 /// Number of children of the switch layer `layer` (`None` if there is no such switch layer).
 pub fn switch_children(p: &crate::project::Project, layer: &str) -> Option<usize> {
     match &p.find_layer(layer)?.kind {
-        crate::project::LayerKind::Switch { layers, .. } => Some(layers.len()),
+        crate::project::LayerKind::Selector { layers, .. } => Some(layers.len()),
         _ => None,
     }
 }
@@ -165,7 +165,7 @@ pub fn lipsync_channel(target: &str, a: &Audio, fps: f32, frames: u32, mapping: 
 pub fn lipsync_checked(p: &crate::project::Project, layer: &str, a: &Audio, mapping: &[usize; 5]) -> Result<Channel, String> {
     let l = p.find_layer(layer).ok_or_else(|| format!("no layer '{layer}'"))?;
     let n = match &l.kind {
-        crate::project::LayerKind::Switch { layers, .. } => layers.len(),
+        crate::project::LayerKind::Selector { layers, .. } => layers.len(),
         _ => return Err(format!("layer '{layer}' is not a switch layer")),
     };
     if let Some(bad) = mapping.iter().find(|&&m| m >= n) {

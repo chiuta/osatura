@@ -73,7 +73,7 @@ than CIEDE2000. See `percep`.
 Sharma, Wu and Dalal (2005) and checked against their published test pairs. Used by animation CI to
 judge visible change. See `percep`, `ci`; `docs/CI.md`.
 
-**Clean room.** The development rule that code is written from public standards and textbook methods,
+**Independent implementation (not a strict clean room).** The development rule that code is written from public standards and textbook methods,
 with no copied code and no reproduction of other tools' formats or names. Each technique is logged in
 `CLEANROOM.md`.
 

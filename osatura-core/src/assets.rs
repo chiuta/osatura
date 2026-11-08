@@ -200,7 +200,7 @@ pub fn rewrite_relative_assets(p: &mut crate::project::Project, from: &Path, to:
                         rewrite_one(f, from, to, fc, tc, notes);
                     }
                 }
-                crate::project::LayerKind::Group { layers } | crate::project::LayerKind::Switch { layers, .. } => walk(layers, from, to, fc, tc, notes),
+                crate::project::LayerKind::Group { layers } | crate::project::LayerKind::Selector { layers, .. } => walk(layers, from, to, fc, tc, notes),
                 _ => {}
             }
         }

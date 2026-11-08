@@ -127,7 +127,7 @@ Adding tests: put engine tests next to the code (`#[cfg(test)]`), CLI behaviour 
 7. **End-to-end**: add the command to the e2e pipeline if it belongs to the production path; add a smoke check to the studio scripts if it has UI.
 8. **Run**: `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `scripts/licence-audit.sh` (when dependencies or headers changed).
 
-## 6. Clean-room rules and DCO
+## 6. Independent-implementation rules and DCO
 
 The project is an independent implementation. In short (the binding text is [CLEANROOM.md](../CLEANROOM.md) and [CONTRIBUTING.md](../CONTRIBUTING.md)):
 

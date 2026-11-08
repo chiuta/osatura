@@ -503,7 +503,7 @@ If ffmpeg is missing the command fails with `cannot run ffmpeg (...)` and writes
   claims have been announced for both; **status: not assessed, do not treat VP9/AV1 as cleared.** Because ffmpeg is the user's own installation, every
   codec choice is the user's responsibility, and OSATURA must not bundle ffmpeg.
 * The deterministic raster, GIF, APNG, PNG, SVG, OpenEXR, OCA, ORA, glTF and Lottie writers are OSATURA's own implementations from public
-  format descriptions (clean-room, see CLEANROOM.md). Their patent status is not assessed beyond that: PATENT_NOTES.md lists only the areas above
+  format descriptions (independent implementation, see CLEANROOM.md). Their patent status is not assessed beyond that: PATENT_NOTES.md lists only the areas above
   (face-driven puppeteering, state machines and data binding, FABRIK/MVC/weights, stencil-then-cover filling, codecs).
 * GIF: the LZW patents are long expired in all jurisdictions; this is general knowledge, not a clearance recorded in the repository.
 * Licences of produced files: files you export are yours; the engine is MPL-2.0 and the CLI AGPL-3.0-or-later, which applies to the programs, not to the

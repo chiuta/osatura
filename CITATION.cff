@@ -3,7 +3,7 @@
 cff-version: 1.2.0
 message: "If you use OSATURA in your work, please cite it as below."
 title: "OSATURA"
-abstract: "A clean-room 2D rigging and animation engine in Rust, with a command-line tool, a browser studio and a WebAssembly module."
+abstract: "An independently implemented 2D rigging and animation engine in Rust, with a command-line tool, a browser studio and a WebAssembly module."
 type: software
 authors:
   - family-names: "Chiuță"

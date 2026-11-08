@@ -846,7 +846,7 @@ fn lock_free_replace(p: &mut Project, ch: Channel) -> Result<(), String> {
 pub fn apply_lipsync(p: &mut Project, layer: &str, al: &Alignment, lang: Lang, mapping: &[usize; 5], o: &LipOptions) -> Result<usize, String> {
     let l = p.find_layer(layer).ok_or_else(|| format!("no layer '{layer}'"))?;
     let n = match &l.kind {
-        LayerKind::Switch { layers, .. } => layers.len(),
+        LayerKind::Selector { layers, .. } => layers.len(),
         _ => return Err(format!("layer '{layer}' is not a switch layer")),
     };
     if let Some(bad) = mapping.iter().find(|&&m| m >= n) {
