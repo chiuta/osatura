@@ -54,9 +54,11 @@ Eticheta mai apare în ~96 de fișiere în afara `CLEANROOM.md` (comentarii „C
 ### Brevete (observații, fără evaluare)
 `docs/PATENT_NOTES.md` nu acoperă: aliniere forțată pentru lip-sync (`speech.rs`), completare/interpolare automată de poze (`posesuggest`, `tinymlp`), retargeting mocap, rigging automat (`autorig`), bucle fără cusătură/potrivire de spring (`looper`, `springfit`), fizică (`physics`, `cloth`), CRDT pentru colaborare (`collab`), vectorizare automată (`autotrace`), hash perceptual (`percep`), efecte de imagine (`dof`, `relight`), merge semantic (`vcs`, `semdiff`). Ocolirea brevetelor Adobe citate în `ROADMAP.md:40` (RBF Wendland) nu a fost verificată de un specialist.
 
-### De completat de către titular
-- Ce a existat înainte de commit-ul din 2026-10-23 și dacă sesiunile au avut acces la Moho, la documentația ori la scripturile lui: ______
-- Ce a citit efectiv agentul de cercetare din depozitele GPL/Spine (nu se poate stabili din repo): ______
-- Decizia pentru `Switch`/`Liquid` (redenumire sau justificare): ______
+### Completat din istoricul conversațiilor Claude (2026-11-08)
+Sursa: conversația claude.ai „Moho 14.5 Rust implementation" (508 de rânduri/ture; pornită cu cercetare web). Nu s-a citit integral; ce nu apare mai jos nu este confirmat.
+- **Acces la Moho:** în porțiunile citite, sesiunea a pornit de la căutări web despre Moho 14.5 și de la cererea de implementare clean-room. Nu apare nicio instalare, decompilare sau citire a binarului ori a scripturilor Moho. Absența nu este dovedită pentru ture necitite. Titularul confirmă: ______
+- **Depozite deschise (runda 7, 2026-10-19):** agentul a citit prin WebFetch doar paginile/README-urile publice ale unor proiecte (Tahoma2D, Pencil2D, rive-runtime, spine-runtimes, dotlottie-rs, Glaxnimate, Friction, topicuri GitHub) și a consemnat în FEATURES.md doar funcții declarate. GitLab/Codeberg au fost blocate de proxy. Nu s-a citit cod sursă din depozitele GPL, ci doar README-uri. Rezultatul este un tabel de funcții („Seen in"), nu cod.
+- **Intenția folosirii listei de funcții:** FEATURES.md a servit ca roadmap funcțional (idei 1–77). Funcțiile sunt idei/capabilități, nu expresie; rămâne riscul de similaritate de nume și de brevete (vezi mai sus).
+- **Switch/Liquid:** decizie neconsemnată în istoric. Titularul decide (redenumire sau justificare): ______
 
 **Limite:** nu s-a rulat `cargo`/`cargo deny` (toolchain nedescărcabil în audit); nu s-a comparat cu depozite terțe și nu s-a rulat un test de similaritate de cod; binarele nu au fost reconstruite; EULA Moho nu a fost citit; nu este opinie juridică și nici analiză de libertate de operare pentru brevete.
