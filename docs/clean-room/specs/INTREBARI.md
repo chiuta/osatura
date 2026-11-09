@@ -12,3 +12,7 @@ Format: spec · punct · ce lipsește · ce s-a implementat între timp. Complet
 - Integrarea în tipul `Ease` (care este `Copy`): curba pe segmente are o listă de puncte, deci nu poate fi variantă `Copy` simplă. Opțiuni: (a) scoate `Copy` din `Ease` (373 de utilizări în workspace), (b) bibliotecă de curbe numite la nivel de proiect și variantă `Ease::Named(index)`, (c) număr fix de puncte. Neimplementat: modulul `segease` oferă curbele și validarea, fără legătură cu `Track`/format.
 - Intrarea implicită a ultimului punct când el are intrare explicită < 100 %: spec zice „cel puțin 1" (necunoscut). S-a ales: maximul dintre 1 și cea mai mare intrare anterioară; nu e acoperit de teste de acceptanță.
 - Plafon ales de implementare: 4096 de puncte/trepte.
+
+## 03 — panoramare stereo
+- Conectarea la `sound mix` și câmpul `pan` pe `SoundTrack`: mixarea curentă este un graf de filtre ffmpeg (`soundtrack::track_chain`); modulul `stereopan` este o funcție pură pe eșantioane. Nu s-a ghicit nicio echivalență cu filtrele ffmpeg. Decizie necesară: mixer intern pentru WAV, sau pan-ul se aplică în afara ffmpeg. Neimplementat: câmpul `pan` și apelul din mix.
+- Rampa de netezire la schimbarea lui p și mixarea canalelor > 2: [necunoscut] în spec, neimplementate. Panoramarea cu chei (interpolare liniară în timp, p. 7 din spec) este implementată ca `pan_mono_keyed`, fără test de acceptanță al specificației.

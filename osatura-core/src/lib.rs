@@ -128,6 +128,8 @@ pub mod formatschema;
 #[doc(hidden)]
 pub mod segease;
 #[doc(hidden)]
+pub mod stereopan;
+#[doc(hidden)]
 pub mod speech;
 #[doc(hidden)]
 pub mod gltf;
