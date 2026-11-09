@@ -8,7 +8,8 @@
 //! * Fills become flat triangle meshes (ear clipping). Shapes are *rigid*: a layer with a `bone`
 //!   follows that bone node; other shapes stay put. Shapes whose anchors all carry bone weights are
 //!   skinned meshes (JOINTS_0/WEIGHTS_0, 4 influences per vertex, weights interpolated along each
-//!   segment). Layer transform animation (non-bone) and opacity animation are not exported.
+//!   segment). Layer transform animation (non-bone) is exported only with `GlbOptions::layer_animation`
+//!   (sampled parent nodes, see `export_glb_with`); opacity animation is not exported.
 //! * Strokes are triangulated into their own meshes (width, width profile, butt/round/square caps,
 //!   miter/round/bevel joins with a miter limit of 4, dashes). Stroke vertices inherit the bone
 //!   weights of the path point they were offset from. Translucent strokes can look darker where

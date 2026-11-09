@@ -8,8 +8,9 @@
 //! docs/clean-room/specs/07-gltf-animatie-transformari-strat.md). Accessor details (component type, `min`/`max` of the time accessor) follow
 //! what the existing bone-animation export in this module already writes.
 //!
-//! Not yet called by the exporter: the project's layer-to-node mapping for non-bone layers is not specified, so layer transform animation
-//! is still frozen at frame 0 (see docs/clean-room/specs/INTREBARI.md).
+//! Called by the exporter only when `GlbOptions::layer_animation` is set (CLI `export ... .glb --layer-anim`): each moving rigid shape layer
+//! gets a parent node and sampled LINEAR tracks (see `export_glb_with` and docs/clean-room/specs/INTREBARI.md). STEP, CUBICSPLINE and
+//! the keyed (non-sampled) mapping of project tracks are not used by the exporter.
 #![allow(dead_code)]
 
 use super::geometry::{f32s, Bin};

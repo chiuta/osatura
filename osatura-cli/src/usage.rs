@@ -55,7 +55,7 @@ OPEN FORMATS (open specifications; no H.264/H.265 unless you ask for .mp4; codec
   osatura export   <project.json> <out.apng> [--scale N]   animated PNG
   osatura export   <project.json> <out.webm> [--scale N] [--codec vp9|av1]   VP9 with alpha (--codec av1 for AV1) via ffmpeg
   osatura export   <project.json> <out.png> [--scale N] [--columns N]   sprite sheet + <out>.atlas.json (layout; never <out>.json)
-  osatura export   <project.json> <out.glb> [--report r.json]   glTF 2.0 (bones, animation, skinned fills/strokes, gradients, masks, images, morph targets)
+  osatura export   <project.json> <out.glb> [--report r.json] [--layer-anim]   glTF 2.0 (bones, animation, skinned fills/strokes, gradients, masks, images, morph targets); --layer-anim also animates the position, rotation and scale of rigid shape layers
   osatura export-oca <project.json> <out_dir> [--layers]   Open Cel Animation folder
   osatura import-ora <file.ora> <out.json> [--fps N] [--frames N]   OpenRaster -> project
 

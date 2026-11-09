@@ -105,7 +105,7 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                 }
                 "apng" => { warn_silent(&e, "APNG"); fwrite(out, open_formats::apng_bytes(&e, a.scale)?).map_err(|e| e.to_string())? }
                 "glb" => {
-                    let (bytes, notes) = osatura_core::gltf::export_glb_report(&e)?;
+                    let (bytes, notes) = osatura_core::gltf::export_glb_with(&e, &osatura_core::gltf::GlbOptions { layer_animation: a.flags.iter().any(|f| f == "--layer-anim") })?;
                     fwrite(out, bytes).map_err(|e| e.to_string())?;
                     report_warnings(a, path, "glb", notes.into_iter().map(|n| ("glb-limit", String::new(), n)).collect())?;
                 }

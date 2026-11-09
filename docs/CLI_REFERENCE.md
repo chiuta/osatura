@@ -518,7 +518,7 @@ osatura export <project.json> <out.mp4> [--scale N]
 osatura export <project.json> <out.apng> [--scale N]
 osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1]
 osatura export <project.json> <out.png> [--scale N] [--columns N]
-osatura export <project.json> <out.glb> [--report r.json]
+osatura export <project.json> <out.glb> [--report r.json] [--layer-anim]
 ```
 (one form per format; the output extension, case-insensitive, picks the form. An option that the form does not list is refused: `unknown option --scale for 'export .json' (applies to: export .gif, export .mp4, ...)`. With an unknown or missing extension the format error is reported instead.)
 
@@ -542,6 +542,7 @@ Options:
 |---|---|
 | `--scale N` | Raster scale (0, 16] for `.gif .mp4 .apng .webm .png`. On other formats it is refused (`unknown option --scale for 'export .json'`); before wave 7 it was a warning. |
 | `--report FILE` | Write the list of things the format could not carry as JSON (`.gif .json .lottie .glb`): `{"format","count","warnings":[{"code","layer","message"}]}`. The same warnings are always printed on stderr. The file may not be the input project. |
+| `--layer-anim` | `.glb` only: also animate the position, rotation and scale of rigid (not skinned) shape layers. Each moving layer gets a parent node with sampled LINEAR translation, rotation and scale channels relative to its frame-0 placement, in the space of the bone it follows (or the stage), so animated groups and the camera-compensated stage are included; layers that do not move are written exactly as without the flag. Skew, opacity, switches, wobble and deformers are still not animated (reported as `[glb-limit]`). |
 | `--codec vp9\|av1` | `.webm` only (default `vp9`); any other value: `unknown --codec 'foo' (vp9 or av1)`. |
 | `--columns N` | `.png` sprite sheet only: tiles per row (default: a near-square grid, ceil(sqrt(frames)): 3 columns for 8 frames). |
 
