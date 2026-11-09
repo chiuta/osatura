@@ -193,6 +193,7 @@ EDITING / GENERATORS / IMPORT
   osatura keys     scale <project.json> <out.json> --factor X [--pivot F --from F --to F --target NAME --prop PROP]   scale key times about a pivot frame
   osatura keys     ease <project.json> <out.json> --ease linear|step|ease_in|ease_out|ease_in_out|smooth [--from F --to F --target NAME --prop PROP]   set the easing of the keys
   osatura keys     reverse <project.json> <out.json> [--from F --to F --target NAME --prop PROP]   reverse the key order inside the range
+  osatura keys     curve <project.json> <out.json> --curve piecewise:STOP,STOP,...|steps:N[:position] [--from F --to F --target NAME --prop PROP]   bake a piecewise-linear or stepped easing curve into the segments that start in the range
   osatura marker   <project.json> <out.json> <name> <frame> [--end F]
   osatura idle     blink <project.json> <out.json> --target T --prop P [--interval S --jitter X --closed F --seed N]   random blinks
   osatura idle     breath <project.json> <out.json> --target T --prop P [--amp A --period F]   slow scale breathing

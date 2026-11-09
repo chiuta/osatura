@@ -272,7 +272,7 @@ fn usage_forms_split_alternatives() {
     assert_eq!(f.iter().map(|x| x.keys[0].as_str()).collect::<Vec<_>>(), ["init", "run", "bless", "diff"]);
     assert!(select_forms("golden", &args(&["golden", "write"]), &[]).iter().all(|f| f.keys == ["write"]));
     assert_eq!(usage_forms().iter().filter(|f| f.cmd == "keyedit").count(), 16);
-    assert_eq!(usage_forms().iter().filter(|f| f.cmd == "keys").count(), 4);
+    assert_eq!(usage_forms().iter().filter(|f| f.cmd == "keys").count(), 5);
     assert_eq!(usage_forms().iter().filter(|f| f.cmd == "idle").count(), 3);
     assert_eq!(usage_forms().iter().filter(|f| f.cmd == "snapshot").count(), 4);
     assert_eq!(usage_forms().iter().filter(|f| f.cmd == "comp").count(), 2);

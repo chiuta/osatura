@@ -65,3 +65,34 @@ fn render_shutter_blurs_a_moving_demo_and_rejects_bad_use() {
     assert!(bad(&["--shutter", "90", "--samples", "0"], blur.to_str().unwrap()).contains("samples"));
     std::fs::remove_dir_all(proj.parent().unwrap()).ok();
 }
+
+fn keys_of(project: &std::path::Path, target: &str) -> Vec<(f64, f64, String)> {
+    let v: serde_json::Value = serde_json::from_slice(&std::fs::read(project).unwrap()).unwrap();
+    let c = v["channels"].as_array().unwrap().iter().find(|c| c["target"] == target && c["prop"] == "bone_angle").unwrap();
+    c["track"]["keys"].as_array().unwrap().iter().map(|k| (k["frame"].as_f64().unwrap(), k["value"].as_f64().unwrap(), k["ease"]["type"].as_str().unwrap_or("linear").to_string())).collect()
+}
+
+#[test]
+fn keys_curve_bakes_a_stepped_curve_into_the_selected_segment_only() {
+    let proj = tmp("curve-demo.json");
+    let p = proj.to_str().unwrap();
+    assert!(osatura(&["demo", p]).status.success());
+    let out = tmp("curve-out.json");
+    let o = osatura(&["keys", "curve", p, out.to_str().unwrap(), "--curve", "steps:4", "--target", "arm_up", "--prop", "bone_angle", "--from", "0", "--to", "0"]);
+    assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
+    let (before, after) = (keys_of(&proj, "arm_up"), keys_of(&out, "arm_up"));
+    // the first segment (0..12, 0 -> -25) became four held plateaus, the rest is unchanged
+    assert_eq!(after.len(), before.len() + 3);
+    let head: Vec<(f64, f64, &str)> = after[..4].iter().map(|k| (k.0, k.1, k.2.as_str())).collect();
+    assert_eq!(head, vec![(0.0, 0.0, "step"), (3.0, -6.25, "step"), (6.0, -12.5, "step"), (9.0, -18.75, "step")]);
+    assert_eq!(after[4..], before[1..]);
+    // other channels are not touched
+    assert_eq!(keys_of(&proj, "hand"), keys_of(&out, "hand"));
+    // refusals say why and write nothing
+    let gone = tmp("curve-none.json");
+    let o = osatura(&["keys", "curve", p, gone.to_str().unwrap(), "--curve", "steps:4:jump-start"]);
+    assert!(!o.status.success() && String::from_utf8_lossy(&o.stderr).contains("not 0"));
+    assert!(!gone.exists());
+    let o = osatura(&["keys", "curve", p, gone.to_str().unwrap()]);
+    assert!(!o.status.success() && String::from_utf8_lossy(&o.stderr).contains("--curve"));
+}

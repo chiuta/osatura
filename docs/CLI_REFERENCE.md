@@ -874,6 +874,7 @@ osatura keys shift <project.json> <out.json> --by N [--from F --to F --target NA
 osatura keys scale <project.json> <out.json> --factor X [--pivot F --from F --to F --target NAME --prop PROP]
 osatura keys ease <project.json> <out.json> --ease linear|step|ease_in|ease_out|ease_in_out|smooth [--from F --to F --target NAME --prop PROP]
 osatura keys reverse <project.json> <out.json> [--from F --to F --target NAME --prop PROP]
+osatura keys curve <project.json> <out.json> --curve piecewise:STOP,STOP,...|steps:N[:position] [--from F --to F --target NAME --prop PROP]
 ```
 Each operation accepts only its own options (`keys shift --factor 2` is refused); `--by`, `--factor` and `--ease` are required for their operation (an omitted `--by` or `--factor` used to be a silent no-op).
 
@@ -885,6 +886,9 @@ Bulk key operations over **all keyed channels** (filtered by `--target` / `--pro
 | `scale` | `--pivot F --factor X` | Scale key times about the pivot frame. |
 | `ease` | `--ease E` | Set the easing of the keys (named easings; use `keyedit ease` for `bezier:`). |
 | `reverse` | - | Reverse the key order inside the range. |
+| `curve` | `--curve C` | Bake a piecewise-linear or stepped easing curve into every segment that **starts** at a key in the range. |
+
+**`keys curve`.** `--curve piecewise:STOP,STOP,...` takes stops written `output [input [input]]` (inputs as fractions or percentages, so `piecewise:0,0.25 75%,1` rises to a quarter at three quarters of the segment, then to the end value); `--curve steps:N[:position]` takes `jump-end` (default) or `jump-none`. The stop and input rules (missing inputs spread evenly, an input below an earlier one raised to it, two inputs on one stop, at least 2 stops) follow the public CSS Easing Functions Level 2 draft. The curve is **baked**: the start key keeps its value, gets the first ease (linear, or step for a stepped curve) and keys are inserted so that the ordinary key interpolation reproduces the curve exactly; the curve itself is not stored, the project format is unchanged, and old projects load as before. A segment's end key is never changed, so a curve must start at 0 and end at 1: a curve that does not (`jump-start` and `jump-both` steps, a piecewise curve starting above 0), and a piecewise curve with a vertical jump (two stops with the same input and different outputs), are refused with the reason and nothing is written. At most 200000 keys per track.
 
 ```
 $ osatura keys shift small.json k1.json --target arm_up --prop bone_angle --by 2
@@ -893,6 +897,7 @@ $ osatura keys scale small.json k2.json --pivot 0 --factor 0.5 --from 0 --to 48
 wrote k2.json (37 key(s) changed)
 $ osatura keys reverse small.json k4.json
 wrote k4.json (37 key(s) changed)
+$ osatura keys curve small.json k5.json --curve steps:4 --target arm_up --prop bone_angle --from 0 --to 12
 ```
 Keys moved outside `0..frames-1` stay in the file (lint reports `L007`); this command does not extend the project length. **Related:** `keyedit` (precise, selection based), `loop-solve`.
 
