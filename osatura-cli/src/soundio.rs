@@ -30,15 +30,61 @@ fn codec_for(ext: &str) -> Result<&'static [&'static str], String> {
     }
 }
 
-/// Decode a track's whole file to 32-bit float WAV at its own sample rate and channel count (ffmpeg), read it back.
-fn decode_float(path: &Path, tmp: &Path) -> Result<(usize, u32, Vec<f32>), String> {
-    run(Command::new("ffmpeg")
-        .args(["-y", "-loglevel", "error", "-protocol_whitelist", "file"])
+/// Sample rate and channel count of the first audio stream (ffprobe); `None` when ffprobe is missing or cannot tell.
+fn probe_rate_channels(path: &Path) -> Option<(u32, u32)> {
+    let path = if path.is_absolute() || path.starts_with(".") { path.to_path_buf() } else { Path::new(".").join(path) };
+    let out = Command::new("ffprobe")
+        .args(["-v", "error", "-protocol_whitelist", "file"])
+        .args(soundtrack::forced_demuxer(&path).map(|f| ["-f", f]).unwrap_or(["-hide_banner", "-hide_banner"]))
+        .args(["-select_streams", "a:0", "-show_entries", "stream=sample_rate,channels", "-of", "default=nw=1"])
+        .arg("-i")
+        .arg(&path)
+        .output()
+        .ok()?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    let get = |k: &str| text.lines().find_map(|l| l.strip_prefix(k)?.strip_prefix('=')?.trim().parse::<u32>().ok());
+    Some((get("sample_rate")?, get("channels")?))
+}
+
+/// Decode a track's file (up to its `trim_out`, which is all the mix can use of it) to 32-bit float WAV at its own sample rate and
+/// channel count (ffmpeg), read it back. The decoded size is checked BEFORE anything is written when the length, rate and channels
+/// are known (ffprobe), and ffmpeg is told to stop at the size cap anyway, so no more than the cap is ever written to the scratch dir.
+fn decode_float(s: &osatura_core::soundtrack::SoundTrack, path: &Path, tmp: &Path) -> Result<(usize, u32, Vec<f32>), String> {
+    let cap = osatura_core::assets::MAX_AUDIO_BYTES;
+    let too_long = |detail: String| {
+        format!(
+            "sound '{}': '{}' is too long for pan or filters ({detail}; the limit is {} MB of decoded audio): set a shorter --trim-out or use a shorter file",
+            s.name,
+            s.file,
+            cap >> 20
+        )
+    };
+    let clip_end = match (s.trim_out, soundtrack::file_duration(path)) {
+        (Some(t), Some(d)) => Some(t.min(d)),
+        (Some(t), None) => Some(t),
+        (None, d) => d,
+    };
+    if let (Some(end), Some((rate, ch))) = (clip_end, probe_rate_channels(path)) {
+        let bytes = f64::from(end.max(0.0)) * f64::from(rate) * f64::from(ch) * 4.0;
+        if bytes > cap as f64 {
+            return Err(too_long(format!("about {:.0} s of {ch} channel(s) at {rate} Hz would need {:.0} MB", end, bytes / 1_048_576.0)));
+        }
+    }
+    let mut cmd = Command::new("ffmpeg");
+    cmd.args(["-y", "-loglevel", "error", "-protocol_whitelist", "file"])
         .args(soundtrack::forced_demuxer(path).map(|f| ["-f", f]).unwrap_or(["-hide_banner", "-hide_banner"]))
         .arg("-i")
         .arg(path)
-        .args(["-vn", "-c:a", "pcm_f32le"])
-        .arg(tmp))?;
+        .args(["-vn", "-c:a", "pcm_f32le"]);
+    if let Some(t) = s.trim_out.filter(|t| t.is_finite() && *t > 0.0) {
+        cmd.args(["-t", &format!("{t}")]);
+    }
+    cmd.args(["-fs", &(cap + 1).to_string()]).arg(tmp);
+    run(&mut cmd)?;
+    if std::fs::metadata(tmp).map(|m| m.len() > cap).unwrap_or(false) {
+        let _ = std::fs::remove_file(tmp);
+        return Err(too_long("the decoded audio exceeds the limit".into()));
+    }
     soundtrack::read_samples(tmp)
 }
 
@@ -52,7 +98,7 @@ fn prepare_effects(p: &Project, base: &Path, scratch: &Path) -> Result<soundtrac
         }
         let path = soundtrack::track_path(base, s)?;
         osatura_core::assets::check_regular(&path, osatura_core::assets::MAX_AUDIO_BYTES, "sound file")?;
-        let (ch, rate, samples) = decode_float(&path, &scratch.join(format!("dec{i}.wav")))?;
+        let (ch, rate, samples) = decode_float(s, &path, &scratch.join(format!("dec{i}.wav")))?;
         for f in &s.filters {
             for w in osatura_core::biquad::warnings(f64::from(rate), &f.to_biquad()?) {
                 eprintln!("warning: sound '{}': {w}", s.name);
@@ -169,6 +215,39 @@ mod tests {
     fn level(a: &osatura_core::audio::Audio, from: f32, to: f32) -> f32 {
         let s = &a.samples[(from * a.sample_rate as f32) as usize..(to * a.sample_rate as f32) as usize];
         s.iter().fold(0.0f32, |m, v| m.max(v.abs()))
+    }
+
+    /// Pan / filters on a track whose decoded size is over the cap are refused before ffmpeg writes anything; with a trim-out
+    /// the same file works. 20 minutes of 44.1 kHz stereo silence is 423 MB decoded (cap 256 MiB) and a few hundred KB as FLAC.
+    #[test]
+    fn pan_on_an_over_long_file_fails_early_and_a_trim_out_makes_it_work() {
+        if !have_ffmpeg() || !Command::new("ffprobe").arg("-version").output().map(|o| o.status.success()).unwrap_or(false) {
+            return;
+        }
+        let scratch = osatura_core::fsutil::ScratchDir::new("osatura_soundio_long_test");
+        let dir = scratch.to_path_buf();
+        let made = Command::new("ffmpeg")
+            .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo", "-t", "1200", "-c:a", "flac"])
+            .arg(dir.join("long.flac"))
+            .status();
+        if !made.map(|s| s.success()).unwrap_or(false) {
+            return; // ffmpeg without the flac encoder or lavfi
+        }
+        let mut p = Project::new("t", 10.0, 10.0, 10.0, 20);
+        let mut t = SoundTrack::new("long", "long.flac", 0.0, 1.0);
+        t.pan = Some(0.2);
+        soundtrack::add_track(&mut p, t.clone()).unwrap();
+        let scratch2 = dir.join("fx");
+        std::fs::create_dir_all(&scratch2).unwrap();
+        let err = prepare_effects(&p, &dir, &scratch2).unwrap_err();
+        assert!(err.contains("'long'") && err.contains("long.flac") && err.contains("too long"), "{err}");
+        assert!(!err.contains("dec0.wav"), "the error names the user's file, not a temp file: {err}");
+        assert!(!scratch2.join("dec0.wav").exists(), "nothing was decoded");
+        let mut q = Project::new("t", 10.0, 10.0, 10.0, 20);
+        t.trim_out = Some(5.0);
+        soundtrack::add_track(&mut q, t).unwrap();
+        let o = prepare_effects(&q, &dir, &scratch2).unwrap();
+        assert_eq!(o.len(), 1);
     }
 
     #[test]
