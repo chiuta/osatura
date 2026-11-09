@@ -17,8 +17,9 @@ USAGE:
   osatura demo-person <out.json>                      write the walking-person demo (head, ears, hands with fingers, feet)
   osatura demo-fx  <out.json>                         write the liquid / boolean / particles demo
   osatura check    <project.json>                     validate a project
-  osatura render   <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N]
+  osatura render   <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
                     --proxy N: scrub proxy (N = 1..4): .png = bitmap at 1/2^N resolution, .svg = simplified vectors; both drop fine strokes, gradients, blends
+                    --shutter DEG: motion blur (.png only): average --samples N (default 8) renders over DEG/360 of the frame time, starting --shutter-phase SEC (default 0) after the frame time
   osatura frames   <project.json> <out_dir> [--png] [--bones] [--scale N]
   osatura export   <project.json> <out.gif> [--scale N] [--report r.json]   looping GIF; limits are warned on stderr and listed in --report
   osatura export   <project.json> <out.html|out.htm>   one self-contained HTML player (no options)

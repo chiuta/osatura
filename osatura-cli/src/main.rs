@@ -520,8 +520,36 @@ fn write_frame(e: &Engine, frame: f32, out: &Path, a: &Args) -> Result<(), Strin
         Some(v) => v.parse::<u8>().map_err(|_| format!("--proxy needs a level 0..={}, got '{v}'", osatura_core::scrub::MAX_LEVEL))?,
     };
     osatura_core::scrub::check_level(proxy)?;
+    let shutter = match a.opts.get("--shutter") {
+        None => {
+            if a.opts.contains_key("--samples") || a.opts.contains_key("--shutter-phase") {
+                return Err("--samples and --shutter-phase need --shutter DEG".into());
+            }
+            None
+        }
+        Some(v) => {
+            let angle: f64 = v.parse().map_err(|_| format!("--shutter needs an angle in degrees, got '{v}'"))?;
+            let samples: u32 = match a.opts.get("--samples") {
+                None => 8,
+                Some(s) => s.parse().map_err(|_| format!("--samples needs a whole number, got '{s}'"))?,
+            };
+            let phase_s: f64 = match a.opts.get("--shutter-phase") {
+                None => 0.0,
+                Some(s) => s.parse().map_err(|_| format!("--shutter-phase needs seconds, got '{s}'"))?,
+            };
+            let sh = osatura_core::motionblur::Shutter { angle_deg: angle, samples, phase_s };
+            sh.validate()?;
+            if !png || proxy > 0 {
+                return Err("--shutter works with .png output and without --proxy (nothing was written)".into());
+            }
+            Some(sh)
+        }
+    };
     e.evaluate_checked(frame)?;
-    let bytes = if proxy > 0 && png {
+    let bytes = if let Some(sh) = shutter {
+        let (w, h, px) = osatura_core::motionblur::render_engine(e, frame, &RasterOptions { scale: a.scale, show_bones: bones, transparent: false }, &sh)?;
+        osatura_core::open_formats::encode_rgba_png(w, h, &px)?
+    } else if proxy > 0 && png {
         osatura_core::scrub::render_proxy_png(e, frame, proxy, a.scale, bones)?
     } else if proxy > 0 {
         osatura_core::scrub::proxy_svg_vector(e, frame, proxy, bones)?.into_bytes()
