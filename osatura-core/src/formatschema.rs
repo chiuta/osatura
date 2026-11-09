@@ -443,6 +443,30 @@ pub fn project_format(strict: bool) -> FormatDesc {
             f("stretch", Real).default(json!(1)),
         ],
     );
+    let filter = TypeDesc::new(
+        "TrackFilter",
+        vec![
+            f("kind", Enum(["lowpass", "highpass", "bandpass", "notch", "allpass", "peaking", "lowshelf", "highshelf"].iter().map(|s| s.to_string()).collect())),
+            f("freq", Real).range(Some(0.0), None).doc("Corner or centre frequency, Hz (> 0)."),
+            f("q", Real).default(json!(0.7071067811865476)).doc("Quality factor."),
+            f("gain_db", Real).default(json!(0)).doc("dB; peaking and shelves only."),
+        ],
+    );
+    let sound = TypeDesc::new(
+        "Sound",
+        vec![
+            f("name", Text),
+            f("file", Text).doc("Path relative to the project file, or absolute."),
+            f("start", Real).default(json!(0)).doc("Frame at which the sound starts."),
+            f("gain", Real).default(json!(1)).doc("Linear gain 0..4."),
+            f("trim_in", Real).default(json!(0)).doc("Seconds."),
+            f("trim_out", Real).optional().doc("Seconds; omitted = to the end of the file."),
+            f("fade_in", Real).default(json!(0)).doc("Seconds."),
+            f("fade_out", Real).default(json!(0)).doc("Seconds."),
+            f("pan", Real).optional().range(Some(-1.0), Some(1.0)).doc("Constant stereo pan, -1 (left) .. 1 (right); omitted = no pan stage."),
+            f("filters", List(Box::new(Ref("TrackFilter".into())))).optional().doc("Biquad filters applied in order before the pan; omitted = none."),
+        ],
+    );
     let root = TypeDesc {
         name: "Project".into(),
         doc: Some("An OSATURA project file.".into()),
@@ -466,7 +490,7 @@ pub fn project_format(strict: bool) -> FormatDesc {
             f("comps", obj_list()).optional(),
             f("events", obj_list()).optional(),
             f("bone_vis", obj_list()).optional(),
-            f("sounds", obj_list()).optional(),
+            f("sounds", List(Box::new(Ref("Sound".into())))).optional(),
             f("skins", obj_list()).optional(),
             f("channel_meta", obj_list()).optional(),
             f("shots", obj_list()).optional(),
@@ -481,7 +505,7 @@ pub fn project_format(strict: bool) -> FormatDesc {
             f("lods", obj_list()).optional(),
         ],
     };
-    FormatDesc { id: PROJECT_SCHEMA_ID.into(), title: "OSATURA project".into(), root, types: vec![bone, camera, ik], strict }
+    FormatDesc { id: PROJECT_SCHEMA_ID.into(), title: "OSATURA project".into(), root, types: vec![bone, camera, ik, sound, filter], strict }
 }
 
 #[cfg(test)]
@@ -647,6 +671,18 @@ mod tests {
         for k in v.as_object().unwrap().keys() {
             assert!(props.contains_key(k), "field {k} missing from the schema");
         }
+        // sounds: old tracks (no pan, no filters) and tracks with the optional fields both validate; a bad pan does not
+        let base = json!({"name": "x", "width": 1, "height": 1, "fps": 1, "frames": 1});
+        let with = |snd: Value| {
+            let mut v = base.clone();
+            v["sounds"] = json!([snd]);
+            v
+        };
+        assert!(validate(&s, &with(json!({"name": "a", "file": "a.wav", "start": 0, "gain": 1}))).is_ok());
+        let new = json!({"name": "a", "file": "a.wav", "pan": -0.5, "filters": [{"kind": "lowpass", "freq": 800}, {"kind": "peaking", "freq": 1000, "q": 2, "gain_db": 3}]});
+        assert!(validate(&s, &with(new)).is_ok());
+        assert!(validate(&s, &with(json!({"name": "a", "file": "a.wav", "pan": 2}))).is_err());
+        assert!(validate(&s, &with(json!({"name": "a", "file": "a.wav", "filters": [{"kind": "wobble", "freq": 1}]}))).is_err());
         assert!(validate(&s, &json!({"name": "x", "width": 1, "height": 1, "fps": 1})).is_err(), "frames is required");
         assert!(validate(&s, &json!({"format": 2, "name": "x", "width": 1, "height": 1, "fps": 1, "frames": 1})).is_err());
         assert!(validate(&s, &json!({"name": "x", "width": 1, "height": 1, "fps": 1, "frames": 1, "color_space": "cmyk"})).is_err());
