@@ -1,8 +1,10 @@
-Aprobare filtru: prin instrucțiunea titularului din conversație (2026-11-09), nu bifată individual
+Aprobare filtru: instrucțiune generală a titularului din conversație (2026-11-09); căsuțele din fișiere sunt nebifate
 
 # Specificații funcționale candidate — lot 1
 
-Data: 2026-11-09 · Etapa 1 din 2 (analiză/specificare). Nu conține cod de produs. Toate specificațiile au status **candidat**: nu au trecut filtrul (căsuțele „Licență", „Brevete" și „Aprobată de mine" din fiecare fișier sunt nebifate) și nu se predau implementării înainte de aprobarea omului.
+Data: 2026-11-09 · Etapa 1 (analiză/specificare), apoi implementată în aceeași sesiune. Statusul din tabel este cel al codului; fișierele-specificație își păstrează statusul **candidat**.
+
+Stare a filtrului, fără ocolișuri: căsuțele „Licență", „Brevete" și „Aprobată de mine" din fiecare fișier sunt **nebifate** (niciun om nu le-a bifat individual). Aprobarea este instrucțiunea generală a titularului din conversație (2026-11-09), nu o verificare per specificație; licențele documentelor-sursă și brevetele nu au fost evaluate. Separarea în trei etape (specificare / filtru / implementare de către sesiuni diferite) **nu** a fost respectată: aceeași sesiune a specificat și a implementat. Vezi și `CLEANROOM.md` și `PROVENANCE.md` (care rămâne de completat de titular).
 
 Surse: numai standarde și documentație publică. Fiecare fișier indică, la începutul lui, ce parte a sursei a fost efectiv citită în sesiune și ce nu (specificațiile 07, 09, 10, 11 se sprijină în mare parte pe cunoștințe de manual marcate [dedus]; 10 și 11 nu au nicio sursă citită).
 
@@ -31,7 +33,7 @@ Note de ordine: 08 întâi pentru că fiecare spec care adaugă câmpuri (03, 04
 - 07 → 05 (recomandat).
 - 10, 09, 11, 01, 06: independente.
 
-## Ce trebuie făcut înainte de predarea către etapa 2
+## Ce rămâne de făcut (a fost implementat fără aceste verificări)
 1. Omul bifează licența documentelor-sursă, brevetele (la nevoie consultare PI) și „Aprobată de mine" în fiecare fișier.
 2. Pentru 07, 09, 10, 11: recitirea surselor indicate și actualizarea marcajelor [dedus] → [observat] acolo unde sursa confirmă.
 3. Copierea specificațiilor aprobate în `docs/clean-room/3-implementare/spec/`.
