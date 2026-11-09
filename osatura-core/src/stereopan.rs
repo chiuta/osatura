@@ -7,8 +7,8 @@
 //!
 //! The pan value `p` runs from -1 (full left) through 0 (centre) to 1 (full right); values outside are clamped, a value that is
 //! not finite is an error. Gains are `left = cos(pi/2 * x)`, `right = sin(pi/2 * x)` with `x = (p + 1) / 2` for a mono input,
-//! and for a stereo input `x = p + 1` when `p <= 0`, else `x = p`. Not yet connected to `sound mix` (that mix runs through
-//! ffmpeg filter graphs, see docs/clean-room/specs/INTREBARI.md).
+//! and for a stereo input `x = p + 1` when `p <= 0`, else `x = p`. Connected to `sound mix` and the exports through the
+//! optional `pan` field of a sound track (`soundtrack::process_samples`), see docs/clean-room/specs/INTREBARI.md.
 
 use std::f64::consts::FRAC_PI_2;
 

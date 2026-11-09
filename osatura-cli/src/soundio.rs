@@ -30,6 +30,47 @@ fn codec_for(ext: &str) -> Result<&'static [&'static str], String> {
     }
 }
 
+/// Decode a track's whole file to 32-bit float WAV at its own sample rate and channel count (ffmpeg), read it back.
+fn decode_float(path: &Path, tmp: &Path) -> Result<(usize, u32, Vec<f32>), String> {
+    run(Command::new("ffmpeg")
+        .args(["-y", "-loglevel", "error", "-protocol_whitelist", "file"])
+        .args(soundtrack::forced_demuxer(path).map(|f| ["-f", f]).unwrap_or(["-hide_banner", "-hide_banner"]))
+        .arg("-i")
+        .arg(path)
+        .args(["-vn", "-c:a", "pcm_f32le"])
+        .arg(tmp))?;
+    soundtrack::read_samples(tmp)
+}
+
+/// Sample-domain path (pan, filters): for each track that has the stage, decode the whole file, run
+/// `soundtrack::process_samples` and write a float WAV into `scratch`. Tracks without the stage are not touched.
+fn prepare_effects(p: &Project, base: &Path, scratch: &Path) -> Result<soundtrack::Overrides, String> {
+    let mut o = soundtrack::Overrides::new();
+    for (i, s) in p.sounds.iter().enumerate() {
+        if !s.needs_sample_path() {
+            continue;
+        }
+        let path = soundtrack::track_path(base, s)?;
+        osatura_core::assets::check_regular(&path, osatura_core::assets::MAX_AUDIO_BYTES, "sound file")?;
+        let (ch, rate, samples) = decode_float(&path, &scratch.join(format!("dec{i}.wav")))?;
+        let (och, out) = soundtrack::process_samples(s, ch, &samples)?;
+        let dest = scratch.join(format!("fx{i}.wav"));
+        soundtrack::write_samples(&dest, och, rate, &out)?;
+        o.insert(i, dest);
+    }
+    Ok(o)
+}
+
+/// `soundtrack::mux_args`, with the sample-domain stage for the tracks that have `pan` or filters. A project whose tracks
+/// have neither gets exactly the graph of `mux_args`. `scratch` must stay alive until ffmpeg has run.
+pub fn mux_for(p: &Project, base: &Path, first_input: usize, pad_to: Option<f32>, scratch: &Path) -> Result<Option<soundtrack::Mux>, String> {
+    if !p.sounds.iter().any(|s| s.needs_sample_path()) {
+        return soundtrack::mux_args(p, base, first_input, pad_to);
+    }
+    let o = prepare_effects(p, base, scratch)?;
+    soundtrack::mux_args_with(p, base, first_input, pad_to, &o)
+}
+
 /// Mix all sound tracks of the project (start, gain, trim, fades applied) into `out`, padded or cut
 /// to the project length. Needs at least one sound track.
 pub fn mix_to_file(p: &Project, base: &Path, out: &Path) -> Result<(), String> {
@@ -39,7 +80,8 @@ pub fn mix_to_file(p: &Project, base: &Path, out: &Path) -> Result<(), String> {
     for s in &p.sounds {
         osatura_core::assets::check_regular(&soundtrack::track_path(base, s)?, osatura_core::assets::MAX_AUDIO_BYTES, "sound file")?;
     }
-    let mux = soundtrack::mux_args(p, base, 0, Some(dur))?.ok_or("the project has no sound tracks (see: sound add)")?;
+    let scratch = if p.sounds.iter().any(|s| s.needs_sample_path()) { Some(osatura_core::fsutil::private_temp_dir("osatura-fx")?) } else { None };
+    let mux = mux_for(p, base, 0, Some(dur), scratch.as_deref().unwrap_or(Path::new(".")))?.ok_or("the project has no sound tracks (see: sound add)")?;
     run(Command::new("ffmpeg")
         .args(["-y", "-loglevel", "error"])
         .args(&mux.inputs)
@@ -168,5 +210,42 @@ mod tests {
         assert!(mix_to_file(&p, &dir, &dir.join("x.flac")).is_err());
         assert!(mix_to_file(&Project::new("e", 1.0, 1.0, 10.0, 10), &dir, &out).is_err());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pan_runs_in_the_sample_domain_and_an_unpanned_track_keeps_the_plain_graph() {
+        if !have_ffmpeg() {
+            return;
+        }
+        let scratch = osatura_core::fsutil::ScratchDir::new("osatura_soundio_pan");
+        let dir = scratch.to_path_buf();
+        steps_wav(&dir.join("steps.wav"));
+        let mut p = Project::new("t", 10.0, 10.0, 10.0, 30);
+        soundtrack::add(&mut p, "s", "steps.wav", 0.0, 1.0).unwrap();
+        // without pan: nothing is prepared and the graph is the one soundtrack::mux_args builds
+        let plain = soundtrack::mux_args(&p, &dir, 0, Some(3.0)).unwrap().unwrap();
+        let same = mux_for(&p, &dir, 0, Some(3.0), &dir.join("never-used")).unwrap().unwrap();
+        assert_eq!((plain.inputs, plain.filter), (same.inputs, same.filter));
+        assert!(!dir.join("never-used").exists());
+        let base_peak = {
+            mix_to_file(&p, &dir, &dir.join("plain.wav")).unwrap();
+            let (_, _, v) = soundtrack::read_samples(&dir.join("plain.wav")).unwrap();
+            v.iter().fold(0.0f32, |m, x| m.max(x.abs()))
+        };
+        // full left: the right channel is silent, the left keeps the (mono) level
+        p.sounds[0].pan = Some(-1.0);
+        let out = dir.join("mix.wav");
+        mix_to_file(&p, &dir, &out).unwrap();
+        let (ch, _, v) = soundtrack::read_samples(&out).unwrap();
+        assert_eq!(ch, 2);
+        let peak = |c: usize| v.iter().skip(c).step_by(2).fold(0.0f32, |m, x| m.max(x.abs()));
+        assert!((peak(0) - base_peak).abs() < 0.02 && peak(1) < 0.01, "L {} R {}", peak(0), peak(1));
+        // centre: equal power, both channels at cos(pi/4) of the mono level
+        p.sounds[0].pan = Some(0.0);
+        mix_to_file(&p, &dir, &out).unwrap();
+        let (_, _, v) = soundtrack::read_samples(&out).unwrap();
+        let peak = |c: usize| v.iter().skip(c).step_by(2).fold(0.0f32, |m, x| m.max(x.abs()));
+        let want = base_peak * std::f32::consts::FRAC_1_SQRT_2;
+        assert!((peak(0) - want).abs() < 0.02 && (peak(1) - want).abs() < 0.02, "{} {}", peak(0), peak(1));
     }
 }

@@ -695,8 +695,9 @@ fn guard_out(input: &str, out: &str) -> Result<(), String> {
 
 /// Extra ffmpeg arguments that mix the project's sound tracks (none when it has no sounds).
 /// Inputs must come before the output; the filter/map/codec go after the video options.
-fn audio_inputs(e: &Engine, base: &Path) -> Result<(Vec<String>, Vec<String>, bool), String> {
-    Ok(match soundtrack::mux_args(&e.project, base, 1, None)? {
+/// `scratch` holds the processed copies of tracks with pan/filters and must outlive the ffmpeg run.
+fn audio_inputs(e: &Engine, base: &Path, scratch: &Path) -> Result<(Vec<String>, Vec<String>, bool), String> {
+    Ok(match soundio::mux_for(&e.project, base, 1, None, scratch)? {
         Some(m) => (m.inputs, vec!["-filter_complex".into(), m.filter, "-map".into(), "0:v".into(), "-map".into(), "[aout]".into(), "-t".into(), format!("{}", e.project.frames as f32 / e.project.fps)], true),
         None => (vec![], vec![], false),
     })
@@ -717,6 +718,9 @@ fn apply_sound_opts(t: &mut soundtrack::SoundTrack, a: &Args, fps: f32) -> Resul
     if let Some(v) = a.opts.get("--trim-out") { let o = parse_time(v, fps, "--trim-out")?; t.trim_out = if o == 0.0 { None } else { Some(o) }; }
     if let Some(v) = a.opts.get("--fade-in") { t.fade_in = parse_time(v, fps, "--fade-in")?; }
     if let Some(v) = a.opts.get("--fade-out") { t.fade_out = parse_time(v, fps, "--fade-out")?; }
+    if let Some(v) = a.opts.get("--pan") {
+        t.pan = if v == "none" { None } else { Some(v.parse::<f32>().ok().filter(|p| p.is_finite()).ok_or_else(|| format!("--pan needs a number from -1 (left) to 1 (right), or none, got '{v}'"))?) };
+    }
     Ok(())
 }
 
@@ -777,7 +781,7 @@ fn export_mp4(e: &Engine, out: &str, scale: f32, base: &Path) -> Result<(), Stri
     osatura_core::fsutil::refuse_symlink(Path::new(out))?;
     let guard = osatura_core::fsutil::private_temp_dir("osatura-mp4")?;
     let dir = guard.path().to_path_buf();
-    let (ain, aargs, has_audio) = audio_inputs(e, base)?;
+    let (ain, aargs, has_audio) = audio_inputs(e, base, &dir)?;
     let result = (|| {
         for f in 0..e.project.frames {
             let png = render_png(e, f as f32, &RasterOptions { scale, show_bones: false, transparent: false })?;
@@ -810,7 +814,7 @@ fn export_webm(e: &Engine, out: &str, scale: f32, codec: &str, base: &Path) -> R
     osatura_core::fsutil::refuse_symlink(Path::new(out))?;
     let guard = osatura_core::fsutil::private_temp_dir("osatura-webm")?;
     let dir = guard.path().to_path_buf();
-    let (ain, aargs, has_audio) = audio_inputs(e, base)?;
+    let (ain, aargs, has_audio) = audio_inputs(e, base, &dir)?;
     let result = (|| {
         for f in 0..e.project.frames {
             let png = render_png(e, f as f32, &RasterOptions { scale, show_bones: false, transparent: false })?;

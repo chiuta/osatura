@@ -16,6 +16,7 @@ Format: spec · punct · ce lipsește · ce s-a implementat între timp. Complet
 ## 03 — panoramare stereo
 - Conectarea la `sound mix` și câmpul `pan` pe `SoundTrack`: mixarea curentă este un graf de filtre ffmpeg (`soundtrack::track_chain`); modulul `stereopan` este o funcție pură pe eșantioane. Nu s-a ghicit nicio echivalență cu filtrele ffmpeg. Decizie necesară: mixer intern pentru WAV, sau pan-ul se aplică în afara ffmpeg. Neimplementat: câmpul `pan` și apelul din mix.
 - Rampa de netezire la schimbarea lui p și mixarea canalelor > 2: [necunoscut] în spec, neimplementate. Panoramarea cu chei (interpolare liniară în timp, p. 7 din spec) este implementată ca `pan_mono_keyed`, fără test de acceptanță al specificației.
+Decizie (titular: legare aditivă, 2026-11-09): câmp opțional `pan` pe `SoundTrack` (serde default + skip_serializing_if; proiectele vechi se reserializează identic); piesele cu `pan` trec printr-o cale internă în domeniul eșantioanelor (decodare ffmpeg în WAV float, `soundtrack::process_samples`, WAV temporar ca intrare ffmpeg), restul pieselor păstrează graful ffmpeg neschimbat; opțiunea `--pan P|none` la `sound add`/`sound edit`. Panoramare constantă, fără chei, fără rampă; fișier cu peste 2 canale refuzat; ordinea: pan pe fișierul întreg, apoi trim/fade/start/gain în ffmpeg.
 
 ## 04 — filtru biquad
 - Același punct ca la 03: nu există încă un câmp de filtre pe `SoundTrack` și nici un mixer intern; `biquad` este funcție pură pe eșantioane (mono, sau intercalat pe canale). Decizie necesară înainte de legare.

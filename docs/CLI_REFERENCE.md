@@ -1477,8 +1477,11 @@ osatura sound edit   <project.json> <out.json> <name> [--start F] [--gain G] [tr
 osatura sound remove <project.json> <out.json> <name>
 osatura sound mix    <project.json> <out.wav|out.ogg|out.mp3>
     trim/fade options (seconds, or frames with an f suffix such as 36f): --trim-in T --trim-out T --fade-in T --fade-out T
+    pan option: --pan P (-1 left .. 1 right, equal power; edit: none clears)
 ```
 Sound tracks are **references** (file path relative to the project, start frame, gain 0..4, trim window inside the file, fades). Nothing is embedded in the project; the audio file must travel with it, and must lie inside the project directory unless `--allow-external-assets` is given. `edit` changes the given fields only (`0` clears a trim). `--trim-out 0` means "to the end". `sound mix` renders only the mixed audio for the **project length** (through ffmpeg: wav = 44.1 kHz PCM 16-bit, ogg = Vorbis q4, mp3 = 96 kb/s).
+**Pan (optional).** `--pan P` (-1 = left, 0 = centre, 1 = right) stores a constant equal-power pan on the track (a mono file becomes stereo; a stereo file uses the balance law of the stereo panner; more than two channels are refused). A track without `pan` is mixed exactly as before, through the unchanged ffmpeg graph. A track with `pan` is first decoded to 32-bit float, panned in the sample domain, and the result replaces the file as the ffmpeg input; start, trim, fades and gain then apply to the panned audio. `sound edit ... --pan none` removes it. The waveform preview in the studio does not show the pan.
+
 Mixed audio is also muxed into `.mp4` (AAC), `.webm` (Opus) and embedded in `.html`; `.gif`/`.apng` cannot carry it.
 
 ```

@@ -32,6 +32,11 @@ pub struct SoundTrack {
     /// Fade-out length ending at the (trimmed) end, seconds.
     #[serde(default, skip_serializing_if = "is_zero")]
     pub fade_out: f32,
+    /// Constant stereo pan, -1 (left) .. 1 (right), equal-power law of `stereopan` (spec 03). `None` = no pan stage: the
+    /// track goes through the ffmpeg graph exactly as before. Present = the file is first decoded and panned in the sample
+    /// domain (`soundtrack::process_samples`), and the result replaces the file as the ffmpeg input.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pan: Option<f32>,
 }
 
 fn one() -> f32 {
@@ -44,10 +49,15 @@ fn is_zero(v: &f32) -> bool {
 
 impl SoundTrack {
     pub fn new(name: &str, file: &str, start: f32, gain: f32) -> SoundTrack {
-        SoundTrack { name: name.into(), file: file.into(), start, gain, trim_in: 0.0, trim_out: None, fade_in: 0.0, fade_out: 0.0 }
+        SoundTrack { name: name.into(), file: file.into(), start, gain, trim_in: 0.0, trim_out: None, fade_in: 0.0, fade_out: 0.0, pan: None }
     }
 
     /// Length of the clip after trimming, when known (`file_len` is the whole file's length).
+    /// Does the track need the sample-domain path (pan and/or filters) before the ffmpeg graph?
+    pub fn needs_sample_path(&self) -> bool {
+        self.pan.is_some()
+    }
+
     pub fn clip_len(&self, file_len: Option<f32>) -> Option<f32> {
         self.trim_out.or(file_len).map(|end| (end - self.trim_in).max(0.0))
     }
@@ -73,6 +83,11 @@ pub fn check_track(s: &SoundTrack) -> Result<(), String> {
     for (what, v) in [("fade in", s.fade_in), ("fade out", s.fade_out)] {
         if !v.is_finite() || !(0.0..=86_400.0).contains(&v) {
             return Err(format!("sound '{n}': {what} must be a number of seconds >= 0"));
+        }
+    }
+    if let Some(p) = s.pan {
+        if !p.is_finite() || !(-1.0..=1.0).contains(&p) {
+            return Err(format!("sound '{n}': pan must be a number within -1 (left) .. 1 (right)"));
         }
     }
     if let Some(len) = s.clip_len(None) {
@@ -179,17 +194,76 @@ pub fn forced_demuxer(path: &std::path::Path) -> Option<&'static str> {
     }
 }
 
+/// The sample-domain stage of a track that has `pan` (spec 03): `samples` are interleaved `channels` (1 or 2) of the decoded,
+/// untrimmed file. Returns the channel count and samples of the processed file (a mono file becomes stereo). A track without
+/// the stage is returned unchanged. More than two channels are refused (no mixing rule is specified for them).
+pub fn process_samples(s: &SoundTrack, channels: usize, samples: &[f32]) -> Result<(usize, Vec<f32>), String> {
+    let n = &s.name;
+    let mut ch = channels;
+    let mut buf: Vec<f32> = samples.to_vec();
+    if let Some(p) = s.pan {
+        buf = match ch {
+            1 => {
+                ch = 2;
+                crate::stereopan::pan_mono(&buf, f64::from(p))?
+            }
+            2 => crate::stereopan::pan_stereo(&buf, f64::from(p))?,
+            _ => return Err(format!("sound '{n}': pan needs a mono or stereo file, this one has {ch} channels")),
+        };
+    }
+    Ok((ch, buf))
+}
+
+/// Read a WAV (any sample format `hound` reads) as interleaved `f32`: `(channels, sample rate, samples)`.
+pub fn read_samples(path: &std::path::Path) -> Result<(usize, u32, Vec<f32>), String> {
+    crate::assets::check_regular(path, crate::assets::MAX_AUDIO_BYTES, "sound file")?;
+    let mut r = hound::WavReader::open(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    let spec = r.spec();
+    let v: Vec<f32> = match spec.sample_format {
+        hound::SampleFormat::Float => r.samples::<f32>().collect::<Result<_, _>>(),
+        hound::SampleFormat::Int => {
+            let scale = 1.0 / (1u64 << (spec.bits_per_sample.clamp(1, 32) - 1)) as f32;
+            r.samples::<i32>().map(|x| x.map(|x| x as f32 * scale)).collect::<Result<_, _>>()
+        }
+    }
+    .map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    Ok((spec.channels as usize, spec.sample_rate, v))
+}
+
+/// Write interleaved `f32` samples as a 32-bit float WAV.
+pub fn write_samples(path: &std::path::Path, channels: usize, rate: u32, samples: &[f32]) -> Result<(), String> {
+    let ch = u16::try_from(channels).map_err(|_| "too many channels".to_string())?;
+    let spec = hound::WavSpec { channels: ch, sample_rate: rate, bits_per_sample: 32, sample_format: hound::SampleFormat::Float };
+    let mut w = hound::WavWriter::create(path, spec).map_err(|e| e.to_string())?;
+    for &v in samples {
+        w.write_sample(v).map_err(|e| e.to_string())?;
+    }
+    w.finalize().map_err(|e| e.to_string())
+}
+
+/// Input files that replace a track's own file in the ffmpeg inputs (index in `Project::sounds` -> path of a processed WAV).
+pub type Overrides = std::collections::HashMap<usize, std::path::PathBuf>;
+
 /// The whole mix as a pure function. `first_input` is the ffmpeg input number of the first audio
 /// file (1 when a video input comes first, 0 for audio only). `file_lens[i]` is the length of
 /// track i's file if known. `pad_to` (seconds) pads the result with silence to at least that length.
 pub fn mux_plan(p: &Project, base_dir: &std::path::Path, first_input: usize, file_lens: &[Option<f32>], pad_to: Option<f32>) -> Result<Option<Mux>, String> {
+    mux_plan_with(p, base_dir, first_input, file_lens, pad_to, &Overrides::new())
+}
+
+/// `mux_plan` where the tracks listed in `overrides` read their (already processed) WAV instead of their own file. The graph
+/// of every track is built the same way; with no overrides the result is identical to `mux_plan`.
+pub fn mux_plan_with(p: &Project, base_dir: &std::path::Path, first_input: usize, file_lens: &[Option<f32>], pad_to: Option<f32>, overrides: &Overrides) -> Result<Option<Mux>, String> {
     if p.sounds.is_empty() {
         return Ok(None);
     }
     let mut inputs = Vec::new();
     let mut parts = Vec::new();
     for (i, s) in p.sounds.iter().enumerate() {
-        let path = resolve(base_dir, &s.file)?;
+        let path = match overrides.get(&i) {
+            Some(o) => o.clone(),
+            None => resolve(base_dir, &s.file)?,
+        };
         // only the plain file protocol: a file name such as http://... or concat:... is never fetched
         inputs.push("-protocol_whitelist".to_string());
         inputs.push("file".to_string());
@@ -266,12 +340,17 @@ fn resolve(base_dir: &std::path::Path, file: &str) -> Result<std::path::PathBuf,
 
 /// Like `mux_plan`, probing file lengths only for tracks that need one (fade-out without trim-out).
 pub fn mux_args(p: &Project, base_dir: &std::path::Path, first_input: usize, pad_to: Option<f32>) -> Result<Option<Mux>, String> {
+    mux_args_with(p, base_dir, first_input, pad_to, &Overrides::new())
+}
+
+/// `mux_args` with processed inputs for some tracks (see `mux_plan_with`).
+pub fn mux_args_with(p: &Project, base_dir: &std::path::Path, first_input: usize, pad_to: Option<f32>, overrides: &Overrides) -> Result<Option<Mux>, String> {
     let lens: Vec<Option<f32>> = p
         .sounds
         .iter()
         .map(|s| if s.fade_out > 0.0 && s.trim_out.is_none() { resolve(base_dir, &s.file).ok().and_then(|f| file_duration(&f)) } else { None })
         .collect();
-    mux_plan(p, base_dir, first_input, &lens, pad_to)
+    mux_plan_with(p, base_dir, first_input, &lens, pad_to, overrides)
 }
 
 /// Resolved path of a track's file.
@@ -426,5 +505,82 @@ mod tests {
         add(&mut p, "b", "y.wav", 24.0, 1.0).unwrap();
         let m = mux_plan(&p, Path::new("."), 0, &[], Some(2.0)).unwrap().unwrap();
         assert!(m.filter.starts_with("[0:a]") && m.filter.contains(";[1:a]") && m.filter.ends_with("apad=whole_dur=2[aout]"), "{}", m.filter);
+    }
+
+    #[test]
+    fn float_wav_samples_round_trip() {
+        let dir = crate::fsutil::private_temp_dir("osatura-snd-test").unwrap();
+        let f = dir.path().join("t.wav");
+        let v = vec![0.0f32, 0.25, -0.5, 1.0];
+        write_samples(&f, 2, 8000, &v).unwrap();
+        assert_eq!(read_samples(&f).unwrap(), (2, 8000, v));
+        // 16-bit input is scaled to -1..1
+        let spec = hound::WavSpec { channels: 1, sample_rate: 8000, bits_per_sample: 16, sample_format: hound::SampleFormat::Int };
+        let mut w = hound::WavWriter::create(dir.path().join("i.wav"), spec).unwrap();
+        w.write_sample(16384i16).unwrap();
+        w.finalize().unwrap();
+        assert_eq!(read_samples(&dir.path().join("i.wav")).unwrap(), (1, 8000, vec![0.5]));
+    }
+
+    #[test]
+    fn a_project_without_pan_round_trips_byte_identically() {
+        let mut p = Project::new("s", 10.0, 10.0, 24.0, 10);
+        let mut t = SoundTrack::new("a", "a.wav", 2.0, 0.5);
+        t.fade_in = 0.25;
+        add_track(&mut p, t).unwrap();
+        let j = p.to_json_pretty();
+        assert!(!j.contains("\"pan\""), "an absent pan is not written");
+        let q = Project::from_json(&j).unwrap();
+        assert_eq!(q.sounds[0].pan, None);
+        assert_eq!(q.to_json_pretty(), j);
+    }
+
+    #[test]
+    fn pan_is_validated_stored_and_round_trips() {
+        let mut p = Project::new("s", 10.0, 10.0, 24.0, 10);
+        let mut t = SoundTrack::new("a", "a.wav", 0.0, 1.0);
+        for bad in [1.5f32, -1.01, f32::NAN, f32::INFINITY] {
+            t.pan = Some(bad);
+            assert!(check_track(&t).unwrap_err().contains("pan"), "{bad}");
+        }
+        t.pan = Some(-0.5);
+        add_track(&mut p, t.clone()).unwrap();
+        let j = p.to_json_pretty();
+        assert!(j.contains("\"pan\": -0.5"));
+        assert_eq!(Project::from_json(&j).unwrap().sounds[0], t);
+        assert!(t.needs_sample_path() && !SoundTrack::new("b", "b.wav", 0.0, 1.0).needs_sample_path());
+    }
+
+    #[test]
+    fn process_samples_pans_mono_to_stereo_and_stereo_in_place_and_refuses_more_channels() {
+        let mut t = SoundTrack::new("a", "a.wav", 0.0, 1.0);
+        // no stage: unchanged
+        assert_eq!(process_samples(&t, 1, &[0.5, -0.5]).unwrap(), (1, vec![0.5, -0.5]));
+        t.pan = Some(-1.0);
+        let (ch, v) = process_samples(&t, 1, &[1.0]).unwrap();
+        assert_eq!(ch, 2);
+        assert!((v[0] - 1.0).abs() < 1e-6 && v[1].abs() < 1e-6, "{v:?}");
+        t.pan = Some(1.0);
+        let (ch, v) = process_samples(&t, 2, &[0.5, 0.25]).unwrap();
+        assert_eq!(ch, 2);
+        assert!(v[0].abs() < 1e-6 && (v[1] - 0.75).abs() < 1e-6, "{v:?}");
+        assert!(process_samples(&t, 6, &[0.0; 6]).unwrap_err().contains("6 channels"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn overrides_replace_only_the_input_path_and_leave_the_graph_alone() {
+        let mut p = Project::new("s", 10.0, 10.0, 24.0, 48);
+        add(&mut p, "a", "x.wav", 12.0, 0.5).unwrap();
+        add(&mut p, "b", "y.wav", 0.0, 1.0).unwrap();
+        let plain = mux_plan(&p, Path::new("/d"), 1, &[], None).unwrap().unwrap();
+        let same = mux_plan_with(&p, Path::new("/d"), 1, &[], None, &Overrides::new()).unwrap().unwrap();
+        assert_eq!((plain.inputs.clone(), plain.filter.clone()), (same.inputs, same.filter));
+        let mut o = Overrides::new();
+        o.insert(1, std::path::PathBuf::from("/tmp/x/t1.wav"));
+        let m = mux_plan_with(&p, Path::new("/d"), 1, &[], None, &o).unwrap().unwrap();
+        assert_eq!(m.filter, plain.filter);
+        assert_eq!(m.inputs[5], "/d/x.wav");
+        assert_eq!(m.inputs[11], "/tmp/x/t1.wav");
     }
 }
