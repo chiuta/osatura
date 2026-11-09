@@ -3,7 +3,7 @@
 //! Two easing-curve families defined by a public specification: a piecewise-linear curve through author-given stops, and a
 //! stepped curve with four jump placements; plus the validity rules and named presets of the cubic Bézier curve.
 //!
-//! Basis (public): W3C *CSS Easing Functions Level 2*, First Public Working Draft of 29 August 2024 (https://www.w3.org/TR/css-easing-2),
+//! Basis (public): W3C *CSS Easing Functions Level 2*, First Public Working Draft of 29 August 2024 (<https://www.w3.org/TR/css-easing-2>),
 //! sections on the piecewise-linear function, the cubic Bézier function and the steps function (including its output algorithm).
 //! The text is a working draft; details may differ in later versions. Spec: docs/clean-room/specs/05-easing-liniar-pe-segmente-si-trepte.md.
 //!

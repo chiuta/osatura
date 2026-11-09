@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Decoder of animated PNG (APNG) files into a list of full-canvas RGBA frames with their durations.
 //!
-//! Basis (public): the *APNG Specification* (https://wiki.mozilla.org/APNG_Specification: `acTL`, `fcTL`, `fdAT`, sequence numbers,
+//! Basis (public): the *APNG Specification* (<https://wiki.mozilla.org/APNG_Specification>: `acTL`, `fcTL`, `fdAT`, sequence numbers,
 //! `dispose_op`, `blend_op`) on top of the PNG chunk structure (length, type, data, CRC-32) and the "alpha compositing" rule for the
 //! over operator. The pixel data of each frame is decoded as an ordinary PNG image of the frame's size by the `png` crate already used by
 //! the project; chunk parsing, ordering rules, compositing and disposal are own code. Spec: docs/clean-room/specs/02-apng-decodare-secventa.md.

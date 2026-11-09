@@ -3,7 +3,7 @@
 //! Publishes a JSON Schema (dialect 2020-12) for project files from a small own description of the format.
 //!
 //! Basis (public): *JSON Schema: A Media Type for Describing JSON Documents* (core, 2020-12) and *JSON Schema Validation*
-//! (2020-12), https://json-schema.org/specification. Keywords used: `$schema`, `$id`, `$defs`, `$ref`, `type`, `enum`,
+//! (2020-12), <https://json-schema.org/specification>. Keywords used: `$schema`, `$id`, `$defs`, `$ref`, `type`, `enum`,
 //! `const`, `minimum`, `maximum`, `required`, `default`, `description`, `properties`, `items`, `additionalProperties`.
 //! Spec: docs/clean-room/specs/08-schema-json-export-format-proiect.md.
 //!
@@ -12,7 +12,7 @@
 //! project file: the root, the camera, bones and IK chains in full, the other list members as free-form objects (the
 //! loader reports unknown fields instead of refusing them, so the schema does not forbid extra properties unless
 //! `strict` is set).
-//! [`validate`] checks an instance against the subset of keywords this module emits (used by the tests and by `schema --check`).
+//! [`validate`] checks an instance against the subset of keywords this module emits (used by the tests).
 
 use serde_json::{json, Map, Value};
 

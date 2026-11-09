@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Second-order (biquad) audio filters: low-pass, high-pass, band-pass, notch, all-pass, peaking, low shelf, high shelf.
 //!
-//! Basis (public): W3C Working Group Note *Audio EQ Cookbook* (8 June 2021, after R. Bristow-Johnson), https://www.w3.org/TR/audio-eq-cookbook
+//! Basis (public): W3C Working Group Note *Audio EQ Cookbook* (8 June 2021, after R. Bristow-Johnson), <https://www.w3.org/TR/audio-eq-cookbook>
 //! (the `Q` forms of the coefficient formulas; the bandwidth and shelf-slope forms are not offered). Spec:
 //! docs/clean-room/specs/04-audio-filtru-biquad.md.
 //!

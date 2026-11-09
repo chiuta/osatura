@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Decoder of GIF files (static or animated) into a list of full-canvas RGBA frames with their durations.
 //!
-//! Basis (public): *Graphics Interchange Format, Version 89a* (CompuServe, 31 July 1990; copy at https://www.w3.org/Graphics/GIF/spec-gif89a.txt):
+//! Basis (public): *Graphics Interchange Format, Version 89a* (CompuServe, 31 July 1990; copy at <https://www.w3.org/Graphics/GIF/spec-gif89a.txt>):
 //! the logical screen descriptor, colour tables, graphic control extension, image descriptor, interlacing, the variable-length-code LZW
 //! compression and the block grammar. Own code; the `gif` crate used elsewhere in the project is not involved. Spec:
 //! docs/clean-room/specs/01-gif-decodare-secventa.md.
