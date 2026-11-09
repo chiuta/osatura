@@ -197,6 +197,7 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                 _ => {}
             }
             let mut touched = 0;
+            let mut total_keys: usize = p.channels.iter().map(|c| if let Source::Keys { track } = &c.source { track.keys.len() } else { 0 }).sum();
             let locked_view = p.clone();
             for c in &mut p.channels {
                 if want_target.is_some_and(|t| &c.target != t) || want_prop.is_some_and(|pr| c.prop != pr) {
@@ -212,7 +213,15 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                     "scale" => keyops::scale_keys(track, from, to, num(a, "--pivot", 0.0)?, factor.ok_or("keys scale needs --factor X")?)?,
                     "ease" => keyops::set_ease(track, from, to, ease.ok_or("--ease is required")?),
                     "reverse" => keyops::reverse_keys(track, from, to),
-                    "curve" => keyops::bake_curve(track, from, to, curve.as_ref().ok_or("keys curve needs --curve")?)?,
+                    "curve" => {
+                        let before = track.keys.len();
+                        let n = keyops::bake_curve(track, from, to, curve.as_ref().ok_or("keys curve needs --curve")?)?;
+                        total_keys = total_keys + track.keys.len() - before;
+                        if total_keys > keyops::MAX_PROJECT_KEYS_AFTER_BAKE {
+                            return Err(format!("the bake would give more than {} keys in the project (use a curve with fewer stops or steps, or a smaller range or fewer channels)", keyops::MAX_PROJECT_KEYS_AFTER_BAKE));
+                        }
+                        n
+                    }
                     other => return Err(format!("unknown keys operation '{other}' (shift, scale, ease, reverse, curve)")),
                 };
             }

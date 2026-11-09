@@ -75,6 +75,9 @@ pub fn set_ease(t: &mut Track, from: f32, to: f32, ease: Ease) -> usize {
 /// Most keys a track may hold after a bake (so a hostile curve cannot exhaust memory).
 pub const MAX_KEYS_AFTER_BAKE: usize = 200_000;
 
+/// Most keys a whole project may hold after `keys curve` (the per-track limit alone does not bound a project with many tracks).
+pub const MAX_PROJECT_KEYS_AFTER_BAKE: usize = 2_000_000;
+
 /// Write a curve of `segease` into the segments that start at a key in `[from, to]`: the start key keeps its value and gets the
 /// curve's first ease, and keys are inserted between it and the next key so that the ordinary key interpolation (linear or held)
 /// reproduces the curve exactly. Returns how many segments were baked. The curve is not stored: the result is plain keys, which
