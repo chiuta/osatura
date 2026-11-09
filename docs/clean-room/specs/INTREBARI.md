@@ -36,3 +36,8 @@ Format: spec · punct · ce lipsește · ce s-a implementat între timp. Complet
 - Ca la 01: `animimport::decode_apng` există deja; `apngseq` este decodorul după specificație (parsare proprie a fragmentelor, CRC-32 propriu verificat cu constantele cunoscute ale lui IEND și ale șirului "123456789", reguli de ordine/secvență, compunere și eliminare proprii; doar datele comprimate ale fiecărui cadru trec prin crate-ul `png`, ca imagine PNG obișnuită, cum cere spec). Test diferențial cu `animimport` pe fișiere valide (aceiași pixeli și întârzieri). Nelegat de `import-anim`.
 - Formula OVER: [necunoscut] în spec (rotunjire pe 8 biți). Implementat în virgulă mobilă, formula obișnuită cu alfa nepremultiplicat, rotunjită la cel mai apropiat întreg; testul 5 al specificației (valori exacte) trece. Alte valori pot diferi cu ±1 față de alte decodoare.
 - Alte decizii: durata 0 → 0 ms; fișier fără acTL → un cadru, durată 0; reluări: `plays` (0 = infinit).
+
+## 10 — coliziune capsulă-capsulă (fără sursă citită în analiză)
+- Spec 10 are `[dedus]` peste tot; testele de acceptanță au fost verificate aritmetic înainte de implementare (1-11, inclusiv lanțul cu 4 segmente) și sunt consistente. S-a implementat din geometrie (distanța dintre segmente), fără a consulta cărțile citate.
+- Neconectat la `physics.rs` (lanțuri dinamice): nu există în spec câmpul de schemă pentru raze/auto-coliziune și nici punctul de integrare cu pasul de simulare. Modulul `capsule2d` oferă `collide`, `corrections`, `self_collisions`, `chain_corrections`.
+- Politica de omitere a vecinilor: implementat doar |i-j| <= 1, cum cere spec ([necunoscut] dacă lanțurile dense au nevoie de 2).

@@ -107,6 +107,7 @@ The feature research behind FEATURES.md was done by an AI research agent that lo
 | baseline | W3C CSS Flexible Box Layout Level 1, 8.3 cross-axis (baseline) alignment and 9.4 single-line cross size; spec docs/clean-room/specs/06 | pure one-line geometry, not yet wired into `containers`; synthesised baseline at the bottom edge is a project decision |
 | gifseq | GIF89a specification (CompuServe 1990; W3C copy): block grammar, LZW with variable code width, interlacing, graphic control extension, disposal; spec docs/clean-room/specs/01 | own decoder; differential test against the existing `gif`-crate based importer |
 | apngseq | APNG Specification (acTL/fcTL/fdAT, sequence numbers, dispose_op, blend_op) over the PNG chunk structure and CRC-32; spec docs/clean-room/specs/02 | own chunk parser, CRC-32 and compositing; frame pixel data decoded by the `png` crate as ordinary PNG; differential test against the existing importer |
+| capsule2d | elementary geometry: minimum distance between two segments, capsule as the points within r of a segment (textbook; Ericson 2005 sec. on closest points of segments and Eberly's segment-distance note named by the spec but not read); spec docs/clean-room/specs/10 | derived from geometry, arithmetic acceptance tests; not yet wired into `physics` |
 
 ## Spec-note template (optional; not applied retroactively)
 ```
