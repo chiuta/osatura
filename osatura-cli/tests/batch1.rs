@@ -96,3 +96,24 @@ fn keys_curve_bakes_a_stepped_curve_into_the_selected_segment_only() {
     let o = osatura(&["keys", "curve", p, gone.to_str().unwrap()]);
     assert!(!o.status.success() && String::from_utf8_lossy(&o.stderr).contains("--curve"));
 }
+
+#[test]
+fn physics_selfcollide_is_opt_in_and_validated() {
+    let proj = tmp("phys-demo.json");
+    let p = proj.to_str().unwrap();
+    assert!(osatura(&["demo", p]).status.success());
+    let (plain, same, hit) = (tmp("phys-plain.json"), tmp("phys-same.json"), tmp("phys-hit.json"));
+    let run = |out: &std::path::Path, extra: &[&str]| {
+        let mut v = vec!["physics", p, out.to_str().unwrap(), "arm_low,hand", "merge=replace", "gravity=500"];
+        v.extend_from_slice(extra);
+        osatura(&v)
+    };
+    assert!(run(&plain, &[]).status.success());
+    // a radius far below half a bone changes nothing for a chain that never folds back on itself
+    assert!(run(&same, &["selfcollide=0.5"]).status.success());
+    assert_eq!(std::fs::read(&plain).unwrap(), std::fs::read(&same).unwrap());
+    let o = run(&hit, &["selfcollide=100000"]);
+    assert!(!o.status.success() && String::from_utf8_lossy(&o.stderr).contains("too large"), "{}", String::from_utf8_lossy(&o.stderr));
+    let o = run(&hit, &["selfcollide=0"]);
+    assert!(!o.status.success() && String::from_utf8_lossy(&o.stderr).contains("> 0"));
+}

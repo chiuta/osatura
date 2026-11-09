@@ -202,6 +202,7 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                             o.capsules.push(physics::Capsule { a: osatura_core::math::Vec2::new(num(f[0])?, num(f[1])?), b: osatura_core::math::Vec2::new(num(f[2])?, num(f[3])?), radius: num(f[4])?, follow: fb });
                         }
                     }
+                    "selfcollide" => o.self_collision = Some(num(v)?),
                     "follow" => follow_all = Some(v.to_string()),
                     "drive" => {
                         for d in v.split(';') {

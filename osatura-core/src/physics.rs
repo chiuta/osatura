@@ -68,11 +68,15 @@ pub struct PhysicsOptions {
     pub capsules: Vec<Capsule>,
     pub drives: Vec<Drive>,
     pub vortices: Vec<Vortex>,
+    /// Opt-in chain self-collision (spec 10, `capsule2d`): every segment of a strand is a capsule of this radius and capsules that are
+    /// not neighbours push each other apart. `None` (the default) leaves the simulation exactly as it was. The radius must be smaller
+    /// than half the shortest bone of the strand (otherwise a straight chain would push itself).
+    pub self_collision: Option<f32>,
 }
 
 impl Default for PhysicsOptions {
     fn default() -> Self {
-        PhysicsOptions { gravity: Vec2::new(0.0, 900.0), wind: Vec2::ZERO, gust: 0.0, gust_hz: 0.5, damping: 0.985, substeps: 4, iterations: 8, colliders: vec![], capsules: vec![], drives: vec![], vortices: vec![] }
+        PhysicsOptions { gravity: Vec2::new(0.0, 900.0), wind: Vec2::ZERO, gust: 0.0, gust_hz: 0.5, damping: 0.985, substeps: 4, iterations: 8, colliders: vec![], capsules: vec![], drives: vec![], vortices: vec![], self_collision: None }
     }
 }
 
@@ -145,6 +149,11 @@ pub fn simulate_strip(p: &Project, strands: &[Vec<String>], lateral: f32, o: &Ph
         }
         vort_bone.push(v.follow.as_deref().map(bone_ix).transpose()?);
     }
+    if let Some(r) = o.self_collision {
+        if !r.is_finite() || r <= 0.0 {
+            return Err("self-collision radius must be a finite number > 0".into());
+        }
+    }
     struct Strand {
         idx: Vec<usize>,
         lens: Vec<f32>,
@@ -162,6 +171,15 @@ pub fn simulate_strip(p: &Project, strands: &[Vec<String>], lateral: f32, o: &Ph
         let lens: Vec<f32> = idx.iter().map(|&i| p.bones[i].length).collect();
         if lens.iter().any(|&l| l.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) {
             return Err("chain bones need positive length".into());
+        }
+        if let Some(r) = o.self_collision {
+            if idx.len() > MAX_SELF_COLLISION_BONES {
+                return Err(format!("self-collision is limited to {MAX_SELF_COLLISION_BONES} bones per strand, got {}", idx.len()));
+            }
+            let shortest = lens.iter().copied().fold(f32::INFINITY, f32::min);
+            if 2.0 * r >= shortest {
+                return Err(format!("self-collision radius {r} is too large: it must be smaller than half the shortest bone ({shortest}), or a straight chain would push itself"));
+            }
         }
         ss.push(Strand { idx, lens, parent });
     }
@@ -289,6 +307,9 @@ pub fn simulate_strip(p: &Project, strands: &[Vec<String>], lateral: f32, o: &Ph
                             }
                         }
                     }
+                    if let Some(r) = o.self_collision {
+                        push_apart(pc, r)?;
+                    }
                     // links between chain points must not cut through a capsule either
                     for &(a, b, r, _) in cur.iter().filter(|s| s.3) {
                         for i in 0..pc.len() - 1 {
@@ -343,6 +364,37 @@ pub fn simulate_strip(p: &Project, strands: &[Vec<String>], lateral: f32, o: &Ph
         }
     }
     Ok(out)
+}
+
+/// Most bones of one strand that the opt-in self-collision handles (the pair test is quadratic).
+pub const MAX_SELF_COLLISION_BONES: usize = 128;
+
+/// One pass of self-collision on a strand: capsule `i` runs from point `i` to point `i + 1`; the corrections of `capsule2d::chain_corrections`
+/// (capsule 0 holds the pinned root, so it counts half as much as the others) are shared by the capsule's two points, a point between two
+/// capsules takes the mean of both, and the root point never moves. The bone lengths are restored by the next link pass.
+fn push_apart(pc: &mut [Vec2], r: f32) -> Result<(), String> {
+    use crate::capsule2d::{chain_capsules, chain_corrections};
+    let pts: Vec<[f64; 2]> = pc.iter().map(|q| [f64::from(q.x), f64::from(q.y)]).collect();
+    let caps = chain_capsules(&pts, f64::from(r));
+    let mut w = vec![1.0; caps.len()];
+    if let Some(first) = w.first_mut() {
+        *first = 0.5;
+    }
+    let corr = chain_corrections(&caps, &w)?;
+    for i in 1..pc.len() {
+        let (mut sx, mut sy, mut n) = (0.0f64, 0.0f64, 0.0f64);
+        for k in [i - 1, i] {
+            if let Some(c) = corr.get(k).filter(|_| k < caps.len()) {
+                sx += c[0];
+                sy += c[1];
+                n += 1.0;
+            }
+        }
+        if n > 0.0 {
+            pc[i] = Vec2::new(pc[i].x + (sx / n) as f32, pc[i].y + (sy / n) as f32);
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn closest_on_segment(a: Vec2, b: Vec2, q: Vec2) -> Vec2 {
@@ -722,5 +774,58 @@ mod tests {
         let (added, skipped) = merge_channels(&mut p, sim, true);
         assert_eq!(added, 2);
         assert!(skipped.contains(&"b".to_string()));
+    }
+
+    /// A square spiral whose last segment ends where the first starts: the capsules of segments 0 and 3 overlap at the root.
+    fn spiral() -> Project {
+        let mut p = Project::new("s", 300.0, 300.0, 24.0, 60);
+        p.bones = vec![
+            Bone::new("a", None, 20.0, Vec2::new(100.0, 100.0), 0.0),
+            Bone::new("b", Some("a"), 20.0, Vec2::new(20.0, 0.0), 90.0),
+            Bone::new("c", Some("b"), 20.0, Vec2::new(20.0, 0.0), 90.0),
+            Bone::new("d", Some("c"), 20.0, Vec2::new(20.0, 0.0), 90.0),
+        ];
+        p
+    }
+    fn spiral_joints(p: &Project, ch: &[Channel], f: f32) -> Vec<Vec2> {
+        let mut q = p.clone();
+        q.channels.extend(ch.iter().cloned());
+        let w = Engine::new(q).unwrap().evaluate(f).world;
+        let mut v: Vec<Vec2> = w.iter().map(|m| Vec2::new(m.tx, m.ty)).collect();
+        let a = w[3].rotation();
+        v.push(v[3] + Vec2::new(a.cos(), a.sin()) * 20.0);
+        v
+    }
+
+    #[test]
+    fn self_collision_is_opt_in_and_keeps_overlapping_segments_apart() {
+        let p = spiral();
+        let names: Vec<String> = ["a", "b", "c", "d"].iter().map(|s| s.to_string()).collect();
+        let still = PhysicsOptions { gravity: Vec2::ZERO, damping: 0.95, ..Default::default() };
+        assert_eq!(still.self_collision, None);
+        let off = simulate_chain(&p, &names, &still).unwrap();
+        let j = spiral_joints(&p, &off, 59.0);
+        assert!(seg_dist(j[0], j[1], j[3], j[4]) < 1.0, "without the option the tip stays on the root: {j:?}");
+        // the default output is bit-identical to what the same options without the field gave: no extra work was done
+        assert_eq!(off, simulate_chain(&p, &names, &PhysicsOptions { self_collision: None, ..still.clone() }).unwrap());
+        let on = simulate_chain(&p, &names, &PhysicsOptions { self_collision: Some(4.0), ..still.clone() }).unwrap();
+        for f in [10.0, 30.0, 59.0] {
+            let j = spiral_joints(&p, &on, f);
+            assert!(seg_dist(j[0], j[1], j[3], j[4]) >= 2.0 * 4.0 - 1.5, "frame {f}: segments 0 and 3 still overlap: {j:?}");
+            for w in j.windows(2) {
+                assert!((w[0].distance(w[1]) - 20.0).abs() < 1.0, "bone lengths hold: {j:?}");
+            }
+        }
+        assert_eq!(on, simulate_chain(&p, &names, &PhysicsOptions { self_collision: Some(4.0), ..still.clone() }).unwrap(), "deterministic");
+    }
+
+    #[test]
+    fn self_collision_radius_is_validated() {
+        let p = spiral();
+        let names: Vec<String> = ["a", "b", "c", "d"].iter().map(|s| s.to_string()).collect();
+        for (r, what) in [(0.0, "finite number > 0"), (-1.0, "finite number > 0"), (f32::NAN, "finite number > 0"), (10.0, "too large"), (12.0, "too large")] {
+            let e = simulate_chain(&p, &names, &PhysicsOptions { self_collision: Some(r), ..opts() }).unwrap_err();
+            assert!(e.contains(what), "{r}: {e}");
+        }
     }
 }

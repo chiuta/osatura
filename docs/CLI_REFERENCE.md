@@ -1199,7 +1199,7 @@ They take `<project.json> <out.json>` and `key=value` words (no `--`).
 osatura physics <project.json> <out.json> <bone,bone,...> [gravity=900] [wind=x,y] [gust=0.5] [damping=0.985]
     [circle=x,y,r[@bone];...] [capsule=x1,y1,x2,y2,r[@bone];...] [follow=bone] [--allow-empty]
     [drive=bone:gain;...] [vortex=bone|x,y:swirl[:radial[:radius]];...] [preset=hair|tail|rope|antenna|cape]
-    [merge=keep|replace] [lateral=0..1]
+    [merge=keep|replace] [lateral=0..1] [selfcollide=R]
 ```
 Bakes a Verlet **chain simulation** (hair, tail, rope, antenna, cape) onto the bones listed (root of the chain first) as `bone_angle` keys, one per frame.
 
@@ -1215,6 +1215,7 @@ Bakes a Verlet **chain simulation** (hair, tail, rope, antenna, cape) onto the b
 | `preset=` | Starting values for `hair tail rope antenna cape`; words written **after** `preset=` override it. |
 | `merge=keep\|replace` | `keep` (default) leaves bones that already have animation untouched; `replace` overwrites them. |
 | `lateral=0..1` | With several chains (`bone,bone/bone,bone`) ties neighbouring strands together. |
+| `selfcollide=R` | Opt-in self-collision of each chain: every segment is a 2D capsule of radius `R` and segments that are not neighbours push each other apart (so a tail curling back onto itself does not pass through itself). `R` must be finite, > 0 and smaller than half the shortest bone of the chain; at most 128 bones per chain; strands do not collide with each other. Without the word the simulation is exactly as before. |
 | `--allow-empty` | Accept a run that baked nothing. |
 
 ```
