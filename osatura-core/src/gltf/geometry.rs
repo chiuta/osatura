@@ -181,7 +181,7 @@ pub(super) fn collect_shapes<'a>(ls: &'a [Layer], prefix: &str, out: &mut Vec<(&
         if matches!(l.kind, LayerKind::Vector { .. } | LayerKind::Boolean { .. } | LayerKind::Image { .. }) {
             out.push((l, path.clone()));
         }
-        if let LayerKind::Group { layers } | LayerKind::Switch { layers, .. } = &l.kind {
+        if let LayerKind::Group { layers } | LayerKind::Selector { layers, .. } = &l.kind {
             collect_shapes(layers, &path, out);
         }
     }

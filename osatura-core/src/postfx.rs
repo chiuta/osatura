@@ -3,7 +3,7 @@
 //! Frame post-effects on straight-alpha RGBA8 buffers: blur, drop shadow, glow, outline,
 //! posterise, pixelate, levels/gamma, fade. A chain is plain JSON, applied after rasterising.
 //!
-//! Clean-room note: textbook image processing (separable Gaussian, morphological dilation,
+//! Provenance note: textbook image processing (separable Gaussian, morphological dilation,
 //! per-channel look-up maths). Parameters and names are our own.
 
 use crate::style::Rgba;
@@ -409,7 +409,7 @@ pub fn validate_layer_normal_maps(p: &crate::project::Project) -> Vec<String> {
                     errs.push(format!("layer '{path}': normal map needs data or path and a strength within 0..=8"));
                 }
             }
-            if let crate::project::LayerKind::Group { layers } | crate::project::LayerKind::Switch { layers, .. } = &l.kind {
+            if let crate::project::LayerKind::Group { layers } | crate::project::LayerKind::Selector { layers, .. } = &l.kind {
                 walk(layers, &path, errs);
             }
         }
@@ -427,7 +427,7 @@ fn leaves_with_maps(p: &crate::project::Project) -> Vec<(String, Option<NormalMa
             let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
             let here = l.normal_map.as_ref().or(inherited);
             match &l.kind {
-                crate::project::LayerKind::Group { layers } | crate::project::LayerKind::Switch { layers, .. } => walk(layers, &path, here, out),
+                crate::project::LayerKind::Group { layers } | crate::project::LayerKind::Selector { layers, .. } => walk(layers, &path, here, out),
                 _ => out.push((path, here.cloned())),
             }
         }

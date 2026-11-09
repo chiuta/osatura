@@ -469,7 +469,7 @@ impl Engine {
                     }
                     Err(e) => errs.push(format!("layer '{}': {e}", node.path)),
                 },
-                LayerKind::Liquid { blobs, threshold, cell, .. } => {
+                LayerKind::Metaball { blobs, threshold, cell, .. } => {
                     if blobs.is_empty() {
                         errs.push(format!("layer '{}': liquid needs at least one blob", node.path));
                     }
@@ -677,7 +677,7 @@ impl Engine {
             };
             if c.prop == Prop::LayerSwitch {
                 let l = layer_at(&project, &nodes[slot].idx_path);
-                if !matches!(l.kind, LayerKind::Switch { .. }) {
+                if !matches!(l.kind, LayerKind::Selector { .. }) {
                     errs.push(format!("channel {ci}: layer_switch needs a switch layer, '{}' is not one", c.target));
                 }
             }

@@ -444,7 +444,7 @@ pub(super) fn to_luma_matte(l: &mut Layer) -> bool {
                 }
             }
         }
-        LayerKind::Group { layers } | LayerKind::Switch { layers, .. } => {
+        LayerKind::Group { layers } | LayerKind::Selector { layers, .. } => {
             for k in layers {
                 ok &= to_luma_matte(k);
             }

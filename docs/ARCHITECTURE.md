@@ -112,7 +112,7 @@ implemented once, in `engine`.
 
 `osatura-core/src` has about 100 modules. They are grouped by area. For each module the "basis" is
 the public standard, paper or textbook technique recorded in `CLEANROOM.md`; "own design" means the
-clean-room log records no outside source. Names ending `_tests` are test modules and are omitted.
+provenance log records no outside source. Names ending `_tests` are test modules and are omitted.
 
 ### 3.1 Data model and language
 

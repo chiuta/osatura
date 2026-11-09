@@ -3,7 +3,7 @@
 //! Importers for open, text-based formats: SVG (subset), BVH motion capture, and mouth-cue
 //! files (Papagayo/Moho-switch style `frame PHONEME` lists and Rhubarb-style TSV).
 //!
-//! Clean-room note: written from the public W3C SVG 1.1 path grammar, the published BVH
+//! Provenance note: written from the public W3C SVG 1.1 path grammar, the published BVH
 //! description, and the plain-text layouts of the cue files. Only the 2-D subset useful for
 //! rigging is supported; unsupported features are reported as warnings, never guessed.
 

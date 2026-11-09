@@ -36,7 +36,7 @@ fn capture_layers(ls: &[Layer], prefix: &str, out: &mut BTreeMap<String, LayerSt
     for l in ls {
         let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
         let selected = match &l.kind {
-            LayerKind::Switch { selected, .. } => Some(*selected),
+            LayerKind::Selector { selected, .. } => Some(*selected),
             _ => None,
         };
         out.insert(path.clone(), LayerState { visible: l.visible, opacity: l.opacity, selected });
@@ -65,7 +65,7 @@ pub fn apply(p: &mut Project, name: &str) -> Result<Vec<String>, String> {
             Some(l) => {
                 l.visible = st.visible;
                 l.opacity = st.opacity;
-                if let (LayerKind::Switch { selected, layers }, Some(s)) = (&mut l.kind, st.selected) {
+                if let (LayerKind::Selector { selected, layers }, Some(s)) = (&mut l.kind, st.selected) {
                     *selected = s.min(layers.len().saturating_sub(1));
                 }
             }
@@ -126,11 +126,11 @@ mod tests {
         let mut p = demo::project();
         capture(&mut p, "base").unwrap();
         let mouth = p.find_layer_mut("mouth").expect("demo has a mouth switch");
-        if let LayerKind::Switch { selected, .. } = &mut mouth.kind {
+        if let LayerKind::Selector { selected, .. } = &mut mouth.kind {
             *selected = 2;
         }
         apply(&mut p, "base").unwrap();
-        if let LayerKind::Switch { selected, .. } = &p.find_layer("mouth").unwrap().kind {
+        if let LayerKind::Selector { selected, .. } = &p.find_layer("mouth").unwrap().kind {
             assert_eq!(*selected, 0);
         }
     }

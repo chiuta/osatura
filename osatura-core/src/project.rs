@@ -382,13 +382,15 @@ pub enum LayerKind {
     Group { layers: Vec<Layer> },
     /// Shows exactly one child (frame-by-frame drawings, symbol/mouth swaps).
     /// Animate `layer_switch` with step keys to pick the child.
-    Switch {
+    #[serde(alias = "switch")]
+    Selector {
         layers: Vec<Layer>,
         #[serde(default)]
         selected: usize,
     },
     /// Metaball liquid: soft blobs that fuse when they approach each other.
-    Liquid {
+    #[serde(alias = "liquid")]
+    Metaball {
         blobs: Vec<Blob>,
         /// Iso-level of the field Σ r²/d² (1.0 = each blob is a circle of its radius).
         #[serde(default = "def_threshold")]
@@ -495,10 +497,10 @@ impl Layer {
         Layer::base(name, LayerKind::Group { layers })
     }
     pub fn switch(name: &str, layers: Vec<Layer>) -> Layer {
-        Layer::base(name, LayerKind::Switch { layers, selected: 0 })
+        Layer::base(name, LayerKind::Selector { layers, selected: 0 })
     }
     pub fn liquid(name: &str, blobs: Vec<Blob>, fill: Paint) -> Layer {
-        Layer::base(name, LayerKind::Liquid { blobs, threshold: 1.0, cell: 3.0, fill: Some(fill), stroke: None })
+        Layer::base(name, LayerKind::Metaball { blobs, threshold: 1.0, cell: 3.0, fill: Some(fill), stroke: None })
     }
     pub fn boolean(name: &str, op: BoolOp, paths: Vec<VPath>) -> Layer {
         Layer::base(name, LayerKind::Boolean { op, paths })
@@ -525,13 +527,13 @@ impl Layer {
 
     pub fn children(&self) -> &[Layer] {
         match &self.kind {
-            LayerKind::Group { layers } | LayerKind::Switch { layers, .. } => layers,
+            LayerKind::Group { layers } | LayerKind::Selector { layers, .. } => layers,
             _ => &[],
         }
     }
     pub fn children_mut(&mut self) -> Option<&mut Vec<Layer>> {
         match &mut self.kind {
-            LayerKind::Group { layers } | LayerKind::Switch { layers, .. } => Some(layers),
+            LayerKind::Group { layers } | LayerKind::Selector { layers, .. } => Some(layers),
             _ => None,
         }
     }
@@ -1068,7 +1070,7 @@ fn skin_layer(l: &mut Layer, segs: &[(Vec2, Vec2)], names: &[String], k: usize) 
                 }
             }
         }
-        LayerKind::Group { layers } | LayerKind::Switch { layers, .. } => {
+        LayerKind::Group { layers } | LayerKind::Selector { layers, .. } => {
             for c in layers {
                 skin_layer(c, segs, names, k);
             }
@@ -1084,7 +1086,7 @@ fn skin_layer(l: &mut Layer, segs: &[(Vec2, Vec2)], names: &[String], k: usize) 
                     .collect();
             }
         }
-        LayerKind::Liquid { .. } | LayerKind::Boolean { .. } | LayerKind::Emitter { .. } => {}
+        LayerKind::Metaball { .. } | LayerKind::Boolean { .. } | LayerKind::Emitter { .. } => {}
     }
 }
 
