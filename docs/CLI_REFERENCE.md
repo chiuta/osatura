@@ -462,7 +462,7 @@ wrote recovered.json
 
 ### `render`
 
-**Synopsis:** `osatura render <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N]`
+**Synopsis:** `osatura render <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N] [--shutter DEG] [--samples N] [--shutter-phase SEC]`
 
 `--proxy N` renders a scrub proxy (N = 1..4): a `.png` is a bitmap at 1/2^N resolution, an `.svg` is simplified vectors; both drop fine strokes, gradients and blends.
 
@@ -473,6 +473,9 @@ Renders one frame. A `<frame>` at or beyond the project length is an error (`fra
 | `--bones` | off | Draw the skeleton overlay (heads as dots, bones as lines). |
 | `--scale N` | 1 | Output scale, a number in (0, 16]. For `.png` it multiplies the pixel size; for `.svg` the document keeps its viewBox. |
 | `--proxy N` | off | Scrub proxy, N = 1..4: `.png` = bitmap at 1/2^N resolution, `.svg` = simplified vectors; both drop fine strokes, gradients and blend modes. Meant for interactive scrubbing, not for deliverables. |
+| `--shutter DEG` | off | Motion blur (`.png` output only, not with `--proxy`): the picture is the average of `--samples` renders of the scene at moments spread evenly over the exposure time `DEG / 360 / fps` seconds (shutter angle `0..360`; 180 is the usual half-frame exposure; 0 is a plain render). Alpha is averaged premultiplied and rounded once at the end. Costs `--samples` renders. |
+| `--samples N` | 8 | Number of renders averaged for `--shutter` (1..256). Each sample is at the middle of one of N equal parts of the exposure. |
+| `--shutter-phase SEC` | 0 | Start of the exposure relative to the frame time, in seconds (negative = centred or before the frame). Moments are limited to the project length. |
 
 ```
 $ osatura render demo.json 12 f12.png --bones --scale 2
@@ -2257,6 +2260,22 @@ Info L007 [:CameraX] key at frame 24 lies outside the 0..8 timeline
 Info L007 [arm_low:BoneAngle] key at frame 12 lies outside the 0..8 timeline
 ```
 `L007` is a key outside the timeline (here because `small.json` is the demo cut to 8 frames).
+
+### `schema`
+
+**Synopsis:** `osatura schema [out.json] [--strict]`
+
+Publishes the JSON Schema (dialect 2020-12) of project files, so editors and external tools can validate a project
+before loading it and offer completion. The root, `camera`, `bones` and `ik` are described field by field (types,
+required fields, defaults, the format version as `const`, `color_space` as an enumeration); the other lists are accepted
+as arrays of objects. The output is deterministic (sorted keys, same bytes every time) and goes to standard output when no
+file is named. By default unknown properties are allowed, matching the loader (it reports them, it does not refuse them);
+`--strict` adds `additionalProperties: false` to the described objects.
+```
+$ osatura schema project.schema.json
+wrote project.schema.json
+```
+**Exit codes:** 0 on success, 1 when the file cannot be written. **Related:** `check`, `lint`.
 
 ### `contracts`
 

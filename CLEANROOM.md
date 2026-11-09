@@ -100,6 +100,17 @@ The feature research behind FEATURES.md was done by an AI research agent that lo
 | vocab / comps / rigedit / snapshots | plain anatomy words; own data model; rest-pose maths | counter-based revisions, no clock |
 | springfit / explain | second-order system response (same integrator as the engine) | own idea |
 | safety | WCAG 2.3.1, relative luminance (IEC 61966-2-1 sRGB) | not a certified tool |
+| formatschema | JSON Schema 2020-12 core and validation vocabularies (json-schema.org/specification); spec docs/clean-room/specs/08 | own description model (`FormatDesc`); `osatura schema`; subset validator for tests |
+| segease | W3C CSS Easing Functions Level 2 (FPWD 2024): piecewise-linear function, steps function and its output algorithm, cubic Bézier validity and presets; spec docs/clean-room/specs/05 | pure functions, not yet wired into `anim::Ease` (see INTREBARI.md) |
+| stereopan | W3C Web Audio API, StereoPanner algorithm (equal power, cos/sin of pi/2 * x); spec docs/clean-room/specs/03 | pure sample functions, not yet wired into `sound mix` |
+| biquad | W3C Note Audio EQ Cookbook (2021), Q-form coefficient formulas, direct-form difference equation; spec docs/clean-room/specs/04 | pure sample functions in f64, not yet wired into `sound mix` |
+| baseline | W3C CSS Flexible Box Layout Level 1, 8.3 cross-axis (baseline) alignment and 9.4 single-line cross size; spec docs/clean-room/specs/06 | pure one-line geometry, not yet wired into `containers`; synthesised baseline at the bottom edge is a project decision |
+| gifseq | GIF89a specification (CompuServe 1990; W3C copy): block grammar, LZW with variable code width, interlacing, graphic control extension, disposal; spec docs/clean-room/specs/01 | own decoder; differential test against the existing `gif`-crate based importer |
+| apngseq | APNG Specification (acTL/fcTL/fdAT, sequence numbers, dispose_op, blend_op) over the PNG chunk structure and CRC-32; spec docs/clean-room/specs/02 | own chunk parser, CRC-32 and compositing; frame pixel data decoded by the `png` crate as ordinary PNG; differential test against the existing importer |
+| capsule2d | elementary geometry: minimum distance between two segments, capsule as the points within r of a segment (textbook; Ericson 2005 sec. on closest points of segments and Eberly's segment-distance note named by the spec but not read); spec docs/clean-room/specs/10 | derived from geometry, arithmetic acceptance tests; not yet wired into `physics` |
+| lighting | classic fixed-function light model (manual page of the light-parameter call: attenuation, spot cutoff/exponent ranges); Lambert cosine law; Blinn 1977 half-vector specular (textbook, not re-read); spec docs/clean-room/specs/09 | pure per-pixel function, separate from `postfx` relight; not wired |
+| motionblur | temporal sampling of the exposure interval (Potmesil-Chakravarty 1983, Korein-Badler 1983, Cook et al. 1984; named by the spec, not read); shutter angle convention; spec docs/clean-room/specs/11 | stratified midpoints, exact integer premultiplied-equivalent average; `render --shutter` |
+| gltf::anim | Khronos glTF 2.0 animations: samplers, channels, STEP/LINEAR/CUBICSPLINE interpolation and the cubic Hermite formula (tutorial chapter "Animations" read; normative text not read); quaternion slerp (textbook); spec docs/clean-room/specs/07 | sampling rules and sampler/channel encoder using the existing buffer writer; not yet called by `export_glb` |
 
 ## Spec-note template (optional; not applied retroactively)
 ```
