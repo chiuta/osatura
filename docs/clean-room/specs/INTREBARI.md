@@ -20,3 +20,9 @@ Format: spec · punct · ce lipsește · ce s-a implementat între timp. Complet
 ## 04 — filtru biquad
 - Același punct ca la 03: nu există încă un câmp de filtre pe `SoundTrack` și nici un mixer intern; `biquad` este funcție pură pe eșantioane (mono, sau intercalat pe canale). Decizie necesară înainte de legare.
 - [necunoscut din spec] rampa la schimbarea parametrilor în timp și formele cu BW/S: neimplementate. Frecvența peste 0,45·Fs dă avertisment (`warnings`), nu eroare; `Q` > 1000 este eroare (limită a proiectului, cf. spec).
+
+## 06 — aliniere pe linia de bază
+- Conectarea la `containers::Container`: modul `Align` (start/center/end/stretch) nu are variantă „baseline", iar măsurarea membrilor din containere nu cunoaște o distanță a liniei de bază. Câmpurile propuse de spec (regim de aliniere + distanța liniei de bază, opțională, pe stratul membru) nu au fost adăugate în format; modulul `baseline` este geometrie pură pe o linie. Decizie necesară: unde se citește distanța liniei de bază (câmp pe strat) și cum se integrează cu `wrap`.
+- Muchia pentru linia de bază sintetizată: implementat „jos" cum spune p. 3/9 din spec (decizie de proiectare); testul 4 depinde de ea. Dacă titularul alege altă muchie, testul 4 se schimbă.
+- Mai multe linii (înfășurare): `align_line` se apelează pe fiecare linie; dimensionarea liniilor cu `align-content` nu e specificată și nu e implementată.
+- Un membru `Stretch` este poziționat la început; mărimea lui nu este calculată aici.

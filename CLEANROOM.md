@@ -104,6 +104,7 @@ The feature research behind FEATURES.md was done by an AI research agent that lo
 | segease | W3C CSS Easing Functions Level 2 (FPWD 2024): piecewise-linear function, steps function and its output algorithm, cubic Bézier validity and presets; spec docs/clean-room/specs/05 | pure functions, not yet wired into `anim::Ease` (see INTREBARI.md) |
 | stereopan | W3C Web Audio API, StereoPanner algorithm (equal power, cos/sin of pi/2 * x); spec docs/clean-room/specs/03 | pure sample functions, not yet wired into `sound mix` |
 | biquad | W3C Note Audio EQ Cookbook (2021), Q-form coefficient formulas, direct-form difference equation; spec docs/clean-room/specs/04 | pure sample functions in f64, not yet wired into `sound mix` |
+| baseline | W3C CSS Flexible Box Layout Level 1, 8.3 cross-axis (baseline) alignment and 9.4 single-line cross size; spec docs/clean-room/specs/06 | pure one-line geometry, not yet wired into `containers`; synthesised baseline at the bottom edge is a project decision |
 
 ## Spec-note template (optional; not applied retroactively)
 ```
