@@ -43,6 +43,7 @@ use std::collections::HashMap;
 mod geometry;
 mod masks;
 mod export;
+pub mod anim;
 
 pub use geometry::*;
 use masks::*;

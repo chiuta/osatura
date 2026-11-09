@@ -110,6 +110,7 @@ The feature research behind FEATURES.md was done by an AI research agent that lo
 | capsule2d | elementary geometry: minimum distance between two segments, capsule as the points within r of a segment (textbook; Ericson 2005 sec. on closest points of segments and Eberly's segment-distance note named by the spec but not read); spec docs/clean-room/specs/10 | derived from geometry, arithmetic acceptance tests; not yet wired into `physics` |
 | lighting | classic fixed-function light model (manual page of the light-parameter call: attenuation, spot cutoff/exponent ranges); Lambert cosine law; Blinn 1977 half-vector specular (textbook, not re-read); spec docs/clean-room/specs/09 | pure per-pixel function, separate from `postfx` relight; not wired |
 | motionblur | temporal sampling of the exposure interval (Potmesil-Chakravarty 1983, Korein-Badler 1983, Cook et al. 1984; named by the spec, not read); shutter angle convention; spec docs/clean-room/specs/11 | stratified midpoints, exact integer premultiplied-equivalent average; `render --shutter` |
+| gltf::anim | Khronos glTF 2.0 animations: samplers, channels, STEP/LINEAR/CUBICSPLINE interpolation and the cubic Hermite formula (tutorial chapter "Animations" read; normative text not read); quaternion slerp (textbook); spec docs/clean-room/specs/07 | sampling rules and sampler/channel encoder using the existing buffer writer; not yet called by `export_glb` |
 
 ## Spec-note template (optional; not applied retroactively)
 ```
