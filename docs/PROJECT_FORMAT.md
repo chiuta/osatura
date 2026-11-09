@@ -96,6 +96,8 @@ live-input config, overlays and face-parameter config; config files are read wit
 The project serializes with `skip_serializing_if` for optional lists. A file you write by hand may
 be shorter than what `osatura` writes back; both are equivalent.
 
+A JSON Schema (dialect 2020-12) of the file is printed by `osatura schema [out.json] [--strict]`; it describes the root, `camera`, `bones` and `ik` field by field and the other lists as arrays of objects. It allows unknown properties, like the loader, unless `--strict` is given.
+
 ## 3. Top-level fields
 
 | JSON name | Type | Default | Range / rule | Meaning |

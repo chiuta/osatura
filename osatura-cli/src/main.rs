@@ -35,7 +35,7 @@ use osatura_core::anim_tools::{mirror, walk_cycle, WalkRig, WalkStyle};
 use osatura_core::audio::read_wav_file;
 use osatura_core::edit::Editor;
 use osatura_core::export;
-use osatura_core::{autotrace, posesuggest, tinymlp, speech, links, warp, cage, clipstack, cloth, soundtrack, looper, bonevis, parentswitch, skins, audiomap, lottie_import, hdr, seqimport, chanmeta, depth, eyeclip, physics, magnet, footlock, motionlib, camshots, pathfollow, layout, autorig, drivers, comps, explain, rigedit, snapshots, springfit, vocab, agent, overlays, postfx, importers, inspect, keyops, lint, procgen, open_formats, perf, posematch, safety, statemachine, trace, meshtrace, weights};
+use osatura_core::{formatschema, autotrace, posesuggest, tinymlp, speech, links, warp, cage, clipstack, cloth, soundtrack, looper, bonevis, parentswitch, skins, audiomap, lottie_import, hdr, seqimport, chanmeta, depth, eyeclip, physics, magnet, footlock, motionlib, camshots, pathfollow, layout, autorig, drivers, comps, explain, rigedit, snapshots, springfit, vocab, agent, overlays, postfx, importers, inspect, keyops, lint, procgen, open_formats, perf, posematch, safety, statemachine, trace, meshtrace, weights};
 use osatura_core::project::{Prop, Source};
 use osatura_core::math::Vec2;
 use osatura_core::raster::{render_png, RasterOptions};

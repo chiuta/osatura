@@ -105,6 +105,18 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
             println!("{total} finding(s), {errors} error(s)");
             if errors > 0 { Err("lint errors".into()) } else { Ok(()) }
         }
+        ["schema"] | ["schema", _] => {
+            let schema = formatschema::generate(&formatschema::project_format(a.flags.iter().any(|f| f == "--strict")))?;
+            let text = formatschema::to_text(&schema);
+            match pos.get(1) {
+                Some(out) => {
+                    fwrite(out, text)?;
+                    println!("wrote {out}");
+                }
+                None => print!("{text}"),
+            }
+            Ok(())
+        }
         ["contracts", path, cpath] => {
             let e = load(path)?;
             let contracts: Vec<lint::Contract> = read_json(cpath)?;

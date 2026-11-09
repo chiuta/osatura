@@ -100,6 +100,7 @@ The feature research behind FEATURES.md was done by an AI research agent that lo
 | vocab / comps / rigedit / snapshots | plain anatomy words; own data model; rest-pose maths | counter-based revisions, no clock |
 | springfit / explain | second-order system response (same integrator as the engine) | own idea |
 | safety | WCAG 2.3.1, relative luminance (IEC 61966-2-1 sRGB) | not a certified tool |
+| formatschema | JSON Schema 2020-12 core and validation vocabularies (json-schema.org/specification); spec docs/clean-room/specs/08 | own description model (`FormatDesc`); `osatura schema`; subset validator for tests |
 
 ## Spec-note template (optional; not applied retroactively)
 ```

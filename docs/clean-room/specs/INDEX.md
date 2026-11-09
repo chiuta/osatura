@@ -1,3 +1,5 @@
+Aprobare filtru: prin instrucțiunea titularului din conversație (2026-11-09), nu bifată individual
+
 # Specificații funcționale candidate — lot 1
 
 Data: 2026-11-09 · Etapa 1 din 2 (analiză/specificare). Nu conține cod de produs. Toate specificațiile au status **candidat**: nu au trecut filtrul (căsuțele „Licență", „Brevete" și „Aprobată de mine" din fiecare fișier sunt nebifate) și nu se predau implementării înainte de aprobarea omului.
@@ -8,7 +10,7 @@ Surse: numai standarde și documentație publică. Fiecare fișier indică, la �
 
 | Ord. | Fișier | Funcție | Status | Sursă publică | Mărime | Depinde de |
 |---|---|---|---|---|---|---|
-| 1 | [08-schema-json-export-format-proiect.md](08-schema-json-export-format-proiect.md) | generare_schemă_json_pentru_proiect | candidat | JSON Schema 2020-12 (core + validation), json-schema.org | S (+M acoperire) | — ; recomandat primul: câmpurile noi din 03, 04, 05, 06, 09, 11 se adaugă apoi în descrierea formatului |
+| 1 | [08-schema-json-export-format-proiect.md](08-schema-json-export-format-proiect.md) | generare_schemă_json_pentru_proiect | parțial: schema acoperă câmp cu câmp rădăcina, camera, oasele și IK; celelalte liste sunt obiecte libere; testul 7 (meta-schema) neverificat, fără validator extern offline | JSON Schema 2020-12 (core + validation), json-schema.org | S (+M acoperire) | — ; recomandat primul: câmpurile noi din 03, 04, 05, 06, 09, 11 se adaugă apoi în descrierea formatului |
 | 2 | [05-easing-liniar-pe-segmente-si-trepte.md](05-easing-liniar-pe-segmente-si-trepte.md) | curbă_de_ritm_pe_segmente_și_trepte | candidat | W3C CSS Easing Functions Level 2 (FPWD, 2024) | S | — |
 | 3 | [03-audio-panoramare-stereo.md](03-audio-panoramare-stereo.md) | panoramare_stereo_putere_egală | candidat | W3C Web Audio API (StereoPanner) | S | — |
 | 4 | [04-audio-filtru-biquad.md](04-audio-filtru-biquad.md) | filtru_biquad_pe_pistă | candidat | W3C Note „Audio EQ Cookbook" (2021) | S | 03 (recomandat: aceeași cale de mixare, nu obligatoriu) |

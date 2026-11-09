@@ -74,6 +74,7 @@ INSPECT / QUALITY
   osatura update-check [--proxy-preset tor|tor-browser|warp | --proxy-url URL] [--list-proxy-presets] [--json]   asks GitHub whether a newer release exists (only when you run it; downloads and installs nothing; the optional proxy keeps your address from GitHub)
   osatura ci       init <project.json> [--out osatura-ci.json] [--no-goldens] | run [manifest] [--update] [--bless] [--prune] [--only a,b] [--junit f.xml] [--html f.html] [--json f.json] [--artifacts dir] [--quiet] | bless [manifest] | diff a.png b.png [--metric ssim|de2000|de76|mse] [--tol T] [--ignore x,y,w,h;...] [--aa N] [--out heat.png] [--side s.png] [--overlay o.png] [--flicker f.gif]   animation CI: golden frames with perceptual diff (SSIM, CIEDE2000), structural checks, budgets; exit 0 pass, 1 fail, 2 error
   osatura lint     <project.json>                     static rig / animation checks (exit 1 on errors)
+  osatura schema   [out.json] [--strict]              JSON Schema (2020-12) of project files; stdout without a file; --strict forbids unknown properties
   osatura contracts <project.json> <contracts.json>   motion contracts (unit tests for animation)
   osatura loop-solve <project.json> <out.json> [--window 24] [--inclusive]   make keyed channels loop seamlessly (period N frames, no duplicated seam frame; --inclusive = last frame equals first, legacy)
   osatura coach    <project.json>                     timing / principles suggestions

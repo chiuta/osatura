@@ -2258,6 +2258,22 @@ Info L007 [arm_low:BoneAngle] key at frame 12 lies outside the 0..8 timeline
 ```
 `L007` is a key outside the timeline (here because `small.json` is the demo cut to 8 frames).
 
+### `schema`
+
+**Synopsis:** `osatura schema [out.json] [--strict]`
+
+Publishes the JSON Schema (dialect 2020-12) of project files, so editors and external tools can validate a project
+before loading it and offer completion. The root, `camera`, `bones` and `ik` are described field by field (types,
+required fields, defaults, the format version as `const`, `color_space` as an enumeration); the other lists are accepted
+as arrays of objects. The output is deterministic (sorted keys, same bytes every time) and goes to standard output when no
+file is named. By default unknown properties are allowed, matching the loader (it reports them, it does not refuse them);
+`--strict` adds `additionalProperties: false` to the described objects.
+```
+$ osatura schema project.schema.json
+wrote project.schema.json
+```
+**Exit codes:** 0 on success, 1 when the file cannot be written. **Related:** `check`, `lint`.
+
 ### `contracts`
 
 **Synopsis:** `osatura contracts <project.json> <contracts.json>`

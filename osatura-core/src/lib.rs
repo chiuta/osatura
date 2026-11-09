@@ -124,6 +124,8 @@ pub mod animimport;
 #[doc(hidden)]
 pub mod soundtrack;
 #[doc(hidden)]
+pub mod formatschema;
+#[doc(hidden)]
 pub mod speech;
 #[doc(hidden)]
 pub mod gltf;
