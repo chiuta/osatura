@@ -140,6 +140,8 @@ pub mod apngseq;
 #[doc(hidden)]
 pub mod capsule2d;
 #[doc(hidden)]
+pub mod lighting;
+#[doc(hidden)]
 pub mod speech;
 #[doc(hidden)]
 pub mod gltf;

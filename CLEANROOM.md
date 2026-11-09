@@ -108,6 +108,7 @@ The feature research behind FEATURES.md was done by an AI research agent that lo
 | gifseq | GIF89a specification (CompuServe 1990; W3C copy): block grammar, LZW with variable code width, interlacing, graphic control extension, disposal; spec docs/clean-room/specs/01 | own decoder; differential test against the existing `gif`-crate based importer |
 | apngseq | APNG Specification (acTL/fcTL/fdAT, sequence numbers, dispose_op, blend_op) over the PNG chunk structure and CRC-32; spec docs/clean-room/specs/02 | own chunk parser, CRC-32 and compositing; frame pixel data decoded by the `png` crate as ordinary PNG; differential test against the existing importer |
 | capsule2d | elementary geometry: minimum distance between two segments, capsule as the points within r of a segment (textbook; Ericson 2005 sec. on closest points of segments and Eberly's segment-distance note named by the spec but not read); spec docs/clean-room/specs/10 | derived from geometry, arithmetic acceptance tests; not yet wired into `physics` |
+| lighting | classic fixed-function light model (manual page of the light-parameter call: attenuation, spot cutoff/exponent ranges); Lambert cosine law; Blinn 1977 half-vector specular (textbook, not re-read); spec docs/clean-room/specs/09 | pure per-pixel function, separate from `postfx` relight; not wired |
 
 ## Spec-note template (optional; not applied retroactively)
 ```

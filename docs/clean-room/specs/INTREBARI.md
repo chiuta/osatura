@@ -41,3 +41,8 @@ Format: spec · punct · ce lipsește · ce s-a implementat între timp. Complet
 - Spec 10 are `[dedus]` peste tot; testele de acceptanță au fost verificate aritmetic înainte de implementare (1-11, inclusiv lanțul cu 4 segmente) și sunt consistente. S-a implementat din geometrie (distanța dintre segmente), fără a consulta cărțile citate.
 - Neconectat la `physics.rs` (lanțuri dinamice): nu există în spec câmpul de schemă pentru raze/auto-coliziune și nici punctul de integrare cu pasul de simulare. Modulul `capsule2d` oferă `collide`, `corrections`, `self_collisions`, `chain_corrections`.
 - Politica de omitere a vecinilor: implementat doar |i-j| <= 1, cum cere spec ([necunoscut] dacă lanțurile dense au nevoie de 2).
+
+## 09 — iluminare spot și speculară
+- `postfx::Light` are deja un spot (con cu margine netedă `soft`, fără exponent, fără atenuare 1/(kc+kl·d+kq·d²), fără termen speculativ). Modelul din spec (con cu masca strictă, cos^e, atenuare cu trei factori, Blinn) este implementat separat în `lighting` ca funcție pură; nu a fost legat de efectul `relight`, ca să nu se schimbe randările existente (golden-uri). Decizie: câmpuri noi pe `Light`/material și ramură nouă în `relight`?
+- Ecuația completă din sursa (1) lipsește în spec (marcată [dedus]); testele 1-7 sunt consistente aritmetic și trec. Eroare adăugată de implementare: toți factorii de atenuare zero (împărțire la zero). Normala nulă: tratată ca eroare (spec lasă alegerea).
+- Termenul speculativ nu este colorat de material (doar de lumină), cum lasă spec deschis.
