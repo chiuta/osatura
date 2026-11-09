@@ -381,7 +381,7 @@ fn push_apart(pc: &mut [Vec2], r: f32) -> Result<(), String> {
         *first = 0.5;
     }
     let corr = chain_corrections(&caps, &w)?;
-    for i in 1..pc.len() {
+    for (i, p) in pc.iter_mut().enumerate().skip(1) {
         let (mut sx, mut sy, mut n) = (0.0f64, 0.0f64, 0.0f64);
         for k in [i - 1, i] {
             if let Some(c) = corr.get(k).filter(|_| k < caps.len()) {
@@ -391,7 +391,7 @@ fn push_apart(pc: &mut [Vec2], r: f32) -> Result<(), String> {
             }
         }
         if n > 0.0 {
-            pc[i] = Vec2::new(pc[i].x + (sx / n) as f32, pc[i].y + (sy / n) as f32);
+            *p = Vec2::new(p.x + (sx / n) as f32, p.y + (sy / n) as f32);
         }
     }
     Ok(())

@@ -448,7 +448,7 @@ pub fn project_format(strict: bool) -> FormatDesc {
         vec![
             f("kind", Enum(["lowpass", "highpass", "bandpass", "notch", "allpass", "peaking", "lowshelf", "highshelf"].iter().map(|s| s.to_string()).collect())),
             f("freq", Real).range(Some(0.0), None).doc("Corner or centre frequency, Hz (> 0)."),
-            f("q", Real).default(json!(0.7071067811865476)).doc("Quality factor."),
+            f("q", Real).default(json!(std::f64::consts::FRAC_1_SQRT_2)).doc("Quality factor."),
             f("gain_db", Real).default(json!(0)).doc("dB; peaking and shelves only."),
         ],
     );

@@ -123,6 +123,9 @@ pub(super) fn distribute(basis: &[f32], grow: &[f32], shrink: &[f32], lo: &[f32]
     size
 }
 
+/// Per-member cross offsets (`None` for members not on the baseline) and the cross size of the baseline group.
+type BaselineGroup = (Vec<Option<f32>>, f32);
+
 impl<'a> Solver<'a> {
     pub(super) fn new(p: &'a Project) -> Solver<'a> {
         let ids = p.containers.iter().enumerate().map(|(i, c)| (c.id.as_str(), i)).collect();
@@ -221,7 +224,7 @@ impl<'a> Solver<'a> {
     /// Baseline alignment of one line of a row container: for each member of `line` the cross offset when it is aligned with
     /// `Align::Baseline` (`None` for the others), and the cross size of the baseline group. `None` as a whole when the container is a
     /// column or no member of the line asks for it.
-    pub(super) fn baseline_group(&self, c: &Container, preps: &[Prep], line: &[usize]) -> Result<Option<(Vec<Option<f32>>, f32)>, String> {
+    pub(super) fn baseline_group(&self, c: &Container, preps: &[Prep], line: &[usize]) -> Result<Option<BaselineGroup>, String> {
         let wants = |i: usize| preps[i].m.align.unwrap_or(c.align) == Align::Baseline;
         if c.axis != Dir::Row || !line.iter().any(|&i| wants(i)) {
             return Ok(None);
