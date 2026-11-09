@@ -10,7 +10,7 @@
 //! every member that takes part is shifted so that the distances from its top margin edge to its baseline coincide with the largest of
 //! them, which is placed against the start of the line. A member without a baseline gets one at the bottom of its border box
 //! (a project decision). In a column container the baseline mode behaves like `Start`. Wrapped containers call [`align_line`] once per
-//! line. Not yet connected to `containers::Container` (see docs/clean-room/specs/INTREBARI.md).
+//! line. Connected to `containers` through `Align::Baseline` and the optional `Member::baseline` (see docs/clean-room/specs/INTREBARI.md).
 
 /// Cross-axis alignment mode of one member of the line.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

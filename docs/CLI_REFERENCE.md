@@ -1914,11 +1914,11 @@ osatura container solve  <project.json> [--size WxH --data out.json]
 
 A **container** is a flexbox-like layout box: `id`, `members`, `axis` (`row`|`column`), `gap`, `cross_gap`, `padding`
 (`[left,top,right,bottom]`), `justify` (`start|center|end|space_between|space_around`), `align`
-(`start|center|end|stretch`), `wrap` (`none|wrap`) and `rect`, a rule for its own rectangle on the canvas:
+(`start|center|end|stretch|baseline`), `wrap` (`none|wrap`) and `rect`, a rule for its own rectangle on the canvas:
 `{"kind":"fixed",...}`, `{"kind":"pin","left","right","top","bottom","width","height"}` (distances from the canvas edges; any two
 of each axis), `{"kind":"aspect",...}` or `{"kind":"hug"}`. A **member** is exactly one of `{"layer":PATH}`,
 `{"container":ID}` or `{"spacer":true}`, with `grow`, `shrink`, `width`, `height`, `min_w/max_w/min_h/max_h` and
-an `align` override; `"resize":true` lets the solver scale the layer to its slot.
+an `align` override and an optional `baseline` (distance from the top of the member to its baseline, used by `align: baseline` in row containers; see PROJECT_FORMAT.md section 11.5); `"resize":true` lets the solver scale the layer to its slot.
 
 ```
 $ cat cont.json

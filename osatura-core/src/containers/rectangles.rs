@@ -206,6 +206,9 @@ impl<'a> Solver<'a> {
                 sum += preps[i].m.clamp(m, preps[i].nat[m]) + if k > 0 { c.gap } else { 0.0 };
                 cross = cross.max(preps[i].m.clamp(x, preps[i].nat[x]));
             }
+            if let Ok(Some((_, group))) = self.baseline_group(c, &preps, line) {
+                cross = cross.max(group);
+            }
             main_ext = main_ext.max(sum);
             cross_ext += cross + if j > 0 { cross_gap } else { 0.0 };
         }
@@ -213,6 +216,26 @@ impl<'a> Solver<'a> {
         out[m] = main_ext + pad_main;
         out[x] = cross_ext + pad_cross;
         out
+    }
+
+    /// Baseline alignment of one line of a row container: for each member of `line` the cross offset when it is aligned with
+    /// `Align::Baseline` (`None` for the others), and the cross size of the baseline group. `None` as a whole when the container is a
+    /// column or no member of the line asks for it.
+    pub(super) fn baseline_group(&self, c: &Container, preps: &[Prep], line: &[usize]) -> Result<Option<(Vec<Option<f32>>, f32)>, String> {
+        let wants = |i: usize| preps[i].m.align.unwrap_or(c.align) == Align::Baseline;
+        if c.axis != Dir::Row || !line.iter().any(|&i| wants(i)) {
+            return Ok(None);
+        }
+        let which: Vec<usize> = line.iter().copied().filter(|&i| wants(i)).collect();
+        let members: Vec<crate::baseline::Member> = which.iter().map(|&i| crate::baseline::Member::on_baseline(f64::from(preps[i].m.clamp(1, preps[i].nat[1])), preps[i].m.baseline.map(f64::from))).collect();
+        let l = crate::baseline::align_line(&members, None, true).map_err(|e| format!("container '{}': {e}", c.id))?;
+        let mut out = vec![None; line.len()];
+        for (k, &i) in which.iter().enumerate() {
+            if let Some(slot) = line.iter().position(|&j| j == i) {
+                out[slot] = Some(l.offsets[k] as f32);
+            }
+        }
+        Ok(Some((out, l.size as f32)))
     }
 
     pub(super) fn place(&mut self, path: &str, pr: &Prep, slot: [f32; 4]) -> Result<(), String> {
@@ -241,10 +264,11 @@ impl<'a> Solver<'a> {
         let mut cross_cursor = 0.0f32;
         for line in &lines {
             let n = line.len();
+            let base = self.baseline_group(c, &preps, line)?;
             let line_cross = if single {
                 inner[x]
             } else {
-                line.iter().map(|&i| preps[i].m.clamp(x, preps[i].nat[x])).fold(0.0f32, f32::max)
+                line.iter().map(|&i| preps[i].m.clamp(x, preps[i].nat[x])).fold(base.as_ref().map_or(0.0, |b| b.1), f32::max)
             };
             let basis: Vec<f32> = line.iter().map(|&i| preps[i].m.clamp(m, preps[i].nat[m])).collect();
             let grow: Vec<f32> = line.iter().map(|&i| preps[i].m.grow).collect();
@@ -274,6 +298,7 @@ impl<'a> Solver<'a> {
                     pr.m.clamp(x, pr.nat[x])
                 };
                 let coff = match al {
+                    Align::Baseline => base.as_ref().and_then(|b| b.0[k]).unwrap_or(0.0),
                     Align::Start | Align::Stretch => 0.0,
                     Align::Center => (line_cross - cs) * 0.5,
                     Align::End => line_cross - cs,

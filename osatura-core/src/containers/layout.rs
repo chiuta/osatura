@@ -34,6 +34,9 @@ pub enum Align {
     Center,
     End,
     Stretch,
+    /// Row containers only: the members of a line that choose it are shifted so that their baselines coincide (see
+    /// [`Member::baseline`] and `crate::baseline`). In a column container it acts as `Start`.
+    Baseline,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -147,6 +150,10 @@ pub struct Member {
     /// Cross-axis alignment override.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub align: Option<Align>,
+    /// Distance from the top edge of the member's box to its baseline, used when the member is aligned with [`Align::Baseline`] in a
+    /// row container. Without it the baseline is the bottom edge (a nested container has none of its own).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub baseline: Option<f32>,
     /// Scale a layer to its slot (growth, shrinkage and cross-axis stretch change its size).
     /// Without it the layer keeps its size and sits at the start of its slot.
     #[serde(default, skip_serializing_if = "is_false")]
@@ -172,6 +179,7 @@ impl Member {
             min_h: None,
             max_h: None,
             align: None,
+            baseline: None,
             resize: false,
         }
     }

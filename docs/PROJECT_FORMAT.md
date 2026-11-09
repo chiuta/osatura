@@ -681,8 +681,14 @@ targets are checked by a trial compile.
 Flexbox-style 1-D layout. Container fields: `id`, `members`, `axis` (`row`, `column`), `gap`,
 `cross_gap`, `padding` (4 numbers), `justify`, `align`, `wrap`, `rect`. A `rect` has a `kind`:
 `fixed` (`x,y,w,h`), `pin`, `aspect` or `hug`. A member has exactly one of `layer`, `container` or
-`spacer`, plus `grow`, `shrink`, `width`, `height`, `align`, `resize`. Limits: 100000 members,
-nesting depth 64. A scroll has `id`, `viewport`, `content`, `axis`, `offset`, `elastic`, `snap_x`,
+`spacer`, plus `grow`, `shrink`, `width`, `height`, `align`, `resize` and the optional `baseline`.
+`align` is `start`, `center`, `end`, `stretch` or `baseline`. In a row container the members of a line
+that choose `baseline` (on the container or per member) are shifted so that their baselines coincide;
+`baseline` is the distance from the top edge of the member's box to its baseline (a number >= 0, not
+allowed on a spacer; without it the baseline is the bottom edge of the box). The group sits at the
+start of the line, and in a wrapped container it also sets the height of its line. In a column
+container `baseline` acts as `start`. `baseline` is omitted when not set, so a project that does not
+use it is unchanged. Limits: 100000 members, nesting depth 64. A scroll has `id`, `viewport`, `content`, `axis`, `offset`, `elastic`, `snap_x`,
 `snap_y`, `fling`, `clip_layer`, `input`.
 
 ```json
