@@ -103,6 +103,7 @@ The feature research behind FEATURES.md was done by an AI research agent that lo
 | formatschema | JSON Schema 2020-12 core and validation vocabularies (json-schema.org/specification); spec docs/clean-room/specs/08 | own description model (`FormatDesc`); `osatura schema`; subset validator for tests |
 | segease | W3C CSS Easing Functions Level 2 (FPWD 2024): piecewise-linear function, steps function and its output algorithm, cubic Bézier validity and presets; spec docs/clean-room/specs/05 | pure functions, not yet wired into `anim::Ease` (see INTREBARI.md) |
 | stereopan | W3C Web Audio API, StereoPanner algorithm (equal power, cos/sin of pi/2 * x); spec docs/clean-room/specs/03 | pure sample functions, not yet wired into `sound mix` |
+| biquad | W3C Note Audio EQ Cookbook (2021), Q-form coefficient formulas, direct-form difference equation; spec docs/clean-room/specs/04 | pure sample functions in f64, not yet wired into `sound mix` |
 
 ## Spec-note template (optional; not applied retroactively)
 ```
