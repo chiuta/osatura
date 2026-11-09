@@ -133,12 +133,12 @@ impl SoundTrack {
         SoundTrack { name: name.into(), file: file.into(), start, gain, trim_in: 0.0, trim_out: None, fade_in: 0.0, fade_out: 0.0, pan: None, filters: vec![] }
     }
 
-    /// Length of the clip after trimming, when known (`file_len` is the whole file's length).
     /// Does the track need the sample-domain path (pan and/or filters) before the ffmpeg graph?
     pub fn needs_sample_path(&self) -> bool {
         self.pan.is_some() || !self.filters.is_empty()
     }
 
+    /// Length of the clip after trimming, when known (`file_len` is the whole file's length).
     pub fn clip_len(&self, file_len: Option<f32>) -> Option<f32> {
         self.trim_out.or(file_len).map(|end| (end - self.trim_in).max(0.0))
     }

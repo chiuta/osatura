@@ -10,6 +10,10 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Notes for integrators
+
+- Rust API of `osatura-core`: the `LayerKind` variants `Switch` and `Liquid` are now called `Selector` and `Metaball`, and some public structs have new optional fields (`SoundTrack::pan` and `filters`, `PhysicsOptions::self_collision`, `postfx::Light::shading`, `containers::Member::baseline`) and `Align` has a new `Baseline` variant (struct literals and exhaustive matches of external Rust code need updating). The project file format, the scripting API (`layer_info(path).kind`) and the command line keep the names `switch` and `liquid`; `selector` and `metaball` are also accepted when reading. Files written are unchanged unless the new optional fields are used.
+
 ### Added
 
 - `osatura update-check`: asks GitHub whether a newer release exists. Only when you run it; downloads and installs nothing; one anonymous HTTPS request through the system `curl`. Free, ethical proxy options keep your address from GitHub: `--proxy-preset tor|tor-browser|warp` (local `socks5h://` endpoints, so the proxy resolves the name) or your own with `--proxy-url`; lists of open public proxies are deliberately not offered. SemVer comparison (`alpha.10` is newer than `alpha.9`); a build from source cannot tell which release it matches and says so.
