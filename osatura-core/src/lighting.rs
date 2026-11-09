@@ -9,8 +9,8 @@
 //! docs/clean-room/specs/09-iluminare-spot-si-speculara.md.
 //!
 //! The viewer is orthographic above the image plane, looking down: the vector to the viewer is `(0, 0, 1)` (a project decision). This
-//! module is separate from the `relight` post effect in `postfx` (which has its own soft-edged spot); it is not connected to it
-//! (see docs/clean-room/specs/INTREBARI.md). Shadows are out of scope.
+//! module is separate from the default model of the `relight` post effect in `postfx` (which has its own soft-edged spot); a `relight`
+//! light uses this one only when it has the optional `shading` field (see docs/clean-room/specs/INTREBARI.md). Shadows are out of scope.
 
 /// A 3D vector.
 pub type V3 = [f64; 3];
@@ -129,12 +129,24 @@ pub fn spot_factor(l: &LightSpec, point: V3) -> Result<f64, String> {
     Ok(if l.exponent == 0.0 { 1.0 } else { c.max(0.0).powf(l.exponent) })
 }
 
-/// Diffuse and specular contribution of one light at `point` with surface `normal` (normalised here; a zero normal is an error).
-pub fn shade(point: V3, normal: V3, l: &LightSpec, m: &Material) -> Result<Contribution, String> {
-    l.validate()?;
+/// Checks the material coefficients.
+pub fn validate_material(m: &Material) -> Result<(), String> {
     if !(m.ks.is_finite() && m.shininess.is_finite()) || m.ks < 0.0 || m.shininess < 0.0 {
         return Err("material coefficients must be finite and >= 0".into());
     }
+    Ok(())
+}
+
+/// Diffuse and specular contribution of one light at `point` with surface `normal` (normalised here; a zero normal is an error).
+pub fn shade(point: V3, normal: V3, l: &LightSpec, m: &Material) -> Result<Contribution, String> {
+    l.validate()?;
+    validate_material(m)?;
+    shade_prevalidated(point, normal, l, m)
+}
+
+/// [`shade`] for callers that checked the light (`LightSpec::validate`) and the material (`validate_material`) once and shade many points
+/// (the `relight` effect): the per-point work is only the finiteness check of `point` and `normal`.
+pub fn shade_prevalidated(point: V3, normal: V3, l: &LightSpec, m: &Material) -> Result<Contribution, String> {
     if !point.iter().chain(&normal).all(|v| v.is_finite()) {
         return Err("point and normal must be finite".into());
     }

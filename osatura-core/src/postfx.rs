@@ -89,6 +89,64 @@ pub struct Spot {
     pub soft: f32,
 }
 
+/// Opt-in light model of `crate::lighting` (spec 09) for one light: attenuation `1 / (kc + kl d + kq d^2)`, a strict cone with `cos^exponent`
+/// fall-off and a Blinn specular term for an orthographic viewer straight above the image. When a light has it, `spot`, `radius` and `falloff`
+/// of that light are not used; `color` and `intensity` still are, and `cast_shadow` still applies. Positions are in the frame's pixels
+/// (x right, y down, z above the image).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LightShading {
+    /// `[kc, kl, kq]`, each >= 0 and not all zero; default `[1, 0, 0]` (no attenuation).
+    #[serde(default = "no_attenuation")]
+    pub attenuation: [f32; 3],
+    /// Cone half-angle in degrees (0..=90); absent = not a spot.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cutoff: Option<f32>,
+    /// Spot axis from the light toward the lit area (need not be normalised); default straight down onto the image.
+    #[serde(default = "axis_down")]
+    pub direction: [f32; 3],
+    /// Spot exponent 0..=128 (0 = uniform inside the cone).
+    #[serde(default)]
+    pub exponent: f32,
+    /// Specular coefficient (>= 0); 0 = no highlight.
+    #[serde(default)]
+    pub specular: f32,
+    /// Specular exponent (>= 0).
+    #[serde(default = "default_shininess")]
+    pub shininess: f32,
+}
+
+fn no_attenuation() -> [f32; 3] {
+    [1.0, 0.0, 0.0]
+}
+
+fn axis_down() -> [f32; 3] {
+    [0.0, 0.0, -1.0]
+}
+
+fn default_shininess() -> f32 {
+    32.0
+}
+
+impl LightShading {
+    /// The light and material of `crate::lighting` for the light `l` with its parsed `color`; checked.
+    fn specs(&self, l: &Light, color: [f32; 3]) -> Result<(crate::lighting::LightSpec, crate::lighting::Material), String> {
+        let v = |a: [f32; 3]| [f64::from(a[0]), f64::from(a[1]), f64::from(a[2])];
+        let spec = crate::lighting::LightSpec {
+            pos: [f64::from(l.x), f64::from(l.y), f64::from(l.z)],
+            color: v(color),
+            intensity: f64::from(l.intensity),
+            attenuation: (f64::from(self.attenuation[0]), f64::from(self.attenuation[1]), f64::from(self.attenuation[2])),
+            direction: v(self.direction),
+            cutoff_deg: self.cutoff.map_or(180.0, f64::from),
+            exponent: f64::from(self.exponent),
+        };
+        spec.validate()?;
+        let mat = crate::lighting::Material { ks: f64::from(self.specular), shininess: f64::from(self.shininess) };
+        crate::lighting::validate_material(&mat)?;
+        Ok((spec, mat))
+    }
+}
+
 /// A point light above the image plane (`z` px high). `radius` 0 = no distance falloff.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Light {
@@ -110,6 +168,9 @@ pub struct Light {
     /// Distance falloff exponent (used with `radius`): (1 - d/radius)^falloff.
     #[serde(default = "two")]
     pub falloff: f32,
+    /// Opt-in attenuation / strict cone / specular model (see [`LightShading`]); absent = the model above.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shading: Option<LightShading>,
 }
 
 fn two() -> f32 {
@@ -282,6 +343,7 @@ fn check_params(fx: &Fx) -> Result<(), String> {
                 }))
                 && finite(*ground_shadow) && (0.0..=1.0).contains(ground_shadow) && finite(*ambient) && (0.0..=4.0).contains(ambient) && finite(*bevel) && (0.0..=MAX_RADIUS).contains(bevel) && finite(*height) && (0.0..=64.0).contains(height) && lights.len() <= 16
                 && lights.iter().all(|l| [l.x, l.y, l.intensity, l.radius].iter().all(|v| finite(*v)) && l.z.is_finite() && l.z > 0.0 && l.intensity >= 0.0 && l.radius >= 0.0)
+                && lights.iter().all(|l| l.shading.as_ref().is_none_or(|sh| hex(&l.color).and_then(|c| sh.specs(l, c)).is_ok()))
         }
     };
     if ok { Ok(()) } else { Err(format!("invalid parameters for {fx:?}")) }
@@ -623,6 +685,9 @@ pub fn apply_with_normals(chain: &[Fx], w: usize, h: usize, rgba: &mut [u8], fie
                 let cols: Vec<[f32; 3]> = lights.iter().map(|l| hex(&l.color)).collect::<Result<_, _>>()?;
                 let amb_col = match ambient_color { Some(c) => hex(c)?, None => [1.0; 3] };
                 let nmap = match normal_map { Some(nm) => Some(fit_normal_map(nm, w, h)?), None => None };
+                // the opt-in lighting model of the lights that have one (validated here once)
+                let models: Vec<Option<(crate::lighting::LightSpec, crate::lighting::Material)>> =
+                    lights.iter().zip(&cols).map(|(l, c)| l.shading.as_ref().map(|sh| sh.specs(l, *c)).transpose()).collect::<Result<_, _>>()?;
                 // unit spot axes and cosines of the cone edges, precomputed per light
                 let spots: Vec<Option<([f32; 3], f32, f32)>> = lights
                     .iter()
@@ -651,9 +716,30 @@ pub fn apply_with_normals(chain: &[Fx], w: usize, h: usize, rgba: &mut [u8], fie
                         };
                         let mut lit = [*ambient * amb_col[0], *ambient * amb_col[1], *ambient * amb_col[2]];
                         let mut ground = 0.0f32;
-                        for ((l, c), spot) in lights.iter().zip(&cols).zip(&spots) {
+                        let mut glint = [0.0f32; 3];
+                        for (((l, c), spot), model) in lights.iter().zip(&cols).zip(&spots).zip(&models) {
                             let (dx, dy, dz) = (l.x - x as f32, l.y - y as f32, l.z);
                             let d = (dx * dx + dy * dy + dz * dz).sqrt();
+                            if let Some((spec, mat)) = model {
+                                let point = [x as f64, y as f64, 0.0];
+                                let cone = crate::lighting::spot_factor(spec, point)? as f32;
+                                if cone <= 0.0 {
+                                    continue;
+                                }
+                                if l.cast_shadow && {
+                                    let z0 = at(xi, yi) * height;
+                                    shadow_ray(&at, xi, yi, z0, dx, dy, l.z, *height)
+                                } {
+                                    ground = ground.max((1.0 - alpha[(y * w + x) * 4 + 3]) * cone);
+                                    continue;
+                                }
+                                let con = crate::lighting::shade_prevalidated(point, [f64::from(n[0]), f64::from(n[1]), f64::from(n[2])], spec, mat)?;
+                                for k in 0..3 {
+                                    lit[k] += con.diffuse[k] as f32;
+                                    glint[k] += con.specular[k] as f32;
+                                }
+                                continue;
+                            }
                             // spot cone: cosine between the cone axis and the direction light -> pixel
                             let cone = match spot {
                                 Some((axis, outer, inner)) => {
@@ -688,7 +774,7 @@ pub fn apply_with_normals(chain: &[Fx], w: usize, h: usize, rgba: &mut [u8], fie
                         }
                         let o = (y * w + x) * 4;
                         for k in 0..3 {
-                            rgba[o + k] = (rgba[o + k] as f32 * lit[k]).clamp(0.0, 255.0).round() as u8;
+                            rgba[o + k] = (rgba[o + k] as f32 * lit[k] + glint[k] * 255.0).clamp(0.0, 255.0).round() as u8;
                         }
                         // shadow cast onto the empty backdrop: black, as opaque as `ground_shadow` allows
                         if ground > 0.0 && *ground_shadow > 0.0 {
@@ -765,7 +851,7 @@ mod relight_tests {
         v
     }
     fn fx(lx: f32) -> Fx {
-        Fx::Relight { ambient: 0.2, bevel: 6.0, height: 12.0, lights: vec![Light { x: lx, y: 32.0, z: 30.0, color: "#ffffff".into(), intensity: 1.0, radius: 0.0, cast_shadow: false, spot: None, falloff: 2.0 }], ground_shadow: 0.0, normal_map: None, ambient_color: None }
+        Fx::Relight { ambient: 0.2, bevel: 6.0, height: 12.0, lights: vec![Light { x: lx, y: 32.0, z: 30.0, color: "#ffffff".into(), intensity: 1.0, radius: 0.0, cast_shadow: false, spot: None, falloff: 2.0, shading: None }], ground_shadow: 0.0, normal_map: None, ambient_color: None }
     }
 
     #[test]
@@ -783,7 +869,7 @@ mod relight_tests {
 
     #[test]
     fn validation_and_determinism() {
-        let bad = Fx::Relight { ambient: 0.2, bevel: 4.0, height: 8.0, lights: vec![Light { x: 0.0, y: 0.0, z: 0.0, color: "#fff".into(), intensity: 1.0, radius: 0.0, cast_shadow: false, spot: None, falloff: 2.0 }], ground_shadow: 0.0, normal_map: None, ambient_color: None };
+        let bad = Fx::Relight { ambient: 0.2, bevel: 4.0, height: 8.0, lights: vec![Light { x: 0.0, y: 0.0, z: 0.0, color: "#fff".into(), intensity: 1.0, radius: 0.0, cast_shadow: false, spot: None, falloff: 2.0, shading: None }], ground_shadow: 0.0, normal_map: None, ambient_color: None };
         assert!(apply(&[bad], 64, 64, &mut disc(64, 64)).is_err(), "light must be above the plane");
         let (mut a, mut b) = (disc(64, 64), disc(64, 64));
         apply(&[fx(0.0)], 64, 64, &mut a).unwrap();
@@ -795,7 +881,7 @@ mod relight_tests {
 
     #[test]
     fn cast_shadow_lands_on_the_far_side_only_when_enabled() {
-        let mk = |cast: bool, ground: f32| Fx::Relight { ambient: 0.2, bevel: 6.0, height: 12.0, lights: vec![Light { x: -40.0, y: 32.0, z: 30.0, color: "#ffffff".into(), intensity: 1.0, radius: 0.0, cast_shadow: cast, spot: None, falloff: 2.0 }], ground_shadow: ground, normal_map: None, ambient_color: None };
+        let mk = |cast: bool, ground: f32| Fx::Relight { ambient: 0.2, bevel: 6.0, height: 12.0, lights: vec![Light { x: -40.0, y: 32.0, z: 30.0, color: "#ffffff".into(), intensity: 1.0, radius: 0.0, cast_shadow: cast, spot: None, falloff: 2.0, shading: None }], ground_shadow: ground, normal_map: None, ambient_color: None };
         let alpha_at = |img: &[u8], x: usize, y: usize| img[(y * 64 + x) * 4 + 3];
         let mut on = disc(64, 64);
         apply(&[mk(true, 0.8)], 64, 64, &mut on).unwrap();
@@ -837,7 +923,7 @@ mod normal_spot_tests {
         NormalMap { data: Some(format!("data:image/png;base64,{}", crate::base64::encode(&png_of(w, h, &rgb)))), path: None, fit: NormalFit::Stretch, strength: 1.0, green_down: false }
     }
     fn light(x: f32, spot: Option<Spot>) -> Light {
-        Light { x, y: 32.0, z: 30.0, color: "#ffffff".into(), intensity: 1.0, radius: 0.0, cast_shadow: false, spot, falloff: 2.0 }
+        Light { x, y: 32.0, z: 30.0, color: "#ffffff".into(), intensity: 1.0, radius: 0.0, cast_shadow: false, spot, falloff: 2.0, shading: None }
     }
     fn relight(nm: Option<NormalMap>, lights: Vec<Light>) -> Fx {
         Fx::Relight { ambient: 0.1, bevel: 0.0, height: 0.0, lights, ground_shadow: 0.0, normal_map: nm, ambient_color: None }
@@ -949,7 +1035,7 @@ mod normal_spot_tests {
         }
         let mk = |angle: f32, dy: f32| Fx::Relight {
             ambient: 0.2, bevel: 6.0, height: 12.0, ground_shadow: 0.8, normal_map: None, ambient_color: None,
-            lights: vec![Light { x: -40.0, y: 32.0, z: 30.0, color: "#fff".into(), intensity: 1.0, radius: 0.0, cast_shadow: true, spot: Some(Spot { dir_x: 1.0, dir_y: dy, dir_z: -0.3, angle, soft: 0.1 }), falloff: 2.0 }],
+            lights: vec![Light { x: -40.0, y: 32.0, z: 30.0, color: "#fff".into(), intensity: 1.0, radius: 0.0, cast_shadow: true, spot: Some(Spot { dir_x: 1.0, dir_y: dy, dir_z: -0.3, angle, soft: 0.1 }), falloff: 2.0, shading: None }],
         };
         let mut a = img.clone();
         apply(&[mk(60.0, 0.0)], 64, 64, &mut a).unwrap();
@@ -1148,7 +1234,7 @@ mod layer_normal_tests {
             ambient: 0.1,
             bevel: 0.0,
             height: 0.0,
-            lights: vec![Light { x, y, z, color: "#ffffff".into(), intensity: 1.0, radius: 0.0, cast_shadow: false, spot: None, falloff: 2.0 }],
+            lights: vec![Light { x, y, z, color: "#ffffff".into(), intensity: 1.0, radius: 0.0, cast_shadow: false, spot: None, falloff: 2.0, shading: None }],
             ground_shadow: 0.0,
             normal_map: None,
             ambient_color: None,
@@ -1269,5 +1355,95 @@ mod layer_normal_tests {
         mapped.normal_map = Some(sphere_map());
         let back: Layer = serde_json::from_str(&serde_json::to_string(&mapped).unwrap()).unwrap();
         assert_eq!(back.normal_map, mapped.normal_map);
+    }
+}
+
+#[cfg(test)]
+mod shading_tests {
+    use super::*;
+
+    fn flat(w: usize, h: usize, v: u8) -> Vec<u8> {
+        [v, v, v, 255u8].iter().copied().cycle().take(w * h * 4).collect()
+    }
+    fn lit(light: Light, ambient: f32, base: u8) -> Vec<u8> {
+        let mut img = flat(16, 16, base);
+        let fx = Fx::Relight { ambient, bevel: 0.0, height: 0.0, lights: vec![light], ground_shadow: 0.0, normal_map: None, ambient_color: None };
+        apply(&[fx], 16, 16, &mut img).unwrap();
+        img
+    }
+    fn plain(x: f32, y: f32, z: f32) -> Light {
+        Light { x, y, z, color: "#ffffff".into(), intensity: 1.0, radius: 0.0, cast_shadow: false, spot: None, falloff: 2.0, shading: None }
+    }
+    fn with(sh: LightShading, mut l: Light) -> Light {
+        l.shading = Some(sh);
+        l
+    }
+    fn model() -> LightShading {
+        LightShading { attenuation: [1.0, 0.0, 0.0], cutoff: None, direction: [0.0, 0.0, -1.0], exponent: 0.0, specular: 0.0, shininess: 32.0 }
+    }
+    fn px(img: &[u8], x: usize, y: usize) -> i32 {
+        i32::from(img[(y * 16 + x) * 4])
+    }
+
+    #[test]
+    fn a_light_without_the_field_keeps_its_json_and_its_pixels() {
+        let l = plain(8.0, 8.0, 10.0);
+        assert!(!serde_json::to_string(&l).unwrap().contains("shading"));
+        let old = r##"{"x":1,"y":2,"z":3}"##;
+        assert_eq!(serde_json::from_str::<Light>(old).unwrap().shading, None);
+        // a shading with neutral values and no specular is the same as ... itself written out and read back
+        let s = with(model(), l.clone());
+        assert_eq!(serde_json::from_str::<Light>(&serde_json::to_string(&s).unwrap()).unwrap(), s);
+        // no attenuation, no cone, no specular: the same diffuse law as the default model (n . l, intensity 1)
+        let (a, b) = (lit(l, 0.2, 200), lit(s, 0.2, 200));
+        for (u, v) in a.iter().zip(&b) {
+            assert!((i32::from(*u) - i32::from(*v)).abs() <= 1, "{u} vs {v}");
+        }
+    }
+
+    #[test]
+    fn attenuation_cone_and_specular_follow_the_lighting_module() {
+        // attenuation: kq only, light 10 high above (8, 8): the centre is lit by 1 / 100, a corner by less
+        let at = with(LightShading { attenuation: [0.0, 0.0, 1.0], ..model() }, plain(8.0, 8.0, 10.0));
+        let img = lit(at, 0.0, 200);
+        let want = |x: f64, y: f64| {
+            let (dx, dy) = (8.0 - x, 8.0 - y);
+            let d2 = dx * dx + dy * dy + 100.0;
+            (200.0 * (10.0 / d2.sqrt()) / d2).round() as i32
+        };
+        assert!((px(&img, 8, 8) - want(8.0, 8.0)).abs() <= 1 && (px(&img, 0, 0) - want(0.0, 0.0)).abs() <= 1, "{} {}", px(&img, 8, 8), px(&img, 0, 0));
+        assert!(px(&img, 8, 8) > px(&img, 0, 0));
+        // strict cone: 20 degrees about the downward axis from 10 px up reaches a radius of 3.6 px
+        let cone = with(LightShading { cutoff: Some(20.0), ..model() }, plain(8.0, 8.0, 10.0));
+        let img = lit(cone, 0.0, 200);
+        assert!(px(&img, 8, 8) > 150 && px(&img, 10, 8) > 100, "inside the cone");
+        assert_eq!((px(&img, 14, 8), px(&img, 0, 0)), (0, 0), "outside the cone nothing is lit (no soft edge)");
+        // specular: a black surface shows the highlight only; the peak is under the light, none far away
+        let sp = with(LightShading { specular: 1.0, shininess: 8.0, ..model() }, plain(8.0, 8.0, 10.0));
+        let img = lit(sp, 0.0, 0);
+        assert!(px(&img, 8, 8) > 250, "highlight under the light: {}", px(&img, 8, 8));
+        assert!(px(&img, 0, 0) < px(&img, 8, 8) / 2, "weaker away from it");
+        // the value agrees with the lighting module (diffuse is multiplied by the base colour, the highlight is added)
+        let spec = crate::lighting::LightSpec::point([8.0, 8.0, 10.0]);
+        let c = crate::lighting::shade([3.0, 5.0, 0.0], [0.0, 0.0, 1.0], &spec, &crate::lighting::Material { ks: 1.0, shininess: 8.0 }).unwrap();
+        let img = lit(with(LightShading { specular: 1.0, shininess: 8.0, ..model() }, plain(8.0, 8.0, 10.0)), 0.0, 100);
+        let expect = (100.0 * c.diffuse[0] + 255.0 * c.specular[0]).clamp(0.0, 255.0).round() as i32;
+        assert!((px(&img, 3, 5) - expect).abs() <= 1, "{} vs {expect}", px(&img, 3, 5));
+    }
+
+    #[test]
+    fn shading_parameters_are_validated() {
+        let run = |sh: LightShading| {
+            let fx = Fx::Relight { ambient: 0.1, bevel: 0.0, height: 0.0, lights: vec![with(sh, plain(8.0, 8.0, 10.0))], ground_shadow: 0.0, normal_map: None, ambient_color: None };
+            apply(&[fx], 16, 16, &mut flat(16, 16, 100))
+        };
+        assert!(run(model()).is_ok());
+        assert!(run(LightShading { attenuation: [0.0, 0.0, 0.0], ..model() }).is_err());
+        assert!(run(LightShading { attenuation: [-1.0, 0.0, 0.0], ..model() }).is_err());
+        assert!(run(LightShading { cutoff: Some(120.0), ..model() }).is_err());
+        assert!(run(LightShading { cutoff: Some(30.0), direction: [0.0, 0.0, 0.0], ..model() }).is_err());
+        assert!(run(LightShading { exponent: 200.0, ..model() }).is_err());
+        assert!(run(LightShading { specular: -1.0, ..model() }).is_err());
+        assert!(run(LightShading { shininess: f32::NAN, ..model() }).is_err());
     }
 }

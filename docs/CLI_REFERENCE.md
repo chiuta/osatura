@@ -2003,8 +2003,15 @@ A `<frame>` outside the project is an error; `--clamp` renders the nearest valid
 Renders a frame and runs a **post-effects chain** over it. `chain.json` is a list of effects, each with a `type`:
 `blur {radius}`, `drop_shadow {dx,dy,blur,color,opacity}`, `glow {radius,strength,color?}`, `outline {width,color}`,
 `posterize {levels}`, `pixelate {size}`, `levels {in_black,in_white,gamma,out_black?,out_white?}`, `fade {amount}` and
-`relight {ambient,bevel,height,lights:[{x,y,z,color?,intensity?,radius?,cast_shadow?,spot?,falloff?}],ground_shadow?,
+`relight {ambient,bevel,height,lights:[{x,y,z,color?,intensity?,radius?,cast_shadow?,spot?,falloff?,shading?}],ground_shadow?,
 normal_map?,ambient_color?}`. Without a `normal_map` the relight shades a bevel made from the blurred alpha channel.
+A light may carry the optional `shading` object `{attenuation?:[kc,kl,kq], cutoff?, direction?:[x,y,z], exponent?, specular?, shininess?}`
+to use another light model: attenuation `1/(kc + kl d + kq d^2)` (default `[1,0,0]`, each >= 0, not all zero), a strict cone of
+half-angle `cutoff` degrees (0..90; absent = no cone, no soft edge) about `direction` (from the light toward the image, default
+`[0,0,-1]`) with intensity `cos(angle)^exponent` (0..128, default 0), and a Blinn highlight for a viewer straight above the image
+(`specular` >= 0, default 0 = none; `shininess` >= 0, default 32). The highlight is the light's colour times its intensity, added after the
+surface colour is multiplied by the diffuse light. For a light with `shading`, that light's `spot`, `radius` and `falloff` are ignored;
+`color`, `intensity` and `cast_shadow` still apply. Lights without `shading` and chains written before it existed render exactly as before.
 
 ```
 $ cat chain.json
