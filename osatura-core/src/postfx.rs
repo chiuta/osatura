@@ -3,7 +3,7 @@
 //! Frame post-effects on straight-alpha RGBA8 buffers: blur, drop shadow, glow, outline,
 //! posterise, pixelate, levels/gamma, fade. A chain is plain JSON, applied after rasterising.
 //!
-//! Clean-room note: textbook image processing (separable Gaussian, morphological dilation,
+//! Provenance note: textbook image processing (separable Gaussian, morphological dilation,
 //! per-channel look-up maths). Parameters and names are our own.
 
 use crate::style::Rgba;

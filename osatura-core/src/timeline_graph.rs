@@ -4,7 +4,7 @@
 //! Bezier tangent handles (get / set / move with constraints) on top of the per-segment easing
 //! that [`Ease`] already provides.
 //!
-//! Clean-room note: textbook maths only. Hermite <-> Bezier control-point conversion, the
+//! Provenance note: textbook maths only. Hermite <-> Bezier control-point conversion, the
 //! non-uniform Catmull-Rom tangent, and the Fritsch-Carlson monotone-cubic limiter are all
 //! standard numerical-analysis material; the handle model (a segment's easing is a cubic Bezier
 //! in normalised segment space) is this project's own and follows from `Ease::CubicBezier`.

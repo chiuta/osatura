@@ -12,7 +12,7 @@
 //!   editor like any other edit. Planning never mutates the project; any error (locked channel,
 //!   frame outside the project, collision under `Refuse`, stale key) refuses the whole op.
 //!
-//! Clean-room note: generic dope-sheet maths (translate / scale about a pivot / clip copy and
+//! Provenance note: generic dope-sheet maths (translate / scale about a pivot / clip copy and
 //! paste with channel remap / ripple insert and delete / loop closing). The data model and the
 //! operation set are this project's own; nothing follows any product's behaviour, naming or
 //! shortcuts.

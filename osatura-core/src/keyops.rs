@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 //! Timeline editing operations on keyed tracks, plus markers/regions and SMPTE timecode.
 //!
-//! Clean-room note: generic dope-sheet maths (shift, scale about a pivot, range copy/paste,
+//! Provenance note: generic dope-sheet maths (shift, scale about a pivot, range copy/paste,
 //! batch easing). Nothing here depends on any product's behaviour or naming.
 
 use crate::anim::{Ease, Key, Track};

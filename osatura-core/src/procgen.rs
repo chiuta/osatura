@@ -4,7 +4,7 @@
 //! follow-through (overlap) chains. Everything returns ordinary channels, so results can be
 //! edited, baked or exported like hand-keyed animation.
 //!
-//! Clean-room note: generic animation-principles maths (periodic eases, delayed copies with
+//! Provenance note: generic animation-principles maths (periodic eases, delayed copies with
 //! decay). No product behaviour is imitated.
 
 use crate::anim::{Ease, Extrapolate, Track};
