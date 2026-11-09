@@ -26,3 +26,8 @@ Format: spec · punct · ce lipsește · ce s-a implementat între timp. Complet
 - Muchia pentru linia de bază sintetizată: implementat „jos" cum spune p. 3/9 din spec (decizie de proiectare); testul 4 depinde de ea. Dacă titularul alege altă muchie, testul 4 se schimbă.
 - Mai multe linii (înfășurare): `align_line` se apelează pe fiecare linie; dimensionarea liniilor cu `align-content` nu e specificată și nu e implementată.
 - Un membru `Stretch` este poziționat la început; mărimea lui nu este calculată aici.
+
+## 01 — decodare GIF
+- Lipsa L-31 din spec nu mai există în cod: `animimport.rs` (comanda `import-anim`) decodează deja GIF/APNG cu crate-urile `gif` și `png`. Modulul nou `gifseq` este un decodor propriu, după standardul GIF89a, cu plafoane verificate înainte de alocare, ieșire atomică și erori distincte. Nu a fost legat de `import-anim` (ar înlocui comportamentul existent fără nevoie dovedită). Un test diferențial compară `gifseq` cu `animimport::decode_gif` pe fișiere valide (aceiași pixeli și întârzieri, inclusiv întrețesere și eliminare 1 și 3). Decizie: păstrăm ambele, sau înlocuim implementarea din `import-anim`?
+- Decizii luate unde spec zice „necunoscut": metoda de eliminare 2 → transparent; durata 0 → 0 ms (fără minim); bucla nu e citită; flux fără 0x3B dar cu cadre complete → acceptat cu avertisment. Plafoane implicite alese de implementare: 4096 de cadre, 16 Mpixeli pe ecran/regiune, 128 Mpixeli total.
+- Diferență față de `animimport::decode_gif` cunoscută din cod: acela folosește `Background` = transparent la fel, dar nu are plafon total de pixeli.

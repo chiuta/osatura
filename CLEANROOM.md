@@ -105,6 +105,7 @@ The feature research behind FEATURES.md was done by an AI research agent that lo
 | stereopan | W3C Web Audio API, StereoPanner algorithm (equal power, cos/sin of pi/2 * x); spec docs/clean-room/specs/03 | pure sample functions, not yet wired into `sound mix` |
 | biquad | W3C Note Audio EQ Cookbook (2021), Q-form coefficient formulas, direct-form difference equation; spec docs/clean-room/specs/04 | pure sample functions in f64, not yet wired into `sound mix` |
 | baseline | W3C CSS Flexible Box Layout Level 1, 8.3 cross-axis (baseline) alignment and 9.4 single-line cross size; spec docs/clean-room/specs/06 | pure one-line geometry, not yet wired into `containers`; synthesised baseline at the bottom edge is a project decision |
+| gifseq | GIF89a specification (CompuServe 1990; W3C copy): block grammar, LZW with variable code width, interlacing, graphic control extension, disposal; spec docs/clean-room/specs/01 | own decoder; differential test against the existing `gif`-crate based importer |
 
 ## Spec-note template (optional; not applied retroactively)
 ```

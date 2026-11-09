@@ -134,6 +134,8 @@ pub mod biquad;
 #[doc(hidden)]
 pub mod baseline;
 #[doc(hidden)]
+pub mod gifseq;
+#[doc(hidden)]
 pub mod speech;
 #[doc(hidden)]
 pub mod gltf;
