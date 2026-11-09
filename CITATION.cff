@@ -14,7 +14,8 @@ url: "https://osatura.chiuta.ro"
 license:
   - AGPL-3.0-or-later
   - MPL-2.0
-version: "0.1.0-alpha.4"
+version: "0.1.0-alpha.5"
+date-released: 2026-11-09
 keywords:
   - animation
   - rigging
