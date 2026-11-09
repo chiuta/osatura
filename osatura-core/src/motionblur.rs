@@ -72,6 +72,63 @@ impl Shutter {
     }
 }
 
+/// Running sum for the average of straight-alpha RGBA8 images (the memory is 16 bytes per pixel whatever the number of images,
+/// so the samples of a frame are added one render at a time and never kept). Sums fit in `u32` because at most
+/// [`MAX_SAMPLES`] images are added (255 * 255 * 256 < 2^32).
+pub struct Accumulator {
+    sums: Vec<[u32; 4]>,
+    count: u32,
+}
+
+impl Accumulator {
+    /// An empty sum for images of `len` bytes (a multiple of 4).
+    pub fn new(len: usize) -> Result<Accumulator, String> {
+        if len % 4 != 0 {
+            return Err("the images must be RGBA with the same size".into());
+        }
+        Ok(Accumulator { sums: vec![[0; 4]; len / 4], count: 0 })
+    }
+
+    /// Adds one image.
+    pub fn add(&mut self, image: &[u8]) -> Result<(), String> {
+        if image.len() != self.sums.len() * 4 {
+            return Err("the images must be RGBA with the same size".into());
+        }
+        if self.count >= MAX_SAMPLES {
+            return Err(format!("more than {MAX_SAMPLES} images"));
+        }
+        for (s, p) in self.sums.iter_mut().zip(image.chunks_exact(4)) {
+            let a = u32::from(p[3]);
+            for c in 0..3 {
+                s[c] += u32::from(p[c]) * a;
+            }
+            s[3] += a;
+        }
+        self.count += 1;
+        Ok(())
+    }
+
+    /// The average: colour is the alpha-weighted mean, alpha the plain mean, both rounded once to the nearest integer (halves up).
+    pub fn finish(self) -> Result<Vec<u8>, String> {
+        if self.count == 0 {
+            return Err("no images to average".into());
+        }
+        let n = u64::from(self.count);
+        let mut out = vec![0u8; self.sums.len() * 4];
+        for (s, o) in self.sums.iter().zip(out.chunks_exact_mut(4)) {
+            let sa = u64::from(s[3]);
+            if sa == 0 {
+                continue;
+            }
+            for c in 0..3 {
+                o[c] = ((2 * u64::from(s[c]) + sa) / (2 * sa)).min(255) as u8;
+            }
+            o[3] = ((2 * sa + n) / (2 * n)).min(255) as u8;
+        }
+        Ok(out)
+    }
+}
+
 /// Averages straight-alpha RGBA8 images of equal length: colour is the alpha-weighted mean, alpha the plain mean, both rounded once
 /// to the nearest integer (halves up).
 pub fn accumulate(images: &[&[u8]]) -> Result<Vec<u8>, String> {
@@ -82,27 +139,11 @@ pub fn accumulate(images: &[&[u8]]) -> Result<Vec<u8>, String> {
     if images.len() > MAX_SAMPLES as usize {
         return Err(format!("more than {MAX_SAMPLES} images"));
     }
-    let n = images.len() as u64;
-    let mut out = vec![0u8; first.len()];
-    for (px, o) in out.chunks_exact_mut(4).enumerate() {
-        let (mut sc, mut sa) = ([0u64; 3], 0u64);
-        for img in images {
-            let p = &img[px * 4..px * 4 + 4];
-            let a = u64::from(p[3]);
-            for c in 0..3 {
-                sc[c] += u64::from(p[c]) * a;
-            }
-            sa += a;
-        }
-        if sa == 0 {
-            continue;
-        }
-        for c in 0..3 {
-            o[c] = ((2 * sc[c] + sa) / (2 * sa)).min(255) as u8;
-        }
-        o[3] = ((2 * sa + n) / (2 * n)).min(255) as u8;
+    let mut acc = Accumulator::new(first.len())?;
+    for img in images {
+        acc.add(img)?;
     }
-    Ok(out)
+    acc.finish()
 }
 
 /// Renders a frame with motion blur through `render(time_seconds) -> (width, height, straight RGBA8)`. Times are limited to
@@ -120,17 +161,19 @@ where
         return render(times[0]);
     }
     let mut size: Option<(u32, u32)> = None;
-    let mut imgs: Vec<Vec<u8>> = Vec::with_capacity(times.len());
+    let mut acc: Option<Accumulator> = None;
     for &s in &times {
         let (w, h, px) = render(s)?;
         if *size.get_or_insert((w, h)) != (w, h) {
             return Err("the renders have different sizes".into());
         }
-        imgs.push(px);
+        if acc.is_none() {
+            acc = Some(Accumulator::new(px.len())?);
+        }
+        acc.as_mut().ok_or("no samples")?.add(&px)?;
     }
-    let refs: Vec<&[u8]> = imgs.iter().map(Vec::as_slice).collect();
     let (w, h) = size.ok_or("no samples")?;
-    Ok((w, h, accumulate(&refs)?))
+    Ok((w, h, acc.ok_or("no samples")?.finish()?))
 }
 
 /// Motion-blurred render of `frame` (a frame number of the project) with the raster renderer.
@@ -210,6 +253,27 @@ mod tests {
         let mut z = Shutter::new(0.0, 7);
         z.phase_s = 0.5;
         assert_eq!(z.sample_times(2.0, 24.0).unwrap(), vec![2.5]);
+    }
+
+    #[test]
+    fn incremental_sum_equals_batch_average() {
+        let imgs: Vec<Vec<u8>> = (0..7u8).map(|i| (0..64u8).map(|j| i.wrapping_mul(37).wrapping_add(j.wrapping_mul(11))).collect()).collect();
+        let refs: Vec<&[u8]> = imgs.iter().map(Vec::as_slice).collect();
+        let mut acc = Accumulator::new(64).unwrap();
+        for i in &imgs {
+            acc.add(i).unwrap();
+        }
+        assert_eq!(acc.finish().unwrap(), accumulate(&refs).unwrap());
+        assert!(Accumulator::new(5).is_err());
+        assert!(Accumulator::new(8).unwrap().add(&[0; 4]).is_err());
+        assert!(Accumulator::new(8).unwrap().finish().is_err());
+        // the maximum number of fully opaque white images does not overflow the sums
+        let mut acc = Accumulator::new(4).unwrap();
+        for _ in 0..MAX_SAMPLES {
+            acc.add(&[255; 4]).unwrap();
+        }
+        assert!(acc.add(&[255; 4]).is_err());
+        assert_eq!(acc.finish().unwrap(), vec![255; 4]);
     }
 
     #[test]
