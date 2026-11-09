@@ -9,8 +9,8 @@
 //!
 //! Two capsules collide when the minimum distance `d` between their segments is strictly below `ra + rb`. The penetration depth is
 //! `ra + rb - d`, the normal points from A to B. When the segments touch (`d == 0`) the normal is the left normal of A's direction
-//! (A's direction rotated by +90 degrees), or `(1, 0)` when A is a point. Not yet connected to `physics.rs` (see
-//! docs/clean-room/specs/INTREBARI.md).
+//! (A's direction rotated by +90 degrees), or `(1, 0)` when A is a point. Used by `physics::simulate_strip` when
+//! `PhysicsOptions::self_collision` is set (CLI `physics ... selfcollide=R`), see docs/clean-room/specs/INTREBARI.md.
 
 /// A 2D point or vector.
 pub type P2 = [f64; 2];

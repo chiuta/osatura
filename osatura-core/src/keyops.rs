@@ -72,6 +72,43 @@ pub fn set_ease(t: &mut Track, from: f32, to: f32, ease: Ease) -> usize {
     n
 }
 
+/// Most keys a track may hold after a bake (so a hostile curve cannot exhaust memory).
+pub const MAX_KEYS_AFTER_BAKE: usize = 200_000;
+
+/// Write a curve of `segease` into the segments that start at a key in `[from, to]`: the start key keeps its value and gets the
+/// curve's first ease, and keys are inserted between it and the next key so that the ordinary key interpolation (linear or held)
+/// reproduces the curve exactly. Returns how many segments were baked. The curve is not stored: the result is plain keys, which
+/// stay editable but no longer know the curve. Errors are those of `BakeCurve::keys`, and a track that would exceed
+/// [`MAX_KEYS_AFTER_BAKE`] keys is left untouched.
+pub fn bake_curve(t: &mut Track, from: f32, to: f32, curve: &crate::segease::BakeCurve) -> Result<usize, String> {
+    let plan = curve.keys()?;
+    let ease_of = |hold: bool| if hold { Ease::Step } else { Ease::Linear };
+    let mut out: Vec<Key> = Vec::with_capacity(t.keys.len());
+    let mut baked = 0;
+    for i in 0..t.keys.len() {
+        let a = t.keys[i];
+        let Some(b) = t.keys.get(i + 1).copied().filter(|b| in_range(&a, from, to) && b.frame > a.frame) else {
+            out.push(a);
+            continue;
+        };
+        out.push(Key { ease: ease_of(plan[0].hold), ..a });
+        let mut prev = a.frame;
+        for k in plan.iter().skip(1) {
+            let frame = a.frame + (k.u as f32) * (b.frame - a.frame);
+            if frame > prev && frame < b.frame {
+                out.push(Key { frame, value: a.value + (b.value - a.value) * k.level as f32, ease: ease_of(k.hold) });
+                prev = frame;
+            }
+        }
+        baked += 1;
+        if out.len() + (t.keys.len() - i - 1) > MAX_KEYS_AFTER_BAKE {
+            return Err(format!("the bake would give more than {MAX_KEYS_AFTER_BAKE} keys (use a curve with fewer stops or steps, or a smaller range)"));
+        }
+    }
+    t.keys = out;
+    Ok(baked)
+}
+
 /// Copy keys in `[from, to]`, returned with frames relative to `from`.
 pub fn copy_keys(t: &Track, from: f32, to: f32) -> Vec<Key> {
     t.keys.iter().filter(|k| in_range(k, from, to)).map(|k| Key { frame: k.frame - from, ..*k }).collect()
@@ -409,5 +446,39 @@ mod tests {
         ];
         assert_eq!(active_markers(&m, 12.0), vec!["hit", "walk"]);
         assert_eq!(active_markers(&m, 30.0), Vec::<&str>::new());
+    }
+
+    #[test]
+    fn baked_curves_reproduce_the_curve_through_the_ordinary_key_interpolation() {
+        use crate::segease::BakeCurve;
+        let base = Track::with_keys(&[(0.0, 10.0, Ease::Linear), (20.0, 30.0, Ease::Linear), (40.0, 0.0, Ease::EaseIn)]);
+        // piecewise: 0 -> 0.25 at 75% -> 1 (overshoot-free), first segment only
+        let c = BakeCurve::parse("piecewise:0,0.25 75%,1").unwrap();
+        let mut t = base.clone();
+        assert_eq!(bake_curve(&mut t, 0.0, 5.0, &c).unwrap(), 1);
+        assert_eq!(t.keys.len(), 4);
+        for f in [0.0, 3.0, 10.0, 15.0, 17.5, 20.0] {
+            let u = f / 20.0;
+            let want = 10.0 + 20.0 * if let BakeCurve::Piecewise(p) = &c { p.eval(u as f64) as f32 } else { 0.0 };
+            assert!((t.eval(f).unwrap() - want).abs() < 1e-4, "frame {f}");
+        }
+        // the second segment and its ease are untouched
+        assert_eq!(t.keys[3], base.keys[2]);
+        assert_eq!(t.eval(30.0), base.eval(30.0));
+        // steps:4 on the second segment: four plateaus, the jump at each quarter
+        let s = BakeCurve::parse("steps:4").unwrap();
+        let mut t = base.clone();
+        assert_eq!(bake_curve(&mut t, 20.0, 20.0, &s).unwrap(), 1);
+        for (f, want) in [(20.0, 30.0), (24.9, 30.0), (25.0, 22.5), (29.9, 22.5), (30.0, 15.0), (35.0, 7.5), (39.9, 7.5), (40.0, 0.0)] {
+            assert!((t.eval(f).unwrap() - want).abs() < 1e-4, "frame {f}: {:?}", t.eval(f));
+        }
+        // the last key has no next key: nothing to bake
+        let mut one = Track::with_keys(&[(0.0, 1.0, Ease::Linear)]);
+        assert_eq!(bake_curve(&mut one, 0.0, 9.0, &s).unwrap(), 0);
+        // a failing bake leaves the track as it was
+        let mut t = base.clone();
+        let jump_start = BakeCurve::parse("steps:2:jump-start").unwrap();
+        assert!(bake_curve(&mut t, 0.0, 40.0, &jump_start).is_err());
+        assert_eq!(t, base);
     }
 }

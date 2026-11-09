@@ -477,6 +477,8 @@ Renders one frame. A `<frame>` at or beyond the project length is an error (`fra
 | `--samples N` | 8 | Number of renders averaged for `--shutter` (1..256). Each sample is at the middle of one of N equal parts of the exposure. |
 | `--shutter-phase SEC` | 0 | Start of the exposure relative to the frame time, in seconds (negative = centred or before the frame). Moments are limited to the project length. |
 
+The same three options are accepted by `frames --png` (every frame blurred) and by `export` to `.gif`, `.apng`, `.mp4` and `.webm` (every frame of the animation blurred; a GIF above 50 fps blurs only the frames it keeps). They are refused for the other formats and for `.svg` frames (`--shutter works with ...`). A sequence may take at most 100000 renders (frames x samples); `--shutter 0` writes the plain renders. Not connected: `render-hdr`, the studio and the other exports.
+
 ```
 $ osatura render demo.json 12 f12.png --bones --scale 2
 wrote f12.png
@@ -494,7 +496,7 @@ wrote px.png
 
 ### `frames`
 
-**Synopsis:** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N]`
+**Synopsis:** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]`
 
 Renders **every** frame into a directory (created if missing) as `frame_0000.svg` ... (or `.png` with `--png`). All frames are checked for finite poses first.
 
@@ -511,14 +513,14 @@ frame_0001.png
 
 **Synopsis:**
 ```
-osatura export <project.json> <out.gif> [--scale N] [--report r.json]
+osatura export <project.json> <out.gif> [--scale N] [--report r.json] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.html|out.htm>
 osatura export <project.json> <out.json|out.lottie> [--report r.json]
-osatura export <project.json> <out.mp4> [--scale N]
-osatura export <project.json> <out.apng> [--scale N]
-osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1]
+osatura export <project.json> <out.mp4> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.apng> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.png> [--scale N] [--columns N]
-osatura export <project.json> <out.glb> [--report r.json]
+osatura export <project.json> <out.glb> [--report r.json] [--layer-anim]
 ```
 (one form per format; the output extension, case-insensitive, picks the form. An option that the form does not list is refused: `unknown option --scale for 'export .json' (applies to: export .gif, export .mp4, ...)`. With an unknown or missing extension the format error is reported instead.)
 
@@ -542,6 +544,7 @@ Options:
 |---|---|
 | `--scale N` | Raster scale (0, 16] for `.gif .mp4 .apng .webm .png`. On other formats it is refused (`unknown option --scale for 'export .json'`); before wave 7 it was a warning. |
 | `--report FILE` | Write the list of things the format could not carry as JSON (`.gif .json .lottie .glb`): `{"format","count","warnings":[{"code","layer","message"}]}`. The same warnings are always printed on stderr. The file may not be the input project. |
+| `--layer-anim` | `.glb` only: also animate the position, rotation and scale of rigid (not skinned) shape layers. Each moving layer gets a parent node with sampled LINEAR translation, rotation and scale channels relative to its frame-0 placement, in the space of the bone it follows (or the stage), so animated groups and the camera-compensated stage are included; layers that do not move are written exactly as without the flag. Skew, opacity, switches, wobble and deformers are still not animated (reported as `[glb-limit]`). |
 | `--codec vp9\|av1` | `.webm` only (default `vp9`); any other value: `unknown --codec 'foo' (vp9 or av1)`. |
 | `--columns N` | `.png` sprite sheet only: tiles per row (default: a near-square grid, ceil(sqrt(frames)): 3 columns for 8 frames). |
 
@@ -874,6 +877,7 @@ osatura keys shift <project.json> <out.json> --by N [--from F --to F --target NA
 osatura keys scale <project.json> <out.json> --factor X [--pivot F --from F --to F --target NAME --prop PROP]
 osatura keys ease <project.json> <out.json> --ease linear|step|ease_in|ease_out|ease_in_out|smooth [--from F --to F --target NAME --prop PROP]
 osatura keys reverse <project.json> <out.json> [--from F --to F --target NAME --prop PROP]
+osatura keys curve <project.json> <out.json> --curve piecewise:STOP,STOP,...|steps:N[:position] [--from F --to F --target NAME --prop PROP]
 ```
 Each operation accepts only its own options (`keys shift --factor 2` is refused); `--by`, `--factor` and `--ease` are required for their operation (an omitted `--by` or `--factor` used to be a silent no-op).
 
@@ -885,6 +889,9 @@ Bulk key operations over **all keyed channels** (filtered by `--target` / `--pro
 | `scale` | `--pivot F --factor X` | Scale key times about the pivot frame. |
 | `ease` | `--ease E` | Set the easing of the keys (named easings; use `keyedit ease` for `bezier:`). |
 | `reverse` | - | Reverse the key order inside the range. |
+| `curve` | `--curve C` | Bake a piecewise-linear or stepped easing curve into every segment that **starts** at a key in the range. |
+
+**`keys curve`.** `--curve piecewise:STOP,STOP,...` takes stops written `output [input [input]]` (inputs as fractions or percentages, so `piecewise:0,0.25 75%,1` rises to a quarter at three quarters of the segment, then to the end value); `--curve steps:N[:position]` takes `jump-end` (default) or `jump-none`. The stop and input rules (missing inputs spread evenly, an input below an earlier one raised to it, two inputs on one stop, at least 2 stops) follow the public CSS Easing Functions Level 2 draft. The curve is **baked**: the start key keeps its value, gets the first ease (linear, or step for a stepped curve) and keys are inserted so that the ordinary key interpolation reproduces the curve exactly; the curve itself is not stored, the project format is unchanged, and old projects load as before. A segment's end key is never changed, so a curve must start at 0 and end at 1: a curve that does not (`jump-start` and `jump-both` steps, a piecewise curve starting above 0), and a piecewise curve with a vertical jump (two stops with the same input and different outputs), are refused with the reason and nothing is written. At most 200000 keys per track.
 
 ```
 $ osatura keys shift small.json k1.json --target arm_up --prop bone_angle --by 2
@@ -893,6 +900,7 @@ $ osatura keys scale small.json k2.json --pivot 0 --factor 0.5 --from 0 --to 48
 wrote k2.json (37 key(s) changed)
 $ osatura keys reverse small.json k4.json
 wrote k4.json (37 key(s) changed)
+$ osatura keys curve small.json k5.json --curve steps:4 --target arm_up --prop bone_angle --from 0 --to 12
 ```
 Keys moved outside `0..frames-1` stay in the file (lint reports `L007`); this command does not extend the project length. **Related:** `keyedit` (precise, selection based), `loop-solve`.
 
@@ -1193,7 +1201,7 @@ They take `<project.json> <out.json>` and `key=value` words (no `--`).
 osatura physics <project.json> <out.json> <bone,bone,...> [gravity=900] [wind=x,y] [gust=0.5] [damping=0.985]
     [circle=x,y,r[@bone];...] [capsule=x1,y1,x2,y2,r[@bone];...] [follow=bone] [--allow-empty]
     [drive=bone:gain;...] [vortex=bone|x,y:swirl[:radial[:radius]];...] [preset=hair|tail|rope|antenna|cape]
-    [merge=keep|replace] [lateral=0..1]
+    [merge=keep|replace] [lateral=0..1] [selfcollide=R]
 ```
 Bakes a Verlet **chain simulation** (hair, tail, rope, antenna, cape) onto the bones listed (root of the chain first) as `bone_angle` keys, one per frame.
 
@@ -1209,6 +1217,7 @@ Bakes a Verlet **chain simulation** (hair, tail, rope, antenna, cape) onto the b
 | `preset=` | Starting values for `hair tail rope antenna cape`; words written **after** `preset=` override it. |
 | `merge=keep\|replace` | `keep` (default) leaves bones that already have animation untouched; `replace` overwrites them. |
 | `lateral=0..1` | With several chains (`bone,bone/bone,bone`) ties neighbouring strands together. |
+| `selfcollide=R` | Opt-in self-collision of each chain: every segment is a 2D capsule of radius `R` and segments that are not neighbours push each other apart (so a tail curling back onto itself does not pass through itself). `R` must be finite, > 0 and smaller than half the shortest bone of the chain; at most 128 bones per chain; strands do not collide with each other. Without the word the simulation is exactly as before. |
 | `--allow-empty` | Accept a run that baked nothing. |
 
 ```
@@ -1477,8 +1486,11 @@ osatura sound edit   <project.json> <out.json> <name> [--start F] [--gain G] [tr
 osatura sound remove <project.json> <out.json> <name>
 osatura sound mix    <project.json> <out.wav|out.ogg|out.mp3>
     trim/fade options (seconds, or frames with an f suffix such as 36f): --trim-in T --trim-out T --fade-in T --fade-out T
+    audio options: --pan P (-1 left .. 1 right, equal power) --filter kind:freq[:q[:gain_db]][,...] (biquad; kinds lowpass highpass bandpass notch allpass peaking lowshelf highshelf); edit: none clears
 ```
 Sound tracks are **references** (file path relative to the project, start frame, gain 0..4, trim window inside the file, fades). Nothing is embedded in the project; the audio file must travel with it, and must lie inside the project directory unless `--allow-external-assets` is given. `edit` changes the given fields only (`0` clears a trim). `--trim-out 0` means "to the end". `sound mix` renders only the mixed audio for the **project length** (through ffmpeg: wav = 44.1 kHz PCM 16-bit, ogg = Vorbis q4, mp3 = 96 kb/s).
+**Pan and filters (optional).** `--pan P` (-1 = left, 0 = centre, 1 = right) stores a constant equal-power pan on the track (a mono file becomes stereo; a stereo file uses the balance law of the stereo panner; more than two channels are refused). A track with neither is mixed exactly as before, through the unchanged ffmpeg graph. A track with a pan is first decoded to 32-bit float, panned in the sample domain, and the result replaces the file as the ffmpeg input; start, trim, fades and gain then apply to the panned audio. `sound edit ... --pan none` removes it. `--filter` stores a list of second-order (biquad) filters applied in order, before the pan, to the whole decoded file: `kind:freq[:q[:gain_db]]`, kinds `lowpass`, `highpass`, `bandpass`, `notch`, `allpass`, `peaking`, `lowshelf`, `highshelf`; `q` defaults to 0.7071 (0 < q <= 1000), `gain_db` matters for peaking and the shelves; several filters are separated by commas (`--filter lowpass:8000,peaking:1000:2:6`); `--filter none` clears them. The frequency must be below half the sample rate of the file (checked when the mix runs; above 0.45 times the rate a numerical-stability warning is printed), each channel is filtered on its own with zero initial state, and the output is limited to -1..1. The filter formulas are the public Audio EQ Cookbook forms; the list is stored as `filters` on the track (absent when empty). Tracks with a pan or filters take the sample-domain path described above; the order is filters, then pan, then trim, fades, start and gain. The waveform preview in the studio shows neither.
+
 Mixed audio is also muxed into `.mp4` (AAC), `.webm` (Opus) and embedded in `.html`; `.gif`/`.apng` cannot carry it.
 
 ```
@@ -1906,11 +1918,11 @@ osatura container solve  <project.json> [--size WxH --data out.json]
 
 A **container** is a flexbox-like layout box: `id`, `members`, `axis` (`row`|`column`), `gap`, `cross_gap`, `padding`
 (`[left,top,right,bottom]`), `justify` (`start|center|end|space_between|space_around`), `align`
-(`start|center|end|stretch`), `wrap` (`none|wrap`) and `rect`, a rule for its own rectangle on the canvas:
+(`start|center|end|stretch|baseline`), `wrap` (`none|wrap`) and `rect`, a rule for its own rectangle on the canvas:
 `{"kind":"fixed",...}`, `{"kind":"pin","left","right","top","bottom","width","height"}` (distances from the canvas edges; any two
 of each axis), `{"kind":"aspect",...}` or `{"kind":"hug"}`. A **member** is exactly one of `{"layer":PATH}`,
 `{"container":ID}` or `{"spacer":true}`, with `grow`, `shrink`, `width`, `height`, `min_w/max_w/min_h/max_h` and
-an `align` override; `"resize":true` lets the solver scale the layer to its slot.
+an `align` override and an optional `baseline` (distance from the top of the member to its baseline, used by `align: baseline` in row containers; see PROJECT_FORMAT.md section 11.5); `"resize":true` lets the solver scale the layer to its slot.
 
 ```
 $ cat cont.json
@@ -1993,8 +2005,15 @@ A `<frame>` outside the project is an error; `--clamp` renders the nearest valid
 Renders a frame and runs a **post-effects chain** over it. `chain.json` is a list of effects, each with a `type`:
 `blur {radius}`, `drop_shadow {dx,dy,blur,color,opacity}`, `glow {radius,strength,color?}`, `outline {width,color}`,
 `posterize {levels}`, `pixelate {size}`, `levels {in_black,in_white,gamma,out_black?,out_white?}`, `fade {amount}` and
-`relight {ambient,bevel,height,lights:[{x,y,z,color?,intensity?,radius?,cast_shadow?,spot?,falloff?}],ground_shadow?,
+`relight {ambient,bevel,height,lights:[{x,y,z,color?,intensity?,radius?,cast_shadow?,spot?,falloff?,shading?}],ground_shadow?,
 normal_map?,ambient_color?}`. Without a `normal_map` the relight shades a bevel made from the blurred alpha channel.
+A light may carry the optional `shading` object `{attenuation?:[kc,kl,kq], cutoff?, direction?:[x,y,z], exponent?, specular?, shininess?}`
+to use another light model: attenuation `1/(kc + kl d + kq d^2)` (default `[1,0,0]`, each >= 0, not all zero), a strict cone of
+half-angle `cutoff` degrees (0..90; absent = no cone, no soft edge) about `direction` (from the light toward the image, default
+`[0,0,-1]`) with intensity `cos(angle)^exponent` (0..128, default 0), and a Blinn highlight for a viewer straight above the image
+(`specular` >= 0, default 0 = none; `shininess` >= 0, default 32). The highlight is the light's colour times its intensity, added after the
+surface colour is multiplied by the diffuse light. For a light with `shading`, that light's `spot`, `radius` and `falloff` are ignored;
+`color`, `intensity` and `cast_shadow` still apply. Lights without `shading` and chains written before it existed render exactly as before.
 
 ```
 $ cat chain.json

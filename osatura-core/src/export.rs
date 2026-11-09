@@ -80,15 +80,27 @@ pub fn gif_bytes(engine: &Engine, scale: f32) -> Result<Vec<u8>, String> {
 
 /// Same, also returning the warnings (frame-rate decimation).
 pub fn gif_bytes_warn(engine: &Engine, scale: f32) -> Result<(Vec<u8>, Vec<String>), String> {
+    gif_bytes_warn_with(engine, scale, None)
+}
+
+/// [`gif_bytes_warn`] with optional motion blur (`crate::motionblur`): only the frames the plan keeps are rendered, each as the
+/// average of the shutter's samples. `None` is exactly [`gif_bytes_warn`].
+pub fn gif_bytes_warn_with(engine: &Engine, scale: f32, shutter: Option<&crate::motionblur::Shutter>) -> Result<(Vec<u8>, Vec<String>), String> {
     let p = &engine.project;
     crate::raster::check_sequence(p, scale)?;
     let plan = gif_plan(p.frames as usize, p.fps as f64)?;
+    if let Some(sh) = shutter {
+        crate::motionblur::check_sequence_cost(plan.picks.len() as u32, sh)?;
+    }
     let opts = RasterOptions { scale, show_bones: false, transparent: false };
     let mut frames = Vec::new();
     let mut delays = Vec::new();
     let (mut w, mut h) = (0u32, 0u32);
     for &(f, d) in &plan.picks {
-        let (fw, fh, rgba) = render_rgba(engine, f as f32, &opts);
+        let (fw, fh, rgba) = match shutter {
+            Some(sh) => crate::motionblur::render_engine(engine, f as f32, &opts, sh)?,
+            None => render_rgba(engine, f as f32, &opts),
+        };
         (w, h) = (fw, fh);
         frames.push(rgba);
         delays.push(d);

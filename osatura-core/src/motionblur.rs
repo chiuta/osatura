@@ -11,6 +11,9 @@
 //! The samples are at the middles of `n` equal sub-intervals of `[t + phase, t + phase + E]` (deterministic, no random numbers), with
 //! `E = angle / 360 / fps`. A shutter angle of 0 renders once at `t + phase`. Images are averaged with premultiplied alpha, in the space the
 //! renderer already produced (the project's compositing space), in exact integer arithmetic, and rounded once at the end (halves up).
+//!
+//! Used by the CLI through `--shutter` on `render`, `frames --png` and `export` to `.gif`, `.apng`, `.mp4` and `.webm` (see
+//! docs/clean-room/specs/INTREBARI.md); `render-hdr`, the studio and the other exports are not connected.
 
 use crate::engine::Engine;
 use crate::raster::{render_rgba, RasterOptions};
@@ -142,6 +145,36 @@ pub fn render_engine(engine: &Engine, frame: f32, opts: &RasterOptions, shutter:
         engine.evaluate_checked(f)?;
         Ok(render_rgba(engine, f, opts))
     })
+}
+
+/// Most renders (frames x samples) one blurred sequence may take; a sequence over it is refused before the first render.
+pub const MAX_SEQUENCE_RENDERS: u64 = 100_000;
+
+/// Checks the shutter and the total cost of blurring `frames` frames.
+pub fn check_sequence_cost(frames: u32, shutter: &Shutter) -> Result<(), String> {
+    shutter.validate()?;
+    let n = if shutter.angle_deg == 0.0 { 1 } else { u64::from(shutter.samples) };
+    let total = u64::from(frames) * n;
+    if total > MAX_SEQUENCE_RENDERS {
+        return Err(format!("{frames} frames with {n} samples each are {total} renders (limit {MAX_SEQUENCE_RENDERS}): lower --samples or shorten the animation"));
+    }
+    Ok(())
+}
+
+/// Every frame of the project with motion blur, as `(width, height, straight RGBA frames)`; the same layout as the unblurred sequence
+/// writers use, so the existing GIF / APNG encoders take it unchanged. With angle 0 the frames are the plain renders.
+pub fn frames_rgba(engine: &Engine, scale: f32, shutter: &Shutter) -> Result<(u32, u32, Vec<Vec<u8>>), String> {
+    crate::raster::check_sequence(&engine.project, scale)?;
+    check_sequence_cost(engine.project.frames, shutter)?;
+    let opts = RasterOptions { scale, show_bones: false, transparent: false };
+    let (mut w, mut h) = (0, 0);
+    let mut out = Vec::with_capacity(engine.project.frames as usize);
+    for f in 0..engine.project.frames {
+        let (fw, fh, d) = render_engine(engine, f as f32, &opts, shutter)?;
+        (w, h) = (fw, fh);
+        out.push(d);
+    }
+    Ok((w, h, out))
 }
 
 #[cfg(test)]
@@ -284,5 +317,15 @@ mod tests {
         assert_ne!(blurred.2, plain.2, "the demo moves, so the average differs from a single render");
         let again = render_engine(&e, 6.0, &opts, &Shutter::new(360.0, 4)).unwrap();
         assert_eq!(again, blurred, "same inputs, same bytes");
+    }
+
+    #[test]
+    fn sequence_cost_is_capped_before_any_render() {
+        assert!(check_sequence_cost(390, &Shutter::new(180.0, 256)).is_ok());
+        let e = check_sequence_cost(391, &Shutter::new(180.0, 256)).unwrap_err();
+        assert!(e.contains("limit"), "{e}");
+        // angle 0 renders once per frame whatever the sample count says
+        assert!(check_sequence_cost(100_000, &Shutter::new(0.0, 256)).is_ok());
+        assert!(check_sequence_cost(10, &Shutter::new(400.0, 4)).is_err());
     }
 }

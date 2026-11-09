@@ -589,3 +589,83 @@ fn skin_has_a_common_root_and_zero_weights_use_joint_zero() {
         assert!(w.iter().zip(jb).all(|(w, j)| *w > 0.0 || *j == 0));
     }
 }
+
+// ---- layer transform animation (opt-in) ---------------------------------------------------
+
+fn moving_layer() -> (Vec<Layer>, Vec<Channel>) {
+    let l = Layer::vector("box", vec![VPath::rect("r", 0.0, 0.0, 20.0, 10.0).with_fill("#00ff00")]);
+    let x = Channel::keys("box", Prop::LayerX, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (4.0, 40.0, Ease::Linear)]));
+    let rot = Channel::keys("box", Prop::LayerRotation, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (4.0, 90.0, Ease::Linear)]));
+    (vec![l], vec![x, rot])
+}
+
+#[test]
+fn layer_animation_is_off_by_default_and_the_default_output_does_not_change() {
+    let (layers, ch) = moving_layer();
+    let e = engine_with(layers, 5, ch);
+    let plain = export_glb(&e).unwrap();
+    assert_eq!(plain, export_glb_with(&e, &GlbOptions::default()).unwrap().0);
+    let (_, notes) = export_glb_report(&e).unwrap();
+    assert!(notes.join("\n").contains("animated layer transform"), "{notes:?}");
+    // a project whose layers do not move: the option changes nothing
+    let still = engine_with(vec![Layer::vector("box", vec![VPath::rect("r", 0.0, 0.0, 20.0, 10.0).with_fill("#00ff00")])], 5, vec![]);
+    assert_eq!(export_glb(&still).unwrap(), export_glb_with(&still, &GlbOptions { layer_animation: true }).unwrap().0);
+}
+
+#[test]
+fn layer_animation_writes_a_parent_node_with_sampled_channels() {
+    let (layers, ch) = moving_layer();
+    let e = engine_with(layers, 5, ch);
+    let (glb, notes) = export_glb_with(&e, &GlbOptions { layer_animation: true }).unwrap();
+    assert!(!notes.join("\n").contains("animated layer transform"), "{notes:?}");
+    let (j, bin) = parse(&glb);
+    // the wrapper node holds the shape node and replaced it in the scene
+    let nodes = j["nodes"].as_array().unwrap();
+    let w = nodes.iter().position(|n| n["name"].as_str().is_some_and(|s| s.starts_with("anim "))).expect("wrapper node");
+    let child = nodes[w]["children"][0].as_u64().unwrap() as usize;
+    assert!(nodes[child]["mesh"].is_number());
+    let scene = j["scenes"][0]["nodes"].as_array().unwrap();
+    assert!(scene.iter().any(|n| n.as_u64() == Some(w as u64)) && !scene.iter().any(|n| n.as_u64() == Some(child as u64)));
+    // three channels on the wrapper, sampler indices continue after the bone channels
+    let anim = &j["animations"][0];
+    let chans: Vec<&Value> = anim["channels"].as_array().unwrap().iter().filter(|c| c["target"]["node"] == w as u64).collect();
+    assert_eq!(chans.len(), 3);
+    let sampler_of = |path: &str| chans.iter().find(|c| c["target"]["path"] == path).map(|c| &anim["samplers"][c["sampler"].as_u64().unwrap() as usize]).unwrap();
+    let out = |path: &str| acc_f(&j, &bin, sampler_of(path)["output"].as_u64().unwrap() as usize);
+    // frame 4 (last): moved 40 right (x), turned 90 degrees (y flip: clockwise in glTF, z component negative)
+    let t = out("translation");
+    assert_eq!(t.len(), 15);
+    assert!(t[0].abs() < 1e-4 && (t[12] - 40.0).abs() < 1e-3 && t[13].abs() < 1e-3 && t[14] == 0.0, "{t:?}");
+    let r = out("rotation");
+    let (s, c) = (std::f32::consts::FRAC_PI_4.sin(), std::f32::consts::FRAC_PI_4.cos());
+    assert!(r[2].abs() < 1e-5 && (r[3] - 1.0).abs() < 1e-5, "frame 0 is the identity");
+    assert!((r[18] + s).abs() < 1e-4 && (r[19] - c).abs() < 1e-4, "{:?}", &r[16..]);
+    assert!(out("scale").chunks(3).all(|v| (v[0] - 1.0).abs() < 1e-4 && (v[1] - 1.0).abs() < 1e-4 && v[2] == 1.0));
+    // times match the bone channels, every accessor index is valid
+    assert!(anim["samplers"].as_array().unwrap().iter().all(|s| s["input"].as_u64().unwrap() < j["accessors"].as_array().unwrap().len() as u64 && s["output"].as_u64().unwrap() < j["accessors"].as_array().unwrap().len() as u64));
+    // the frame-0 geometry is the same as without the option
+    let (plain, _) = export_glb_with(&e, &GlbOptions::default()).unwrap();
+    let (pj, _) = parse(&plain);
+    assert_eq!(pj["meshes"], j["meshes"]);
+}
+
+#[test]
+fn layer_animation_follows_a_group_and_a_bone() {
+    // a child of an animated group moves with it; a layer on a bone is animated relative to the bone, so its own channels stay empty
+    let child = Layer::vector("c", vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_fill("#00ff00")]);
+    let mut g = Layer::group("g", vec![child]);
+    g.transform.position = Vec2::new(5.0, 5.0);
+    let gx = Channel::keys("g", Prop::LayerX, Track::with_keys(&[(0.0, 5.0, Ease::Linear), (4.0, 25.0, Ease::Linear)]));
+    let mut on_bone = Layer::vector("b", vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_fill("#ff0000")]);
+    on_bone.bone = Some("root".into());
+    let e = engine_with(vec![g, on_bone], 5, vec![gx]);
+    let (glb, _) = export_glb_with(&e, &GlbOptions { layer_animation: true }).unwrap();
+    let (j, bin) = parse(&glb);
+    let nodes = j["nodes"].as_array().unwrap();
+    let wrappers: Vec<usize> = (0..nodes.len()).filter(|&i| nodes[i]["name"].as_str().is_some_and(|s| s.starts_with("anim "))).collect();
+    assert_eq!(wrappers.len(), 1, "only the group's child moves: {nodes:?}");
+    let anim = &j["animations"][0];
+    let ch = anim["channels"].as_array().unwrap().iter().find(|c| c["target"]["node"] == wrappers[0] as u64 && c["target"]["path"] == "translation").unwrap();
+    let t = acc_f(&j, &bin, anim["samplers"][ch["sampler"].as_u64().unwrap() as usize]["output"].as_u64().unwrap() as usize);
+    assert!((t[12] - 20.0).abs() < 1e-3, "{t:?}");
+}

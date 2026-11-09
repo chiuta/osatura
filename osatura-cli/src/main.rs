@@ -508,24 +508,14 @@ fn onion_spec_from(a: &Args) -> Result<overlays::OnionSpec, String> {
     Ok(spec)
 }
 
-fn write_frame(e: &Engine, frame: f32, out: &Path, a: &Args) -> Result<(), String> {
-    let bones = a.flags.iter().any(|f| f == "--bones");
-    let png = out.extension().map(|x| x.eq_ignore_ascii_case("png")).unwrap_or(false);
-    let svg = out.extension().map(|x| x.eq_ignore_ascii_case("svg")).unwrap_or(false);
-    if !png && !svg {
-        return Err(format!("render writes .png or .svg; '{}' has another extension (nothing was written)", out.display()));
-    }
-    let proxy = match a.opts.get("--proxy") {
-        None => 0u8,
-        Some(v) => v.parse::<u8>().map_err(|_| format!("--proxy needs a level 0..={}, got '{v}'", osatura_core::scrub::MAX_LEVEL))?,
-    };
-    osatura_core::scrub::check_level(proxy)?;
-    let shutter = match a.opts.get("--shutter") {
+/// `--shutter DEG [--samples N] [--shutter-phase SEC]` as a validated shutter (`None` without `--shutter`; the other two need it).
+fn shutter_from_args(a: &Args) -> Result<Option<osatura_core::motionblur::Shutter>, String> {
+    match a.opts.get("--shutter") {
         None => {
             if a.opts.contains_key("--samples") || a.opts.contains_key("--shutter-phase") {
                 return Err("--samples and --shutter-phase need --shutter DEG".into());
             }
-            None
+            Ok(None)
         }
         Some(v) => {
             let angle: f64 = v.parse().map_err(|_| format!("--shutter needs an angle in degrees, got '{v}'"))?;
@@ -539,12 +529,27 @@ fn write_frame(e: &Engine, frame: f32, out: &Path, a: &Args) -> Result<(), Strin
             };
             let sh = osatura_core::motionblur::Shutter { angle_deg: angle, samples, phase_s };
             sh.validate()?;
-            if !png || proxy > 0 {
-                return Err("--shutter works with .png output and without --proxy (nothing was written)".into());
-            }
-            Some(sh)
+            Ok(Some(sh))
         }
+    }
+}
+
+fn write_frame(e: &Engine, frame: f32, out: &Path, a: &Args) -> Result<(), String> {
+    let bones = a.flags.iter().any(|f| f == "--bones");
+    let png = out.extension().map(|x| x.eq_ignore_ascii_case("png")).unwrap_or(false);
+    let svg = out.extension().map(|x| x.eq_ignore_ascii_case("svg")).unwrap_or(false);
+    if !png && !svg {
+        return Err(format!("render writes .png or .svg; '{}' has another extension (nothing was written)", out.display()));
+    }
+    let proxy = match a.opts.get("--proxy") {
+        None => 0u8,
+        Some(v) => v.parse::<u8>().map_err(|_| format!("--proxy needs a level 0..={}, got '{v}'", osatura_core::scrub::MAX_LEVEL))?,
     };
+    osatura_core::scrub::check_level(proxy)?;
+    let shutter = shutter_from_args(a)?;
+    if shutter.is_some() && (!png || proxy > 0) {
+        return Err("--shutter works with .png output and without --proxy (nothing was written)".into());
+    }
     e.evaluate_checked(frame)?;
     let bytes = if let Some(sh) = shutter {
         let (w, h, px) = osatura_core::motionblur::render_engine(e, frame, &RasterOptions { scale: a.scale, show_bones: bones, transparent: false }, &sh)?;
@@ -695,8 +700,9 @@ fn guard_out(input: &str, out: &str) -> Result<(), String> {
 
 /// Extra ffmpeg arguments that mix the project's sound tracks (none when it has no sounds).
 /// Inputs must come before the output; the filter/map/codec go after the video options.
-fn audio_inputs(e: &Engine, base: &Path) -> Result<(Vec<String>, Vec<String>, bool), String> {
-    Ok(match soundtrack::mux_args(&e.project, base, 1, None)? {
+/// `scratch` holds the processed copies of tracks with pan/filters and must outlive the ffmpeg run.
+fn audio_inputs(e: &Engine, base: &Path, scratch: &Path) -> Result<(Vec<String>, Vec<String>, bool), String> {
+    Ok(match soundio::mux_for(&e.project, base, 1, None, scratch)? {
         Some(m) => (m.inputs, vec!["-filter_complex".into(), m.filter, "-map".into(), "0:v".into(), "-map".into(), "[aout]".into(), "-t".into(), format!("{}", e.project.frames as f32 / e.project.fps)], true),
         None => (vec![], vec![], false),
     })
@@ -717,6 +723,10 @@ fn apply_sound_opts(t: &mut soundtrack::SoundTrack, a: &Args, fps: f32) -> Resul
     if let Some(v) = a.opts.get("--trim-out") { let o = parse_time(v, fps, "--trim-out")?; t.trim_out = if o == 0.0 { None } else { Some(o) }; }
     if let Some(v) = a.opts.get("--fade-in") { t.fade_in = parse_time(v, fps, "--fade-in")?; }
     if let Some(v) = a.opts.get("--fade-out") { t.fade_out = parse_time(v, fps, "--fade-out")?; }
+    if let Some(v) = a.opts.get("--filter") { t.filters = soundtrack::TrackFilter::parse_list(v)?; }
+    if let Some(v) = a.opts.get("--pan") {
+        t.pan = if v == "none" { None } else { Some(v.parse::<f32>().ok().filter(|p| p.is_finite()).ok_or_else(|| format!("--pan needs a number from -1 (left) to 1 (right), or none, got '{v}'"))?) };
+    }
     Ok(())
 }
 
@@ -773,16 +783,32 @@ fn html_audio(e: &Engine, base: &Path) -> Option<(&'static str, Vec<u8>)> {
     }
 }
 
-fn export_mp4(e: &Engine, out: &str, scale: f32, base: &Path) -> Result<(), String> {
+/// The numbered PNG frames of a video export; with a shutter each is the motion-blurred average (`osatura_core::motionblur`).
+fn write_video_frames(e: &Engine, dir: &Path, scale: f32, shutter: Option<&osatura_core::motionblur::Shutter>) -> Result<(), String> {
+    let opts = RasterOptions { scale, show_bones: false, transparent: false };
+    if let Some(sh) = shutter {
+        osatura_core::motionblur::check_sequence_cost(e.project.frames, sh)?;
+    }
+    for f in 0..e.project.frames {
+        let png = match shutter {
+            Some(sh) => {
+                let (w, h, px) = osatura_core::motionblur::render_engine(e, f as f32, &opts, sh)?;
+                osatura_core::open_formats::encode_rgba_png(w, h, &px)?
+            }
+            None => render_png(e, f as f32, &opts)?,
+        };
+        fwrite(dir.join(format!("f_{f:05}.png")), png).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn export_mp4(e: &Engine, out: &str, scale: f32, base: &Path, shutter: Option<&osatura_core::motionblur::Shutter>) -> Result<(), String> {
     osatura_core::fsutil::refuse_symlink(Path::new(out))?;
     let guard = osatura_core::fsutil::private_temp_dir("osatura-mp4")?;
     let dir = guard.path().to_path_buf();
-    let (ain, aargs, has_audio) = audio_inputs(e, base)?;
+    let (ain, aargs, has_audio) = audio_inputs(e, base, &dir)?;
     let result = (|| {
-        for f in 0..e.project.frames {
-            let png = render_png(e, f as f32, &RasterOptions { scale, show_bones: false, transparent: false })?;
-            fwrite(dir.join(format!("f_{f:05}.png")), png).map_err(|e| e.to_string())?;
-        }
+        write_video_frames(e, &dir, scale, shutter)?;
         let status = Command::new("ffmpeg")
             .args(["-y", "-loglevel", "error", "-protocol_whitelist", "file", "-framerate", &e.project.fps.to_string(), "-i"])
             .arg(dir.join("f_%05d.png"))
@@ -801,7 +827,7 @@ fn export_mp4(e: &Engine, out: &str, scale: f32, base: &Path) -> Result<(), Stri
 }
 
 /// WebM with alpha. VP9 (default) or AV1, encoded by the user's own ffmpeg (external process, never bundled); patent/licensing status of the codecs is not assessed here (docs/PATENT_NOTES.md). Needs ffmpeg on PATH.
-fn export_webm(e: &Engine, out: &str, scale: f32, codec: &str, base: &Path) -> Result<(), String> {
+fn export_webm(e: &Engine, out: &str, scale: f32, codec: &str, base: &Path, shutter: Option<&osatura_core::motionblur::Shutter>) -> Result<(), String> {
     let enc: &[&str] = match codec {
         "vp9" => &["-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "30", "-auto-alt-ref", "0"],
         "av1" => &["-c:v", "libaom-av1", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "35", "-cpu-used", "6"],
@@ -810,12 +836,9 @@ fn export_webm(e: &Engine, out: &str, scale: f32, codec: &str, base: &Path) -> R
     osatura_core::fsutil::refuse_symlink(Path::new(out))?;
     let guard = osatura_core::fsutil::private_temp_dir("osatura-webm")?;
     let dir = guard.path().to_path_buf();
-    let (ain, aargs, has_audio) = audio_inputs(e, base)?;
+    let (ain, aargs, has_audio) = audio_inputs(e, base, &dir)?;
     let result = (|| {
-        for f in 0..e.project.frames {
-            let png = render_png(e, f as f32, &RasterOptions { scale, show_bones: false, transparent: false })?;
-            fwrite(dir.join(format!("f_{f:05}.png")), png).map_err(|e| e.to_string())?;
-        }
+        write_video_frames(e, &dir, scale, shutter)?;
         let status = Command::new("ffmpeg")
             .args(["-y", "-loglevel", "error", "-protocol_whitelist", "file", "-framerate", &e.project.fps.to_string(), "-i"])
             .arg(dir.join("f_%05d.png"))

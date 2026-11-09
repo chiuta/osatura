@@ -182,13 +182,18 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
             };
             let by = a.opts.get("--by").map(|_| num(a, "--by", 0.0)).transpose()?;
             let factor = a.opts.get("--factor").map(|_| num(a, "--factor", 1.0)).transpose()?;
-            if !["shift", "scale", "ease", "reverse"].contains(op) {
-                return Err(format!("unknown keys operation '{op}' (shift, scale, ease, reverse)"));
+            if !["shift", "scale", "ease", "reverse", "curve"].contains(op) {
+                return Err(format!("unknown keys operation '{op}' (shift, scale, ease, reverse, curve)"));
             }
+            let curve = match a.opts.get("--curve") {
+                Some(s) => Some(osatura_core::segease::BakeCurve::parse(s)?),
+                None => None,
+            };
             match *op {
                 "shift" if by.is_none() => return Err("keys shift needs --by N".into()),
                 "scale" if factor.is_none() => return Err("keys scale needs --factor X".into()),
                 "ease" if ease.is_none() => return Err("--ease is required".into()),
+                "curve" if curve.is_none() => return Err("keys curve needs --curve piecewise:STOP,STOP,... or --curve steps:N[:position]".into()),
                 _ => {}
             }
             let mut touched = 0;
@@ -207,7 +212,8 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                     "scale" => keyops::scale_keys(track, from, to, num(a, "--pivot", 0.0)?, factor.ok_or("keys scale needs --factor X")?)?,
                     "ease" => keyops::set_ease(track, from, to, ease.ok_or("--ease is required")?),
                     "reverse" => keyops::reverse_keys(track, from, to),
-                    other => return Err(format!("unknown keys operation '{other}' (shift, scale, ease, reverse)")),
+                    "curve" => keyops::bake_curve(track, from, to, curve.as_ref().ok_or("keys curve needs --curve")?)?,
+                    other => return Err(format!("unknown keys operation '{other}' (shift, scale, ease, reverse, curve)")),
                 };
             }
             compile(p.clone(), path)?;

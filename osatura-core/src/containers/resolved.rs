@@ -149,6 +149,14 @@ pub fn validate(p: &Project) -> Vec<String> {
                     }
                 }
             }
+            if let Some(b) = m.baseline {
+                if !(finite(b) && b >= 0.0) {
+                    errs.push(format!("{who}: {ml}: baseline must be a finite number >= 0"));
+                }
+                if m.spacer {
+                    errs.push(format!("{who}: {ml}: a spacer has no baseline"));
+                }
+            }
             for (a, (lo, hi)) in [(0, (m.min_w, m.max_w)), (1, (m.min_h, m.max_h))] {
                 let n = if a == 0 { "w" } else { "h" };
                 if let Some(v) = lo {

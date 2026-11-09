@@ -750,3 +750,84 @@ fn overlay_marks_every_rectangle() {
     assert!(svg.starts_with("<svg><g") && svg.ends_with("</g></svg>"));
     assert_eq!(svg.matches("<rect").count(), 2);
 }
+
+#[test]
+fn baseline_alignment_lines_up_members_and_is_off_by_default() {
+    // heights 20/30/10 with baselines 15/10/10 (spec 06 example): offsets 0, 5, 5
+    let mut p = proj(&[(40.0, 20.0), (40.0, 30.0), (40.0, 10.0)]);
+    let mut c = row(&p, 3);
+    for (m, b) in c.members.iter_mut().zip([15.0, 10.0, 10.0]) {
+        m.baseline = Some(b);
+    }
+    p.containers.push(c.clone());
+    // without align = baseline the field is only data: everything sits at the start
+    near(&ys(&solve_project(&p).unwrap()), &[0.0, 0.0, 0.0]);
+    p.containers[0].align = Align::Baseline;
+    near(&ys(&solve_project(&p).unwrap()), &[0.0, 5.0, 5.0]);
+    // a member-level choice mixes with the container's: the third one goes to the end of the 200 high line
+    p.containers[0].align = Align::Start;
+    p.containers[0].members[0].align = Some(Align::Baseline);
+    p.containers[0].members[1].align = Some(Align::Baseline);
+    p.containers[0].members[2].align = Some(Align::End);
+    near(&ys(&solve_project(&p).unwrap()), &[0.0, 5.0, 190.0]);
+    // a member without a baseline gets one at its bottom edge: the 20 high first member then sets the line (before = 20)
+    p.containers[0].members[0].baseline = None;
+    p.containers[0].members[2].align = Some(Align::Baseline);
+    near(&ys(&solve_project(&p).unwrap()), &[0.0, 10.0, 10.0]);
+}
+
+#[test]
+fn baseline_in_a_column_acts_as_start_and_in_a_wrapped_row_it_sizes_the_line() {
+    let mut p = proj(&[(40.0, 20.0), (40.0, 30.0)]);
+    let mut c = Container::new("col", Dir::Column, vec![Member::layer("l0"), Member::layer("l1")]);
+    c.align = Align::Baseline;
+    c.members[0].baseline = Some(5.0);
+    p.containers.push(c);
+    near(&xs(&solve_project(&p).unwrap()), &[0.0, 0.0]);
+    // wrapped row of width 50: each member on its own line; the line height is the baseline group's (20 + the part above)
+    let mut p = proj(&[(40.0, 20.0), (40.0, 30.0), (40.0, 10.0)]);
+    let mut c = row(&p, 3);
+    c.align = Align::Baseline;
+    c.wrap = Wrap::Wrap;
+    c.rect = RectRule::Fixed { x: 0.0, y: 0.0, w: 50.0, h: 200.0 };
+    p.containers.push(c);
+    near(&ys(&solve_project(&p).unwrap()), &[0.0, 20.0, 50.0]);
+    // two members on a line with baselines 15 and 10: the line is 35 high, the next line starts below it
+    let mut p = proj(&[(20.0, 20.0), (20.0, 30.0), (20.0, 10.0)]);
+    let mut c = row(&p, 3);
+    c.align = Align::Baseline;
+    c.wrap = Wrap::Wrap;
+    c.rect = RectRule::Fixed { x: 0.0, y: 0.0, w: 45.0, h: 200.0 };
+    c.members[0].baseline = Some(15.0);
+    c.members[1].baseline = Some(10.0);
+    p.containers.push(c);
+    let s = solve_project(&p).unwrap();
+    near(&ys(&s), &[0.0, 5.0, 35.0]);
+}
+
+#[test]
+fn baseline_field_validation_and_serialisation() {
+    let base = proj(&[(50.0, 20.0)]);
+    let bad = |f: &dyn Fn(&mut Container)| {
+        let mut p = base.clone();
+        let mut c = Container::new("c", Dir::Row, vec![Member::layer("l0")]);
+        f(&mut c);
+        p.containers.push(c);
+        validate(&p).join("\n")
+    };
+    assert!(bad(&|c| c.members[0].baseline = Some(-1.0)).contains("baseline must be"));
+    assert!(bad(&|c| c.members[0].baseline = Some(f32::NAN)).contains("baseline must be"));
+    assert!(bad(&|c| c.members = vec![Member { baseline: Some(1.0), ..Member::spacer(1.0) }]).contains("spacer has no baseline"));
+    assert!(bad(&|c| c.members[0].baseline = Some(4.0)).is_empty());
+    // a container written before the option existed re-serialises unchanged; the new values round-trip
+    let old = r#"{"id":"c","members":[{"layer":"l0","grow":0.0,"shrink":1.0}],"axis":"row","gap":0.0,"padding":[0.0,0.0,0.0,0.0],"justify":"start","align":"end","wrap":"none","rect":{"kind":"pin"}}"#;
+    let c: Container = serde_json::from_str(old).unwrap();
+    assert_eq!(c.members[0].baseline, None);
+    assert!(!serde_json::to_string(&c).unwrap().contains("baseline"));
+    let mut c = c;
+    c.align = Align::Baseline;
+    c.members[0].baseline = Some(7.5);
+    let j = serde_json::to_string(&c).unwrap();
+    assert!(j.contains("\"align\":\"baseline\"") && j.contains("\"baseline\":7.5"));
+    assert_eq!(serde_json::from_str::<Container>(&j).unwrap(), c);
+}
