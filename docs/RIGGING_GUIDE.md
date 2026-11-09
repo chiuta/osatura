@@ -286,7 +286,7 @@ should only be active with a skin.
 
 ### 5.4 Rigid pieces plus a switch layer
 
-For things that change shape discretely (mouths, hands, eyes), put the alternatives in a `selector` layer
+For things that change shape discretely (mouths, hands, eyes), put the alternatives in a `switch` layer
 and key `layer_switch`. See section 11.
 
 ## 6. Deformers

@@ -6223,7 +6223,7 @@
     },
     {
       "name": "eye",
-      "type": "selector",
+      "type": "switch",
       "layers": [
         {
           "name": "open",
@@ -6571,7 +6571,7 @@
     },
     {
       "name": "mouth",
-      "type": "selector",
+      "type": "switch",
       "layers": [
         {
           "name": "smile",

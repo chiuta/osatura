@@ -222,7 +222,7 @@ A layer is `{"name": ..., "type": ..., <kind fields>, <common fields>}`. `type` 
 | JSON name | Type | Default | Range | Meaning |
 | --- | --- | --- | --- | --- |
 | `name` | string | **Req** | non-empty, no `/`, no `::`; the full path must be unique | Layer name. Children are addressed as `parent/child`. |
-| `type` | string | **Req** | `vector`, `group`, `selector`, `metaball`, `boolean`, `emitter`, `image` | Kind. |
+| `type` | string | **Req** | `vector`, `group`, `switch`, `liquid`, `boolean`, `emitter`, `image` | Kind. |
 | `transform` | object | identity | | `position` `[0,0]`, `rotation` 0, `scale` `[1,1]`, `skew` 0, `anchor` `[0,0]`. |
 | `opacity` | number | 1 | clamped 0..1 | Multiplies into the layer composite. |
 | `visible` | bool | true | | Hidden layers are skipped when drawing but can still be mask sources. |
@@ -260,7 +260,9 @@ The common fields are written after the kind fields in output but order is irrel
 | --- | --- | --- | --- |
 | `layers` | array of layers | `[]` | Children inherit the group transform. |
 
-### 5.4 `selector`
+### 5.4 `switch`
+
+The Rust type of this kind is called `Selector` (and `Metaball` for `liquid`), but the file format and the scripting API (`layer_info(path).kind`) keep the names `switch` and `liquid` for compatibility. When reading, `selector` and `metaball` are accepted as aliases; files are always written with `switch` / `liquid`.
 
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -271,7 +273,7 @@ Exactly one child is shown. The value is rounded; negative becomes 0; values at 
 count become the last child. Validation does not reject out-of-range keys. See section 20 for a
 lint wording mismatch about this.
 
-### 5.5 `metaball`
+### 5.5 `liquid`
 
 Metaball liquid. The field is the sum of `r^2 / d^2` over the blobs; the outline is the iso-contour,
 extracted by marching squares on a grid capped at 600 by 600 cells and smoothed with Catmull-Rom.
@@ -484,7 +486,7 @@ There are 39 props. The prop decides what `target` means.
 Gradient handle semantics: for linear gradients `.from` and `.to` move the start and end point by
 `(dx, dy)`. For radial gradients `.from` moves the centre and `.to` changes the radius by `dx`.
 Only paths whose fill or stroke is a gradient have these targets. `layer_switch` requires a
-`selector` layer. An unknown prop lists every valid variant in the error.
+`switch` layer. An unknown prop lists every valid variant in the error.
 
 Clamps on write: opacity 0..1, camera zoom at least 0.01, camera blur at least 0, `ik_mix` and
 `constraint_weight` 0..1.
@@ -1129,7 +1131,7 @@ mouths. Out-of-range keys clamp: a key value of 7 shows child 2 and -3 shows chi
     },
     {
       "name": "mouth",
-      "type": "selector",
+      "type": "switch",
       "selected": 0,
       "layers": [
         {

@@ -382,14 +382,14 @@ pub enum LayerKind {
     Group { layers: Vec<Layer> },
     /// Shows exactly one child (frame-by-frame drawings, symbol/mouth swaps).
     /// Animate `layer_switch` with step keys to pick the child.
-    #[serde(alias = "switch")]
+    #[serde(rename = "switch", alias = "selector")]
     Selector {
         layers: Vec<Layer>,
         #[serde(default)]
         selected: usize,
     },
     /// Metaball liquid: soft blobs that fuse when they approach each other.
-    #[serde(alias = "liquid")]
+    #[serde(rename = "liquid", alias = "metaball")]
     Metaball {
         blobs: Vec<Blob>,
         /// Iso-level of the field Σ r²/d² (1.0 = each blob is a circle of its radius).
@@ -1105,6 +1105,21 @@ pub fn mesh_vertices(origin: Vec2, size: Vec2, cols: usize, rows: usize) -> Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn switch_and_liquid_keep_their_file_names_and_the_new_names_are_read_aliases() {
+        let sw = Layer::switch("s", vec![]);
+        let lq = Layer::liquid("l", vec![], Paint::solid("#ffffff"));
+        let (a, b) = (serde_json::to_value(&sw).unwrap(), serde_json::to_value(&lq).unwrap());
+        assert_eq!(a["type"], "switch");
+        assert_eq!(b["type"], "liquid");
+        for (alias, want) in [("selector", &sw), ("metaball", &lq)] {
+            let mut v = if alias == "selector" { a.clone() } else { b.clone() };
+            v["type"] = alias.into();
+            let back: Layer = serde_json::from_value(v).unwrap();
+            assert_eq!(&back, want, "{alias}");
+        }
+    }
 
     #[test]
     fn layer_json_is_flat_and_round_trips() {

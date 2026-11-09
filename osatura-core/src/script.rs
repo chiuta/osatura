@@ -1018,7 +1018,7 @@ mod tests {
         let r = run_script(&mut e, src).unwrap();
         assert!(r.log[0].starts_with("arm_low parent arm_up length "), "{:?}", r.log);
         assert_eq!(r.log[1], "ghost true");
-        assert!(r.log[2].starts_with("selector 3 bone hand"), "{:?}", r.log);
+        assert!(r.log[2].starts_with("switch 3 bone hand"), "{:?}", r.log);
         assert_eq!(r.log[3], "mouth/open true");
         assert_eq!(r.log[4], "moved true");
         assert_eq!(r.log[5], "late true", "helpers read the project as it was when the script started");
