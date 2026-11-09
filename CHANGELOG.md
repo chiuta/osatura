@@ -10,6 +10,36 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - 2026-11-09
+
+*Pre-release prepared from `main`; the tag `v0.1.0-alpha.5` is created when the release is published. Crate versions stay `0.1.0`; the release version comes from `OSATURA_VERSION` set by `release.yml`.*
+
+### Added (batch 1: the nine functional specifications, all opt-in)
+
+- **Sound** (specs 03 and 04): `SoundTrack` has optional `pan` (-1 to 1, equal-power) and `filters` (biquad); `sound add` and `sound edit` take `--pan P|none` and `--filter kind:freq[:q[:gain_db]][,...]`; used by `sound mix`, the mp4/webm exports and the HTML player. Tracks without them keep the unchanged ffmpeg graph; the project schema describes both fields.
+- **Motion blur** (spec 11): `--shutter DEG [--samples N] [--shutter-phase SEC]` on `frames --png` and on export to `.gif`, `.apng`, `.mp4` and `.webm`. Angle 0 gives the plain bytes; a sequence is capped at 100000 renders. `render-hdr`, the studio and the other exports are not wired.
+- **Lighting** (spec 09): the `relight` effect accepts an optional `shading` object on a light (attenuation, strict spot cone, Blinn specular); lights without it give the same pixels as before.
+- **Physics** (spec 10): opt-in chain self-collision with capsules (`PhysicsOptions::self_collision`, physics word `selfcollide=R`); the default leaves the simulation bit-identical.
+- **Easing** (spec 05): `keys curve --curve piecewise:...|steps:N[:pos]` bakes a piecewise-linear or stepped curve into ordinary keys.
+- **Layout** (spec 06): `Align::Baseline` and an optional `Member::baseline` for row containers.
+- **glTF** (spec 07): `export ... .glb --layer-anim` writes sampled translation, rotation and scale channels for moving layers (skew is dropped and reported).
+- GIF and APNG sequence decoders (specs 01 and 02) are in `osatura-core` but are **not wired** to any command.
+
+### Fixed (review of batch 1)
+
+- **Wire names kept**: the Rust variants are `Selector` and `Metaball`, but project files, `layer_info(path).kind` and scripts keep `switch` and `liquid`; `selector` and `metaball` are also accepted when reading. The shipped WebAssembly demo project works again. Regression test added.
+- **`keys curve`**: the total number of keys of a project is capped at 2,000,000 (`MAX_PROJECT_KEYS_AFTER_BAKE`, checked while baking); before, `--curve steps:4096` on a project with many tracks could exhaust memory.
+- **Motion blur memory**: samples are accumulated in a running sum, so memory no longer grows with `--samples` (byte-identical output).
+- **Sound decode size**: `--pan` and `--filter` tracks are checked against the 256 MiB cap before decoding (trim is honoured, ffprobe is consulted first), with an error naming the sound.
+- Rustdoc warnings (bare URLs), `reuse lint` annotations for `docs/clean-room` and `try/THIRD-PARTY-NOTICES.md`, clippy (`manual_is_multiple_of`), a dead TOC link and a misplaced doc line.
+- `CLEANROOM.md` and `docs/clean-room` now say exactly which modules are wired and what the clean-room filter did (the three filter boxes in the specifications are unticked; the three-stage separation was not followed).
+
+### Known notes
+
+- **Wire names**: `switch` and `liquid` remain the file, script and command-line names although the Rust types are `Selector` and `Metaball` (see "Notes for integrators" below).
+- **Keys limit**: `keys curve` refuses to bake more than 2,000,000 keys in total.
+- **Sign-off**: 9 commits on `main` since `v0.1.0-alpha.4` carry no DCO `Signed-off-by` line (the clean-room kit, the provenance audit, the provenance statements, the independent-implementation wording, the third-party notices for `try/` and the clean-room specification batch; see `git log --no-merges v0.1.0-alpha.4..main`). They are disclosed here and not rewritten.
+
 ### Notes for integrators
 
 - Rust API of `osatura-core`: the `LayerKind` variants `Switch` and `Liquid` are now called `Selector` and `Metaball`, and some public structs have new optional fields (`SoundTrack::pan` and `filters`, `PhysicsOptions::self_collision`, `postfx::Light::shading`, `containers::Member::baseline`) and `Align` has a new `Baseline` variant (struct literals and exhaustive matches of external Rust code need updating). The project file format, the scripting API (`layer_info(path).kind`) and the command line keep the names `switch` and `liquid`; `selector` and `metaball` are also accepted when reading. Files written are unchanged unless the new optional fields are used.
