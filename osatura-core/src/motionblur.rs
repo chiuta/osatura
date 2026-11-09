@@ -83,7 +83,7 @@ pub struct Accumulator {
 impl Accumulator {
     /// An empty sum for images of `len` bytes (a multiple of 4).
     pub fn new(len: usize) -> Result<Accumulator, String> {
-        if len % 4 != 0 {
+        if !len.is_multiple_of(4) {
             return Err("the images must be RGBA with the same size".into());
         }
         Ok(Accumulator { sums: vec![[0; 4]; len / 4], count: 0 })
@@ -133,7 +133,7 @@ impl Accumulator {
 /// to the nearest integer (halves up).
 pub fn accumulate(images: &[&[u8]]) -> Result<Vec<u8>, String> {
     let first = images.first().ok_or("no images to average")?;
-    if first.len() % 4 != 0 || images.iter().any(|i| i.len() != first.len()) {
+    if !first.len().is_multiple_of(4) || images.iter().any(|i| i.len() != first.len()) {
         return Err("the images must be RGBA with the same size".into());
     }
     if images.len() > MAX_SAMPLES as usize {
