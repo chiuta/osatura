@@ -49,6 +49,12 @@ pub fn apng_bytes(engine: &Engine, scale: f32) -> Result<Vec<u8>, String> {
     apng_from_frames(w, h, &frames, engine.project.fps)
 }
 
+/// [`apng_bytes`] with motion blur (`crate::motionblur`).
+pub fn apng_bytes_blurred(engine: &Engine, scale: f32, shutter: &crate::motionblur::Shutter) -> Result<Vec<u8>, String> {
+    let (w, h, frames) = crate::motionblur::frames_rgba(engine, scale, shutter)?;
+    apng_from_frames(w, h, &frames, engine.project.fps)
+}
+
 /// Looping animated PNG from ready RGBA frames (all `w`x`h`) at `fps`.
 pub fn apng_from_frames(w: u32, h: u32, frames: &[Vec<u8>], fps: f32) -> Result<Vec<u8>, String> {
     if frames.is_empty() {

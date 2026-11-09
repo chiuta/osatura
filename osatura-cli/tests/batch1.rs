@@ -30,7 +30,9 @@ fn schema_goes_to_stdout_or_a_file_and_is_deterministic() {
 }
 
 fn tmp(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("osatura-batch1-{}", std::process::id()));
+    // one directory per test (tests run in parallel and some of them remove theirs when they finish)
+    let tag: String = std::thread::current().name().unwrap_or("t").chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect();
+    let dir = std::env::temp_dir().join(format!("osatura-batch1-{}-{tag}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     dir.join(name)
 }
@@ -116,4 +118,48 @@ fn physics_selfcollide_is_opt_in_and_validated() {
     assert!(!o.status.success() && String::from_utf8_lossy(&o.stderr).contains("too large"), "{}", String::from_utf8_lossy(&o.stderr));
     let o = run(&hit, &["selfcollide=0"]);
     assert!(!o.status.success() && String::from_utf8_lossy(&o.stderr).contains("> 0"));
+}
+
+#[test]
+fn shutter_reaches_frames_gif_and_apng_and_is_refused_elsewhere() {
+    let proj = tmp("blur-demo.json");
+    let p = proj.to_str().unwrap();
+    assert!(osatura(&["demo", p]).status.success());
+    let ok = |args: &[&str]| {
+        let o = osatura(args);
+        assert!(o.status.success(), "{args:?}: {}", String::from_utf8_lossy(&o.stderr));
+    };
+    // frames --png: angle 0 is the plain sequence, a real shutter changes a moving frame, and it is reproducible
+    let (d0, d1, d2, d3) = (tmp("fr-plain"), tmp("fr-zero"), tmp("fr-blur"), tmp("fr-blur2"));
+    ok(&["frames", p, d0.to_str().unwrap(), "--png", "--scale", "0.2"]);
+    ok(&["frames", p, d1.to_str().unwrap(), "--png", "--scale", "0.2", "--shutter", "0"]);
+    ok(&["frames", p, d2.to_str().unwrap(), "--png", "--scale", "0.2", "--shutter", "360", "--samples", "3"]);
+    ok(&["frames", p, d3.to_str().unwrap(), "--png", "--scale", "0.2", "--shutter", "360", "--samples", "3"]);
+    let read = |d: &std::path::Path, n: &str| std::fs::read(d.join(n)).unwrap();
+    assert_eq!(read(&d0, "frame_0006.png"), read(&d1, "frame_0006.png"));
+    assert_ne!(read(&d0, "frame_0006.png"), read(&d2, "frame_0006.png"));
+    assert_eq!(read(&d2, "frame_0006.png"), read(&d3, "frame_0006.png"));
+    // gif / apng: same size class, different bytes with blur, identical with angle 0, deterministic
+    for ext in ["gif", "apng"] {
+        let (a, z, b, b2) = (tmp(&format!("s-plain.{ext}")), tmp(&format!("s-zero.{ext}")), tmp(&format!("s-blur.{ext}")), tmp(&format!("s-blur2.{ext}")));
+        ok(&["export", p, a.to_str().unwrap(), "--scale", "0.2"]);
+        ok(&["export", p, z.to_str().unwrap(), "--scale", "0.2", "--shutter", "0"]);
+        ok(&["export", p, b.to_str().unwrap(), "--scale", "0.2", "--shutter", "360", "--samples", "2"]);
+        ok(&["export", p, b2.to_str().unwrap(), "--scale", "0.2", "--shutter", "360", "--samples", "2"]);
+        assert_eq!(std::fs::read(&a).unwrap(), std::fs::read(&z).unwrap(), "{ext}");
+        assert_ne!(std::fs::read(&a).unwrap(), std::fs::read(&b).unwrap(), "{ext}");
+        assert_eq!(std::fs::read(&b).unwrap(), std::fs::read(&b2).unwrap(), "{ext}");
+    }
+    // refused: other formats, svg frames, samples without shutter, too many renders
+    let bad = |args: &[&str], what: &str| {
+        let o = osatura(args);
+        let e = String::from_utf8_lossy(&o.stderr).to_string();
+        assert!(!o.status.success() && e.contains(what), "{args:?}: {e}");
+    };
+    let h = tmp("s.html");
+    bad(&["export", p, h.to_str().unwrap(), "--shutter", "180"], "shutter");
+    bad(&["frames", p, d0.to_str().unwrap(), "--shutter", "180"], "--png");
+    bad(&["export", p, tmp("s2.gif").to_str().unwrap(), "--samples", "4"], "need --shutter");
+    bad(&["export", p, tmp("s3.gif").to_str().unwrap(), "--shutter", "180", "--samples", "257"], "1..=256");
+    assert!(!tmp("s3.gif").exists());
 }

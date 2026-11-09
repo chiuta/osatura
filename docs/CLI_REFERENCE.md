@@ -477,6 +477,8 @@ Renders one frame. A `<frame>` at or beyond the project length is an error (`fra
 | `--samples N` | 8 | Number of renders averaged for `--shutter` (1..256). Each sample is at the middle of one of N equal parts of the exposure. |
 | `--shutter-phase SEC` | 0 | Start of the exposure relative to the frame time, in seconds (negative = centred or before the frame). Moments are limited to the project length. |
 
+The same three options are accepted by `frames --png` (every frame blurred) and by `export` to `.gif`, `.apng`, `.mp4` and `.webm` (every frame of the animation blurred; a GIF above 50 fps blurs only the frames it keeps). They are refused for the other formats and for `.svg` frames (`--shutter works with ...`). A sequence may take at most 100000 renders (frames x samples); `--shutter 0` writes the plain renders. Not connected: `render-hdr`, the studio and the other exports.
+
 ```
 $ osatura render demo.json 12 f12.png --bones --scale 2
 wrote f12.png
@@ -494,7 +496,7 @@ wrote px.png
 
 ### `frames`
 
-**Synopsis:** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N]`
+**Synopsis:** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]`
 
 Renders **every** frame into a directory (created if missing) as `frame_0000.svg` ... (or `.png` with `--png`). All frames are checked for finite poses first.
 
@@ -511,12 +513,12 @@ frame_0001.png
 
 **Synopsis:**
 ```
-osatura export <project.json> <out.gif> [--scale N] [--report r.json]
+osatura export <project.json> <out.gif> [--scale N] [--report r.json] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.html|out.htm>
 osatura export <project.json> <out.json|out.lottie> [--report r.json]
-osatura export <project.json> <out.mp4> [--scale N]
-osatura export <project.json> <out.apng> [--scale N]
-osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1]
+osatura export <project.json> <out.mp4> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.apng> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.png> [--scale N] [--columns N]
 osatura export <project.json> <out.glb> [--report r.json] [--layer-anim]
 ```

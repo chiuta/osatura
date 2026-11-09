@@ -20,11 +20,11 @@ USAGE:
   osatura render   <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
                     --proxy N: scrub proxy (N = 1..4): .png = bitmap at 1/2^N resolution, .svg = simplified vectors; both drop fine strokes, gradients, blends
                     --shutter DEG: motion blur (.png only): average --samples N (default 8) renders over DEG/360 of the frame time, starting --shutter-phase SEC (default 0) after the frame time
-  osatura frames   <project.json> <out_dir> [--png] [--bones] [--scale N]
-  osatura export   <project.json> <out.gif> [--scale N] [--report r.json]   looping GIF; limits are warned on stderr and listed in --report
+  osatura frames   <project.json> <out_dir> [--png] [--bones] [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+  osatura export   <project.json> <out.gif> [--scale N] [--report r.json] [--shutter DEG] [--samples N] [--shutter-phase SEC]   looping GIF; limits are warned on stderr and listed in --report
   osatura export   <project.json> <out.html|out.htm>   one self-contained HTML player (no options)
   osatura export   <project.json> <out.json|out.lottie> [--report r.json]   .json = Lottie, .lottie = dotLottie; limits are warned on stderr and listed in --report
-  osatura export   <project.json> <out.mp4> [--scale N]   H.264, needs ffmpeg on PATH
+  osatura export   <project.json> <out.mp4> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]   H.264, needs ffmpeg on PATH
   osatura lipsync  <project.json> <audio.wav> <switch_layer> <out.json> [--map 0,1,2,3,4]   default map follows the switch's child count; shapes rest,small,open,round,wide: 1 child all, 2 closed+open, 3 closed+open+round/wide, 4 closed+small+open+round/wide, 5+ in that order
   osatura walk     <project.json> <out.json> --thigh-l B --thigh-r B [--shin-l B --shin-r B
                     --arm-l B --arm-r B --hips B --period N --stride DEG --knee DEG --bob PX --swing DEG]
@@ -52,8 +52,8 @@ USAGE:
   osatura ui       search <query...> [--ui-config F]              fuzzy command search as the palette ranks it
 
 OPEN FORMATS (open specifications; no H.264/H.265 unless you ask for .mp4; codec patent status is not assessed, see docs/PATENT_NOTES.md)
-  osatura export   <project.json> <out.apng> [--scale N]   animated PNG
-  osatura export   <project.json> <out.webm> [--scale N] [--codec vp9|av1]   VP9 with alpha (--codec av1 for AV1) via ffmpeg
+  osatura export   <project.json> <out.apng> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]   animated PNG
+  osatura export   <project.json> <out.webm> [--scale N] [--codec vp9|av1] [--shutter DEG] [--samples N] [--shutter-phase SEC]   VP9 with alpha (--codec av1 for AV1) via ffmpeg
   osatura export   <project.json> <out.png> [--scale N] [--columns N]   sprite sheet + <out>.atlas.json (layout; never <out>.json)
   osatura export   <project.json> <out.glb> [--report r.json] [--layer-anim]   glTF 2.0 (bones, animation, skinned fills/strokes, gradients, masks, images, morph targets); --layer-anim also animates the position, rotation and scale of rigid shape layers
   osatura export-oca <project.json> <out_dir> [--layers]   Open Cel Animation folder
