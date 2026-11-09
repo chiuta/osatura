@@ -718,6 +718,7 @@ fn apply_sound_opts(t: &mut soundtrack::SoundTrack, a: &Args, fps: f32) -> Resul
     if let Some(v) = a.opts.get("--trim-out") { let o = parse_time(v, fps, "--trim-out")?; t.trim_out = if o == 0.0 { None } else { Some(o) }; }
     if let Some(v) = a.opts.get("--fade-in") { t.fade_in = parse_time(v, fps, "--fade-in")?; }
     if let Some(v) = a.opts.get("--fade-out") { t.fade_out = parse_time(v, fps, "--fade-out")?; }
+    if let Some(v) = a.opts.get("--filter") { t.filters = soundtrack::TrackFilter::parse_list(v)?; }
     if let Some(v) = a.opts.get("--pan") {
         t.pan = if v == "none" { None } else { Some(v.parse::<f32>().ok().filter(|p| p.is_finite()).ok_or_else(|| format!("--pan needs a number from -1 (left) to 1 (right), or none, got '{v}'"))?) };
     }

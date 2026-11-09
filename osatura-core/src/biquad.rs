@@ -7,7 +7,8 @@
 //! docs/clean-room/specs/04-audio-filtru-biquad.md.
 //!
 //! `H(z) = (b0 + b1 z^-1 + b2 z^-2) / (a0 + a1 z^-1 + a2 z^-2)` evaluated as the difference equation with `a0` normalised away and zero
-//! initial state, in `f64`. Not yet connected to `sound mix` (see docs/clean-room/specs/INTREBARI.md).
+//! initial state, in `f64`. Connected to `sound mix` and the exports through the optional `filters`
+//! list of a sound track (`soundtrack::process_samples`), see docs/clean-room/specs/INTREBARI.md.
 
 use std::f64::consts::PI;
 
@@ -30,6 +31,20 @@ pub enum FilterKind {
 }
 
 impl FilterKind {
+    /// The canonical name accepted by [`FilterKind::parse`].
+    pub fn name(self) -> &'static str {
+        match self {
+            FilterKind::LowPass => "lowpass",
+            FilterKind::HighPass => "highpass",
+            FilterKind::BandPass => "bandpass",
+            FilterKind::Notch => "notch",
+            FilterKind::AllPass => "allpass",
+            FilterKind::Peaking => "peaking",
+            FilterKind::LowShelf => "lowshelf",
+            FilterKind::HighShelf => "highshelf",
+        }
+    }
+
     /// `lowpass`, `highpass`, `bandpass`, `notch`, `allpass`, `peaking`, `lowshelf`, `highshelf` (case-insensitive; `-` and `_` ignored).
     pub fn parse(s: &str) -> Result<FilterKind, String> {
         let t: String = s.chars().filter(|c| *c != '-' && *c != '_').collect::<String>().to_ascii_lowercase();

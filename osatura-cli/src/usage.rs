@@ -94,7 +94,7 @@ RIG / PROJECT ORGANISATION
   osatura camera-seq <project.json> <out.json> <frame:shot[:cut],...>   keys the camera through saved shots
   osatura sound list <project.json> | add <project.json> <out.json> <name> <file.wav|ogg|mp3|...> [start_frame] [gain] [trim/fade options] | edit <project.json> <out.json> <name> [--start F] [--gain G] [trim/fade options] | remove <project.json> <out.json> <name>
                     trim/fade options (seconds, or frames with an f suffix such as 36f): --trim-in T --trim-out T --fade-in T --fade-out T (trim points are inside the audio file; edit: 0 clears)
-                    pan option: --pan P (-1 left .. 1 right, equal power; edit: none clears)
+                    audio options: --pan P (-1 left .. 1 right, equal power) --filter kind:freq[:q[:gain_db]][,...] (biquad; kinds lowpass highpass bandpass notch allpass peaking lowshelf highshelf); edit: none clears
   osatura sound mix <project.json> <out.wav|out.ogg|out.mp3>   only the mixed audio (start, gain, trim, fades; project length), through ffmpeg
                     audio is mixed into .mp4 (AAC) and .webm (Opus) and embedded in .html (needs ffmpeg); .gif and .apng cannot carry audio and stay silent
   osatura make-loop <project.json> <out.json> [targets|all] [props] [--inclusive]   (removes travel = in-place; period N frames so playing 0..N-1 repeatedly has no duplicate seam frame; --inclusive = frame N-1 equals frame 0, legacy)

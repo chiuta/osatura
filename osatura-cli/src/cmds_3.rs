@@ -63,6 +63,7 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                 if s.fade_in > 0.0 { extra += &format!(" fade-in {}s", s.fade_in); }
                 if s.fade_out > 0.0 { extra += &format!(" fade-out {}s", s.fade_out); }
                 if let Some(p) = s.pan { extra += &format!(" pan {p}"); }
+                if !s.filters.is_empty() { extra += &format!(" filter {}", s.filters.iter().map(|f| f.spec()).collect::<Vec<_>>().join(",")); }
                 println!("{}: {} at frame {} gain {}{extra}", s.name, s.file, s.start, s.gain);
             }
             if p.sounds.is_empty() { println!("no sound tracks"); }

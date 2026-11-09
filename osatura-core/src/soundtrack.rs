@@ -37,6 +37,87 @@ pub struct SoundTrack {
     /// domain (`soundtrack::process_samples`), and the result replaces the file as the ffmpeg input.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pan: Option<f32>,
+    /// Biquad filters applied in order to the whole file before the pan (spec 04). Empty = no filter stage (not written).
+    /// Same sample-domain path as `pan`; tracks with neither keep the unchanged ffmpeg graph.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub filters: Vec<TrackFilter>,
+}
+
+/// One biquad filter of a track (canonical kind name, frequency, quality factor, gain for peaking and shelves).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TrackFilter {
+    /// `lowpass`, `highpass`, `bandpass`, `notch`, `allpass`, `peaking`, `lowshelf`, `highshelf`.
+    pub kind: String,
+    /// Corner / centre frequency, Hz (> 0; checked against the file's sample rate when the mix runs).
+    pub freq: f32,
+    #[serde(default = "default_q")]
+    pub q: f32,
+    /// dB, peaking and shelves only.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub gain_db: f32,
+}
+
+fn default_q() -> f32 {
+    std::f32::consts::FRAC_1_SQRT_2
+}
+
+impl TrackFilter {
+    /// `kind:freq[:q[:gain_db]]`, e.g. `lowpass:800`, `highshelf:6000:0.7:3`.
+    pub fn parse(s: &str) -> Result<TrackFilter, String> {
+        let bad = || format!("filter '{s}': write kind:freq[:q[:gain_db]], e.g. lowpass:800 or peaking:1000:2:6");
+        let mut it = s.split(':');
+        let kind = crate::biquad::FilterKind::parse(it.next().unwrap_or(""))?.name().to_string();
+        let mut num = |what: &str, dflt: Option<f32>| -> Result<f32, String> {
+            match it.next() {
+                Some(t) => t.trim().parse::<f32>().map_err(|_| format!("filter '{s}': {what} must be a number")),
+                None => dflt.ok_or_else(bad),
+            }
+        };
+        let f = TrackFilter { kind, freq: num("frequency", None)?, q: num("q", Some(default_q()))?, gain_db: num("gain", Some(0.0))? };
+        if it.next().is_some() {
+            return Err(bad());
+        }
+        f.check()?;
+        Ok(f)
+    }
+
+    /// Comma-separated list of filters (`none` or empty = no filters).
+    pub fn parse_list(s: &str) -> Result<Vec<TrackFilter>, String> {
+        if s.trim().is_empty() || s.trim() == "none" {
+            return Ok(vec![]);
+        }
+        s.split(',').map(TrackFilter::parse).collect()
+    }
+
+    /// `kind:freq:q[:gain]` as `parse` reads it.
+    pub fn spec(&self) -> String {
+        if self.gain_db != 0.0 {
+            format!("{}:{}:{}:{}", self.kind, self.freq, self.q, self.gain_db)
+        } else {
+            format!("{}:{}:{}", self.kind, self.freq, self.q)
+        }
+    }
+
+    /// Checks that do not need the sample rate (the rest is checked by `biquad::check` when the mix runs).
+    pub fn check(&self) -> Result<(), String> {
+        crate::biquad::FilterKind::parse(&self.kind)?;
+        if !self.freq.is_finite() || self.freq <= 0.0 || self.freq > 384_000.0 {
+            return Err(format!("filter '{}': frequency must be within (0, 384000] Hz", self.kind));
+        }
+        if !self.q.is_finite() || self.q <= 0.0 || f64::from(self.q) > crate::biquad::MAX_Q {
+            return Err(format!("filter '{}': q must be within (0, {}]", self.kind, crate::biquad::MAX_Q));
+        }
+        if !self.gain_db.is_finite() || self.gain_db.abs() > 100.0 {
+            return Err(format!("filter '{}': gain must be within -100..100 dB", self.kind));
+        }
+        Ok(())
+    }
+
+    /// The filter as a `biquad` specification.
+    pub fn to_biquad(&self) -> Result<crate::biquad::BiquadSpec, String> {
+        self.check()?;
+        Ok(crate::biquad::BiquadSpec { kind: crate::biquad::FilterKind::parse(&self.kind)?, f0: f64::from(self.freq), q: f64::from(self.q), gain_db: f64::from(self.gain_db) })
+    }
 }
 
 fn one() -> f32 {
@@ -49,13 +130,13 @@ fn is_zero(v: &f32) -> bool {
 
 impl SoundTrack {
     pub fn new(name: &str, file: &str, start: f32, gain: f32) -> SoundTrack {
-        SoundTrack { name: name.into(), file: file.into(), start, gain, trim_in: 0.0, trim_out: None, fade_in: 0.0, fade_out: 0.0, pan: None }
+        SoundTrack { name: name.into(), file: file.into(), start, gain, trim_in: 0.0, trim_out: None, fade_in: 0.0, fade_out: 0.0, pan: None, filters: vec![] }
     }
 
     /// Length of the clip after trimming, when known (`file_len` is the whole file's length).
     /// Does the track need the sample-domain path (pan and/or filters) before the ffmpeg graph?
     pub fn needs_sample_path(&self) -> bool {
-        self.pan.is_some()
+        self.pan.is_some() || !self.filters.is_empty()
     }
 
     pub fn clip_len(&self, file_len: Option<f32>) -> Option<f32> {
@@ -89,6 +170,9 @@ pub fn check_track(s: &SoundTrack) -> Result<(), String> {
         if !p.is_finite() || !(-1.0..=1.0).contains(&p) {
             return Err(format!("sound '{n}': pan must be a number within -1 (left) .. 1 (right)"));
         }
+    }
+    for f in &s.filters {
+        f.check().map_err(|e| format!("sound '{n}': {e}"))?;
     }
     if let Some(len) = s.clip_len(None) {
         if s.fade_in + s.fade_out > len + 1e-4 {
@@ -194,13 +278,19 @@ pub fn forced_demuxer(path: &std::path::Path) -> Option<&'static str> {
     }
 }
 
-/// The sample-domain stage of a track that has `pan` (spec 03): `samples` are interleaved `channels` (1 or 2) of the decoded,
-/// untrimmed file. Returns the channel count and samples of the processed file (a mono file becomes stereo). A track without
-/// the stage is returned unchanged. More than two channels are refused (no mixing rule is specified for them).
-pub fn process_samples(s: &SoundTrack, channels: usize, samples: &[f32]) -> Result<(usize, Vec<f32>), String> {
+/// The sample-domain stage of a track that has `filters` and/or `pan` (specs 04 and 03): `samples` are interleaved `channels`
+/// of the decoded, untrimmed file at `fs` Hz. The filters run first, in order, each channel on its own (zero initial state, output
+/// limited to -1..1 as `biquad::filter_interleaved` does); then the pan, which needs a mono or stereo file and makes a mono file
+/// stereo. Returns the channel count and samples of the processed file. A track without the stage is returned unchanged.
+pub fn process_samples(s: &SoundTrack, channels: usize, fs: f64, samples: &[f32]) -> Result<(usize, Vec<f32>), String> {
     let n = &s.name;
     let mut ch = channels;
     let mut buf: Vec<f32> = samples.to_vec();
+    for f in &s.filters {
+        let spec = f.to_biquad().map_err(|e| format!("sound '{n}': {e}"))?;
+        crate::biquad::check(fs, &spec).map_err(|e| format!("sound '{n}': {e}"))?;
+        buf = crate::biquad::filter_interleaved(&buf, ch, fs, &spec).map_err(|e| format!("sound '{n}': {e}"))?;
+    }
     if let Some(p) = s.pan {
         buf = match ch {
             1 => {
@@ -555,16 +645,16 @@ mod tests {
     fn process_samples_pans_mono_to_stereo_and_stereo_in_place_and_refuses_more_channels() {
         let mut t = SoundTrack::new("a", "a.wav", 0.0, 1.0);
         // no stage: unchanged
-        assert_eq!(process_samples(&t, 1, &[0.5, -0.5]).unwrap(), (1, vec![0.5, -0.5]));
+        assert_eq!(process_samples(&t, 1, 8000.0, &[0.5, -0.5]).unwrap(), (1, vec![0.5, -0.5]));
         t.pan = Some(-1.0);
-        let (ch, v) = process_samples(&t, 1, &[1.0]).unwrap();
+        let (ch, v) = process_samples(&t, 1, 8000.0, &[1.0]).unwrap();
         assert_eq!(ch, 2);
         assert!((v[0] - 1.0).abs() < 1e-6 && v[1].abs() < 1e-6, "{v:?}");
         t.pan = Some(1.0);
-        let (ch, v) = process_samples(&t, 2, &[0.5, 0.25]).unwrap();
+        let (ch, v) = process_samples(&t, 2, 8000.0, &[0.5, 0.25]).unwrap();
         assert_eq!(ch, 2);
         assert!(v[0].abs() < 1e-6 && (v[1] - 0.75).abs() < 1e-6, "{v:?}");
-        assert!(process_samples(&t, 6, &[0.0; 6]).unwrap_err().contains("6 channels"));
+        assert!(process_samples(&t, 6, 8000.0, &[0.0; 6]).unwrap_err().contains("6 channels"));
     }
 
     #[cfg(unix)]
@@ -582,5 +672,58 @@ mod tests {
         assert_eq!(m.filter, plain.filter);
         assert_eq!(m.inputs[5], "/d/x.wav");
         assert_eq!(m.inputs[11], "/tmp/x/t1.wav");
+    }
+
+    #[test]
+    fn filters_parse_validate_and_round_trip_and_absent_filters_write_nothing() {
+        let f = TrackFilter::parse("LowPass:800").unwrap();
+        assert_eq!((f.kind.as_str(), f.freq, f.gain_db), ("lowpass", 800.0, 0.0));
+        assert!((f.q - 0.70710677).abs() < 1e-6);
+        let g = TrackFilter::parse("highshelf:6000:0.7:3").unwrap();
+        assert_eq!(TrackFilter::parse(&g.spec()).unwrap(), g);
+        for bad in ["", "lowpass", "lowpass:x", "lowpass:-5", "lowpass:100:0", "lowpass:100:5000", "wobble:100", "peaking:100:1:2:9", "peaking:100:1:500"] {
+            assert!(TrackFilter::parse(bad).is_err(), "{bad}");
+        }
+        assert_eq!(TrackFilter::parse_list("none").unwrap(), vec![]);
+        assert_eq!(TrackFilter::parse_list("lowpass:800,notch:50:10").unwrap().len(), 2);
+        let mut p = Project::new("s", 10.0, 10.0, 24.0, 10);
+        add(&mut p, "a", "a.wav", 0.0, 1.0).unwrap();
+        assert!(!p.to_json_pretty().contains("filters"));
+        let mut t = p.sounds[0].clone();
+        t.filters = TrackFilter::parse_list("lowpass:800,peaking:1000:2:6").unwrap();
+        add_track(&mut p, t.clone()).unwrap();
+        let j = p.to_json_pretty();
+        assert!(j.contains("\"filters\"") && j.contains("\"gain_db\": 6.0") && !j.contains("\"gain_db\": 0"));
+        assert_eq!(Project::from_json(&j).unwrap().sounds[0], t);
+        t.filters[0].freq = f32::NAN;
+        assert!(check_track(&t).unwrap_err().contains("sound 'a'"));
+        assert!(t.needs_sample_path());
+    }
+
+    #[test]
+    fn filters_run_before_the_pan_and_use_the_sample_rate() {
+        let fs = 8000.0f64;
+        let tone = |hz: f64| -> Vec<f32> { (0..8000).map(|n| (0.5 * (2.0 * std::f64::consts::PI * hz * n as f64 / fs).sin()) as f32).collect() };
+        let peak = |v: &[f32]| v[4000..].iter().fold(0.0f32, |m, x| m.max(x.abs()));
+        let mut t = SoundTrack::new("a", "a.wav", 0.0, 1.0);
+        t.filters = vec![TrackFilter::parse("lowpass:400").unwrap()];
+        let (ch, low) = process_samples(&t, 1, fs, &tone(100.0)).unwrap();
+        let (_, high) = process_samples(&t, 1, fs, &tone(3000.0)).unwrap();
+        assert_eq!(ch, 1, "filters alone keep the channel count");
+        assert!(peak(&low) > 0.45 && peak(&high) < 0.02, "{} {}", peak(&low), peak(&high));
+        // filter then pan: mono -> stereo, the right channel stays empty at full left
+        t.pan = Some(-1.0);
+        let (ch, v) = process_samples(&t, 1, fs, &tone(100.0)).unwrap();
+        assert_eq!(ch, 2);
+        assert!(v.iter().skip(1).step_by(2).all(|x| x.abs() < 1e-6) && v.iter().step_by(2).fold(0.0f32, |m, x| m.max(x.abs())) > 0.45);
+        // a frequency at or above half the sample rate is refused when the rate is known
+        t.filters = vec![TrackFilter::parse("lowpass:5000").unwrap()];
+        assert!(process_samples(&t, 1, fs, &tone(100.0)).unwrap_err().contains("half the sample rate"));
+        // interleaved stereo: channels filtered separately
+        t.pan = None;
+        t.filters = vec![TrackFilter::parse("lowpass:400").unwrap()];
+        let st: Vec<f32> = tone(100.0).iter().flat_map(|&x| [x, 0.0]).collect();
+        let (ch, v) = process_samples(&t, 2, fs, &st).unwrap();
+        assert!(ch == 2 && v.iter().skip(1).step_by(2).all(|x| *x == 0.0));
     }
 }

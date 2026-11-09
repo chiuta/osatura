@@ -53,7 +53,12 @@ fn prepare_effects(p: &Project, base: &Path, scratch: &Path) -> Result<soundtrac
         let path = soundtrack::track_path(base, s)?;
         osatura_core::assets::check_regular(&path, osatura_core::assets::MAX_AUDIO_BYTES, "sound file")?;
         let (ch, rate, samples) = decode_float(&path, &scratch.join(format!("dec{i}.wav")))?;
-        let (och, out) = soundtrack::process_samples(s, ch, &samples)?;
+        for f in &s.filters {
+            for w in osatura_core::biquad::warnings(f64::from(rate), &f.to_biquad()?) {
+                eprintln!("warning: sound '{}': {w}", s.name);
+            }
+        }
+        let (och, out) = soundtrack::process_samples(s, ch, f64::from(rate), &samples)?;
         let dest = scratch.join(format!("fx{i}.wav"));
         soundtrack::write_samples(&dest, och, rate, &out)?;
         o.insert(i, dest);
@@ -247,5 +252,30 @@ mod tests {
         let peak = |c: usize| v.iter().skip(c).step_by(2).fold(0.0f32, |m, x| m.max(x.abs()));
         let want = base_peak * std::f32::consts::FRAC_1_SQRT_2;
         assert!((peak(0) - want).abs() < 0.02 && (peak(1) - want).abs() < 0.02, "{} {}", peak(0), peak(1));
+    }
+
+    #[test]
+    fn filters_change_the_mixed_audio_before_the_ffmpeg_graph() {
+        if !have_ffmpeg() {
+            return;
+        }
+        let scratch = osatura_core::fsutil::ScratchDir::new("osatura_soundio_filter");
+        let dir = scratch.to_path_buf();
+        steps_wav(&dir.join("steps.wav")); // a 200 Hz square wave
+        let mut p = Project::new("t", 10.0, 10.0, 10.0, 30);
+        soundtrack::add(&mut p, "s", "steps.wav", 0.0, 1.0).unwrap();
+        let out = dir.join("mix.wav");
+        let peak = |p: &Project| {
+            mix_to_file(p, &dir, &out).unwrap();
+            let (_, _, v) = soundtrack::read_samples(&out).unwrap();
+            v.iter().skip(4000).fold(0.0f32, |m, x| m.max(x.abs()))
+        };
+        let plain = peak(&p);
+        p.sounds[0].filters = soundtrack::TrackFilter::parse_list("lowpass:50").unwrap();
+        let hp = peak(&p);
+        assert!(plain > 0.7 && hp < 0.2 * plain, "{plain} {hp}");
+        // a frequency above half the file's rate (8 kHz file: 4 kHz) is refused, not clamped
+        p.sounds[0].filters = soundtrack::TrackFilter::parse_list("lowpass:5000").unwrap();
+        assert!(mix_to_file(&p, &dir, &out).unwrap_err().contains("half the sample rate"));
     }
 }
