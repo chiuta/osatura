@@ -10,6 +10,10 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Fixed
+
+- **Sound filters are capped**: a track may carry at most 32 filters (`MAX_TRACK_FILTERS`); a project file with more is refused by `check` and the other commands, and `--filter` refuses a longer list. Before, a hostile project file with about a million filters on one track made `sound mix` run for minutes (found by adversarial testing of alpha.5).
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Pre-release published on 10 Nov 2026 from `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Crate versions stay `0.1.0`; the release version comes from `OSATURA_VERSION` set by `release.yml`.*

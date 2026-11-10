@@ -86,6 +86,9 @@ impl TrackFilter {
         if s.trim().is_empty() || s.trim() == "none" {
             return Ok(vec![]);
         }
+        if s.matches(',').count() >= MAX_TRACK_FILTERS {
+            return Err(format!("too many filters: at most {MAX_TRACK_FILTERS} are allowed on one track"));
+        }
         s.split(',').map(TrackFilter::parse).collect()
     }
 
@@ -144,6 +147,9 @@ impl SoundTrack {
     }
 }
 
+/// Most filters one sound track may carry (a project file with more is refused; each adds a stage to the mix graph).
+pub const MAX_TRACK_FILTERS: usize = 32;
+
 /// Check one track; the message names the track.
 pub fn check_track(s: &SoundTrack) -> Result<(), String> {
     let n = &s.name;
@@ -170,6 +176,9 @@ pub fn check_track(s: &SoundTrack) -> Result<(), String> {
         if !p.is_finite() || !(-1.0..=1.0).contains(&p) {
             return Err(format!("sound '{n}': pan must be a number within -1 (left) .. 1 (right)"));
         }
+    }
+    if s.filters.len() > MAX_TRACK_FILTERS {
+        return Err(format!("sound '{n}': {} filters; at most {MAX_TRACK_FILTERS} are allowed on one track", s.filters.len()));
     }
     for f in &s.filters {
         f.check().map_err(|e| format!("sound '{n}': {e}"))?;
@@ -697,6 +706,15 @@ mod tests {
         assert_eq!(Project::from_json(&j).unwrap().sounds[0], t);
         t.filters[0].freq = f32::NAN;
         assert!(check_track(&t).unwrap_err().contains("sound 'a'"));
+        // a track carries at most MAX_TRACK_FILTERS filters (a hostile project file cannot ask for millions)
+        let one = TrackFilter::parse("lowpass:800").unwrap();
+        let mut many = SoundTrack::new("b", "b.wav", 0.0, 1.0);
+        many.filters = vec![one.clone(); MAX_TRACK_FILTERS];
+        assert!(check_track(&many).is_ok());
+        many.filters.push(one);
+        assert!(check_track(&many).unwrap_err().contains("at most 32"));
+        assert!(TrackFilter::parse_list(&vec!["lowpass:800"; MAX_TRACK_FILTERS].join(",")).is_ok());
+        assert!(TrackFilter::parse_list(&vec!["lowpass:800"; MAX_TRACK_FILTERS + 1].join(",")).is_err());
         assert!(t.needs_sample_path());
     }
 
