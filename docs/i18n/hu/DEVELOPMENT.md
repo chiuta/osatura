@@ -140,7 +140,7 @@ A projekt független megvalósítás. Röviden (a kötelező érvényű szöveg 
 
 ## 7. Kiadási ellenőrzőlista
 
-A legutóbb közzétett előzetes kiadás a `v0.1.0-alpha.4`; a következő `v0.1.0-alpha.5` néven készül (minden crate továbbra is 0.1.0; a „v0.5/v0.6/v0.7" verziócímkék a README-ben, a FEATURES-ben és a ROADMAP-ben funkciószintek, nem crate-verziók; lásd [CHANGELOG.md](CHANGELOG.md)). Egy kiadás elkészítéséhez:
+A legutóbb közzétett előzetes kiadás a `v0.1.0-alpha.5` néven készül (minden crate továbbra is 0.1.0; a „v0.5/v0.6/v0.7" verziócímkék a README-ben, a FEATURES-ben és a ROADMAP-ben funkciószintek, nem crate-verziók; lásd [CHANGELOG.md](CHANGELOG.md)). Egy kiadás elkészítéséhez:
 
 1. **Verzió.** Döntsd el az egyes crate-ek verzióját. A homlokzatnak saját verziója van (`API_VERSION`, ma 1.4.0: főverzió egy felületi sor eltávolításakor vagy módosításakor, alverzió hozzáadáskor), az `OSATURA_ABI_VERSION` / `arm_abi_version()` (mindkettő 1) pedig csak a C vagy wasm ABI törő változásakor módosul. Igazítsd egymáshoz a `Cargo.toml` verzióit, az `osatura --version` kimenetét, a README állapotdobozát és a CHANGELOG-ot.
 2. **Zöld kapuk.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, az öt Chromium smoke-teszt, `scripts/e2e.sh` (release), `cargo test -p osatura-gpu`, ha a GPU-kód változott.

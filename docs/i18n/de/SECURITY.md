@@ -139,7 +139,7 @@ Ehrliche Liste; für die weitere Liste funktionaler Einschränkungen siehe [LIMI
 * **Eröffne kein öffentliches Issue** für eine Schwachstelle. Sende eine private Meldung an den Maintainer: **`alexio@trom.tf`** (die Adresse im Hinweis des Programms bei `--version` und in den Lizenzdokumenten), oder nutze die private Schwachstellenmeldung von GitHub auf dem Reiter *Security* des Repositorys, sofern sie aktiviert ist.
 * Gib an: Version (`osatura --version`) und Plattform, das Projekt oder die Anfrage, die das Problem auslöst (eine minimale Datei ist am besten), was du erwartet hast und was passiert ist, und ob du namentlich genannt werden möchtest.
 * Was dich erwartet *(Absicht, kein Vertrag: Dies ist ein Ein-Personen-Projekt)*: eine Bestätigung innerhalb angemessener Zeit, ein im Privaten entwickelter Fix, ein der Suite hinzugefügter Regressionstest, ein Vermerk in [CHANGELOG.md](CHANGELOG.md) und auf Wunsch eine Namensnennung. Bitte lass Zeit für einen Fix, bevor du Details veröffentlichst.
-* Unterstützte Versionen: Nur die neueste Vorabversion (derzeit `v0.1.0-alpha.4`) und der aktuelle Baum auf `main` werden unterstützt.
+* Unterstützte Versionen: Nur die neueste Vorabversion (derzeit `v0.1.0-alpha.5`) und der aktuelle Baum auf `main` werden unterstützt.
 * Meldungen zur Netzwerk-Exposition des Studios, wenn es absichtlich ohne Reverse-Proxy an eine öffentliche Adresse gebunden wird, sind zunächst Dokumentationsthemen: siehe Abschnitt 11.
 
 ## 11. Härtungs-Checkliste für Betreiber
