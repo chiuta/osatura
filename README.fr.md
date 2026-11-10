@@ -28,7 +28,7 @@ Principes qui structurent le projet :
 
 *Nom : le projet s'appelait ARMATURA jusqu'au 24 oct. 2026 et a été renommé OSATURA après une recherche de marque ([docs/LIMITATIONS.md](docs/i18n/fr/LIMITATIONS.md) L-78). Le dépôt et l'adresse du site ont également été renommés (les anciens liens du dépôt redirigent).*
 
-> **Alpha. Dernière préversion publiée : `v0.1.0-alpha.4` ; la suivante sera `v0.1.0-alpha.5`.** Les exécutables pour Windows x86-64, macOS arm64 et Linux x86-64 ainsi que le module WebAssembly sont construits par GitHub Actions et joints à une préversion *en brouillon* sur <https://github.com/chiuta/osatura/releases> (un brouillon n'est visible que de son propriétaire tant qu'il n'a pas été publié à la main). Tous les crates sont toujours en version `0.1.0` ; « v0.5 / v0.6 / v0.7 » sont des *niveaux de fonctionnalités* dans l'historique, pas des numéros de version ([CHANGELOG.md](docs/i18n/fr/CHANGELOG.md)).
+> **Alpha. Dernière préversion publiée : `v0.1.0-alpha.5`.** Les exécutables pour Windows x86-64, macOS arm64 et Linux x86-64 ainsi que le module WebAssembly sont construits par GitHub Actions et joints à une préversion *en brouillon* sur <https://github.com/chiuta/osatura/releases> (un brouillon n'est visible que de son propriétaire tant qu'il n'a pas été publié à la main). Tous les crates sont toujours en version `0.1.0` ; « v0.5 / v0.6 / v0.7 » sont des *niveaux de fonctionnalités* dans l'historique, pas des numéros de version ([CHANGELOG.md](docs/i18n/fr/CHANGELOG.md)).
 >
 > | Vérifié | Non vérifié |
 > |---|---|

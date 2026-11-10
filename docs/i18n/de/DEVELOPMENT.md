@@ -140,7 +140,7 @@ Das Projekt ist eine unabhängige Implementierung. Kurz gefasst (verbindlich sin
 
 ## 7. Release-Checkliste
 
-Die zuletzt veröffentlichte Vorabversion ist `v0.1.0-alpha.4`; die nächste wird als `v0.1.0-alpha.5` vorbereitet (alle Crates stehen weiterhin auf 0.1.0; die Versionsbezeichnungen „v0.5/v0.6/v0.7“ in README, FEATURES und ROADMAP sind Feature-Stufen, keine Crate-Versionen; siehe [CHANGELOG.md](CHANGELOG.md)). So erstellst du eine:
+Die zuletzt veröffentlichte Vorabversion ist `v0.1.0-alpha.5` vorbereitet (alle Crates stehen weiterhin auf 0.1.0; die Versionsbezeichnungen „v0.5/v0.6/v0.7“ in README, FEATURES und ROADMAP sind Feature-Stufen, keine Crate-Versionen; siehe [CHANGELOG.md](CHANGELOG.md)). So erstellst du eine:
 
 1. **Version.** Lege die Version jedes Crates fest. Die Fassade hat ihre eigene Version (`API_VERSION`, heute 1.4.0: Major bei Entfernung oder Änderung einer Oberflächenzeile, Minor bei Ergänzung), und `OSATURA_ABI_VERSION` / `arm_abi_version()` (beide 1) ändern sich nur bei einem Breaking Change der C- oder wasm-ABI. Gleiche die `Cargo.toml`-Versionen, die Ausgabe von `osatura --version`, die Statusbox im README und das CHANGELOG ab.
 2. **Grüne Gates.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, die fünf Chromium-Smoke-Tests, `scripts/e2e.sh` (Release), `cargo test -p osatura-gpu`, wenn sich der GPU-Code geändert hat.

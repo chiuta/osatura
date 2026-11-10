@@ -140,7 +140,7 @@ El proyecto es una implementación independiente. En resumen (el texto vinculant
 
 ## 7. Lista de comprobación de publicación
 
-La última versión preliminar publicada es `v0.1.0-alpha.4`; la siguiente se prepara como `v0.1.0-alpha.5` (todos los crates siguen en 0.1.0; las etiquetas de versión "v0.5/v0.6/v0.7" de README, FEATURES y ROADMAP son niveles de funciones, no versiones de crates; véase [CHANGELOG.md](CHANGELOG.md)). Para preparar una:
+La última versión preliminar publicada es `v0.1.0-alpha.5` (todos los crates siguen en 0.1.0; las etiquetas de versión "v0.5/v0.6/v0.7" de README, FEATURES y ROADMAP son niveles de funciones, no versiones de crates; véase [CHANGELOG.md](CHANGELOG.md)). Para preparar una:
 
 1. **Versión.** Decide la versión de cada crate. La fachada tiene su propia versión (`API_VERSION`, hoy 1.4.0: mayor al eliminar o cambiar una línea de la superficie, menor al añadir) y `OSATURA_ABI_VERSION` / `arm_abi_version()` (ambas 1) cambian únicamente ante un cambio incompatible de la ABI de C o de wasm. Alinea las versiones de `Cargo.toml`, la salida de `osatura --version`, el recuadro de estado del README y el CHANGELOG.
 2. **Controles en verde.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, las cinco pruebas de humo de Chromium, `scripts/e2e.sh` (release), `cargo test -p osatura-gpu` si cambió el código de GPU.

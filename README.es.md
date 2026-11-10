@@ -28,7 +28,7 @@ Principios que dan forma al proyecto:
 
 *Nombre: el proyecto se llamó ARMATURA hasta el 24 oct 2026 y pasó a llamarse OSATURA tras una búsqueda de marca ([docs/LIMITATIONS.md](docs/i18n/es/LIMITATIONS.md) L-78). También se cambiaron el nombre del repositorio y la dirección del sitio (los enlaces antiguos al repositorio redirigen).*
 
-> **Alfa. Última versión preliminar publicada: `v0.1.0-alpha.4`; la siguiente será `v0.1.0-alpha.5`.** Los ejecutables para Windows x86-64, macOS arm64 y Linux x86-64 y el módulo WebAssembly los compila GitHub Actions y se adjuntan a una versión preliminar *en borrador* en <https://github.com/chiuta/osatura/releases> (un borrador solo lo ve el propietario hasta que lo publica a mano). Todos los crates siguen en la versión `0.1.0`; "v0.5 / v0.6 / v0.7" son *niveles de funciones* del historial, no números de versión ([CHANGELOG.md](docs/i18n/es/CHANGELOG.md)).
+> **Alfa. Última versión preliminar publicada: `v0.1.0-alpha.5`.** Los ejecutables para Windows x86-64, macOS arm64 y Linux x86-64 y el módulo WebAssembly los compila GitHub Actions y se adjuntan a una versión preliminar *en borrador* en <https://github.com/chiuta/osatura/releases> (un borrador solo lo ve el propietario hasta que lo publica a mano). Todos los crates siguen en la versión `0.1.0`; "v0.5 / v0.6 / v0.7" son *niveles de funciones* del historial, no números de versión ([CHANGELOG.md](docs/i18n/es/CHANGELOG.md)).
 >
 > | Verificado | No verificado |
 > |---|---|

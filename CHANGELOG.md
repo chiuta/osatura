@@ -12,7 +12,7 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [0.1.0-alpha.5] - 2026-11-09
 
-*Pre-release prepared from `main`; the tag `v0.1.0-alpha.5` is created when the release is published. Crate versions stay `0.1.0`; the release version comes from `OSATURA_VERSION` set by `release.yml`.*
+*Pre-release published on 10 Nov 2026 from `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Crate versions stay `0.1.0`; the release version comes from `OSATURA_VERSION` set by `release.yml`.*
 
 ### Added (batch 1: the nine functional specifications, all opt-in)
 
@@ -35,6 +35,9 @@ Related versions that **are** real and independent of the above: the Rust facade
 - `CLEANROOM.md` and `docs/clean-room` now say exactly which modules are wired and what the clean-room filter did (the three filter boxes in the specifications are unticked; the three-stage separation was not followed).
 
 ### Known notes
+
+- **Sound filters are not capped** (found by adversarial testing before publication): a hostile project file with about a million `filters` on one track makes `sound mix` run for minutes. Open only project files you trust; a cap is planned for the next pre-release. `--shutter-phase` also accepts very large finite values (harmless).
+- **WebAssembly export names**: the module still exports its functions with the old `arm_` prefix (ABI version 1); renaming would break the ABI.
 
 - **Wire names**: `switch` and `liquid` remain the file, script and command-line names although the Rust types are `Selector` and `Metaball` (see "Notes for integrators" below).
 - **Keys limit**: `keys curve` refuses to bake more than 2,000,000 keys in total.

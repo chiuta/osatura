@@ -139,7 +139,7 @@ Listă sinceră; vezi [LIMITATIONS.md](LIMITATIONS.md) pentru lista mai largă d
 * **Nu deschide un issue public** pentru o vulnerabilitate. Trimite un raport privat către mentenanță: **`alexio@trom.tf`** (adresa din notificarea `--version` a programului și din documentele de licență), sau folosește raportarea privată de vulnerabilități a GitHub, din fila *Security* a depozitului, când este activată.
 * Include: versiunea (`osatura --version`) și platforma, proiectul sau cererea care declanșează problema (un fișier minimal este cel mai bun), ce te așteptai să se întâmple și ce s-a întâmplat, și dacă dorești să fii menționat.
 * La ce să te aștepți *(intenție, nu contract: acesta este un proiect al unei singure persoane)*: o confirmare într-un timp rezonabil, o remediere dezvoltată în privat, un test de regresie adăugat în suită, o notă în [CHANGELOG.md](CHANGELOG.md) și menționare dacă dorești. Te rugăm să lași timp pentru o remediere înainte de a publica detalii.
-* Versiuni suportate: este suportată doar cea mai nouă pre-lansare (în prezent `v0.1.0-alpha.4`) și arborele curent de pe `main`.
+* Versiuni suportate: este suportată doar cea mai nouă pre-lansare (în prezent `v0.1.0-alpha.5`) și arborele curent de pe `main`.
 * Rapoartele despre expunerea în rețea a studioului când este legat în mod deliberat la o adresă publică fără reverse proxy sunt mai întâi probleme de documentație: vezi secțiunea 11.
 
 ## 11. Listă de consolidare pentru cel care implementează
