@@ -107,11 +107,20 @@ version's source. `/source` is that offer; set `--source-url` to where your buil
 
 ### Toolbar
 
-Undo, Redo, **Save**; checkboxes `bones` (draw the skeleton), `auto-key`, `grid` (spacing in canvas units, 0 = off), `snap` (to other layers and the canvas),
-`whole groups` (a click on part of a group selects the top-level group), `points` (show anchors, handles, cage/lattice/pin points and mesh vertices of
-selected layers); a `box` selector for what a drag-box selects (`touches`, `contains`, `bounds touch`; it starts at `touches`); **Lock**; and the buttons **Overlays**, **Suggest**, **Layout**,
-**Commands** (palette) and **Keys** (shortcut editor). A second row has your name and **Collab**, and the export buttons **GIF**, **HTML player** and **Lottie**,
-which download what `osatura export` would write (the HTML player includes the mixed sound when there is sound and `ffmpeg` can make the mp3). The **Simple view** button hides the editing checkboxes, Overlays, Suggest and the command palette button so that only undo, save, panels and exports remain; the choice is remembered in this browser (or window) and the full toolbar comes back with **Full view**.
+The toolbar has two rows. **First row**: Undo, Redo and **Save** (a small orange dot on Save means the project has changes that are not on disk), an **autosave** switch, and the editing switches `bones` (draw the skeleton), `auto-key`, `grid` (spacing in canvas units, 0 = off), `snap` (to other layers and the canvas),
+`whole groups` (a click on part of a group selects the top-level group) and `points` (show anchors, handles, cage/lattice/pin points and mesh vertices of
+selected layers); a `box` selector for what a drag-box selects (`touches`, `contains`, `bounds touch`; it starts at `touches`); and **Lock**. Switches look like pills and are filled when on. **Second row**: your name and **Collab**, then the buttons **Overlays**, **Demo**, **Suggest**, **Layout**,
+**Commands** (palette), **Keys** (shortcut editor) and **Simple view**, then the time of the last save and the **Export** menu with **GIF**, **HTML player** and **Lottie**,
+which download what `osatura export` would write (the HTML player includes the mixed sound when there is sound and `ffmpeg` can make the mp3). The **Simple view** button hides the editing switches, Overlays, Suggest and the command palette button so that only undo, save, panels and exports remain; the choice is remembered in this browser (or window) and the full toolbar comes back with **Full view**. Hover a button to see its current shortcut (it follows your own bindings). On a narrow screen (under 700 px) the toolbar becomes one row you scroll sideways.
+
+### Saving, unsaved changes and connection
+
+* **Save** writes the project file and says so ("saved 17:52" next to Export). If the save fails, the reason appears in a message that stays for several seconds.
+* **Unsaved changes.** After any edit the Save button shows an orange dot and the browser tab title starts with a dot. Undoing back to the saved state clears them. Closing or reloading the page with unsaved changes asks for confirmation (not in a shared session, and not while the guided demo is loaded, which has its own warning).
+* **Autosave** (off by default, remembered in this browser) saves 3 seconds after your last edit. It does nothing in a shared session or during the demo.
+* **Lost connection.** If the page can no longer reach the studio (the program was closed, or the machine went to sleep), a red banner appears at the top and the page tries again every 3 seconds. When the server is back the banner goes away and the page reloads the project from it.
+* **Quick start.** On the first visit a strip under the toolbar names the three things to know (click to select, **Space** to play, **Ctrl+K** for every command, **?** for the shortcut list) and offers the guided demo. It goes away when you press *Got it*, start the demo, or make your first edit, and stays away in this browser.
+* The frame counter shows the time as well: `12 / 47 · 0.50 s`.
 
 ### Panels and layouts
 
@@ -456,9 +465,9 @@ Web MIDI needs a browser that implements it (Chromium does); the camera needs `g
 shared session. Pointer events are used for dragging; touch screens were not tested.
 
 **Accessibility, honestly.** I did not audit the studio with a screen reader or a keyboard-only session. What exists: a `lang` attribute and viewport meta tag, labelled checkboxes, a
-`role="status"` toast, a few ARIA attributes, **a complete set of keyboard shortcuts and a command palette** that reach every command, rebindable shortcuts, and the `osatura` command line, which does
+`role="status"` toast and save status, `role="alert"` for the lost-connection banner, a toolbar role, visible keyboard focus rings on every control, larger touch targets on touch screens, `prefers-reduced-motion` respected for the new transitions, shortcut hints in tooltips, **a complete set of keyboard shortcuts and a command palette** that reach every command, rebindable shortcuts, and the `osatura` command line, which does
 everything the editor does without a pointer. What is missing: the canvas is a picture and most canvas editing is by pointer (arrow-key nudging exists), there is no light theme and no
-`prefers-reduced-motion` or `prefers-color-scheme` handling, focus outlines are the browser defaults and I did not check them, and I did not measure colour contrast. If you depend on assistive technology,
+`prefers-color-scheme` handling, the older animations (the guided demo's flash) are the only motion not yet covered by the reduced-motion rule beyond what the browser does, and I did not measure colour contrast. If you depend on assistive technology,
 prefer the CLI and the JSON panel, and tell the project what breaks.
 
 ## 12. Known rough edges
