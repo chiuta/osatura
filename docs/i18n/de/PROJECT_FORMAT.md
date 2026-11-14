@@ -96,6 +96,8 @@ Live-Input-Konfiguration, Overlays und die Konfiguration der Gesichtsparameter; 
 Das Projekt serialisiert optionale Listen mit `skip_serializing_if`. Eine von Hand geschriebene Datei kann
 kürzer sein als das, was `osatura` zurückschreibt; beide sind gleichwertig.
 
+Ein JSON Schema (Dialekt 2020-12) der Datei gibt `osatura schema [out.json] [--strict]` aus; es beschreibt die Wurzel, `camera`, `bones` und `ik` Feld für Feld und die übrigen Listen als Arrays von Objekten. Es erlaubt unbekannte Eigenschaften, wie der Lader, es sei denn, `--strict` wird angegeben.
+
 ## 3. Felder der obersten Ebene
 
 | JSON-Name | Typ | Standard | Bereich / Regel | Bedeutung |
@@ -259,6 +261,8 @@ Die gemeinsamen Felder werden in der Ausgabe nach den Art-Feldern geschrieben, a
 | `layers` | array of layers | `[]` | Kinder erben die Transformation der Gruppe. |
 
 ### 5.4 `switch`
+
+Der Rust-Typ dieser Art heißt `Selector` (und `Metaball` für `liquid`), aber das Dateiformat und die Skript-API (`layer_info(path).kind`) behalten aus Kompatibilitätsgründen die Namen `switch` und `liquid`. Beim Lesen werden `selector` und `metaball` als Aliase akzeptiert; Dateien werden immer mit `switch` / `liquid` geschrieben.
 
 | Feld | Typ | Standard | Bedeutung |
 | --- | --- | --- | --- |
@@ -679,8 +683,14 @@ werden durch eine Probekompilierung geprüft.
 Eindimensionales Layout im Flexbox-Stil. Container-Felder: `id`, `members`, `axis` (`row`, `column`), `gap`,
 `cross_gap`, `padding` (4 Zahlen), `justify`, `align`, `wrap`, `rect`. Ein `rect` hat einen `kind`:
 `fixed` (`x,y,w,h`), `pin`, `aspect` oder `hug`. Ein Member hat genau eines von `layer`, `container` oder
-`spacer`, dazu `grow`, `shrink`, `width`, `height`, `align`, `resize`. Grenzen: 100000 Member,
-Verschachtelungstiefe 64. Ein Scroll hat `id`, `viewport`, `content`, `axis`, `offset`, `elastic`, `snap_x`,
+`spacer`, dazu `grow`, `shrink`, `width`, `height`, `align`, `resize` und optional `baseline`.
+`align` ist `start`, `center`, `end`, `stretch` oder `baseline`. In einem Zeilen-Container werden die Member einer Zeile,
+die `baseline` wählen (am Container oder pro Member), so verschoben, dass ihre Grundlinien zusammenfallen;
+`baseline` ist der Abstand von der Oberkante der Box des Members zu seiner Grundlinie (eine Zahl >= 0, bei einem
+Spacer nicht erlaubt; ohne sie ist die Grundlinie die Unterkante der Box). Die Gruppe sitzt am
+Zeilenanfang und legt in einem Container mit Wrap auch die Höhe ihrer Zeile fest. In einem
+Spalten-Container wirkt `baseline` wie `start`. `baseline` wird weggelassen, wenn es nicht gesetzt ist, ein Projekt, das es
+nicht verwendet, bleibt also unverändert. Grenzen: 100000 Member, Verschachtelungstiefe 64. Ein Scroll hat `id`, `viewport`, `content`, `axis`, `offset`, `elastic`, `snap_x`,
 `snap_y`, `fling`, `clip_layer`, `input`.
 
 ```json

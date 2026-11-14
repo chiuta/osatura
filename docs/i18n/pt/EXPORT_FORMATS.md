@@ -294,9 +294,14 @@ glTF 2.0 binário (magic `glTF`, versão 2, `"generator": "osatura"`), apenas re
   traços, e apenas para a forma da máscara no quadro 0. **Camadas de imagem** viram quads texturizados ou malhas de deformação com PNG embutido.
 * **Path morphs** viram morph targets com pesos animados quando a verificação por quadro reproduz a geometria do motor; caso contrário,
   o caminho permanece uma forma estática do quadro 0 e o motivo é informado.
-* **Não exportado (informado como avisos `[glb-limit]`):** modos de mesclagem diferentes de normal (desenhados como normal), opacidade de camada animada (congelada no
-  quadro 0), animação de transformação de camada que não seja de osso, efeitos de camada, deformadores além da sua forma no quadro 0, caminhos animados sem um
-  morph válido, formas de máscara animadas, som.
+* **Não exportado (relatado por avisos `[glb-limit]`):** modos de mesclagem diferentes de normal (desenhados como normal), opacidade animada da camada (congelada no
+  quadro 0), animação de transformação das camadas sem osso (a menos que se dê `--layer-anim`: veja abaixo), efeitos de camada, deformadores para além da sua forma no quadro 0, caminhos animados sem morph
+  válido, formas de máscara animadas, som.
+* **Animação de transformação das camadas (opcional, `--layer-anim`):** cada camada de forma rígida cuja posição, rotação ou escala muda recebe um nó
+  pai com canais LINEAR amostrados de translação, rotação (um quaternião em torno de Z, mantido contínuo para além de meias voltas) e escala, relativos
+  à colocação da camada no quadro 0 e expressos no espaço do osso que a camada segue (ou da cena). Os grupos pai e a
+  câmera já fazem parte da colocação amostrada. As formas com skin e as formas com morph mantêm a sua própria animação; as camadas que não
+  se movem, e qualquer export sem a opção, são gravados como antes. O skew é descartado (relatado).
 * **Coordenadas:** y é negado (o glTF é y-up); as formas são empilhadas com um pequeno deslocamento em z (0.01 por forma) para a ordem de desenho.
 * **Validação:** o cabeçalho é `glTF`, versão 2, e o campo de comprimento é igual ao tamanho do arquivo (one-liner em `python3` na seção 16). Use um validador
   ou visualizador de glTF de sua escolha para a verificação completa; nenhum é incluído e nenhum foi executado para este documento. O exemplo acima tem 22 nós,

@@ -293,9 +293,14 @@ glTF 2.0 binario (número mágico `glTF`, versión 2, `"generator": "osatura"`),
   trazos, y solo para la forma de máscara del fotograma 0. **Las capas de imagen** se convierten en cuadriláteros texturizados o mallas de deformación con PNG incrustado.
 * **Los morphs de ruta** se convierten en morph targets con pesos animados cuando la comprobación por fotograma reproduce la geometría del motor; en caso contrario
   la ruta queda como una forma estática del fotograma 0 y se informa del motivo.
-* **No se exporta (se informa con advertencias `[glb-limit]`):** modos de mezcla distintos de normal (se dibujan como normal), opacidad de capa animada (congelada en el
-  fotograma 0), animación de transformación de capa que no sea de huesos, efectos de capa, deformadores más allá de su forma del fotograma 0, rutas animadas sin un
-  morph válido, formas de máscara animadas, sonido.
+* **No exportado (se informa con avisos `[glb-limit]`):** modos de fusión distintos de normal (se dibujan como normal), opacidad animada de la capa (congelada en el
+  fotograma 0), animación de transformación de las capas sin hueso (salvo que se dé `--layer-anim`: véase abajo), efectos de capa, deformadores más allá de su forma en el fotograma 0, trazados animados sin morph
+  válido, formas de máscara animadas, sonido.
+* **Animación de transformación de capas (opcional, `--layer-anim`):** cada capa de forma rígida cuya posición, rotación o escala cambia recibe un nodo
+  padre con canales LINEAR muestreados de traslación, rotación (un cuaternión alrededor de Z, mantenido continuo más allá de las medias vueltas) y escala, relativos
+  a la colocación de la capa en el fotograma 0 y expresados en el espacio del hueso que sigue la capa (o de la escena). Los grupos padre y la
+  cámara ya forman parte de la colocación muestreada. Las formas skinned y las formas con morph conservan su propia animación; las capas que no
+  se mueven, y cualquier export sin la opción, se escriben como antes. El skew se descarta (se informa).
 * **Coordenadas:** y se niega (glTF tiene y hacia arriba); las formas se apilan con un pequeño desplazamiento en z (0.01 por forma) para el orden de dibujo.
 * **Validación:** la cabecera es `glTF`, versión 2, y el campo de longitud es igual al tamaño del archivo (instrucción de `python3` de una línea en la sección 16). Usa un validador
   o visor de glTF de tu elección para la comprobación completa; no se incluye ninguno ni se ejecutó ninguno para este documento. El ejemplo de arriba tiene 22 nodos,

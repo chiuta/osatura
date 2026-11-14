@@ -294,9 +294,14 @@ glTF 2.0 bináris (`glTF` magic, 2-es verzió, `"generator": "osatura"`), csak a
   és csak a 0. képkocka maszkalakzatára. A **képrétegek** textúrázott négyszögekké vagy deformációs hálókká válnak beágyazott PNG-vel.
 * **Az útvonal-morphok** animált súlyú morph targetekké válnak, ha a képkockánkénti ellenőrzés reprodukálja a motor geometriáját; egyébként
   az útvonal statikus, 0. képkockás alakzat marad, és az okot jelzi a rendszer.
-* **Nincs exportálva (`[glb-limit]` figyelmeztetésként jelezve):** a normáltól eltérő keverési módok (normálként rajzolva), az animált rétegátlátszatlanság (a 0. képkockán
-  befagyasztva), a nem csont rétegtranszformáció-animáció, a rétegeffektek, a deformerek a 0. képkockás alakzatukon túl, az érvényes
-  morph nélküli animált útvonalak, az animált maszkalakzatok, a hang.
+* **Nem exportált (`[glb-limit]` figyelmeztetésként jelentve):** a normáltól eltérő keverési módok (normálként rajzolva), animált rétegátlátszatlanság (befagyasztva a
+  a 0. képkockánál), a csont nélküli rétegek transzformációs animációja (hacsak nincs megadva `--layer-anim`: lásd lent), rétegeffektek, a 0. képkockabeli alakjukon túli deformerek, érvényes morph nélküli animált
+  útvonalak, animált maszkalakzatok, hang.
+* **Rétegtranszformációs animáció (opcionális, `--layer-anim`):** minden merev alakzatréteg, amelynek pozíciója, forgatása vagy méretezése változik, kap egy
+  szülő csomópontot mintavételezett LINEAR csatornákkal az eltolásra, a forgatásra (egy Z körüli kvaternió, a félfordulatokon túl folytonosan tartva) és a méretezésre, a réteg
+  a 0. képkockabeli elhelyezéséhez viszonyítva, annak a csontnak (vagy a jelenetnek) a terében kifejezve, amelyet a réteg követ. A szülőcsoportok és a
+  kamera már része a mintavételezett elhelyezésnek. A skinnelt alakzatok és a morphos alakzatok megtartják a saját animációjukat; a nem
+  mozgó rétegek és a kapcsoló nélküli export a korábbiak szerint íródik. A skew elvetve (jelentve).
 * **Koordináták:** az y negált (a glTF y-fel felfelé áll); az alakzatok kis z-eltolással (alakzatonként 0,01) rétegződnek a rajzolási sorrend érdekében.
 * **Ellenőrzés:** a fejléc `glTF`, 2-es verzió, és a hosszmező megegyezik a fájlmérettel (`python3` egysoros a 16. szakaszban). A teljes ellenőrzéshez használj
   tetszőleges glTF-validátort vagy -megjelenítőt; egyik sincs mellékelve, és ehhez a dokumentumhoz egyiket sem futtattuk. A fenti példában 22 csomópont,

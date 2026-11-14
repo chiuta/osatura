@@ -295,8 +295,13 @@ glTF 2.0 binar (magic `glTF`, versiunea 2, `"generator": "osatura"`), doar func�
 * **Morph-urile de cale** devin ținte morph cu greutăți animate când verificarea pe cadru reproduce geometria motorului; în caz contrar
   calea rămâne o formă statică din cadrul 0, iar motivul este raportat.
 * **Neexportate (raportate ca avertismente `[glb-limit]`):** moduri de blend altele decât normal (desenate ca normal), opacitatea animată a stratului (înghețată la
-  cadrul 0), animația de transformare a straturilor fără os, efecte de strat, deformatoare dincolo de forma lor din cadrul 0, căi animate fără un
-  morph valid, forme de mască animate, sunet.
+  cadrul 0), animația de transformare a straturilor fără os (dacă nu se dă `--layer-anim`: vezi mai jos), efecte de strat, deformatoare dincolo de forma lor din cadrul 0, căi animate fără un morph
+  valid, forme de mască animate, sunet.
+* **Animația de transformare a straturilor (opțională, `--layer-anim`):** fiecare strat de formă rigid a cărui poziție, rotație sau scală se schimbă primește un nod
+  părinte cu canale LINEAR eșantionate de translație, rotație (un cuaternion în jurul lui Z, menținut continuu peste jumătăți de tur) și scală, relative
+  la plasarea stratului din cadrul 0 și exprimate în spațiul osului pe care îl urmează stratul (sau al scenei). Grupurile părinte și
+  camera fac deja parte din plasarea eșantionată. Formele cu skin și formele cu morph își păstrează propria animație; straturile care nu
+  se mișcă și orice export fără opțiune sunt scrise ca înainte. Skew-ul este eliminat (raportat).
 * **Coordonate:** y este negat (glTF are y în sus); formele sunt stratificate cu un mic offset z (0.01 pe formă) pentru ordinea de desenare.
 * **Validare:** antetul este `glTF`, versiunea 2, iar câmpul de lungime este egal cu dimensiunea fișierului (one-liner `python3` în secțiunea 16). Folosește un validator
   sau vizualizator glTF la alegere pentru verificarea completă; niciunul nu este inclus și niciunul nu a fost rulat pentru acest document. Exemplul de mai sus are 22 de noduri,

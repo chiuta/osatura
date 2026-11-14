@@ -96,6 +96,8 @@ la configuración de entrada en directo, las superposiciones y la configuración
 El proyecto se serializa con `skip_serializing_if` para las listas opcionales. Un archivo que escribas a mano puede
 ser más corto que lo que `osatura` escribe de vuelta; ambos son equivalentes.
 
+`osatura schema [out.json] [--strict]` imprime un JSON Schema (dialecto 2020-12) del archivo; describe la raíz, `camera`, `bones` e `ik` campo a campo y las demás listas como arrays de objetos. Permite propiedades desconocidas, igual que el cargador, salvo que se pase `--strict`.
+
 ## 3. Campos de nivel superior
 
 | Nombre JSON | Tipo | Por defecto | Rango / regla | Significado |
@@ -260,6 +262,8 @@ Los campos comunes se escriben después de los campos del tipo en la salida, per
 
 ### 5.4 `switch`
 
+
+El tipo de Rust de esta clase se llama `Selector` (y `Metaball` para `liquid`), pero el formato de archivo y la API de scripting (`layer_info(path).kind`) conservan los nombres `switch` y `liquid` por compatibilidad. Al leer, `selector` y `metaball` se aceptan como alias; los archivos se escriben siempre con `switch` / `liquid`.
 | Campo | Tipo | Por defecto | Significado |
 | --- | --- | --- | --- |
 | `layers` | array de capas | `[]` | Dibujos candidatos. |
@@ -681,9 +685,15 @@ destinos de máquinas y bindings se comprueban mediante una compilación de prue
 Diseño unidimensional al estilo flexbox. Campos de un container: `id`, `members`, `axis` (`row`,
 `column`), `gap`, `cross_gap`, `padding` (4 números), `justify`, `align`, `wrap`, `rect`. Un `rect`
 tiene un `kind`: `fixed` (`x,y,w,h`), `pin`, `aspect` o `hug`. Un miembro tiene exactamente uno de
-`layer`, `container` o `spacer`, además de `grow`, `shrink`, `width`, `height`, `align`, `resize`.
-Límites: 100000 miembros, profundidad de anidamiento 64. Un scroll tiene `id`, `viewport`,
-`content`, `axis`, `offset`, `elastic`, `snap_x`, `snap_y`, `fling`, `clip_layer`, `input`.
+`layer`, `container` o `spacer`, más `grow`, `shrink`, `width`, `height`, `align`, `resize` y `baseline` opcional.
+`align` es `start`, `center`, `end`, `stretch` o `baseline`. En un contenedor de fila, los miembros de una línea
+que eligen `baseline` (en el contenedor o por miembro) se desplazan para que sus líneas base coincidan;
+`baseline` es la distancia desde el borde superior de la caja del miembro hasta su línea base (un número >= 0, no
+permitido en un spacer; sin él, la línea base es el borde inferior de la caja). El grupo se sitúa al
+principio de la línea y, en un contenedor con wrap, fija también la altura de su línea. En un contenedor de
+columna, `baseline` actúa como `start`. `baseline` se omite cuando no está definido, así que un proyecto que no
+lo usa queda sin cambios. Límites: 100000 miembros, profundidad de anidamiento 64. Un scroll tiene `id`, `viewport`, `content`, `axis`, `offset`, `elastic`, `snap_x`,
+`snap_y`, `fling`, `clip_layer`, `input`.
 
 ```json
 "containers": [{"id": "row", "axis": "row", "gap": 4, "padding": [2,2,2,2],
