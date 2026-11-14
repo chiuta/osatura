@@ -56,7 +56,14 @@ pub struct Field {
 
 impl Field {
     pub fn new(name: &str, ty: FieldType) -> Field {
-        Field { name: name.into(), ty, default: None, min: None, max: None, doc: None }
+        Field {
+            name: name.into(),
+            ty,
+            default: None,
+            min: None,
+            max: None,
+            doc: None,
+        }
     }
     pub fn default(mut self, v: Value) -> Field {
         self.default = Some(v);
@@ -88,7 +95,11 @@ pub struct TypeDesc {
 
 impl TypeDesc {
     pub fn new(name: &str, fields: Vec<Field>) -> TypeDesc {
-        TypeDesc { name: name.into(), doc: None, fields }
+        TypeDesc {
+            name: name.into(),
+            doc: None,
+            fields,
+        }
     }
 }
 
@@ -114,8 +125,17 @@ fn num(v: f64) -> Value {
 }
 
 fn check_id(id: &str) -> Result<(), String> {
-    let (scheme, rest) = id.split_once(':').ok_or_else(|| format!("$id '{id}' is not an absolute URI"))?;
-    let ok_scheme = !scheme.is_empty() && scheme.chars().next().is_some_and(|c| c.is_ascii_alphabetic()) && scheme.chars().all(|c| c.is_ascii_alphanumeric() || "+-.".contains(c));
+    let (scheme, rest) = id
+        .split_once(':')
+        .ok_or_else(|| format!("$id '{id}' is not an absolute URI"))?;
+    let ok_scheme = !scheme.is_empty()
+        && scheme
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_alphabetic())
+        && scheme
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || "+-.".contains(c));
     if !ok_scheme || rest.is_empty() {
         return Err(format!("$id '{id}' is not an absolute URI"));
     }
@@ -166,38 +186,59 @@ fn default_fits(ty: &FieldType, v: &Value, min: Option<f64>, max: Option<f64>) -
     }
     let in_range = |x: f64| min.is_none_or(|m| x >= m) && max.is_none_or(|m| x <= m);
     match ty {
-        FieldType::Int => v.as_i64().is_some_and(|x| in_range(x as f64)) || v.as_u64().is_some_and(|x| in_range(x as f64)),
+        FieldType::Int => {
+            v.as_i64().is_some_and(|x| in_range(x as f64))
+                || v.as_u64().is_some_and(|x| in_range(x as f64))
+        }
         FieldType::Real => v.as_f64().is_some_and(in_range),
         FieldType::Text => v.is_string(),
         FieldType::Bool => v.is_boolean(),
         FieldType::Enum(names) => v.as_str().is_some_and(|s| names.iter().any(|n| n == s)),
         FieldType::Const(c) => c == v,
         FieldType::List(_) => v.is_array(),
-        FieldType::Tuple(n) => v.as_array().is_some_and(|a| a.len() == *n && a.iter().all(|x| x.is_number())),
+        FieldType::Tuple(n) => v
+            .as_array()
+            .is_some_and(|a| a.len() == *n && a.iter().all(|x| x.is_number())),
         FieldType::Ref(_) | FieldType::FreeObject => v.is_object(),
         FieldType::Any => true,
     }
 }
 
-fn object_schema(t: &TypeDesc, strict: bool, known: &std::collections::BTreeSet<String>) -> Result<Value, String> {
+fn object_schema(
+    t: &TypeDesc,
+    strict: bool,
+    known: &std::collections::BTreeSet<String>,
+) -> Result<Value, String> {
     let mut props = Map::new();
     let mut required = Vec::new();
     let mut seen = std::collections::BTreeSet::new();
     for f in &t.fields {
         if !seen.insert(f.name.clone()) {
-            return Err(format!("type '{}': field '{}' declared twice", t.name, f.name));
+            return Err(format!(
+                "type '{}': field '{}' declared twice",
+                t.name, f.name
+            ));
         }
         if let (Some(a), Some(b)) = (f.min, f.max) {
             if !a.is_finite() || !b.is_finite() {
-                return Err(format!("type '{}', field '{}': range is not finite", t.name, f.name));
+                return Err(format!(
+                    "type '{}', field '{}': range is not finite",
+                    t.name, f.name
+                ));
             }
             if a > b {
-                return Err(format!("type '{}', field '{}': minimum {a} is above maximum {b}", t.name, f.name));
+                return Err(format!(
+                    "type '{}', field '{}': minimum {a} is above maximum {b}",
+                    t.name, f.name
+                ));
             }
         }
         for r in refs_of(&f.ty) {
             if !known.contains(&r) {
-                return Err(format!("type '{}', field '{}': unknown type '{r}'", t.name, f.name));
+                return Err(format!(
+                    "type '{}', field '{}': unknown type '{r}'",
+                    t.name, f.name
+                ));
             }
         }
         let mut s = match type_schema(&f.ty, 0) {
@@ -259,7 +300,17 @@ fn refs_of(ty: &FieldType) -> Vec<String> {
 
 /// Refs that must be present as a direct required member (no list, no optional): a cycle made only of these can never be satisfied.
 fn required_refs(t: &TypeDesc) -> Vec<String> {
-    t.fields.iter().filter(|f| f.default.is_none()).filter_map(|f| if let FieldType::Ref(n) = &f.ty { Some(n.clone()) } else { None }).collect()
+    t.fields
+        .iter()
+        .filter(|f| f.default.is_none())
+        .filter_map(|f| {
+            if let FieldType::Ref(n) = &f.ty {
+                Some(n.clone())
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 /// Builds the schema document. Errors: an unknown type name, an unsatisfiable cycle of required members, a minimum above a
@@ -272,7 +323,10 @@ pub fn generate(desc: &FormatDesc) -> Result<Value, String> {
             return Err(format!("type '{}' declared twice", t.name));
         }
         if t.name.is_empty() || t.name.contains(['/', '#', '~']) {
-            return Err(format!("type name '{}' cannot be used in a reference", t.name));
+            return Err(format!(
+                "type name '{}' cannot be used in a reference",
+                t.name
+            ));
         }
     }
     // a type that (through required members only) contains itself has no finite instance
@@ -281,7 +335,10 @@ pub fn generate(desc: &FormatDesc) -> Result<Value, String> {
         let mut seen = std::collections::BTreeSet::new();
         while let Some(n) = stack.pop() {
             if n == t.name {
-                return Err(format!("type '{}' requires itself (circular reference without an escape)", t.name));
+                return Err(format!(
+                    "type '{}' requires itself (circular reference without an escape)",
+                    t.name
+                ));
             }
             if !seen.insert(n.clone()) {
                 continue;
@@ -329,7 +386,12 @@ fn type_ok(t: &str, v: &Value) -> bool {
         "array" => v.is_array(),
         "string" => v.is_string(),
         "number" => v.is_number(),
-        "integer" => v.is_i64() || v.is_u64() || v.as_f64().is_some_and(|x| x.is_finite() && x.fract() == 0.0),
+        "integer" => {
+            v.is_i64()
+                || v.is_u64()
+                || v.as_f64()
+                    .is_some_and(|x| x.is_finite() && x.fract() == 0.0)
+        }
         _ => false,
     }
 }
@@ -339,16 +401,27 @@ fn check(root: &Value, s: &Value, v: &Value, path: &str, depth: usize) -> Result
         return Err(format!("{path}: nested too deeply"));
     }
     let Some(o) = s.as_object() else {
-        return if s == &Value::Bool(false) { Err(format!("{path}: nothing is allowed here")) } else { Ok(()) };
+        return if s == &Value::Bool(false) {
+            Err(format!("{path}: nothing is allowed here"))
+        } else {
+            Ok(())
+        };
     };
     if let Some(r) = o.get("$ref").and_then(Value::as_str) {
-        let name = r.strip_prefix("#/$defs/").ok_or_else(|| format!("{path}: unsupported $ref '{r}'"))?;
-        let target = root.get("$defs").and_then(|d| d.get(name)).ok_or_else(|| format!("{path}: $ref '{r}' not found"))?;
+        let name = r
+            .strip_prefix("#/$defs/")
+            .ok_or_else(|| format!("{path}: unsupported $ref '{r}'"))?;
+        let target = root
+            .get("$defs")
+            .and_then(|d| d.get(name))
+            .ok_or_else(|| format!("{path}: $ref '{r}' not found"))?;
         check(root, target, v, path, depth + 1)?;
     }
     match o.get("type") {
         Some(Value::String(t)) if !type_ok(t, v) => return Err(format!("{path}: expected {t}")),
-        Some(Value::Array(ts)) if !ts.iter().filter_map(Value::as_str).any(|t| type_ok(t, v)) => return Err(format!("{path}: wrong type")),
+        Some(Value::Array(ts)) if !ts.iter().filter_map(Value::as_str).any(|t| type_ok(t, v)) => {
+            return Err(format!("{path}: wrong type"))
+        }
         _ => {}
     }
     if let Some(e) = o.get("enum").and_then(Value::as_array) {
@@ -362,15 +435,27 @@ fn check(root: &Value, s: &Value, v: &Value, path: &str, depth: usize) -> Result
         }
     }
     if let Some(x) = v.as_f64() {
-        if o.get("minimum").and_then(Value::as_f64).is_some_and(|m| x < m) {
+        if o.get("minimum")
+            .and_then(Value::as_f64)
+            .is_some_and(|m| x < m)
+        {
             return Err(format!("{path}: below the minimum"));
         }
-        if o.get("maximum").and_then(Value::as_f64).is_some_and(|m| x > m) {
+        if o.get("maximum")
+            .and_then(Value::as_f64)
+            .is_some_and(|m| x > m)
+        {
             return Err(format!("{path}: above the maximum"));
         }
     }
     if let Some(m) = v.as_object() {
-        for r in o.get("required").and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str) {
+        for r in o
+            .get("required")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+        {
             if !m.contains_key(r) {
                 return Err(format!("{path}: required property '{r}' is missing"));
             }
@@ -379,16 +464,24 @@ fn check(root: &Value, s: &Value, v: &Value, path: &str, depth: usize) -> Result
         for (k, val) in m {
             match props.and_then(|p| p.get(k)) {
                 Some(ps) => check(root, ps, val, &format!("{path}.{k}"), depth + 1)?,
-                None if o.get("additionalProperties") == Some(&Value::Bool(false)) => return Err(format!("{path}: property '{k}' is not allowed")),
+                None if o.get("additionalProperties") == Some(&Value::Bool(false)) => {
+                    return Err(format!("{path}: property '{k}' is not allowed"))
+                }
                 None => {}
             }
         }
     }
     if let Some(a) = v.as_array() {
-        if o.get("minItems").and_then(Value::as_u64).is_some_and(|n| (a.len() as u64) < n) {
+        if o.get("minItems")
+            .and_then(Value::as_u64)
+            .is_some_and(|n| (a.len() as u64) < n)
+        {
             return Err(format!("{path}: too few items"));
         }
-        if o.get("maxItems").and_then(Value::as_u64).is_some_and(|n| (a.len() as u64) > n) {
+        if o.get("maxItems")
+            .and_then(Value::as_u64)
+            .is_some_and(|n| (a.len() as u64) > n)
+        {
             return Err(format!("{path}: too many items"));
         }
         if let Some(items) = o.get("items") {
@@ -411,18 +504,26 @@ pub fn project_format(strict: bool) -> FormatDesc {
     let camera = TypeDesc::new(
         "Camera",
         vec![
-            f("position", Tuple(2)).optional().doc("Point of the stage at the screen centre; omitted = stage centre."),
+            f("position", Tuple(2))
+                .optional()
+                .doc("Point of the stage at the screen centre; omitted = stage centre."),
             f("zoom", Real).default(json!(1)),
             f("rotation", Real).default(json!(0)).doc("Degrees."),
-            f("focus", Real).default(json!(1)).doc("Depth of field: the parallax depth in focus."),
-            f("blur", Real).default(json!(12)).doc("Depth of field: blur radius per unit of parallax distance."),
+            f("focus", Real)
+                .default(json!(1))
+                .doc("Depth of field: the parallax depth in focus."),
+            f("blur", Real)
+                .default(json!(12))
+                .doc("Depth of field: blur radius per unit of parallax distance."),
         ],
     );
     let bone = TypeDesc::new(
         "Bone",
         vec![
             f("name", Text),
-            f("parent", Text).optional().doc("Parent bone name; parents are listed before their children."),
+            f("parent", Text)
+                .optional()
+                .doc("Parent bone name; parents are listed before their children."),
             f("length", Real),
             f("rest_offset", Tuple(2)).default(json!([0, 0])),
             f("rest_angle", Real).default(json!(0)).doc("Degrees."),
@@ -438,7 +539,9 @@ pub fn project_format(strict: bool) -> FormatDesc {
             f("target", Text),
             f("bend", Real).default(json!(1)),
             f("mix", Real).default(json!(1)),
-            f("iterations", Int).default(json!(16)).range(Some(0.0), None),
+            f("iterations", Int)
+                .default(json!(16))
+                .range(Some(0.0), None),
             f("soft", Real).default(json!(0)),
             f("stretch", Real).default(json!(1)),
         ],
@@ -446,10 +549,33 @@ pub fn project_format(strict: bool) -> FormatDesc {
     let filter = TypeDesc::new(
         "TrackFilter",
         vec![
-            f("kind", Enum(["lowpass", "highpass", "bandpass", "notch", "allpass", "peaking", "lowshelf", "highshelf"].iter().map(|s| s.to_string()).collect())),
-            f("freq", Real).range(Some(0.0), None).doc("Corner or centre frequency, Hz (> 0)."),
-            f("q", Real).default(json!(std::f64::consts::FRAC_1_SQRT_2)).doc("Quality factor."),
-            f("gain_db", Real).default(json!(0)).doc("dB; peaking and shelves only."),
+            f(
+                "kind",
+                Enum(
+                    [
+                        "lowpass",
+                        "highpass",
+                        "bandpass",
+                        "notch",
+                        "allpass",
+                        "peaking",
+                        "lowshelf",
+                        "highshelf",
+                    ]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+                ),
+            ),
+            f("freq", Real)
+                .range(Some(0.0), None)
+                .doc("Corner or centre frequency, Hz (> 0)."),
+            f("q", Real)
+                .default(json!(std::f64::consts::FRAC_1_SQRT_2))
+                .doc("Quality factor."),
+            f("gain_db", Real)
+                .default(json!(0))
+                .doc("dB; peaking and shelves only."),
         ],
     );
     let sound = TypeDesc::new(
@@ -457,27 +583,42 @@ pub fn project_format(strict: bool) -> FormatDesc {
         vec![
             f("name", Text),
             f("file", Text).doc("Path relative to the project file, or absolute."),
-            f("start", Real).default(json!(0)).doc("Frame at which the sound starts."),
+            f("start", Real)
+                .default(json!(0))
+                .doc("Frame at which the sound starts."),
             f("gain", Real).default(json!(1)).doc("Linear gain 0..4."),
             f("trim_in", Real).default(json!(0)).doc("Seconds."),
-            f("trim_out", Real).optional().doc("Seconds; omitted = to the end of the file."),
+            f("trim_out", Real)
+                .optional()
+                .doc("Seconds; omitted = to the end of the file."),
             f("fade_in", Real).default(json!(0)).doc("Seconds."),
             f("fade_out", Real).default(json!(0)).doc("Seconds."),
-            f("pan", Real).optional().range(Some(-1.0), Some(1.0)).doc("Constant stereo pan, -1 (left) .. 1 (right); omitted = no pan stage."),
-            f("filters", List(Box::new(Ref("TrackFilter".into())))).optional().doc("Biquad filters applied in order before the pan; omitted = none."),
+            f("pan", Real)
+                .optional()
+                .range(Some(-1.0), Some(1.0))
+                .doc("Constant stereo pan, -1 (left) .. 1 (right); omitted = no pan stage."),
+            f("filters", List(Box::new(Ref("TrackFilter".into()))))
+                .optional()
+                .doc("Biquad filters applied in order before the pan; omitted = none."),
         ],
     );
     let root = TypeDesc {
         name: "Project".into(),
         doc: Some("An OSATURA project file.".into()),
         fields: vec![
-            f("format", Const(json!(crate::project::FORMAT_VERSION))).default(json!(crate::project::FORMAT_VERSION)).doc("File-format version; a missing value means 1."),
+            f("format", Const(json!(crate::project::FORMAT_VERSION)))
+                .default(json!(crate::project::FORMAT_VERSION))
+                .doc("File-format version; a missing value means 1."),
             f("name", Text),
             f("width", Real),
             f("height", Real),
             f("fps", Real),
-            f("frames", Int).range(Some(0.0), None).doc("Number of frames."),
-            f("background", Text).optional().doc("Hex colour (#rgb, #rrggbb or #rrggbbaa)."),
+            f("frames", Int)
+                .range(Some(0.0), None)
+                .doc("Number of frames."),
+            f("background", Text)
+                .optional()
+                .doc("Hex colour (#rgb, #rrggbb or #rrggbbaa)."),
             f("color_space", Enum(vec!["srgb".into(), "linear".into()])).default(json!("srgb")),
             f("camera", Ref("Camera".into())).optional(),
             f("bones", List(Box::new(Ref("Bone".into())))).optional(),
@@ -505,7 +646,13 @@ pub fn project_format(strict: bool) -> FormatDesc {
             f("lods", obj_list()).optional(),
         ],
     };
-    FormatDesc { id: PROJECT_SCHEMA_ID.into(), title: "OSATURA project".into(), root, types: vec![bone, camera, ik, sound, filter], strict }
+    FormatDesc {
+        id: PROJECT_SCHEMA_ID.into(),
+        title: "OSATURA project".into(),
+        root,
+        types: vec![bone, camera, ik, sound, filter],
+        strict,
+    }
 }
 
 #[cfg(test)]
@@ -518,8 +665,22 @@ mod tests {
             id: "https://example.org/schema/mini.json".into(),
             title: "mini".into(),
             strict: false,
-            root: TypeDesc::new("Root", vec![Field::new("versiune", Const(json!(3))), Field::new("puncte", List(Box::new(Ref("Punct".into()))))]),
-            types: vec![TypeDesc::new("Punct", vec![Field::new("x", Real), Field::new("y", Real), Field::new("culoare", Enum(vec!["rosu".into(), "verde".into()])).default(json!("rosu"))])],
+            root: TypeDesc::new(
+                "Root",
+                vec![
+                    Field::new("versiune", Const(json!(3))),
+                    Field::new("puncte", List(Box::new(Ref("Punct".into())))),
+                ],
+            ),
+            types: vec![TypeDesc::new(
+                "Punct",
+                vec![
+                    Field::new("x", Real),
+                    Field::new("y", Real),
+                    Field::new("culoare", Enum(vec!["rosu".into(), "verde".into()]))
+                        .default(json!("rosu")),
+                ],
+            )],
         }
     }
 
@@ -551,8 +712,16 @@ mod tests {
         let e = validate(&s, &json!({"versiune": 3, "puncte": [{"x": 1.5}]})).unwrap_err();
         assert!(e.contains("'y'"), "{e}");
         assert!(validate(&s, &json!({"versiune": 4, "puncte": []})).is_err());
-        assert!(validate(&s, &json!({"versiune": 3, "puncte": [{"x": 1, "y": 2, "culoare": "albastru"}]})).is_err());
-        assert!(validate(&s, &json!({"versiune": 3, "puncte": [{"x": 1, "y": 2, "culoare": "verde"}]})).is_ok());
+        assert!(validate(
+            &s,
+            &json!({"versiune": 3, "puncte": [{"x": 1, "y": 2, "culoare": "albastru"}]})
+        )
+        .is_err());
+        assert!(validate(
+            &s,
+            &json!({"versiune": 3, "puncte": [{"x": 1, "y": 2, "culoare": "verde"}]})
+        )
+        .is_ok());
     }
 
     #[test]
@@ -562,7 +731,9 @@ mod tests {
         assert_eq!(a.as_bytes(), b.as_bytes());
         fn sorted(v: &Value) -> bool {
             match v {
-                Value::Object(m) => m.keys().zip(m.keys().skip(1)).all(|(x, y)| x < y) && m.values().all(sorted),
+                Value::Object(m) => {
+                    m.keys().zip(m.keys().skip(1)).all(|(x, y)| x < y) && m.values().all(sorted)
+                }
                 Value::Array(a) => a.iter().all(sorted),
                 _ => true,
             }
@@ -571,7 +742,12 @@ mod tests {
         assert!(sorted(&parsed));
         // the text itself lists keys alphabetically: "$defs" < "$id" < "$schema" < "properties"
         let at = |k: &str| a.find(&format!("\n  \"{k}\"")).unwrap();
-        assert!(at("$defs") < at("$id") && at("$id") < at("$schema") && at("$schema") < at("properties") && at("properties") < at("type"));
+        assert!(
+            at("$defs") < at("$id")
+                && at("$id") < at("$schema")
+                && at("$schema") < at("properties")
+                && at("properties") < at("type")
+        );
     }
 
     #[test]
@@ -606,7 +782,11 @@ mod tests {
                         // members of "properties" and "$defs" are names chosen by the format; "default"/"const"/"enum" hold data
                         let data = matches!(k.as_str(), "default" | "const" | "enum");
                         if !data {
-                            walk(x, allowed, !in_props && matches!(k.as_str(), "properties" | "$defs"));
+                            walk(
+                                x,
+                                allowed,
+                                !in_props && matches!(k.as_str(), "properties" | "$defs"),
+                            );
                         }
                     }
                 }
@@ -623,22 +803,33 @@ mod tests {
         use FieldType::*;
         let mut d = mini();
         d.types[0].fields[0] = Field::new("x", Real).range(Some(5.0), Some(3.0));
-        assert!(generate(&d).unwrap_err().contains("minimum 5 is above maximum 3"));
+        assert!(generate(&d)
+            .unwrap_err()
+            .contains("minimum 5 is above maximum 3"));
         let mut d = mini();
         d.types[0].fields[2] = Field::new("culoare", Enum(vec![]));
         assert!(generate(&d).is_err());
         let mut d = mini();
-        d.types[0].fields.push(Field::new("alt", Ref("Lipsa".into())));
+        d.types[0]
+            .fields
+            .push(Field::new("alt", Ref("Lipsa".into())));
         assert!(generate(&d).unwrap_err().contains("unknown type"));
         let mut d = mini();
         d.types[0].fields[2] = Field::new("culoare", Enum(vec!["a".into()])).default(json!("b"));
         assert!(generate(&d).unwrap_err().contains("default"));
         let mut d = mini();
-        d.types[0].fields.push(Field::new("eu", Ref("Punct".into())));
+        d.types[0]
+            .fields
+            .push(Field::new("eu", Ref("Punct".into())));
         assert!(generate(&d).unwrap_err().contains("requires itself"));
         let mut d = mini();
-        d.types[0].fields.push(Field::new("eu", List(Box::new(Ref("Punct".into())))));
-        assert!(generate(&d).is_ok(), "a list of itself is fine (empty list)");
+        d.types[0]
+            .fields
+            .push(Field::new("eu", List(Box::new(Ref("Punct".into())))));
+        assert!(
+            generate(&d).is_ok(),
+            "a list of itself is fine (empty list)"
+        );
         let mut d = mini();
         d.id = "nu-e-uri".into();
         assert!(generate(&d).is_err());
@@ -647,7 +838,10 @@ mod tests {
         let mut d = mini();
         d.root.fields.clear();
         d.types.clear();
-        assert!(generate(&d).is_ok(), "a format without fields is an empty object");
+        assert!(
+            generate(&d).is_ok(),
+            "a format without fields is an empty object"
+        );
     }
 
     #[test]
@@ -678,13 +872,30 @@ mod tests {
             v["sounds"] = json!([snd]);
             v
         };
-        assert!(validate(&s, &with(json!({"name": "a", "file": "a.wav", "start": 0, "gain": 1}))).is_ok());
+        assert!(validate(
+            &s,
+            &with(json!({"name": "a", "file": "a.wav", "start": 0, "gain": 1}))
+        )
+        .is_ok());
         let new = json!({"name": "a", "file": "a.wav", "pan": -0.5, "filters": [{"kind": "lowpass", "freq": 800}, {"kind": "peaking", "freq": 1000, "q": 2, "gain_db": 3}]});
         assert!(validate(&s, &with(new)).is_ok());
         assert!(validate(&s, &with(json!({"name": "a", "file": "a.wav", "pan": 2}))).is_err());
-        assert!(validate(&s, &with(json!({"name": "a", "file": "a.wav", "filters": [{"kind": "wobble", "freq": 1}]}))).is_err());
-        assert!(validate(&s, &json!({"name": "x", "width": 1, "height": 1, "fps": 1})).is_err(), "frames is required");
-        assert!(validate(&s, &json!({"format": 2, "name": "x", "width": 1, "height": 1, "fps": 1, "frames": 1})).is_err());
+        assert!(validate(
+            &s,
+            &with(
+                json!({"name": "a", "file": "a.wav", "filters": [{"kind": "wobble", "freq": 1}]})
+            )
+        )
+        .is_err());
+        assert!(
+            validate(&s, &json!({"name": "x", "width": 1, "height": 1, "fps": 1})).is_err(),
+            "frames is required"
+        );
+        assert!(validate(
+            &s,
+            &json!({"format": 2, "name": "x", "width": 1, "height": 1, "fps": 1, "frames": 1})
+        )
+        .is_err());
         assert!(validate(&s, &json!({"name": "x", "width": 1, "height": 1, "fps": 1, "frames": 1, "color_space": "cmyk"})).is_err());
     }
 }

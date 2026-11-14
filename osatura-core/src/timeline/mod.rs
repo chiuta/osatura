@@ -24,13 +24,13 @@ use crate::timeline_graph::{self as g, HandleMode, HandlePos, Side, TangentKind}
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-mod model;
-mod keys;
 mod edits;
+mod keys;
+mod model;
 
-pub use model::*;
-pub use keys::*;
 pub use edits::*;
+pub use keys::*;
+pub use model::*;
 
 #[cfg(test)]
 mod tests;

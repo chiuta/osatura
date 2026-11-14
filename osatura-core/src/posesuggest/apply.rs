@@ -37,7 +37,12 @@ pub(super) fn solve_linear(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<
 
 /// One undoable batch that keys the candidate's rotations at `frame`. Locked channels are skipped (and returned);
 /// an error if nothing can be written.
-pub fn apply_op(project: &Project, values: &[BoneValue], frame: f32, ease: Ease) -> Result<(Op, Vec<String>), String> {
+pub fn apply_op(
+    project: &Project,
+    values: &[BoneValue],
+    frame: f32,
+    ease: Ease,
+) -> Result<(Op, Vec<String>), String> {
     if !frame.is_finite() || frame < 0.0 {
         return Err("frame must be a finite number >= 0".into());
     }
@@ -58,7 +63,12 @@ pub fn apply_op(project: &Project, values: &[BoneValue], frame: f32, ease: Ease)
             skipped.push(v.bone.clone());
             continue;
         }
-        let pos = channels.iter().position(|c| c.target == v.bone && c.prop == Prop::BoneAngle && matches!(c.source, Source::Keys { .. }) && !crate::skins::is_collapse_channel(c));
+        let pos = channels.iter().position(|c| {
+            c.target == v.bone
+                && c.prop == Prop::BoneAngle
+                && matches!(c.source, Source::Keys { .. })
+                && !crate::skins::is_collapse_channel(c)
+        });
         match pos {
             Some(i) => {
                 if let Source::Keys { track } = &mut channels[i].source {
@@ -68,7 +78,11 @@ pub fn apply_op(project: &Project, values: &[BoneValue], frame: f32, ease: Ease)
                     touched.push(i);
                 }
             }
-            None => added.push(Channel::keys(&v.bone, Prop::BoneAngle, Track::with_keys(&[(frame, v.angle, ease)]))),
+            None => added.push(Channel::keys(
+                &v.bone,
+                Prop::BoneAngle,
+                Track::with_keys(&[(frame, v.angle, ease)]),
+            )),
         }
     }
     if touched.is_empty() && added.is_empty() {
@@ -76,13 +90,22 @@ pub fn apply_op(project: &Project, values: &[BoneValue], frame: f32, ease: Ease)
     }
     let need = frame.ceil() as u32 + 1;
     if need > project.frames {
-        ops.push(Op::Set { path: "/frames".into(), value: serde_json::json!(need) });
+        ops.push(Op::Set {
+            path: "/frames".into(),
+            value: serde_json::json!(need),
+        });
     }
     for i in touched {
-        ops.push(Op::Set { path: format!("/channels/{i}"), value: serde_json::to_value(&channels[i]).map_err(|e| e.to_string())? });
+        ops.push(Op::Set {
+            path: format!("/channels/{i}"),
+            value: serde_json::to_value(&channels[i]).map_err(|e| e.to_string())?,
+        });
     }
     for c in added {
-        ops.push(Op::Insert { path: "/channels/-".into(), value: serde_json::to_value(&c).map_err(|e| e.to_string())? });
+        ops.push(Op::Insert {
+            path: "/channels/-".into(),
+            value: serde_json::to_value(&c).map_err(|e| e.to_string())?,
+        });
     }
     Ok((Op::Batch { ops }, skipped))
 }
@@ -123,13 +146,34 @@ pub struct Request {
 }
 
 /// Run a request against a project. The caller builds the [`Suggester`] (from the project, a library or a saved database).
-pub fn suggest(project: &Project, sg: &Suggester, req: &Request, model: Option<&Mlp>) -> Result<Suggestions, String> {
+pub fn suggest(
+    project: &Project,
+    sg: &Suggester,
+    req: &Request,
+    model: Option<&Mlp>,
+) -> Result<Suggestions, String> {
     let bones = &sg.db.bones;
-    let locked: Vec<String> = bones.iter().filter(|b| crate::chanmeta::is_locked(project, b, Prop::BoneAngle)).cloned().collect();
+    let locked: Vec<String> = bones
+        .iter()
+        .filter(|b| crate::chanmeta::is_locked(project, b, Prop::BoneAngle))
+        .cloned()
+        .collect();
     let mut notes: Vec<String> = Vec::new();
-    let missing: Vec<&String> = bones.iter().filter(|b| !project.bones.iter().any(|x| x.name == **b)).collect();
+    let missing: Vec<&String> = bones
+        .iter()
+        .filter(|b| !project.bones.iter().any(|x| x.name == **b))
+        .collect();
     if !missing.is_empty() {
-        notes.push(format!("{} library bone(s) are not in this project and are ignored: {}", missing.len(), missing.iter().take(6).map(|s| s.as_str()).collect::<Vec<_>>().join(", ")));
+        notes.push(format!(
+            "{} library bone(s) are not in this project and are ignored: {}",
+            missing.len(),
+            missing
+                .iter()
+                .take(6)
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
     }
     let frame_ok = |f: Option<f32>, what: &str| -> Result<f32, String> {
         let f = f.ok_or_else(|| format!("{what} is required"))?;
@@ -142,22 +186,51 @@ pub fn suggest(project: &Project, sg: &Suggester, req: &Request, model: Option<&
         "between" => {
             let (fa, fb) = (frame_ok(req.a, "a")?, frame_ok(req.b, "b")?);
             let t = req.t.unwrap_or(0.5);
-            let c = sg.between(&pose_at(project, bones, fa), &pose_at(project, bones, fb), t, req.snap.unwrap_or(0.5), req.k.unwrap_or(6))?;
+            let c = sg.between(
+                &pose_at(project, bones, fa),
+                &pose_at(project, bones, fb),
+                t,
+                req.snap.unwrap_or(0.5),
+                req.k.unwrap_or(6),
+            )?;
             ("between", c, fa + (fb - fa) * t)
         }
         "complete" => {
             let f = frame_ok(req.frame, "frame")?;
             let cur = pose_at(project, bones, f);
-            let base: Vec<f32> = project.bones.iter().map(|b| pose_at(project, std::slice::from_ref(&b.name), f)[0]).collect();
-            let c = sg.complete(Some(project), &req.constraints, &cur, Some(&base), req.free.as_deref(), &locked, req.prior.unwrap_or(1.0), req.top.max(1), model)?;
+            let base: Vec<f32> = project
+                .bones
+                .iter()
+                .map(|b| pose_at(project, std::slice::from_ref(&b.name), f)[0])
+                .collect();
+            let c = sg.complete(
+                Some(project),
+                &req.constraints,
+                &cur,
+                Some(&base),
+                req.free.as_deref(),
+                &locked,
+                req.prior.unwrap_or(1.0),
+                req.top.max(1),
+                model,
+            )?;
             ("complete", c, f)
         }
         "next" => {
             let f = frame_ok(req.frame, "frame")?;
-            let c = sg.next(&pose_at(project, bones, f), f, req.k.unwrap_or(8), req.top.max(1))?;
+            let c = sg.next(
+                &pose_at(project, bones, f),
+                f,
+                req.k.unwrap_or(8),
+                req.top.max(1),
+            )?;
             ("next", c, f)
         }
-        k => return Err(format!("unknown suggestion kind '{k}' (between, complete, next)")),
+        k => {
+            return Err(format!(
+                "unknown suggestion kind '{k}' (between, complete, next)"
+            ))
+        }
     };
     cands.truncate(req.top.max(1));
     for c in cands.iter_mut() {
@@ -167,7 +240,10 @@ pub fn suggest(project: &Project, sg: &Suggester, req: &Request, model: Option<&
     }
     let locked_skipped = sg.bind(&mut cands, project, req.free.as_deref());
     if !locked_skipped.is_empty() {
-        notes.push(format!("locked channels are left alone: {}", locked_skipped.join(", ")));
+        notes.push(format!(
+            "locked channels are left alone: {}",
+            locked_skipped.join(", ")
+        ));
     }
     Ok(Suggestions {
         kind: kind.into(),
@@ -187,13 +263,26 @@ pub fn suggest(project: &Project, sg: &Suggester, req: &Request, model: Option<&
 
 /// Predict a full pose from observed bone values with a pose-completion [`Mlp`] (see `tinymlp` for the contract).
 /// The model's bone list must equal `bones`.
-pub fn predict_completion(m: &Mlp, bones: &[String], observed: &[Option<f32>]) -> Result<Vec<f32>, String> {
+pub fn predict_completion(
+    m: &Mlp,
+    bones: &[String],
+    observed: &[Option<f32>],
+) -> Result<Vec<f32>, String> {
     let d = bones.len();
     if m.bones != bones {
-        return Err(format!("the model was trained for bones [{}], the library has [{}]", m.bones.join(", "), bones.join(", ")));
+        return Err(format!(
+            "the model was trained for bones [{}], the library has [{}]",
+            m.bones.join(", "),
+            bones.join(", ")
+        ));
     }
     if m.n_in() != 2 * d || m.n_out() != d {
-        return Err(format!("the model has {} inputs / {} outputs, a completion model for {d} bones needs {} / {d}", m.n_in(), m.n_out(), 2 * d));
+        return Err(format!(
+            "the model has {} inputs / {} outputs, a completion model for {d} bones needs {} / {d}",
+            m.n_in(),
+            m.n_out(),
+            2 * d
+        ));
     }
     let mean = |j: usize| m.mean.get(j).copied().unwrap_or(0.0);
     let scale = |j: usize| m.scale.get(j).copied().unwrap_or(1.0);
@@ -205,7 +294,9 @@ pub fn predict_completion(m: &Mlp, bones: &[String], observed: &[Option<f32>]) -
         }
     }
     let y = m.forward(&x);
-    Ok((0..d).map(|j| observed[j].unwrap_or(y[j] * scale(j) + mean(j))).collect())
+    Ok((0..d)
+        .map(|j| observed[j].unwrap_or(y[j] * scale(j) + mean(j)))
+        .collect())
 }
 
 /// Train a pose-completion network on the database: random subsets of bones are observed and the network
@@ -220,8 +311,20 @@ pub fn train_completion(db: &PoseDb, o: &TrainOpts) -> Result<(Mlp, Vec<f32>), S
         return Err("training needs at least 4 poses".into());
     }
     let n = db.poses.len();
-    let mean: Vec<f32> = (0..d).map(|j| db.poses.iter().map(|p| p[j]).sum::<f32>() / n as f32).collect();
-    let scale: Vec<f32> = (0..d).map(|j| (db.poses.iter().map(|p| (p[j] - mean[j]).powi(2)).sum::<f32>() / n as f32).sqrt().max(1.0)).collect();
+    let mean: Vec<f32> = (0..d)
+        .map(|j| db.poses.iter().map(|p| p[j]).sum::<f32>() / n as f32)
+        .collect();
+    let scale: Vec<f32> = (0..d)
+        .map(|j| {
+            (db.poses
+                .iter()
+                .map(|p| (p[j] - mean[j]).powi(2))
+                .sum::<f32>()
+                / n as f32)
+                .sqrt()
+                .max(1.0)
+        })
+        .collect();
     let poses = &db.poses;
     let (mean_c, scale_c) = (mean.clone(), scale.clone());
     let mut sample = move |rng: &mut Rng| {
@@ -251,7 +354,14 @@ pub fn train_completion(db: &PoseDb, o: &TrainOpts) -> Result<(Mlp, Vec<f32>), S
         (x, t, w)
     };
     let (layers, hist) = tinymlp::train(2 * d, d, o, n.max(32), &mut sample)?;
-    let m = Mlp { format: "osatura-mlp".into(), version: 1, bones: db.bones.clone(), mean, scale, layers: layers.into_iter().collect::<Vec<Dense>>() };
+    let m = Mlp {
+        format: "osatura-mlp".into(),
+        version: 1,
+        bones: db.bones.clone(),
+        mean,
+        scale,
+        layers: layers.into_iter().collect::<Vec<Dense>>(),
+    };
     m.validate()?;
     Ok((m, hist))
 }

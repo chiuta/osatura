@@ -3,65 +3,140 @@
 //! Tests of `machine`.
 
 use super::*;
+use crate::anim::Key;
 use crate::binding::{Binding, Remap, Target};
 use crate::clipstack::Clip;
 use crate::motionlib::{Take, TakeTrack};
-use crate::anim::Key;
 
 fn k(f: f32, v: f32) -> Key {
-    Key { frame: f, value: v, ease: Ease::Linear }
+    Key {
+        frame: f,
+        value: v,
+        ease: Ease::Linear,
+    }
 }
 
 fn take(name: &str, len: f32, target: &str, prop: Prop, a: f32, b: f32) -> Take {
-    Take { name: name.into(), length: len, tracks: vec![TakeTrack { target: target.into(), prop, keys: vec![k(0.0, a), k(len, b)] }] }
+    Take {
+        name: name.into(),
+        length: len,
+        tracks: vec![TakeTrack {
+            target: target.into(),
+            prop,
+            keys: vec![k(0.0, a), k(len, b)],
+        }],
+    }
 }
 
 /// 24 fps project with a bone "arm", layers "body" and "eye", clips idle (angle 0), walk
 /// (angle 10..20, 24 frames), run (angle 40, 24 frames), wave (once, 12 frames, angle 90).
 fn project() -> Project {
     let mut p = Project::new("m", 100.0, 100.0, 24.0, 48);
-    p.bones.push(crate::project::Bone::new("arm", None, 10.0, crate::math::Vec2::new(0.0, 0.0), 0.0));
-    p.bones.push(crate::project::Bone::new("leg", None, 10.0, crate::math::Vec2::new(0.0, 0.0), 0.0));
+    p.bones.push(crate::project::Bone::new(
+        "arm",
+        None,
+        10.0,
+        crate::math::Vec2::new(0.0, 0.0),
+        0.0,
+    ));
+    p.bones.push(crate::project::Bone::new(
+        "leg",
+        None,
+        10.0,
+        crate::math::Vec2::new(0.0, 0.0),
+        0.0,
+    ));
     let mk = |n: &str, t: Take| Clip::new(n, t);
     p.clips = vec![
         mk("idle", take("idle", 24.0, "arm", Prop::BoneAngle, 0.0, 0.0)),
-        mk("walk", take("walk", 24.0, "arm", Prop::BoneAngle, 10.0, 20.0)),
+        mk(
+            "walk",
+            take("walk", 24.0, "arm", Prop::BoneAngle, 10.0, 20.0),
+        ),
         mk("run", take("run", 24.0, "arm", Prop::BoneAngle, 40.0, 40.0)),
-        mk("wave", take("wave", 12.0, "arm", Prop::BoneAngle, 90.0, 90.0)),
-        mk("legsit", take("legsit", 24.0, "leg", Prop::BoneAngle, 5.0, 5.0)),
+        mk(
+            "wave",
+            take("wave", 12.0, "arm", Prop::BoneAngle, 90.0, 90.0),
+        ),
+        mk(
+            "legsit",
+            take("legsit", 24.0, "leg", Prop::BoneAngle, 5.0, 5.0),
+        ),
     ];
     p
 }
 
 fn st(name: &str, clip: &str) -> State {
-    State { name: name.into(), source: StateSource::Clip { clip: clip.into() }, mode: PlayMode::Loop, speed: 1.0, blend_in: 0.0 }
+    State {
+        name: name.into(),
+        source: StateSource::Clip { clip: clip.into() },
+        mode: PlayMode::Loop,
+        speed: 1.0,
+        blend_in: 0.0,
+    }
 }
 fn tr(from: &str, to: &str, conds: Vec<Condition>) -> Transition {
-    Transition { from: from.into(), to: to.into(), conditions: conds, exit_time: None, duration: Some(0.0), ease: Ease::Linear }
+    Transition {
+        from: from.into(),
+        to: to.into(),
+        conditions: conds,
+        exit_time: None,
+        duration: Some(0.0),
+        ease: Ease::Linear,
+    }
 }
 fn cond(input: &str, op: Cmp, value: f64) -> Condition {
-    Condition { input: input.into(), op, value }
+    Condition {
+        input: input.into(),
+        op,
+        value,
+    }
 }
 fn inp(name: &str, kind: InputKind) -> Input {
-    Input { name: name.into(), kind, default: 0.0, hold: false }
+    Input {
+        name: name.into(),
+        kind,
+        default: 0.0,
+        hold: false,
+    }
 }
 fn layer(name: &str, entry: &str, states: Vec<State>, trans: Vec<Transition>) -> Layer {
-    Layer { name: name.into(), mask: vec![], entry: entry.into(), states, transitions: trans }
+    Layer {
+        name: name.into(),
+        mask: vec![],
+        entry: entry.into(),
+        states,
+        transitions: trans,
+    }
 }
 
 fn base_machine() -> Machine {
     Machine {
         name: "m".into(),
-        inputs: vec![inp("moving", InputKind::Bool), inp("speed", InputKind::Number), inp("wave", InputKind::Trigger)],
+        inputs: vec![
+            inp("moving", InputKind::Bool),
+            inp("speed", InputKind::Number),
+            inp("wave", InputKind::Trigger),
+        ],
         layers: vec![layer(
             "body",
             "idle",
-            vec![st("idle", "idle"), st("walk", "walk"), State { mode: PlayMode::Once, ..st("wave", "wave") }],
+            vec![
+                st("idle", "idle"),
+                st("walk", "walk"),
+                State {
+                    mode: PlayMode::Once,
+                    ..st("wave", "wave")
+                },
+            ],
             vec![
                 tr("idle", "walk", vec![cond("moving", Cmp::Eq, 1.0)]),
                 tr("walk", "idle", vec![cond("moving", Cmp::Eq, 0.0)]),
                 tr("*", "wave", vec![cond("wave", Cmp::Eq, 1.0)]),
-                Transition { exit_time: Some(1.0), ..tr("wave", "idle", vec![]) },
+                Transition {
+                    exit_time: Some(1.0),
+                    ..tr("wave", "idle", vec![])
+                },
             ],
         )],
     }
@@ -73,15 +148,22 @@ fn unknown_keys_in_a_transition_are_an_error_not_an_always_firing_transition() {
     let good = r#"{"from":"idle","to":"walk","when":[{"input":"moving"}]}"#;
     assert!(serde_json::from_str::<Transition>(good).is_ok());
     let typo = r#"{"from":"idle","to":"walk","conditions":[{"input":"moving"}]}"#;
-    let err = serde_json::from_str::<Transition>(typo).unwrap_err().to_string();
+    let err = serde_json::from_str::<Transition>(typo)
+        .unwrap_err()
+        .to_string();
     assert!(err.contains("unknown field `conditions`"), "{err}");
     let bad_cond = r#"{"from":"idle","to":"walk","when":[{"input":"moving","vaule":1}]}"#;
-    assert!(serde_json::from_str::<Transition>(bad_cond).unwrap_err().to_string().contains("vaule"));
+    assert!(serde_json::from_str::<Transition>(bad_cond)
+        .unwrap_err()
+        .to_string()
+        .contains("vaule"));
     // and through a whole project file
     let mut p = project();
     p.machines.push(base_machine());
     let text = p.to_json_pretty().replace("\"when\"", "\"conditions\"");
-    let err = Project::from_json(&text).expect_err("must not load").to_string();
+    let err = Project::from_json(&text)
+        .expect_err("must not load")
+        .to_string();
     assert!(err.contains("conditions"), "{err}");
 }
 
@@ -91,7 +173,10 @@ fn rt_of(m: Machine, mut p: Project) -> MachineRuntime {
 }
 
 fn angle(rt: &MachineRuntime) -> f32 {
-    rt.pose().get("arm", Prop::BoneAngle).map(|x| x.0).unwrap_or(f32::NAN)
+    rt.pose()
+        .get("arm", Prop::BoneAngle)
+        .map(|x| x.0)
+        .unwrap_or(f32::NAN)
 }
 
 #[test]
@@ -109,8 +194,20 @@ fn transitions_by_inputs() {
     rt.step(0.02).unwrap();
     assert_eq!(rt.state_of("body"), Some("idle"));
     let ev = rt.take_events();
-    let kinds: Vec<String> = ev.iter().map(|e| format!("{:?}:{}", e.kind, e.state)).collect();
-    assert_eq!(kinds, ["Entered:idle", "Exited:idle", "Entered:walk", "Exited:walk", "Entered:idle"]);
+    let kinds: Vec<String> = ev
+        .iter()
+        .map(|e| format!("{:?}:{}", e.kind, e.state))
+        .collect();
+    assert_eq!(
+        kinds,
+        [
+            "Entered:idle",
+            "Exited:idle",
+            "Entered:walk",
+            "Exited:walk",
+            "Entered:idle"
+        ]
+    );
     assert!(rt.take_events().is_empty());
 }
 
@@ -175,7 +272,10 @@ fn exit_time_waits_for_the_fraction() {
     let mut m = base_machine();
     m.layers[0].states.truncate(2);
     m.layers[0].entry = "walk".into();
-    m.layers[0].transitions = vec![Transition { exit_time: Some(0.5), ..tr("walk", "idle", vec![]) }];
+    m.layers[0].transitions = vec![Transition {
+        exit_time: Some(0.5),
+        ..tr("walk", "idle", vec![])
+    }];
     let mut rt = rt_of(m, project());
     rt.step(0.4).unwrap(); // 0.4 s of a 1 s clip
     assert_eq!(rt.state_of("body"), Some("walk"));
@@ -184,7 +284,10 @@ fn exit_time_waits_for_the_fraction() {
     // exit time combined with a condition needs both
     let mut m = base_machine();
     m.layers[0].states.truncate(2);
-    m.layers[0].transitions = vec![Transition { exit_time: Some(0.5), ..tr("idle", "walk", vec![cond("moving", Cmp::Eq, 1.0)]) }];
+    m.layers[0].transitions = vec![Transition {
+        exit_time: Some(0.5),
+        ..tr("idle", "walk", vec![cond("moving", Cmp::Eq, 1.0)])
+    }];
     let mut rt = rt_of(m, project());
     rt.set_bool("moving", true).unwrap();
     rt.step(0.3).unwrap();
@@ -217,7 +320,12 @@ fn crossfade_blends_and_finishes() {
     let before = angle(&rt);
     rt.set_bool("moving", false).unwrap();
     rt.step(0.0).unwrap();
-    assert!((angle(&rt) - before).abs() < 0.3, "no jump at the interrupt: {} vs {}", angle(&rt), before);
+    assert!(
+        (angle(&rt) - before).abs() < 0.3,
+        "no jump at the interrupt: {} vs {}",
+        angle(&rt),
+        before
+    );
     rt.step(1.1).unwrap();
     assert!(angle(&rt).abs() < 1e-3);
 }
@@ -234,16 +342,33 @@ fn blend_tree_weights() {
         source: StateSource::Blend {
             input: "speed".into(),
             children: vec![
-                BlendChild { threshold: 0.0, source: StateSource::Clip { clip: "idle".into() } },
-                BlendChild { threshold: 1.0, source: StateSource::Clip { clip: "walk".into() } },
-                BlendChild { threshold: 2.0, source: StateSource::Clip { clip: "run".into() } },
+                BlendChild {
+                    threshold: 0.0,
+                    source: StateSource::Clip {
+                        clip: "idle".into(),
+                    },
+                },
+                BlendChild {
+                    threshold: 1.0,
+                    source: StateSource::Clip {
+                        clip: "walk".into(),
+                    },
+                },
+                BlendChild {
+                    threshold: 2.0,
+                    source: StateSource::Clip { clip: "run".into() },
+                },
             ],
         },
         mode: PlayMode::Loop,
         speed: 1.0,
         blend_in: 0.0,
     };
-    let m = Machine { name: "m".into(), inputs: vec![inp("speed", InputKind::Number)], layers: vec![layer("body", "loco", vec![blend], vec![])] };
+    let m = Machine {
+        name: "m".into(),
+        inputs: vec![inp("speed", InputKind::Number)],
+        layers: vec![layer("body", "loco", vec![blend], vec![])],
+    };
     p.machines.push(m);
     let mut rt = MachineRuntime::new(&p, "m").unwrap();
     rt.set_number("speed", 0.0).unwrap();
@@ -275,15 +400,27 @@ fn blend_tree_clip_weights_use_stack_maths() {
         source: StateSource::Blend {
             input: "speed".into(),
             children: vec![
-                BlendChild { threshold: 0.0, source: StateSource::Clip { clip: "walk".into() } },
-                BlendChild { threshold: 1.0, source: StateSource::Clip { clip: "run".into() } },
+                BlendChild {
+                    threshold: 0.0,
+                    source: StateSource::Clip {
+                        clip: "walk".into(),
+                    },
+                },
+                BlendChild {
+                    threshold: 1.0,
+                    source: StateSource::Clip { clip: "run".into() },
+                },
             ],
         },
         mode: PlayMode::Loop,
         speed: 1.0,
         blend_in: 0.0,
     };
-    p.machines.push(Machine { name: "m".into(), inputs: vec![inp("speed", InputKind::Number)], layers: vec![layer("b", "loco", vec![blend], vec![])] });
+    p.machines.push(Machine {
+        name: "m".into(),
+        inputs: vec![inp("speed", InputKind::Number)],
+        layers: vec![layer("b", "loco", vec![blend], vec![])],
+    });
     let mut rt = MachineRuntime::new(&p, "m").unwrap();
     rt.set_number("speed", 1.0).unwrap();
     let (v, w) = rt.pose().get("arm", Prop::BoneAngle).unwrap();
@@ -297,8 +434,16 @@ fn blend_tree_clip_weights_use_stack_maths() {
 #[test]
 fn ping_pong_and_speed() {
     let mut p = project();
-    let s = State { mode: PlayMode::PingPong, speed: 2.0, ..st("walk", "walk") };
-    p.machines.push(Machine { name: "m".into(), inputs: vec![], layers: vec![layer("b", "walk", vec![s], vec![])] });
+    let s = State {
+        mode: PlayMode::PingPong,
+        speed: 2.0,
+        ..st("walk", "walk")
+    };
+    p.machines.push(Machine {
+        name: "m".into(),
+        inputs: vec![],
+        layers: vec![layer("b", "walk", vec![s], vec![])],
+    });
     let mut rt = MachineRuntime::new(&p, "m").unwrap();
     rt.step(0.25).unwrap(); // 0.5 loops forward
     assert!((angle(&rt) - 15.0).abs() < 0.2);
@@ -313,7 +458,8 @@ fn parallel_layers_on_disjoint_groups() {
     let mut p = project();
     let mut m = base_machine();
     m.layers[0].mask = vec!["arm".into()];
-    m.layers.push(layer("legs", "sit", vec![st("sit", "legsit")], vec![]));
+    m.layers
+        .push(layer("legs", "sit", vec![st("sit", "legsit")], vec![]));
     m.layers[1].mask = vec!["leg".into()];
     p.machines.push(m);
     assert!(validate(&p).is_empty(), "{:?}", validate(&p));
@@ -328,7 +474,9 @@ fn parallel_layers_on_disjoint_groups() {
     // overlapping layers are rejected
     let mut q = p.clone();
     q.machines[0].layers[1].mask.clear();
-    q.machines[0].layers[1].states[0].source = StateSource::Clip { clip: "walk".into() };
+    q.machines[0].layers[1].states[0].source = StateSource::Clip {
+        clip: "walk".into(),
+    };
     let e = validate(&q).join("\n");
     assert!(e.contains("disjoint channel groups"), "{e}");
 }
@@ -350,14 +498,24 @@ fn validation_errors() {
     m.layers[0].states.push(st("idle", "idle"));
     m.inputs.push(inp("moving", InputKind::Bool));
     let e = base(m);
-    assert!(e.contains("duplicate state name 'idle'") && e.contains("duplicate input 'moving'"), "{e}");
+    assert!(
+        e.contains("duplicate state name 'idle'") && e.contains("duplicate input 'moving'"),
+        "{e}"
+    );
     // missing target / source state, unknown input
     let mut m = base_machine();
     m.layers[0].transitions.push(tr("idle", "nowhere", vec![]));
     m.layers[0].transitions.push(tr("zip", "idle", vec![]));
-    m.layers[0].transitions.push(tr("idle", "walk", vec![cond("ghost", Cmp::Eq, 1.0)]));
+    m.layers[0]
+        .transitions
+        .push(tr("idle", "walk", vec![cond("ghost", Cmp::Eq, 1.0)]));
     let e = base(m);
-    assert!(e.contains("transition to missing state 'nowhere'") && e.contains("unknown source state 'zip'") && e.contains("unknown input 'ghost'"), "{e}");
+    assert!(
+        e.contains("transition to missing state 'nowhere'")
+            && e.contains("unknown source state 'zip'")
+            && e.contains("unknown input 'ghost'"),
+        "{e}"
+    );
     // unreachable state
     let mut m = base_machine();
     m.layers[0].states.push(st("lonely", "run"));
@@ -369,7 +527,10 @@ fn validation_errors() {
     assert!(base(m).contains("form a cycle"));
     // but a cycle that waits for an exit time is fine, and so is one with conditions
     let mut m = base_machine();
-    m.layers[0].transitions.push(Transition { exit_time: Some(1.0), ..tr("wave", "walk", vec![]) });
+    m.layers[0].transitions.push(Transition {
+        exit_time: Some(1.0),
+        ..tr("wave", "walk", vec![])
+    });
     assert_eq!(base(m), "");
     // bad entry, bad numbers, bad blend
     let mut m = base_machine();
@@ -378,22 +539,53 @@ fn validation_errors() {
     m.layers[0].transitions[0].exit_time = Some(2.0);
     m.layers[0].transitions[1].duration = Some(-1.0);
     let e = base(m);
-    assert!(e.contains("entry state 'zzz'") && e.contains("speed must") && e.contains("exit_time") && e.contains("duration must"), "{e}");
+    assert!(
+        e.contains("entry state 'zzz'")
+            && e.contains("speed must")
+            && e.contains("exit_time")
+            && e.contains("duration must"),
+        "{e}"
+    );
     let mut m = base_machine();
     m.layers[0].states[0].source = StateSource::Blend {
         input: "moving".into(),
-        children: vec![BlendChild { threshold: 1.0, source: StateSource::Clip { clip: "idle".into() } }, BlendChild { threshold: 0.0, source: StateSource::Clip { clip: "idle".into() } }],
+        children: vec![
+            BlendChild {
+                threshold: 1.0,
+                source: StateSource::Clip {
+                    clip: "idle".into(),
+                },
+            },
+            BlendChild {
+                threshold: 0.0,
+                source: StateSource::Clip {
+                    clip: "idle".into(),
+                },
+            },
+        ],
     };
     let e = base(m);
-    assert!(e.contains("must be a number input") && e.contains("strictly increasing"), "{e}");
+    assert!(
+        e.contains("must be a number input") && e.contains("strictly increasing"),
+        "{e}"
+    );
     // segments outside the project, regions that are not regions
     let mut m = base_machine();
-    m.layers[0].states[0].source = StateSource::Segment { start: 10.0, end: 999.0 };
+    m.layers[0].states[0].source = StateSource::Segment {
+        start: 10.0,
+        end: 999.0,
+    };
     assert!(base(m).contains("beyond"));
     let mut p = project();
-    p.markers.push(crate::keyops::Marker { name: "pt".into(), frame: 3.0, end: None });
+    p.markers.push(crate::keyops::Marker {
+        name: "pt".into(),
+        frame: 3.0,
+        end: None,
+    });
     let mut m = base_machine();
-    m.layers[0].states[0].source = StateSource::Region { marker: "pt".into() };
+    m.layers[0].states[0].source = StateSource::Region {
+        marker: "pt".into(),
+    };
     p.machines.push(m);
     assert!(validate(&p).join("\n").contains("not a region"));
     // a machine named like another
@@ -441,14 +633,38 @@ fn frame_is_rendered_from_the_pose() {
 #[test]
 fn segments_and_regions_play_project_channels() {
     let mut p = project();
-    p.channels.push(Channel::keys("arm", Prop::BoneAngle, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (24.0, 48.0, Ease::Linear)])));
-    p.markers.push(crate::keyops::Marker { name: "second".into(), frame: 12.0, end: Some(24.0) });
-    let s1 = State { source: StateSource::Segment { start: 0.0, end: 24.0 }, ..st("seg", "") };
-    let s2 = State { source: StateSource::Region { marker: "second".into() }, ..st("reg", "") };
+    p.channels.push(Channel::keys(
+        "arm",
+        Prop::BoneAngle,
+        Track::with_keys(&[(0.0, 0.0, Ease::Linear), (24.0, 48.0, Ease::Linear)]),
+    ));
+    p.markers.push(crate::keyops::Marker {
+        name: "second".into(),
+        frame: 12.0,
+        end: Some(24.0),
+    });
+    let s1 = State {
+        source: StateSource::Segment {
+            start: 0.0,
+            end: 24.0,
+        },
+        ..st("seg", "")
+    };
+    let s2 = State {
+        source: StateSource::Region {
+            marker: "second".into(),
+        },
+        ..st("reg", "")
+    };
     p.machines.push(Machine {
         name: "m".into(),
         inputs: vec![inp("go", InputKind::Trigger)],
-        layers: vec![layer("a", "seg", vec![s1, s2], vec![tr("seg", "reg", vec![cond("go", Cmp::Eq, 1.0)])])],
+        layers: vec![layer(
+            "a",
+            "seg",
+            vec![s1, s2],
+            vec![tr("seg", "reg", vec![cond("go", Cmp::Eq, 1.0)])],
+        )],
     });
     let mut rt = MachineRuntime::new(&p, "m").unwrap();
     rt.step(0.5).unwrap();
@@ -471,7 +687,11 @@ fn deterministic_and_chunk_independent() {
             rt.step(c).unwrap();
             out.push((rt.state_of("body").unwrap().to_string(), angle(&rt)));
         }
-        (rt.time(), out.last().unwrap().clone(), rt.take_events().len())
+        (
+            rt.time(),
+            out.last().unwrap().clone(),
+            rt.take_events().len(),
+        )
     };
     let a = run(&[0.1, 0.2, 0.3, 0.4]);
     let b = run(&[0.1, 0.2, 0.3, 0.4]);
@@ -490,8 +710,18 @@ fn script_simulation_logs_states() {
         machine: None,
         duration: Some(2.0),
         events: vec![
-            ScriptEvent { t: 0.5, set: [("moving".to_string(), serde_json::json!(true))].into_iter().collect(), ..Default::default() },
-            ScriptEvent { t: 1.0, trigger: vec!["wave".into()], ..Default::default() },
+            ScriptEvent {
+                t: 0.5,
+                set: [("moving".to_string(), serde_json::json!(true))]
+                    .into_iter()
+                    .collect(),
+                ..Default::default()
+            },
+            ScriptEvent {
+                t: 1.0,
+                trigger: vec!["wave".into()],
+                ..Default::default()
+            },
         ],
     };
     let mut seen = 0;
@@ -505,28 +735,94 @@ fn script_simulation_logs_states() {
     assert_eq!(log.ticks[0].states[0].1, "idle");
     assert_eq!(log.ticks[13].states[0].1, "walk"); // t = 13/24 > 0.5
     assert_eq!(log.ticks[25].states[0].1, "wave");
-    assert!(log.events.iter().any(|e| e.state == "wave" && e.kind == EventKind::Entered));
+    assert!(log
+        .events
+        .iter()
+        .any(|e| e.state == "wave" && e.kind == EventKind::Entered));
     // causality: no state is left before the input that causes it was given
-    let left_idle = log.events.iter().find(|e| e.state == "idle" && e.kind == EventKind::Exited).unwrap();
-    assert!(left_idle.time >= 0.5 - 1e-9, "left idle at {} before the input at 0.5", left_idle.time);
-    let entered_wave = log.events.iter().find(|e| e.state == "wave" && e.kind == EventKind::Entered).unwrap();
-    assert!(entered_wave.time >= 1.0 - 1e-9, "entered wave at {} before the trigger at 1.0", entered_wave.time);
+    let left_idle = log
+        .events
+        .iter()
+        .find(|e| e.state == "idle" && e.kind == EventKind::Exited)
+        .unwrap();
+    assert!(
+        left_idle.time >= 0.5 - 1e-9,
+        "left idle at {} before the input at 0.5",
+        left_idle.time
+    );
+    let entered_wave = log
+        .events
+        .iter()
+        .find(|e| e.state == "wave" && e.kind == EventKind::Entered)
+        .unwrap();
+    assert!(
+        entered_wave.time >= 1.0 - 1e-9,
+        "entered wave at {} before the trigger at 1.0",
+        entered_wave.time
+    );
     let log2 = simulate(&p, &script, 24.0, std::path::Path::new("."), |_, _| Ok(())).unwrap();
-    assert_eq!(serde_json::to_string(&log).unwrap(), serde_json::to_string(&log2).unwrap());
+    assert_eq!(
+        serde_json::to_string(&log).unwrap(),
+        serde_json::to_string(&log2).unwrap()
+    );
     // errors
-    let bad = Script { events: vec![ScriptEvent { t: 0.0, set: [("ghost".to_string(), serde_json::json!(1))].into_iter().collect(), ..Default::default() }], ..Default::default() };
+    let bad = Script {
+        events: vec![ScriptEvent {
+            t: 0.0,
+            set: [("ghost".to_string(), serde_json::json!(1))]
+                .into_iter()
+                .collect(),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
     assert!(simulate(&p, &bad, 24.0, std::path::Path::new("."), |_, _| Ok(())).is_err());
-    assert!(simulate(&project(), &script, 24.0, std::path::Path::new("."), |_, _| Ok(())).is_err());
+    assert!(simulate(
+        &project(),
+        &script,
+        24.0,
+        std::path::Path::new("."),
+        |_, _| Ok(())
+    )
+    .is_err());
 }
 
 #[test]
 fn bindings_drive_properties_and_inputs() {
     let mut p = project();
     p.machines.push(base_machine());
-    let mut hp = Binding::new("hp", "player.health", Target::Prop { target: "leg".into(), prop: Prop::BoneAngle });
-    hp.remap = Some(Remap { in_min: 0.0, in_max: 100.0, out_min: -30.0, out_max: 30.0, clamp: true, curve: Ease::Linear });
-    let mv = Binding::new("mv", "player.moving", Target::Input { machine: "m".into(), input: "moving".into() });
-    let mut spd = Binding::new("spd", "player.fire", Target::Input { machine: "m".into(), input: "wave".into() });
+    let mut hp = Binding::new(
+        "hp",
+        "player.health",
+        Target::Prop {
+            target: "leg".into(),
+            prop: Prop::BoneAngle,
+        },
+    );
+    hp.remap = Some(Remap {
+        in_min: 0.0,
+        in_max: 100.0,
+        out_min: -30.0,
+        out_max: 30.0,
+        clamp: true,
+        curve: Ease::Linear,
+    });
+    let mv = Binding::new(
+        "mv",
+        "player.moving",
+        Target::Input {
+            machine: "m".into(),
+            input: "moving".into(),
+        },
+    );
+    let mut spd = Binding::new(
+        "spd",
+        "player.fire",
+        Target::Input {
+            machine: "m".into(),
+            input: "wave".into(),
+        },
+    );
     spd.expr = Some("value * 2".into());
     p.bindings = vec![hp, mv, spd];
     assert!(Engine::new(p.clone()).is_ok());
@@ -553,13 +849,53 @@ fn bindings_drive_properties_and_inputs() {
     assert_eq!(rt.state_of("body"), Some("wave"));
     // a binding to an unknown bone is rejected when the engine is built
     let mut bad = p.clone();
-    bad.bindings[0].target = Target::Prop { target: "ghost".into(), prop: Prop::BoneAngle };
-    assert!(Engine::new(bad).err().unwrap().join("\n").contains("machine/binding targets"));
+    bad.bindings[0].target = Target::Prop {
+        target: "ghost".into(),
+        prop: Prop::BoneAngle,
+    };
+    assert!(Engine::new(bad)
+        .err()
+        .unwrap()
+        .join("\n")
+        .contains("machine/binding targets"));
     // editing helpers
     let mut q = project();
-    assert!(add_binding(&mut q, Binding::new("x", "a.b", Target::Prop { target: "ghost".into(), prop: Prop::BoneAngle })).is_err());
-    assert!(add_binding(&mut q, Binding::new("x", "a.b", Target::Prop { target: "arm".into(), prop: Prop::BoneAngle })).is_ok());
-    assert!(add_binding(&mut q, Binding::new("x", "a.c", Target::Prop { target: "arm".into(), prop: Prop::BoneAngle })).is_err());
+    assert!(add_binding(
+        &mut q,
+        Binding::new(
+            "x",
+            "a.b",
+            Target::Prop {
+                target: "ghost".into(),
+                prop: Prop::BoneAngle
+            }
+        )
+    )
+    .is_err());
+    assert!(add_binding(
+        &mut q,
+        Binding::new(
+            "x",
+            "a.b",
+            Target::Prop {
+                target: "arm".into(),
+                prop: Prop::BoneAngle
+            }
+        )
+    )
+    .is_ok());
+    assert!(add_binding(
+        &mut q,
+        Binding::new(
+            "x",
+            "a.c",
+            Target::Prop {
+                target: "arm".into(),
+                prop: Prop::BoneAngle
+            }
+        )
+    )
+    .is_err());
     remove_binding(&mut q, "x").unwrap();
     assert!(remove_binding(&mut q, "x").is_err());
     add(&mut q, base_machine()).unwrap();

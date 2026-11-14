@@ -15,14 +15,23 @@ fn base() -> Value {
 }
 
 fn pair() -> (Replica, Replica) {
-    (Replica::new(1, &base()).unwrap(), Replica::new(2, &base()).unwrap())
+    (
+        Replica::new(1, &base()).unwrap(),
+        Replica::new(2, &base()).unwrap(),
+    )
 }
 
 fn set(p: &str, v: Value) -> Op {
-    Op::Set { path: p.into(), value: v }
+    Op::Set {
+        path: p.into(),
+        value: v,
+    }
 }
 fn ins(p: &str, v: Value) -> Op {
-    Op::Insert { path: p.into(), value: v }
+    Op::Insert {
+        path: p.into(),
+        value: v,
+    }
 }
 fn rem(p: &str) -> Op {
     Op::Remove { path: p.into() }
@@ -39,16 +48,24 @@ fn send(from: &mut Replica, op: &Op, to: &mut [&mut Replica]) -> Envelope {
 fn local_ops_match_the_editor_semantics() {
     let mut r = Replica::new(1, &base()).unwrap();
     r.local_op(&set("/layers/1/opacity", json!(0.9))).unwrap();
-    r.local_op(&ins("/layers/1", json!({"name": "new"}))).unwrap();
-    r.local_op(&ins("/layers/-", json!({"name": "last"}))).unwrap();
+    r.local_op(&ins("/layers/1", json!({"name": "new"})))
+        .unwrap();
+    r.local_op(&ins("/layers/-", json!({"name": "last"})))
+        .unwrap();
     r.local_op(&rem("/layers/0")).unwrap();
     r.local_op(&set("/meta/extra", json!(7))).unwrap();
     r.local_op(&rem("/meta/tags")).unwrap();
     let mut want = base();
     // reference: the same ops on a plain document
     want["layers"][1]["opacity"] = json!(0.9);
-    want["layers"].as_array_mut().unwrap().insert(1, json!({"name": "new"}));
-    want["layers"].as_array_mut().unwrap().push(json!({"name": "last"}));
+    want["layers"]
+        .as_array_mut()
+        .unwrap()
+        .insert(1, json!({"name": "new"}));
+    want["layers"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"name": "last"}));
     want["layers"].as_array_mut().unwrap().remove(0);
     want["meta"]["extra"] = json!(7);
     want["meta"].as_object_mut().unwrap().remove("tags");
@@ -71,25 +88,47 @@ fn bad_local_ops_change_nothing_and_batches_are_atomic() {
         assert!(r.local_op(&op).is_err(), "{op:?}");
         assert_eq!(r.json(), base());
     }
-    let b = Op::Batch { ops: vec![set("/frames", json!(99)), rem("/layers/7")] };
+    let b = Op::Batch {
+        ops: vec![set("/frames", json!(99)), rem("/layers/7")],
+    };
     assert!(r.local_op(&b).is_err());
     assert_eq!(r.json(), base());
-    assert_eq!(r.clock().get(&1), None, "a failed edit consumes no sequence number");
-    assert!(r.local_op(&set("/frames", json!(24))).unwrap().is_none(), "writing the same value is a no-op");
+    assert_eq!(
+        r.clock().get(&1),
+        None,
+        "a failed edit consumes no sequence number"
+    );
+    assert!(
+        r.local_op(&set("/frames", json!(24))).unwrap().is_none(),
+        "writing the same value is a no-op"
+    );
 }
 
 #[test]
 fn concurrent_scalar_writes_use_lww_with_replica_tiebreak() {
     let (mut a, mut b) = pair();
-    let ea = a.local_op(&set("/layers/0/opacity", json!(0.1))).unwrap().unwrap();
-    let eb = b.local_op(&set("/layers/0/opacity", json!(0.9))).unwrap().unwrap();
+    let ea = a
+        .local_op(&set("/layers/0/opacity", json!(0.1)))
+        .unwrap()
+        .unwrap();
+    let eb = b
+        .local_op(&set("/layers/0/opacity", json!(0.9)))
+        .unwrap()
+        .unwrap();
     assert_eq!(ea.lamport, eb.lamport);
     a.receive(eb).unwrap();
     b.receive(ea).unwrap();
     assert_eq!(a.json(), b.json());
-    assert_eq!(a.json()["layers"][0]["opacity"], json!(0.9), "equal lamport: the larger replica id wins");
+    assert_eq!(
+        a.json()["layers"][0]["opacity"],
+        json!(0.9),
+        "equal lamport: the larger replica id wins"
+    );
     // a later write (larger lamport) beats a higher replica id
-    let e = a.local_op(&set("/layers/0/opacity", json!(0.3))).unwrap().unwrap();
+    let e = a
+        .local_op(&set("/layers/0/opacity", json!(0.3)))
+        .unwrap()
+        .unwrap();
     b.receive(e).unwrap();
     assert_eq!(b.json()["layers"][0]["opacity"], json!(0.3));
 }
@@ -98,27 +137,48 @@ fn concurrent_scalar_writes_use_lww_with_replica_tiebreak() {
 fn stale_indices_are_transformed_by_identity() {
     let (mut a, mut b) = pair();
     // a inserts at the front; b (not having seen it) edits what it sees as layer 1 ("b")
-    let ea = a.local_op(&ins("/layers/0", json!({"name": "front"}))).unwrap().unwrap();
-    let eb = b.local_op(&set("/layers/1/opacity", json!(0.77))).unwrap().unwrap();
+    let ea = a
+        .local_op(&ins("/layers/0", json!({"name": "front"})))
+        .unwrap()
+        .unwrap();
+    let eb = b
+        .local_op(&set("/layers/1/opacity", json!(0.77)))
+        .unwrap()
+        .unwrap();
     a.receive(eb).unwrap();
     b.receive(ea).unwrap();
     assert_eq!(a.json(), b.json());
     let l = a.json()["layers"].clone();
     assert_eq!(l[0]["name"], "front");
     assert_eq!(l[2]["name"], "b");
-    assert_eq!(l[2]["opacity"], json!(0.77), "the edit followed its element, not its index");
+    assert_eq!(
+        l[2]["opacity"],
+        json!(0.77),
+        "the edit followed its element, not its index"
+    );
     assert_eq!(l[1]["opacity"], json!(1.0));
 }
 
 #[test]
 fn concurrent_inserts_at_the_same_place_keep_both_in_one_order() {
     let (mut a, mut b) = pair();
-    let ea = a.local_op(&ins("/layers/1", json!({"name": "from_a"}))).unwrap().unwrap();
-    let eb = b.local_op(&ins("/layers/1", json!({"name": "from_b"}))).unwrap().unwrap();
+    let ea = a
+        .local_op(&ins("/layers/1", json!({"name": "from_a"})))
+        .unwrap()
+        .unwrap();
+    let eb = b
+        .local_op(&ins("/layers/1", json!({"name": "from_b"})))
+        .unwrap()
+        .unwrap();
     a.receive(eb).unwrap();
     b.receive(ea).unwrap();
     assert_eq!(a.json(), b.json());
-    let names: Vec<String> = a.json()["layers"].as_array().unwrap().iter().map(|l| l["name"].as_str().unwrap().to_string()).collect();
+    let names: Vec<String> = a.json()["layers"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|l| l["name"].as_str().unwrap().to_string())
+        .collect();
     assert_eq!(names.len(), 5);
     assert_eq!(names[0], "a");
     assert_eq!(names[3], "b");
@@ -129,7 +189,10 @@ fn concurrent_inserts_at_the_same_place_keep_both_in_one_order() {
 fn remove_wins_over_edit_inside_and_the_edit_is_dropped_deterministically() {
     let (mut a, mut b) = pair();
     let ea = a.local_op(&rem("/layers/1")).unwrap().unwrap();
-    let eb = b.local_op(&set("/layers/1/opacity", json!(0.01))).unwrap().unwrap();
+    let eb = b
+        .local_op(&set("/layers/1/opacity", json!(0.01)))
+        .unwrap()
+        .unwrap();
     a.receive(eb).unwrap();
     b.receive(ea).unwrap();
     assert_eq!(a.json(), b.json());
@@ -152,10 +215,16 @@ fn whole_object_set_is_diffed_so_concurrent_key_edits_both_survive() {
     let (mut a, mut b) = pair();
     // a adds a key to the channel track by writing the whole channel (what Editor::set_key does)
     let mut ch = base()["channels"][0].clone();
-    ch["track"]["keys"].as_array_mut().unwrap().push(json!({"frame": 20, "value": 1.5}));
+    ch["track"]["keys"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"frame": 20, "value": 1.5}));
     let ea = a.local_op(&set("/channels/0", ch)).unwrap().unwrap();
     // b meanwhile changes an existing key's value
-    let eb = b.local_op(&set("/channels/0/track/keys/0/value", json!(-3.0))).unwrap().unwrap();
+    let eb = b
+        .local_op(&set("/channels/0/track/keys/0/value", json!(-3.0)))
+        .unwrap()
+        .unwrap();
     assert_eq!(ea.ops.len(), 1, "only the new key travels: {:?}", ea.ops);
     a.receive(eb).unwrap();
     b.receive(ea).unwrap();
@@ -172,7 +241,10 @@ fn unrelated_objects_in_a_slot_are_replaced_not_merged() {
     let mut v = base();
     v["layers"] = json!([{"name": "z", "opacity": 3}]);
     let e = r.local_doc(&v).unwrap().unwrap();
-    assert!(e.ops.iter().any(|p| matches!(p, Prim::DelElem { .. })) && e.ops.iter().any(|p| matches!(p, Prim::InsElem { .. })));
+    assert!(
+        e.ops.iter().any(|p| matches!(p, Prim::DelElem { .. }))
+            && e.ops.iter().any(|p| matches!(p, Prim::InsElem { .. }))
+    );
     assert_eq!(r.json(), v);
 }
 
@@ -201,13 +273,23 @@ fn local_doc_diff_roundtrips_for_random_documents() {
 #[test]
 fn redelivery_is_idempotent_and_the_causal_buffer_holds_back_early_envelopes() {
     let (mut a, mut b) = pair();
-    let e1 = a.local_op(&ins("/layers/-", json!({"name": "n1"}))).unwrap().unwrap();
-    let e2 = a.local_op(&set("/layers/3/opacity", json!(0.4))).unwrap().unwrap();
+    let e1 = a
+        .local_op(&ins("/layers/-", json!({"name": "n1"})))
+        .unwrap()
+        .unwrap();
+    let e2 = a
+        .local_op(&set("/layers/3/opacity", json!(0.4)))
+        .unwrap()
+        .unwrap();
     // e2 first: buffered, nothing visible yet
     assert_eq!(b.receive(e2.clone()).unwrap(), Delivery::Buffered);
     assert_eq!(b.json(), base());
     assert_eq!(b.pending_len(), 1);
-    assert_eq!(b.receive(e2.clone()).unwrap(), Delivery::Buffered, "same buffered envelope twice is harmless");
+    assert_eq!(
+        b.receive(e2.clone()).unwrap(),
+        Delivery::Buffered,
+        "same buffered envelope twice is harmless"
+    );
     match b.receive(e1.clone()).unwrap() {
         Delivery::Applied(v) => assert_eq!(v.len(), 2, "e1 releases e2"),
         d => panic!("{d:?}"),
@@ -225,9 +307,16 @@ fn cross_replica_dependency_waits_for_the_other_replica() {
     let mut a = Replica::new(1, &base()).unwrap();
     let mut b = Replica::new(2, &base()).unwrap();
     let mut c = Replica::new(3, &base()).unwrap();
-    let ea = send(&mut a, &ins("/layers/-", json!({"name": "from_a"})), &mut [&mut b]);
+    let ea = send(
+        &mut a,
+        &ins("/layers/-", json!({"name": "from_a"})),
+        &mut [&mut b],
+    );
     // b edits the element a created: its envelope depends on a's
-    let eb = b.local_op(&set("/layers/3/opacity", json!(0.25))).unwrap().unwrap();
+    let eb = b
+        .local_op(&set("/layers/3/opacity", json!(0.25)))
+        .unwrap()
+        .unwrap();
     assert_eq!(eb.deps.get(&1), Some(&1));
     assert_eq!(c.receive(eb).unwrap(), Delivery::Buffered);
     assert!(c.json()["layers"].as_array().unwrap().len() == 3);
@@ -258,12 +347,32 @@ fn invalid_or_hostile_envelopes_never_panic() {
     let mut r = Replica::new(1, &base()).unwrap();
     let unk = Id { r: 9, s: 9, i: 9 };
     let prims = vec![
-        Prim::SetKey { obj: unk, key: "k".into(), value: json!(1) },
-        Prim::DelKey { obj: unk, key: "k".into() },
-        Prim::SetElem { arr: unk, elem: unk, value: json!(1) },
-        Prim::InsElem { arr: unk, after: Some(unk), value: json!(1) },
-        Prim::DelElem { arr: unk, elem: unk },
-        Prim::SetRoot { value: json!([1, 2, 3]) },
+        Prim::SetKey {
+            obj: unk,
+            key: "k".into(),
+            value: json!(1),
+        },
+        Prim::DelKey {
+            obj: unk,
+            key: "k".into(),
+        },
+        Prim::SetElem {
+            arr: unk,
+            elem: unk,
+            value: json!(1),
+        },
+        Prim::InsElem {
+            arr: unk,
+            after: Some(unk),
+            value: json!(1),
+        },
+        Prim::DelElem {
+            arr: unk,
+            elem: unk,
+        },
+        Prim::SetRoot {
+            value: json!([1, 2, 3]),
+        },
     ];
     // wrong kinds: array ops on an object id and vice versa
     let root_obj = match &r.doc.root.val {
@@ -271,30 +380,98 @@ fn invalid_or_hostile_envelopes_never_panic() {
         _ => unreachable!(),
     };
     let mut ps = prims.clone();
-    ps.push(Prim::InsElem { arr: root_obj, after: None, value: json!(1) });
-    ps.push(Prim::SetKey { obj: root_obj, key: "ok".into(), value: json!(1) });
-    let env = Envelope { replica: 2, seq: 1, lamport: 4, deps: VClock::new(), ops: ps };
+    ps.push(Prim::InsElem {
+        arr: root_obj,
+        after: None,
+        value: json!(1),
+    });
+    ps.push(Prim::SetKey {
+        obj: root_obj,
+        key: "ok".into(),
+        value: json!(1),
+    });
+    let env = Envelope {
+        replica: 2,
+        seq: 1,
+        lamport: 4,
+        deps: VClock::new(),
+        ops: ps,
+    };
     r.receive(env).unwrap();
     assert!(r.dropped >= 6);
     for bad in [
-        Envelope { replica: 0, seq: 1, lamport: 1, deps: VClock::new(), ops: vec![] },
-        Envelope { replica: 2, seq: 0, lamport: 1, deps: VClock::new(), ops: vec![] },
-        Envelope { replica: 2, seq: 2, lamport: 0, deps: VClock::new(), ops: vec![] },
-        Envelope { replica: 2, seq: 2, lamport: u64::MAX, deps: VClock::new(), ops: vec![] },
-        Envelope { replica: 1, seq: 5, lamport: 1, deps: VClock::new(), ops: vec![] },
+        Envelope {
+            replica: 0,
+            seq: 1,
+            lamport: 1,
+            deps: VClock::new(),
+            ops: vec![],
+        },
+        Envelope {
+            replica: 2,
+            seq: 0,
+            lamport: 1,
+            deps: VClock::new(),
+            ops: vec![],
+        },
+        Envelope {
+            replica: 2,
+            seq: 2,
+            lamport: 0,
+            deps: VClock::new(),
+            ops: vec![],
+        },
+        Envelope {
+            replica: 2,
+            seq: 2,
+            lamport: u64::MAX,
+            deps: VClock::new(),
+            ops: vec![],
+        },
+        Envelope {
+            replica: 1,
+            seq: 5,
+            lamport: 1,
+            deps: VClock::new(),
+            ops: vec![],
+        },
     ] {
         assert!(r.receive(bad).is_err());
     }
     // an envelope that depends on something that never arrives just waits
     let mut deps = VClock::new();
     deps.insert(7, 3);
-    assert_eq!(r.receive(Envelope { replica: 2, seq: 2, lamport: 5, deps, ops: vec![] }).unwrap(), Delivery::Buffered);
+    assert_eq!(
+        r.receive(Envelope {
+            replica: 2,
+            seq: 2,
+            lamport: 5,
+            deps,
+            ops: vec![]
+        })
+        .unwrap(),
+        Delivery::Buffered
+    );
 }
 
 #[test]
 fn hostile_envelopes_are_applied_identically_in_any_order() {
     let unk = Id { r: 9, s: 9, i: 9 };
-    let mk = |rep: u32, n: u64| Envelope { replica: rep, seq: 1, lamport: n, deps: VClock::new(), ops: vec![Prim::DelElem { arr: unk, elem: unk }, Prim::SetRoot { value: json!({"w": n}) }] };
+    let mk = |rep: u32, n: u64| Envelope {
+        replica: rep,
+        seq: 1,
+        lamport: n,
+        deps: VClock::new(),
+        ops: vec![
+            Prim::DelElem {
+                arr: unk,
+                elem: unk,
+            },
+            Prim::SetRoot {
+                value: json!({"w": n}),
+            },
+        ],
+    };
     let mut x = Replica::new(1, &base()).unwrap();
     let mut y = Replica::new(1, &base()).unwrap();
     for e in [mk(2, 3), mk(3, 3), mk(4, 9)] {
@@ -311,11 +488,25 @@ fn hostile_envelopes_are_applied_identically_in_any_order() {
 fn random_runs_converge_for_many_seeds_and_sizes() {
     for (clients, ops) in [(2, 60), (3, 120), (5, 200), (8, 150)] {
         for seed in 0..12u64 {
-            let rep = simulate(&base(), &SimConfig::new(clients, ops, seed * 7919 + clients as u64)).unwrap();
-            assert!(rep.converged, "clients {clients} seed {seed}: {:?}", rep.divergence);
-            assert!(rep.state_identical, "internal state differs: clients {clients} seed {seed}");
+            let rep = simulate(
+                &base(),
+                &SimConfig::new(clients, ops, seed * 7919 + clients as u64),
+            )
+            .unwrap();
+            assert!(
+                rep.converged,
+                "clients {clients} seed {seed}: {:?}",
+                rep.divergence
+            );
+            assert!(
+                rep.state_identical,
+                "internal state differs: clients {clients} seed {seed}"
+            );
             assert!(rep.clocks_identical && rep.pending_left == 0, "seed {seed}");
-            assert_eq!(rep.dropped_prims, 0, "honest peers never produce dangling references (seed {seed})");
+            assert_eq!(
+                rep.dropped_prims, 0,
+                "honest peers never produce dangling references (seed {seed})"
+            );
             assert!(rep.envelopes > ops / 3);
         }
     }
@@ -354,7 +545,11 @@ fn per_user_undo_touches_only_own_edits() {
     let (mut a, mut b) = pair();
     send(&mut a, &set("/layers/0/opacity", json!(0.1)), &mut [&mut b]);
     send(&mut b, &set("/layers/2/opacity", json!(0.9)), &mut [&mut a]);
-    send(&mut a, &ins("/layers/-", json!({"name": "mine"})), &mut [&mut b]);
+    send(
+        &mut a,
+        &ins("/layers/-", json!({"name": "mine"})),
+        &mut [&mut b],
+    );
     send(&mut b, &set("/frames", json!(48)), &mut [&mut a]);
     // a undoes twice: the insert, then the opacity; b's edits stay
     for _ in 0..2 {
@@ -389,12 +584,21 @@ fn per_user_undo_touches_only_own_edits() {
 fn undo_of_a_remove_reinserts_next_to_its_old_neighbour_after_remote_changes() {
     let (mut a, mut b) = pair();
     send(&mut a, &rem("/layers/1"), &mut [&mut b]); // removes "b"
-    send(&mut b, &ins("/layers/0", json!({"name": "front"})), &mut [&mut a]);
+    send(
+        &mut b,
+        &ins("/layers/0", json!({"name": "front"})),
+        &mut [&mut a],
+    );
     send(&mut b, &set("/layers/1/opacity", json!(0.6)), &mut [&mut a]); // edits "a"
     let e = a.undo().unwrap().unwrap();
     b.receive(e).unwrap();
     assert_eq!(a.json(), b.json());
-    let names: Vec<String> = a.json()["layers"].as_array().unwrap().iter().map(|l| l["name"].as_str().unwrap().to_string()).collect();
+    let names: Vec<String> = a.json()["layers"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|l| l["name"].as_str().unwrap().to_string())
+        .collect();
     assert_eq!(names, vec!["front", "a", "b", "c"]);
     assert_eq!(a.json()["layers"][1]["opacity"], json!(0.6));
 }
@@ -413,7 +617,16 @@ fn undo_skips_what_somebody_else_overwrote_later() {
 #[test]
 fn undo_of_a_multi_step_batch_restores_the_original() {
     let mut r = Replica::new(1, &base()).unwrap();
-    r.local_op(&Op::Batch { ops: vec![set("/frames", json!(30)), set("/frames", json!(31)), ins("/layers/0", json!({"name": "q"})), rem("/layers/0"), rem("/layers/0")] }).unwrap();
+    r.local_op(&Op::Batch {
+        ops: vec![
+            set("/frames", json!(30)),
+            set("/frames", json!(31)),
+            ins("/layers/0", json!({"name": "q"})),
+            rem("/layers/0"),
+            rem("/layers/0"),
+        ],
+    })
+    .unwrap();
     assert_ne!(r.json(), base());
     r.undo().unwrap();
     assert_eq!(r.json(), base());
@@ -428,7 +641,11 @@ fn random_runs_with_heavy_undo_still_converge() {
         let mut cfg = SimConfig::new(4, 200, seed + 500);
         cfg.undo_pct = 45;
         let rep = simulate(&base(), &cfg).unwrap();
-        assert!(rep.converged && rep.state_identical, "seed {seed}: {:?}", rep.divergence);
+        assert!(
+            rep.converged && rep.state_identical,
+            "seed {seed}: {:?}",
+            rep.divergence
+        );
         assert!(rep.undos > 40);
     }
 }
@@ -436,7 +653,11 @@ fn random_runs_with_heavy_undo_still_converge() {
 #[test]
 fn snapshot_roundtrips_through_json_and_a_joiner_continues_the_session() {
     let (mut a, mut b) = pair();
-    send(&mut a, &ins("/layers/0", json!({"name": "x"})), &mut [&mut b]);
+    send(
+        &mut a,
+        &ins("/layers/0", json!({"name": "x"})),
+        &mut [&mut b],
+    );
     send(&mut b, &rem("/layers/2"), &mut [&mut a]);
     let snap = a.snapshot();
     let text = serde_json::to_string(&snap).unwrap();
@@ -444,13 +665,19 @@ fn snapshot_roundtrips_through_json_and_a_joiner_continues_the_session() {
     let mut c = Replica::from_snapshot(3, back).unwrap();
     assert_eq!(c.json(), a.json());
     assert_eq!(c.clock(), a.clock());
-    let e = c.local_op(&set("/layers/1/opacity", json!(0.42))).unwrap().unwrap();
+    let e = c
+        .local_op(&set("/layers/1/opacity", json!(0.42)))
+        .unwrap()
+        .unwrap();
     a.receive(e.clone()).unwrap();
     b.receive(e).unwrap();
     assert_eq!(a.doc(), b.doc());
     assert_eq!(a.json()["layers"][1]["opacity"], json!(0.42));
     // the snapshot's identities line up: an edit made by a before the snapshot-based join is understood by c
-    let e = a.local_op(&set("/layers/0/name", json!("renamed"))).unwrap().unwrap();
+    let e = a
+        .local_op(&set("/layers/0/name", json!("renamed")))
+        .unwrap()
+        .unwrap();
     c.receive(e).unwrap();
     assert_eq!(a.json(), c.json());
     assert!(Replica::from_snapshot(0, a.snapshot()).is_err() && Replica::new(0, &base()).is_err());
@@ -459,7 +686,16 @@ fn snapshot_roundtrips_through_json_and_a_joiner_continues_the_session() {
 #[test]
 fn envelopes_roundtrip_through_json() {
     let mut a = Replica::new(1, &base()).unwrap();
-    let e = a.local_op(&Op::Batch { ops: vec![ins("/layers/1", json!({"name": "n", "k": [1, {"z": null}]})), rem("/layers/0"), set("/meta/new", json!("s"))] }).unwrap().unwrap();
+    let e = a
+        .local_op(&Op::Batch {
+            ops: vec![
+                ins("/layers/1", json!({"name": "n", "k": [1, {"z": null}]})),
+                rem("/layers/0"),
+                set("/meta/new", json!("s")),
+            ],
+        })
+        .unwrap()
+        .unwrap();
     let text = serde_json::to_string(&e).unwrap();
     let back: Envelope = serde_json::from_str(&text).unwrap();
     assert_eq!(back, e);
@@ -467,7 +703,10 @@ fn envelopes_roundtrip_through_json() {
     b.receive(back).unwrap();
     assert_eq!(a.doc(), b.doc());
     assert!(serde_json::from_str::<Envelope>("{\"replica\":1}").is_err());
-    assert!(serde_json::from_str::<Prim>("{\"t\":\"del_elem\",\"arr\":\"bad\",\"elem\":\"1.1.1\"}").is_err());
+    assert!(serde_json::from_str::<Prim>(
+        "{\"t\":\"del_elem\",\"arr\":\"bad\",\"elem\":\"1.1.1\"}"
+    )
+    .is_err());
 }
 
 #[test]
@@ -475,7 +714,11 @@ fn compaction_drops_stable_log_and_purges_tombstones_only_when_quiescent() {
     let (mut a, mut b) = pair();
     send(&mut a, &rem("/layers/0"), &mut [&mut b]);
     send(&mut b, &rem("/layers/0"), &mut [&mut a]);
-    send(&mut a, &ins("/layers/-", json!({"name": "k", "sub": {"x": [1, 2]}})), &mut [&mut b]);
+    send(
+        &mut a,
+        &ins("/layers/-", json!({"name": "k", "sub": {"x": [1, 2]}})),
+        &mut [&mut b],
+    );
     send(&mut a, &set("/meta", json!({"fresh": true})), &mut [&mut b]); // replaces the old subtree => garbage nodes
     assert_eq!(a.tombstones(), 2);
     let nodes_before = a.node_count();
@@ -486,15 +729,28 @@ fn compaction_drops_stable_log_and_purges_tombstones_only_when_quiescent() {
     // everybody has everything
     let before = a.json();
     let st = a.compact(&[b.clock().clone()]);
-    assert!(st.purged && st.tombstones_purged == 2 && st.log_dropped >= 3, "{st:?}");
+    assert!(
+        st.purged && st.tombstones_purged == 2 && st.log_dropped >= 3,
+        "{st:?}"
+    );
     assert!(a.node_count() < nodes_before && st.nodes_collected > 0);
     assert_eq!(a.json(), before);
     b.compact(&[a.clock().clone()]);
-    assert_eq!(a.doc(), b.doc(), "both compacted at the same cut stay identical");
+    assert_eq!(
+        a.doc(),
+        b.doc(),
+        "both compacted at the same cut stay identical"
+    );
     // and the session goes on
-    let e = a.local_op(&ins("/layers/0", json!({"name": "after"}))).unwrap().unwrap();
+    let e = a
+        .local_op(&ins("/layers/0", json!({"name": "after"})))
+        .unwrap()
+        .unwrap();
     b.receive(e).unwrap();
-    let e = b.local_op(&set("/layers/0/name", json!("after2"))).unwrap().unwrap();
+    let e = b
+        .local_op(&set("/layers/0/name", json!("after2")))
+        .unwrap()
+        .unwrap();
     a.receive(e).unwrap();
     assert_eq!(a.doc(), b.doc());
     // a peer behind the compacted log is told to fetch a snapshot
@@ -557,7 +813,10 @@ fn presence_expires_sanitizes_and_ignores_stale_updates() {
     assert_eq!(b.get(3).unwrap().name.chars().count(), 40);
     assert!(b.update(Presence::new(4, ""), 900));
     assert_eq!(b.get(4).unwrap().name, "user4");
-    assert!(b.expire(1300).is_empty(), "300 + 1000 not yet passed; 900 + 1000 neither");
+    assert!(
+        b.expire(1300).is_empty(),
+        "300 + 1000 not yet passed; 900 + 1000 neither"
+    );
     assert_eq!(b.expire(1301), vec![3]);
     b.touch(4, 1500);
     assert!(b.expire(2400).is_empty());
@@ -589,10 +848,23 @@ fn project_aware_edits_keep_the_demo_valid() {
         let mut cfg = SimConfig::new(4, 250, seed);
         cfg.project_aware = true;
         let rep = simulate(&base, &cfg).unwrap();
-        assert!(rep.converged && rep.state_identical && rep.pending_left == 0, "seed {seed}");
+        assert!(
+            rep.converged && rep.state_identical && rep.pending_left == 0,
+            "seed {seed}"
+        );
         let real = crate::demo::project().layers.len();
-        assert_eq!(rep.final_doc["layers"].as_array().unwrap().iter().filter(|l| !l["name"].as_str().unwrap().starts_with("sim_")).count(), real, "seed {seed}: a real layer was lost");
-        let pr: crate::project::Project = serde_json::from_value(rep.final_doc.clone()).unwrap_or_else(|e| panic!("seed {seed}: {e}"));
+        assert_eq!(
+            rep.final_doc["layers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|l| !l["name"].as_str().unwrap().starts_with("sim_"))
+                .count(),
+            real,
+            "seed {seed}: a real layer was lost"
+        );
+        let pr: crate::project::Project = serde_json::from_value(rep.final_doc.clone())
+            .unwrap_or_else(|e| panic!("seed {seed}: {e}"));
         if let Err(e) = crate::Engine::new(pr) {
             panic!("seed {seed}: merged project does not compile: {e:?}");
         }

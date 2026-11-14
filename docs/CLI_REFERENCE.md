@@ -2045,6 +2045,27 @@ unknown colour space 'p3' (srgb or linear)
 ```
 **Limits:** the 8-bit renderer switches to the float compositor for linear projects (own coverage rasteriser, so anti-aliased edges differ slightly from the sRGB output); layer-effect colours (shadow, glow, tint) are used as written, not converted; `dof` and the post-effect chain (`fx`) stay sRGB; SVG, Lottie and the GPU renderer ignore the setting; image resampling happens in sRGB before the conversion. Blend modes are applied to the linear values.
 
+### `texture`
+
+**Synopsis:** `osatura texture  <preset|kind|list> <out.png> [--size N=1024] [--seed S=1] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--normal-out n.png] [--height-out h.png] [--albedo-out a.png] [--no-tile]`
+
+Generates a seamless, deterministic fractal texture and writes it as a PNG. `<preset>` is a ready-made look (`rock`, `granite`, `lava`, `marble`, `moss`, `terrain`, `clouds`, `ice`, `sand`, `bark`, `nebula`, `mandelbrot`, `julia`, `burning-ship`) and `<kind>` a bare pattern (`fbm`, `ridged`, `billow`, `warp`, `cellular`, `marble`, `mandelbrot`, `julia`, `burning-ship`); `texture list` prints both. The main image is lit (Lambert + specular, two-scale cavity occlusion, emission in the low parts when `--glow` is set). `--normal-out` writes the tangent-space normal map (+Y up), `--height-out` a 16-bit height map and `--albedo-out` the unlit colour. Noise kinds tile on all four edges unless `--no-tile` is given; octaves above the Nyquist limit of the size are skipped, so bigger textures gain real detail (`--size` 8 to 4096). `--zoom` and `--seed` choose the view of the escape-time kinds (Mandelbrot, Julia, Burning Ship), `--ssaa N` supersamples N×N. Same options give the same bytes on every machine.
+
+```
+$ osatura texture rock rock.png --size 2048 --seed 7 --normal-out rock-n.png
+$ osatura texture mandelbrot m.png --size 2048 --zoom 4000 --ssaa 3
+```
+
+### `texture-add`
+
+**Synopsis:** `osatura texture-add <project.json> <out.json> <layer> <preset|kind> [--size N] [--seed S] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--no-tile] [--x X] [--y Y] [--front] [--no-normal]`
+
+Generates the texture like `texture` and embeds it in the project as an image layer named `<layer>` (behind the others, or in front with `--front`), together with its normal map, so `fx ... --layer-normals` relights it. A layer with that name must not exist yet.
+
+```
+$ osatura texture-add demo.json demo-tex.json backdrop granite --size 1024 --x -200 --y -200
+```
+
 ### `layer-normal`
 
 **Synopsis:** `osatura layer-normal <project.json> <out.json> <layer> <normal.png|none> [--strength S] [--fit stretch|tile|exact] [--green-down]`
@@ -2883,6 +2904,7 @@ Every command with a one-line summary and the section that documents it. Sub-com
 | `import-svg` | SVG subset -> vector layer | [9](#9-import) |
 | `keyedit` | dope-sheet edits as one undo-safe batch | [6](#6-animation-keys-timeline-and-generators) |
 | `keys` | bulk key operations over all keyed channels | [6](#6-animation-keys-timeline-and-generators) |
+| `texture`, `texture-add` | fractal textures (PNG or image layer with normal map) | [12](#12-effects-depth-of-field-onion-skin-trails-and-camera) |
 | `layer-normal` | attach a normal map to a layer | [12](#12-effects-depth-of-field-onion-skin-trails-and-camera) |
 | `layer-pivot` | move a layer's pivot without changing the picture | [7](#7-physics-cloth-and-deformers) |
 | `layout-preview` | render with layout re-solved for another canvas size | [11](#11-state-machines-data-bindings-containers-and-scroll-regions) |

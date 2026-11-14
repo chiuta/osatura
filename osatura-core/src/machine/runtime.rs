@@ -25,7 +25,11 @@ pub(super) struct RtTrans {
 
 pub(super) enum RtKind {
     Leaf(Leaf),
-    Blend { input: usize, thresholds: Vec<f32>, children: Vec<Leaf> },
+    Blend {
+        input: usize,
+        thresholds: Vec<f32>,
+        children: Vec<Leaf>,
+    },
 }
 
 pub(super) struct RtState {
@@ -105,28 +109,54 @@ impl MachineRuntime {
         MachineRuntime::with_asset_dir(project, machine, std::path::Path::new("."))
     }
 
-    pub fn with_asset_dir(project: &Project, machine: &str, asset_dir: &std::path::Path) -> Result<MachineRuntime, String> {
-        let m = project.machines.iter().find(|m| m.name == machine).ok_or_else(|| format!("unknown machine '{machine}'"))?;
+    pub fn with_asset_dir(
+        project: &Project,
+        machine: &str,
+        asset_dir: &std::path::Path,
+    ) -> Result<MachineRuntime, String> {
+        let m = project
+            .machines
+            .iter()
+            .find(|m| m.name == machine)
+            .ok_or_else(|| format!("unknown machine '{machine}'"))?;
         let mut errs = validate_machine(project, m);
         errs.extend(crate::binding::validate(project));
         if !errs.is_empty() {
             return Err(errs.join("; "));
         }
-        let in_ix: HashMap<&str, usize> = m.inputs.iter().enumerate().map(|(i, x)| (x.name.as_str(), i)).collect();
+        let in_ix: HashMap<&str, usize> = m
+            .inputs
+            .iter()
+            .enumerate()
+            .map(|(i, x)| (x.name.as_str(), i))
+            .collect();
         let mut layers = Vec::new();
         for l in &m.layers {
-            let sx: HashMap<&str, usize> = l.states.iter().enumerate().map(|(i, s)| (s.name.as_str(), i)).collect();
+            let sx: HashMap<&str, usize> = l
+                .states
+                .iter()
+                .enumerate()
+                .map(|(i, s)| (s.name.as_str(), i))
+                .collect();
             let mut states = Vec::new();
             for s in &l.states {
                 let kind = match &s.source {
                     StateSource::Blend { input, children } => RtKind::Blend {
                         input: in_ix[input.as_str()],
                         thresholds: children.iter().map(|c| c.threshold).collect(),
-                        children: children.iter().map(|c| resolve_leaf(project, &c.source, &l.mask)).collect::<Result<_, _>>()?,
+                        children: children
+                            .iter()
+                            .map(|c| resolve_leaf(project, &c.source, &l.mask))
+                            .collect::<Result<_, _>>()?,
                     },
                     other => RtKind::Leaf(resolve_leaf(project, other, &l.mask)?),
                 };
-                states.push(RtState { name: s.name.clone(), mode: s.mode, speed: s.speed as f64, kind });
+                states.push(RtState {
+                    name: s.name.clone(),
+                    mode: s.mode,
+                    speed: s.speed as f64,
+                    kind,
+                });
             }
             let trans = l
                 .transitions
@@ -134,16 +164,37 @@ impl MachineRuntime {
                 .map(|t| {
                     let to = sx[t.to.as_str()];
                     RtTrans {
-                        from: if t.from == "*" { None } else { Some(sx[t.from.as_str()]) },
+                        from: if t.from == "*" {
+                            None
+                        } else {
+                            Some(sx[t.from.as_str()])
+                        },
                         to,
-                        conds: t.conditions.iter().map(|c| RtCond { input: in_ix[c.input.as_str()], op: c.op, value: c.value }).collect(),
+                        conds: t
+                            .conditions
+                            .iter()
+                            .map(|c| RtCond {
+                                input: in_ix[c.input.as_str()],
+                                op: c.op,
+                                value: c.value,
+                            })
+                            .collect(),
                         exit: t.exit_time,
                         dur: t.duration.unwrap_or(l.states[to].blend_in) as f64,
                         ease: t.ease,
                     }
                 })
                 .collect();
-            layers.push(LayerRt { name: l.name.clone(), states, trans, cur: Play { state: sx[l.entry.as_str()], pos: 0.0 }, fade: None });
+            layers.push(LayerRt {
+                name: l.name.clone(),
+                states,
+                trans,
+                cur: Play {
+                    state: sx[l.entry.as_str()],
+                    pos: 0.0,
+                },
+                fade: None,
+            });
         }
         let mut base = project.clone();
         base.machines.clear();
@@ -157,7 +208,17 @@ impl MachineRuntime {
             in_names: m.inputs.iter().map(|i| i.name.clone()).collect(),
             in_kind: m.inputs.iter().map(|i| i.kind).collect(),
             in_hold: m.inputs.iter().map(|i| i.hold).collect(),
-            values: m.inputs.iter().map(|i| if i.kind == InputKind::Trigger { 0.0 } else { i.default }).collect(),
+            values: m
+                .inputs
+                .iter()
+                .map(|i| {
+                    if i.kind == InputKind::Trigger {
+                        0.0
+                    } else {
+                        i.default
+                    }
+                })
+                .collect(),
             layers,
             time: 0.0,
             events: Vec::new(),
@@ -165,7 +226,12 @@ impl MachineRuntime {
         };
         for l in 0..rt.layers.len() {
             let name = rt.layers[l].states[rt.layers[l].cur.state].name.clone();
-            rt.events.push(MachineEvent { time: 0.0, layer: rt.layers[l].name.clone(), kind: EventKind::Entered, state: name });
+            rt.events.push(MachineEvent {
+                time: 0.0,
+                layer: rt.layers[l].name.clone(),
+                kind: EventKind::Entered,
+                state: name,
+            });
         }
         Ok(rt)
     }
@@ -182,7 +248,10 @@ impl MachineRuntime {
     }
 
     pub(super) fn input_ix(&self, name: &str) -> Result<usize, String> {
-        self.in_names.iter().position(|n| n == name).ok_or_else(|| format!("machine '{}' has no input '{name}'", self.machine_name))
+        self.in_names
+            .iter()
+            .position(|n| n == name)
+            .ok_or_else(|| format!("machine '{}' has no input '{name}'", self.machine_name))
     }
 
     pub fn set_bool(&mut self, name: &str, v: bool) -> Result<(), String> {
@@ -231,7 +300,10 @@ impl MachineRuntime {
     }
 
     pub fn input_value(&self, name: &str) -> Option<f64> {
-        self.in_names.iter().position(|n| n == name).map(|i| self.values[i])
+        self.in_names
+            .iter()
+            .position(|n| n == name)
+            .map(|i| self.values[i])
     }
 
     /// Publish an external value for the project's data bindings (applied on the next `step`).
@@ -241,17 +313,26 @@ impl MachineRuntime {
 
     /// Name of the current state of a layer.
     pub fn state_of(&self, layer: &str) -> Option<&str> {
-        self.layers.iter().find(|l| l.name == layer).map(|l| l.states[l.cur.state].name.as_str())
+        self.layers
+            .iter()
+            .find(|l| l.name == layer)
+            .map(|l| l.states[l.cur.state].name.as_str())
     }
 
     /// `(layer, state)` for every layer.
     pub fn states(&self) -> Vec<(String, String)> {
-        self.layers.iter().map(|l| (l.name.clone(), l.states[l.cur.state].name.clone())).collect()
+        self.layers
+            .iter()
+            .map(|l| (l.name.clone(), l.states[l.cur.state].name.clone()))
+            .collect()
     }
 
     /// Whether the layer is currently crossfading.
     pub fn is_fading(&self, layer: &str) -> bool {
-        self.layers.iter().find(|l| l.name == layer).is_some_and(|l| l.fade.is_some())
+        self.layers
+            .iter()
+            .find(|l| l.name == layer)
+            .is_some_and(|l| l.fade.is_some())
     }
 
     /// Events not yet taken, oldest first.
@@ -290,9 +371,17 @@ impl MachineRuntime {
     pub(super) fn state_len(&self, st: &RtState) -> f64 {
         match &st.kind {
             RtKind::Leaf(l) => l.len as f64,
-            RtKind::Blend { input, thresholds, children } => {
+            RtKind::Blend {
+                input,
+                thresholds,
+                children,
+            } => {
                 let w = self.weights_of(thresholds, *input);
-                children.iter().zip(&w).map(|(c, w)| c.len as f64 * *w as f64).sum()
+                children
+                    .iter()
+                    .zip(&w)
+                    .map(|(c, w)| c.len as f64 * *w as f64)
+                    .sum()
             }
         }
     }
@@ -302,9 +391,23 @@ impl MachineRuntime {
         let phase = sample_phase(st.mode, play.pos);
         match &st.kind {
             RtKind::Leaf(leaf) => MachineRuntime::leaf_pose(leaf, phase),
-            RtKind::Blend { input, thresholds, children } => {
+            RtKind::Blend {
+                input,
+                thresholds,
+                children,
+            } => {
                 let w = self.weights_of(thresholds, *input);
-                let poses: Vec<Pose> = children.iter().zip(&w).map(|(c, w)| if *w > 0.0 { MachineRuntime::leaf_pose(c, phase) } else { Pose::default() }).collect();
+                let poses: Vec<Pose> = children
+                    .iter()
+                    .zip(&w)
+                    .map(|(c, w)| {
+                        if *w > 0.0 {
+                            MachineRuntime::leaf_pose(c, phase)
+                        } else {
+                            Pose::default()
+                        }
+                    })
+                    .collect();
                 let parts: Vec<(&Pose, f32)> = poses.iter().zip(&w).map(|(p, w)| (p, *w)).collect();
                 Pose::mix(&parts)
             }
@@ -321,7 +424,11 @@ impl MachineRuntime {
                     FadeFrom::Live(p) => self.play_pose(l, *p),
                     FadeFrom::Snap(s) => s.clone(),
                 };
-                let u = if f.dur > 0.0 { f.ease.apply((f.elapsed / f.dur) as f32).clamp(0.0, 1.0) } else { 1.0 };
+                let u = if f.dur > 0.0 {
+                    f.ease.apply((f.elapsed / f.dur) as f32).clamp(0.0, 1.0)
+                } else {
+                    1.0
+                };
                 Pose::mix(&[(&from, 1.0 - u), (&cur, u)])
             }
         }
@@ -400,7 +507,11 @@ impl MachineRuntime {
                 }
             }
         }
-        let n = if dt == 0.0 { 1 } else { (dt / SUBSTEP).ceil() as usize };
+        let n = if dt == 0.0 {
+            1
+        } else {
+            (dt / SUBSTEP).ceil() as usize
+        };
         let h = dt / n as f64;
         for _ in 0..n {
             self.substep(h);
@@ -450,7 +561,9 @@ impl MachineRuntime {
             }
             // transitions (zero-duration ones may chain)
             for _ in 0..MAX_HOPS {
-                let Some(ti) = self.find_transition(li) else { break };
+                let Some(ti) = self.find_transition(li) else {
+                    break;
+                };
                 let instant = self.fire_transition(li, ti);
                 if !instant {
                     break;
@@ -486,8 +599,17 @@ impl MachineRuntime {
 
     /// Returns whether the transition was instantaneous.
     pub(super) fn fire_transition(&mut self, li: usize, ti: usize) -> bool {
-        let snap = if self.layers[li].fade.is_some() { Some(self.layer_pose(li)) } else { None };
-        let consumed: Vec<usize> = self.layers[li].trans[ti].conds.iter().map(|c| c.input).filter(|&i| self.in_kind[i] == InputKind::Trigger).collect();
+        let snap = if self.layers[li].fade.is_some() {
+            Some(self.layer_pose(li))
+        } else {
+            None
+        };
+        let consumed: Vec<usize> = self.layers[li].trans[ti]
+            .conds
+            .iter()
+            .map(|c| c.input)
+            .filter(|&i| self.in_kind[i] == InputKind::Trigger)
+            .collect();
         for i in consumed {
             self.values[i] = 0.0;
         }
@@ -495,11 +617,29 @@ impl MachineRuntime {
         let l = &mut self.layers[li];
         let (to, dur, ease) = (l.trans[ti].to, l.trans[ti].dur, l.trans[ti].ease);
         let old = l.cur;
-        self.events.push(MachineEvent { time, layer: l.name.clone(), kind: EventKind::Exited, state: l.states[old.state].name.clone() });
-        self.events.push(MachineEvent { time, layer: l.name.clone(), kind: EventKind::Entered, state: l.states[to].name.clone() });
-        l.cur = Play { state: to, pos: 0.0 };
+        self.events.push(MachineEvent {
+            time,
+            layer: l.name.clone(),
+            kind: EventKind::Exited,
+            state: l.states[old.state].name.clone(),
+        });
+        self.events.push(MachineEvent {
+            time,
+            layer: l.name.clone(),
+            kind: EventKind::Entered,
+            state: l.states[to].name.clone(),
+        });
+        l.cur = Play {
+            state: to,
+            pos: 0.0,
+        };
         if dur > 0.0 {
-            l.fade = Some(Fade { from: snap.map_or(FadeFrom::Live(old), FadeFrom::Snap), elapsed: 0.0, dur, ease });
+            l.fade = Some(Fade {
+                from: snap.map_or(FadeFrom::Live(old), FadeFrom::Snap),
+                elapsed: 0.0,
+                dur,
+                ease,
+            });
             false
         } else {
             l.fade = None;

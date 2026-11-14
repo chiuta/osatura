@@ -32,16 +32,26 @@ pub struct Shutter {
 impl Shutter {
     /// A shutter that starts at the frame time.
     pub fn new(angle_deg: f64, samples: u32) -> Shutter {
-        Shutter { angle_deg, samples, phase_s: 0.0 }
+        Shutter {
+            angle_deg,
+            samples,
+            phase_s: 0.0,
+        }
     }
 
     /// Checks angle in `[0, 360]`, `1 <= samples <= MAX_SAMPLES` and a finite phase.
     pub fn validate(&self) -> Result<(), String> {
         if !self.angle_deg.is_finite() || !(0.0..=360.0).contains(&self.angle_deg) {
-            return Err(format!("the shutter angle must be in [0, 360] degrees, got {}", self.angle_deg));
+            return Err(format!(
+                "the shutter angle must be in [0, 360] degrees, got {}",
+                self.angle_deg
+            ));
         }
         if self.samples < 1 || self.samples > MAX_SAMPLES {
-            return Err(format!("the number of samples must be 1..={MAX_SAMPLES}, got {}", self.samples));
+            return Err(format!(
+                "the number of samples must be 1..={MAX_SAMPLES}, got {}",
+                self.samples
+            ));
         }
         if !self.phase_s.is_finite() {
             return Err("the shutter phase must be finite".into());
@@ -68,7 +78,9 @@ impl Shutter {
             return Ok(vec![t + self.phase_s]);
         }
         let n = f64::from(self.samples);
-        Ok((0..self.samples).map(|i| t + self.phase_s + (f64::from(i) + 0.5) / n * e).collect())
+        Ok((0..self.samples)
+            .map(|i| t + self.phase_s + (f64::from(i) + 0.5) / n * e)
+            .collect())
     }
 }
 
@@ -86,7 +98,10 @@ impl Accumulator {
         if !len.is_multiple_of(4) {
             return Err("the images must be RGBA with the same size".into());
         }
-        Ok(Accumulator { sums: vec![[0; 4]; len / 4], count: 0 })
+        Ok(Accumulator {
+            sums: vec![[0; 4]; len / 4],
+            count: 0,
+        })
     }
 
     /// Adds one image.
@@ -148,7 +163,13 @@ pub fn accumulate(images: &[&[u8]]) -> Result<Vec<u8>, String> {
 
 /// Renders a frame with motion blur through `render(time_seconds) -> (width, height, straight RGBA8)`. Times are limited to
 /// `[0, duration_s]` when a duration is given. With angle 0 the single render is returned unchanged (byte for byte).
-pub fn render_blurred<F>(shutter: &Shutter, t: f64, fps: f64, duration_s: Option<f64>, mut render: F) -> Result<(u32, u32, Vec<u8>), String>
+pub fn render_blurred<F>(
+    shutter: &Shutter,
+    t: f64,
+    fps: f64,
+    duration_s: Option<f64>,
+    mut render: F,
+) -> Result<(u32, u32, Vec<u8>), String>
 where
     F: FnMut(f64) -> Result<(u32, u32, Vec<u8>), String>,
 {
@@ -156,7 +177,11 @@ where
         Some(d) if d.is_finite() && d >= 0.0 => x.clamp(0.0, d),
         _ => x,
     };
-    let times: Vec<f64> = shutter.sample_times(t, fps)?.into_iter().map(clamp).collect();
+    let times: Vec<f64> = shutter
+        .sample_times(t, fps)?
+        .into_iter()
+        .map(clamp)
+        .collect();
     if times.len() == 1 {
         return render(times[0]);
     }
@@ -177,7 +202,12 @@ where
 }
 
 /// Motion-blurred render of `frame` (a frame number of the project) with the raster renderer.
-pub fn render_engine(engine: &Engine, frame: f32, opts: &RasterOptions, shutter: &Shutter) -> Result<(u32, u32, Vec<u8>), String> {
+pub fn render_engine(
+    engine: &Engine,
+    frame: f32,
+    opts: &RasterOptions,
+    shutter: &Shutter,
+) -> Result<(u32, u32, Vec<u8>), String> {
     crate::raster::check_project_size(&engine.project, opts.scale)?;
     let p = &engine.project;
     let fps = f64::from(p.fps);
@@ -196,7 +226,11 @@ pub const MAX_SEQUENCE_RENDERS: u64 = 100_000;
 /// Checks the shutter and the total cost of blurring `frames` frames.
 pub fn check_sequence_cost(frames: u32, shutter: &Shutter) -> Result<(), String> {
     shutter.validate()?;
-    let n = if shutter.angle_deg == 0.0 { 1 } else { u64::from(shutter.samples) };
+    let n = if shutter.angle_deg == 0.0 {
+        1
+    } else {
+        u64::from(shutter.samples)
+    };
     let total = u64::from(frames) * n;
     if total > MAX_SEQUENCE_RENDERS {
         return Err(format!("{frames} frames with {n} samples each are {total} renders (limit {MAX_SEQUENCE_RENDERS}): lower --samples or shorten the animation"));
@@ -206,10 +240,18 @@ pub fn check_sequence_cost(frames: u32, shutter: &Shutter) -> Result<(), String>
 
 /// Every frame of the project with motion blur, as `(width, height, straight RGBA frames)`; the same layout as the unblurred sequence
 /// writers use, so the existing GIF / APNG encoders take it unchanged. With angle 0 the frames are the plain renders.
-pub fn frames_rgba(engine: &Engine, scale: f32, shutter: &Shutter) -> Result<(u32, u32, Vec<Vec<u8>>), String> {
+pub fn frames_rgba(
+    engine: &Engine,
+    scale: f32,
+    shutter: &Shutter,
+) -> Result<(u32, u32, Vec<Vec<u8>>), String> {
     crate::raster::check_sequence(&engine.project, scale)?;
     check_sequence_cost(engine.project.frames, shutter)?;
-    let opts = RasterOptions { scale, show_bones: false, transparent: false };
+    let opts = RasterOptions {
+        scale,
+        show_bones: false,
+        transparent: false,
+    };
     let (mut w, mut h) = (0, 0);
     let mut out = Vec::with_capacity(engine.project.frames as usize);
     for f in 0..engine.project.frames {
@@ -234,21 +276,34 @@ mod tests {
         let t = 10.0 / 24.0;
         close(s.exposure_s(24.0).unwrap(), 0.020_833_3);
         let v = s.sample_times(t, 24.0).unwrap();
-        for (got, off) in v.iter().zip([0.002_604_2, 0.007_812_5, 0.013_020_8, 0.018_229_2]) {
+        for (got, off) in v
+            .iter()
+            .zip([0.002_604_2, 0.007_812_5, 0.013_020_8, 0.018_229_2])
+        {
             close(got - t, off);
         }
     }
 
     #[test]
     fn one_sample_full_shutter_and_centred_phase() {
-        close(Shutter::new(360.0, 1).sample_times(0.0, 25.0).unwrap()[0], 0.02);
+        close(
+            Shutter::new(360.0, 1).sample_times(0.0, 25.0).unwrap()[0],
+            0.02,
+        );
         let mut s = Shutter::new(360.0, 2);
         s.phase_s = -s.exposure_s(25.0).unwrap() / 2.0;
         let v = s.sample_times(1.0, 25.0).unwrap();
         close(v[0], 1.0 - 0.01);
         close(v[1], 1.0 + 0.01);
         // the last sample of a full shutter does not reach the next frame time
-        assert!(*Shutter::new(360.0, 8).sample_times(0.0, 25.0).unwrap().last().unwrap() < 0.04);
+        assert!(
+            *Shutter::new(360.0, 8)
+                .sample_times(0.0, 25.0)
+                .unwrap()
+                .last()
+                .unwrap()
+                < 0.04
+        );
         // angle 0: one render at t + phase whatever N is
         let mut z = Shutter::new(0.0, 7);
         z.phase_s = 0.5;
@@ -257,7 +312,13 @@ mod tests {
 
     #[test]
     fn incremental_sum_equals_batch_average() {
-        let imgs: Vec<Vec<u8>> = (0..7u8).map(|i| (0..64u8).map(|j| i.wrapping_mul(37).wrapping_add(j.wrapping_mul(11))).collect()).collect();
+        let imgs: Vec<Vec<u8>> = (0..7u8)
+            .map(|i| {
+                (0..64u8)
+                    .map(|j| i.wrapping_mul(37).wrapping_add(j.wrapping_mul(11)))
+                    .collect()
+            })
+            .collect();
         let refs: Vec<&[u8]> = imgs.iter().map(Vec::as_slice).collect();
         let mut acc = Accumulator::new(64).unwrap();
         for i in &imgs {
@@ -293,7 +354,10 @@ mod tests {
 
     #[test]
     fn mean_of_opaque_greys() {
-        let imgs: Vec<Vec<u8>> = [0u8, 254, 0, 254].iter().map(|&g| vec![g, g, g, 255]).collect();
+        let imgs: Vec<Vec<u8>> = [0u8, 254, 0, 254]
+            .iter()
+            .map(|&g| vec![g, g, g, 255])
+            .collect();
         let refs: Vec<&[u8]> = imgs.iter().map(Vec::as_slice).collect();
         assert_eq!(accumulate(&refs).unwrap(), vec![127, 127, 127, 255]);
     }
@@ -311,7 +375,17 @@ mod tests {
     fn identical_images_average_to_themselves_and_errors() {
         let img: Vec<u8> = (0..64u8).map(|i| i.wrapping_mul(37)).collect();
         let refs: Vec<&[u8]> = vec![&img; 8];
-        assert_eq!(accumulate(&refs).unwrap(), img.iter().enumerate().map(|(i, v)| if i % 4 == 3 || img[i / 4 * 4 + 3] != 0 { *v } else { 0 }).collect::<Vec<u8>>());
+        assert_eq!(
+            accumulate(&refs).unwrap(),
+            img.iter()
+                .enumerate()
+                .map(|(i, v)| if i % 4 == 3 || img[i / 4 * 4 + 3] != 0 {
+                    *v
+                } else {
+                    0
+                })
+                .collect::<Vec<u8>>()
+        );
         assert!(accumulate(&[]).is_err());
         assert!(accumulate(&[&[0u8; 4][..], &[0u8; 8][..]]).is_err());
         assert!(accumulate(&[&[0u8; 5][..]]).is_err());
@@ -330,7 +404,10 @@ mod tests {
         assert_eq!(seen, vec![1.125, 1.375]);
         assert_eq!(r, (1, 1, vec![127, 127, 127, 255]));
         // angle 0: the render is returned unchanged
-        let r = render_blurred(&Shutter::new(0.0, 9), 1.0, 2.0, None, |t| Ok((1, 1, vec![(t * 10.0) as u8, 1, 2, 3]))).unwrap();
+        let r = render_blurred(&Shutter::new(0.0, 9), 1.0, 2.0, None, |t| {
+            Ok((1, 1, vec![(t * 10.0) as u8, 1, 2, 3]))
+        })
+        .unwrap();
         assert_eq!(r.2, vec![10, 1, 2, 3]);
         // times are limited to [0, duration]
         let mut seen = Vec::new();
@@ -366,9 +443,15 @@ mod tests {
         let opts = RasterOptions::default();
         let plain = render_rgba(&e, 3.0, &opts);
         // angle 0, any N: byte for byte
-        assert_eq!(render_engine(&e, 3.0, &opts, &Shutter::new(0.0, 5)).unwrap(), plain);
+        assert_eq!(
+            render_engine(&e, 3.0, &opts, &Shutter::new(0.0, 5)).unwrap(),
+            plain
+        );
         // a static scene: the average of identical renders
-        assert_eq!(render_engine(&e, 3.0, &opts, &Shutter::new(180.0, 8)).unwrap(), plain);
+        assert_eq!(
+            render_engine(&e, 3.0, &opts, &Shutter::new(180.0, 8)).unwrap(),
+            plain
+        );
     }
 
     #[test]
@@ -377,8 +460,14 @@ mod tests {
         let opts = RasterOptions::default();
         let plain = render_rgba(&e, 6.0, &opts);
         let blurred = render_engine(&e, 6.0, &opts, &Shutter::new(360.0, 4)).unwrap();
-        assert_eq!((blurred.0, blurred.1, blurred.2.len()), (plain.0, plain.1, plain.2.len()));
-        assert_ne!(blurred.2, plain.2, "the demo moves, so the average differs from a single render");
+        assert_eq!(
+            (blurred.0, blurred.1, blurred.2.len()),
+            (plain.0, plain.1, plain.2.len())
+        );
+        assert_ne!(
+            blurred.2, plain.2,
+            "the demo moves, so the average differs from a single render"
+        );
         let again = render_engine(&e, 6.0, &opts, &Shutter::new(360.0, 4)).unwrap();
         assert_eq!(again, blurred, "same inputs, same bytes");
     }

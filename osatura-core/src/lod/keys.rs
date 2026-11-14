@@ -29,14 +29,23 @@ pub fn track_deviation_at(orig: &Track, red: &Track, samples: &[f32]) -> f64 {
 /// repair loop re-inserts keys until the bound holds for the whole sample set.
 pub fn reduce_track_bounded(t: &Track, tol: f64, grid: &[f32]) -> Track {
     let n = t.keys.len();
-    if n < 3 || !matches!(tol.partial_cmp(&0.0), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) || !tol.is_finite() {
+    if n < 3
+        || !matches!(
+            tol.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
+        )
+        || !tol.is_finite()
+    {
         return t.clone();
     }
     let samples = merged_samples(t, grid);
     let mut keep = vec![false; n];
     keep[0] = true;
     keep[n - 1] = true;
-    let sub = |lo: usize, hi: usize| Track { keys: vec![t.keys[lo], t.keys[hi]], extrapolate: t.extrapolate };
+    let sub = |lo: usize, hi: usize| Track {
+        keys: vec![t.keys[lo], t.keys[hi]],
+        extrapolate: t.extrapolate,
+    };
     let mut stack = vec![(0usize, n - 1)];
     while let Some((lo, hi)) = stack.pop() {
         if hi - lo < 2 {
@@ -54,12 +63,27 @@ pub fn reduce_track_bounded(t: &Track, tol: f64, grid: &[f32]) -> Track {
         if worst.0 <= tol {
             continue;
         }
-        let split = (lo + 1..hi).min_by(|&a, &b| (t.keys[a].frame - worst.1).abs().total_cmp(&(t.keys[b].frame - worst.1).abs())).unwrap();
+        let split = (lo + 1..hi)
+            .min_by(|&a, &b| {
+                (t.keys[a].frame - worst.1)
+                    .abs()
+                    .total_cmp(&(t.keys[b].frame - worst.1).abs())
+            })
+            .unwrap();
         keep[split] = true;
         stack.push((lo, split));
         stack.push((split, hi));
     }
-    let build = |keep: &[bool]| Track { keys: t.keys.iter().zip(keep).filter(|(_, &k)| k).map(|(k, _)| *k).collect(), extrapolate: t.extrapolate };
+    let build = |keep: &[bool]| Track {
+        keys: t
+            .keys
+            .iter()
+            .zip(keep)
+            .filter(|(_, &k)| k)
+            .map(|(k, _)| *k)
+            .collect(),
+        extrapolate: t.extrapolate,
+    };
     let mut red = build(&keep);
     loop {
         let mut worst = (0.0f64, 0.0f32);
@@ -72,7 +96,11 @@ pub fn reduce_track_bounded(t: &Track, tol: f64, grid: &[f32]) -> Track {
         if worst.0 <= tol {
             return red;
         }
-        let Some(add) = (0..n).filter(|&i| !keep[i]).min_by(|&a, &b| (t.keys[a].frame - worst.1).abs().total_cmp(&(t.keys[b].frame - worst.1).abs())) else {
+        let Some(add) = (0..n).filter(|&i| !keep[i]).min_by(|&a, &b| {
+            (t.keys[a].frame - worst.1)
+                .abs()
+                .total_cmp(&(t.keys[b].frame - worst.1).abs())
+        }) else {
             return red;
         };
         keep[add] = true;
@@ -88,17 +116,29 @@ pub(super) struct KeyOutcome {
 }
 
 /// Reduce the eligible channels so that the summed pixel error at any layer stays within `budget_px`.
-pub(super) fn reduce_keys(c: &Ctx, an: &Analysis, chans: &[(usize, LKind)], scale: f64, budget_px: f64, grid: &[f32]) -> KeyOutcome {
+pub(super) fn reduce_keys(
+    c: &Ctx,
+    an: &Analysis,
+    chans: &[(usize, LKind)],
+    scale: f64,
+    budget_px: f64,
+    grid: &[f32],
+) -> KeyOutcome {
     let p = c.p;
     let mut out = p.channels.clone();
     let mut notes = Vec::new();
     // co-influence count K: how many reducible channels can move the same layer
-    let usable: Vec<usize> = (0..chans.len()).filter(|&i| !an.blocked[i] && an.lever[i].values().any(|&v| v > 0.0)).collect();
+    let usable: Vec<usize> = (0..chans.len())
+        .filter(|&i| !an.blocked[i] && an.lever[i].values().any(|&v| v > 0.0))
+        .collect();
     // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
     #[allow(clippy::needless_range_loop)]
     for i in 0..chans.len() {
         if an.blocked[i] {
-            notes.push(format!("channel {} {:?} skipped: lever not bounded", p.channels[chans[i].0].target, p.channels[chans[i].0].prop));
+            notes.push(format!(
+                "channel {} {:?} skipped: lever not bounded",
+                p.channels[chans[i].0].target, p.channels[chans[i].0].prop
+            ));
         }
     }
     let mut count: BTreeMap<usize, usize> = BTreeMap::new();
@@ -115,7 +155,9 @@ pub(super) fn reduce_keys(c: &Ctx, an: &Analysis, chans: &[(usize, LKind)], scal
     for &i in &usable {
         let ch_i = chans[i].0;
         let ch = &p.channels[ch_i];
-        let Source::Keys { track } = &ch.source else { continue };
+        let Source::Keys { track } = &ch.source else {
+            continue;
+        };
         let lmax = an.lever[i].values().copied().fold(0.0, f64::max) * scale;
         let w = ch.weight as f64;
         let eps_value = budget_px / (k * lmax * w);
@@ -136,5 +178,10 @@ pub(super) fn reduce_keys(c: &Ctx, an: &Analysis, chans: &[(usize, LKind)], scal
         }
     }
     let keys_px = per_node.values().copied().fold(0.0, f64::max) * MARGIN;
-    KeyOutcome { channels: out, keys_px, reduced, notes }
+    KeyOutcome {
+        channels: out,
+        keys_px,
+        reduced,
+        notes,
+    }
 }

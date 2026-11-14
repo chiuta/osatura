@@ -12,8 +12,11 @@ pub(super) fn round_nums(val: &str, d: u8, path_mode: bool) -> String {
     while i < b.len() {
         let c = b[i];
         let starts = c.is_ascii_digit()
-            || ((c == b'-' || c == b'+' || c == b'.') && b.get(i + 1).is_some_and(|n| n.is_ascii_digit() || (*n == b'.' && c != b'.')));
-        let prev_ok = i == 0 || path_mode || !(b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_');
+            || ((c == b'-' || c == b'+' || c == b'.')
+                && b.get(i + 1)
+                    .is_some_and(|n| n.is_ascii_digit() || (*n == b'.' && c != b'.')));
+        let prev_ok =
+            i == 0 || path_mode || !(b[i - 1].is_ascii_alphanumeric() || b[i - 1] == b'_');
         if starts && prev_ok {
             let mut j = i + 1;
             let mut dot = c == b'.';
@@ -36,7 +39,14 @@ pub(super) fn round_nums(val: &str, d: u8, path_mode: bool) -> String {
 }
 
 pub(super) fn round_attr(name: &str, val: &str, d: u8) -> String {
-    if name == "id" || name == "class" || name == "xmlns" || name.ends_with("href") || val.contains('#') || val.contains("url(") || val.starts_with("data:") {
+    if name == "id"
+        || name == "class"
+        || name == "xmlns"
+        || name.ends_with("href")
+        || val.contains('#')
+        || val.contains("url(")
+        || val.starts_with("data:")
+    {
         return val.to_string();
     }
     match name {
@@ -50,11 +60,17 @@ pub(super) fn round_attr(name: &str, val: &str, d: u8) -> String {
             let f: Vec<String> = parts
                 .iter()
                 .enumerate()
-                .map(|(k, p)| p.parse::<f64>().map(|x| fmt_dec(x, if k < 4 { d.saturating_add(3) } else { d })).unwrap_or_else(|_| p.to_string()))
+                .map(|(k, p)| {
+                    p.parse::<f64>()
+                        .map(|x| fmt_dec(x, if k < 4 { d.saturating_add(3) } else { d }))
+                        .unwrap_or_else(|_| p.to_string())
+                })
                 .collect();
             format!("matrix({})", f.join(" "))
         }
-        "opacity" | "fill-opacity" | "stroke-opacity" | "stop-opacity" | "offset" => round_nums(val, d.max(2), false),
+        "opacity" | "fill-opacity" | "stroke-opacity" | "stop-opacity" | "offset" => {
+            round_nums(val, d.max(2), false)
+        }
         _ => round_nums(val, d, false),
     }
 }
@@ -66,7 +82,9 @@ pub fn svg_round(svg: &str, d: u8) -> String {
     let mut out = String::with_capacity(svg.len());
     let mut rest = svg;
     while let Some(p) = rest.find("=\"") {
-        let name_start = rest[..p].rfind(|c: char| c.is_whitespace() || c == '<').map_or(0, |i| i + 1);
+        let name_start = rest[..p]
+            .rfind(|c: char| c.is_whitespace() || c == '<')
+            .map_or(0, |i| i + 1);
         out.push_str(&rest[..p + 2]);
         let after = &rest[p + 2..];
         let Some(end) = after.find('"') else {
@@ -79,7 +97,9 @@ pub fn svg_round(svg: &str, d: u8) -> String {
         rest = &after[end + 1..];
     }
     out.push_str(rest);
-    out.replace(">\n", ">").replace(" opacity=\"1\"", "").replace(" fill-opacity=\"1\"", "")
+    out.replace(">\n", ">")
+        .replace(" opacity=\"1\"", "")
+        .replace(" fill-opacity=\"1\"", "")
 }
 
 /// Apply the rounding of [`svg_round`] to the evaluated frame data (positions, tangents, stroke widths,
@@ -122,8 +142,16 @@ pub(super) fn simplify_frame_paths(f: &mut Frame, eps: f64) {
 }
 
 /// The page: frames as inline SVG, deduplicated (`x` maps displayed frame -> unique frame), play / pause / scrubber.
-pub fn html_page(title: &str, width: f32, fps: f32, unique: &[String], x: Option<&[usize]>) -> String {
-    let data = serde_json::to_string(unique).unwrap_or_else(|_| "[]".into()).replace("</", "<\\/");
+pub fn html_page(
+    title: &str,
+    width: f32,
+    fps: f32,
+    unique: &[String],
+    x: Option<&[usize]>,
+) -> String {
+    let data = serde_json::to_string(unique)
+        .unwrap_or_else(|_| "[]".into())
+        .replace("</", "<\\/");
     let xs = match x {
         Some(x) => serde_json::to_string(x).unwrap_or_else(|_| "null".into()),
         None => "null".into(),

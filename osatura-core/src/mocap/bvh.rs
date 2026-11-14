@@ -69,14 +69,23 @@ pub(super) fn tokenize(text: &str) -> Vec<Tok<'_>> {
                 for (i, c) in w.char_indices() {
                     if c == '{' || c == '}' {
                         if i > last {
-                            out.push(Tok { line: ln + 1, s: &w[last..i] });
+                            out.push(Tok {
+                                line: ln + 1,
+                                s: &w[last..i],
+                            });
                         }
-                        out.push(Tok { line: ln + 1, s: &w[i..i + 1] });
+                        out.push(Tok {
+                            line: ln + 1,
+                            s: &w[i..i + 1],
+                        });
                         last = i + 1;
                     }
                 }
                 if last < w.len() {
-                    out.push(Tok { line: ln + 1, s: &w[last..] });
+                    out.push(Tok {
+                        line: ln + 1,
+                        s: &w[last..],
+                    });
                 }
             }
         }
@@ -104,7 +113,10 @@ impl<'a> Parser<'a> {
                 self.i += 1;
                 Ok((t.line, t.s))
             }
-            None => Err(format!("line {}: unexpected end of file while reading {ctx}", self.last_line())),
+            None => Err(format!(
+                "line {}: unexpected end of file while reading {ctx}",
+                self.last_line()
+            )),
         }
     }
     pub(super) fn expect(&mut self, word: &str) -> Result<usize, String> {
@@ -117,7 +129,9 @@ impl<'a> Parser<'a> {
     }
     pub(super) fn num(&mut self, ctx: &str) -> Result<f64, String> {
         let (l, s) = self.next(ctx)?;
-        let v: f64 = s.parse().map_err(|_| format!("line {l}: '{s}' is not a number ({ctx})"))?;
+        let v: f64 = s
+            .parse()
+            .map_err(|_| format!("line {l}: '{s}' is not a number ({ctx})"))?;
         if !v.is_finite() {
             return Err(format!("line {l}: '{s}' is not a finite number ({ctx})"));
         }
@@ -125,11 +139,22 @@ impl<'a> Parser<'a> {
     }
     pub(super) fn offset(&mut self) -> Result<V3, String> {
         self.expect("OFFSET")?;
-        Ok([self.num("OFFSET x")?, self.num("OFFSET y")?, self.num("OFFSET z")?])
+        Ok([
+            self.num("OFFSET x")?,
+            self.num("OFFSET y")?,
+            self.num("OFFSET z")?,
+        ])
     }
-    pub(super) fn joint(&mut self, parent: Option<usize>, kw_line: usize, depth: usize) -> Result<(), String> {
+    pub(super) fn joint(
+        &mut self,
+        parent: Option<usize>,
+        kw_line: usize,
+        depth: usize,
+    ) -> Result<(), String> {
         if depth > MAX_DEPTH {
-            return Err(format!("line {kw_line}: hierarchy nested deeper than {MAX_DEPTH}"));
+            return Err(format!(
+                "line {kw_line}: hierarchy nested deeper than {MAX_DEPTH}"
+            ));
         }
         if self.joints.len() >= MAX_JOINTS {
             return Err(format!("line {kw_line}: more than {MAX_JOINTS} joints"));
@@ -147,7 +172,15 @@ impl<'a> Parser<'a> {
         }
         let name = name.join(" ");
         let idx = self.joints.len();
-        self.joints.push(Joint { name: name.clone(), parent, offset: [0.0; 3], channels: vec![], chan_start: 0, end_site: None, children: vec![] });
+        self.joints.push(Joint {
+            name: name.clone(),
+            parent,
+            offset: [0.0; 3],
+            channels: vec![],
+            chan_start: 0,
+            end_site: None,
+            children: vec![],
+        });
         if let Some(p) = parent {
             self.joints[p].children.push(idx);
         }
@@ -163,14 +196,21 @@ impl<'a> Parser<'a> {
                 }
                 "channels" => {
                     let (nl, ns) = self.next("channel count")?;
-                    let n: usize = ns.parse().map_err(|_| format!("line {nl}: '{ns}' is not a channel count"))?;
+                    let n: usize = ns
+                        .parse()
+                        .map_err(|_| format!("line {nl}: '{ns}' is not a channel count"))?;
                     if n > 24 {
-                        return Err(format!("line {nl}: {n} channels on one joint is not plausible"));
+                        return Err(format!(
+                            "line {nl}: {n} channels on one joint is not plausible"
+                        ));
                     }
                     let mut ch = Vec::with_capacity(n);
                     for _ in 0..n {
                         let (cl, cs) = self.next("channel name")?;
-                        ch.push(Chan::parse(cs).ok_or_else(|| format!("line {cl}: unknown channel '{cs}'"))?);
+                        ch.push(
+                            Chan::parse(cs)
+                                .ok_or_else(|| format!("line {cl}: unknown channel '{cs}'"))?,
+                        );
                     }
                     self.joints[idx].chan_start = self.nch;
                     self.nch += n;
@@ -205,7 +245,10 @@ impl<'a> Parser<'a> {
             let (l, s) = self.next(&format!("'{}'", words.join(" ")))?;
             let lower = s.to_ascii_lowercase();
             if !lower.starts_with(w) {
-                return Err(format!("line {l}: expected '{}:', found '{s}'", words.join(" ")));
+                return Err(format!(
+                    "line {l}: expected '{}:', found '{s}'",
+                    words.join(" ")
+                ));
             }
             let rest = &s[w.len()..];
             if wi + 1 == words.len() {
@@ -229,7 +272,12 @@ impl<'a> Parser<'a> {
 
 /// Parse BVH text.
 pub fn parse_bvh(text: &str) -> Result<Bvh, String> {
-    let mut p = Parser { t: tokenize(text), i: 0, joints: vec![], nch: 0 };
+    let mut p = Parser {
+        t: tokenize(text),
+        i: 0,
+        joints: vec![],
+        nch: 0,
+    };
     if p.t.is_empty() {
         return Err("line 1: empty file".into());
     }
@@ -251,36 +299,63 @@ pub fn parse_bvh(text: &str) -> Result<Bvh, String> {
                 p.i += 1;
                 break;
             }
-            Some(t) => return Err(format!("line {}: expected ROOT or MOTION, found '{}'", t.line, t.s)),
+            Some(t) => {
+                return Err(format!(
+                    "line {}: expected ROOT or MOTION, found '{}'",
+                    t.line, t.s
+                ))
+            }
         }
     }
     let (fl, fv) = p.labeled(&["frames"])?;
-    let frames: usize = fv.parse().map_err(|_| format!("line {fl}: '{fv}' is not a frame count"))?;
+    let frames: usize = fv
+        .parse()
+        .map_err(|_| format!("line {fl}: '{fv}' is not a frame count"))?;
     if frames > MAX_FRAMES {
-        return Err(format!("line {fl}: {frames} frames exceeds the limit of {MAX_FRAMES}"));
+        return Err(format!(
+            "line {fl}: {frames} frames exceeds the limit of {MAX_FRAMES}"
+        ));
     }
     let (tl, tv) = p.labeled(&["frame", "time"])?;
-    let frame_time: f64 = tv.parse().map_err(|_| format!("line {tl}: '{tv}' is not a frame time"))?;
+    let frame_time: f64 = tv
+        .parse()
+        .map_err(|_| format!("line {tl}: '{tv}' is not a frame time"))?;
     if !(frame_time.is_finite() && frame_time > 0.0) {
-        return Err(format!("line {tl}: frame time must be positive, got '{tv}'"));
+        return Err(format!(
+            "line {tl}: frame time must be positive, got '{tv}'"
+        ));
     }
     let nch = p.nch;
-    let expected = frames.checked_mul(nch).filter(|&n| n <= MAX_VALUES).ok_or("motion data too large")?;
+    let expected = frames
+        .checked_mul(nch)
+        .filter(|&n| n <= MAX_VALUES)
+        .ok_or("motion data too large")?;
     let rest = &p.t[p.i..];
     if rest.len() < expected {
         let l = rest.last().map_or(tl, |t| t.line);
         return Err(format!("line {l}: motion data has {} values, expected {expected} ({frames} frames x {nch} channels)", rest.len()));
     }
     if rest.len() > expected {
-        return Err(format!("line {}: extra data after {frames} frames", rest[expected].line));
+        return Err(format!(
+            "line {}: extra data after {frames} frames",
+            rest[expected].line
+        ));
     }
     let mut data = Vec::with_capacity(expected);
     for t in rest {
-        let v: f64 = t.s.parse().map_err(|_| format!("line {}: '{}' is not a number", t.line, t.s))?;
+        let v: f64 =
+            t.s.parse()
+                .map_err(|_| format!("line {}: '{}' is not a number", t.line, t.s))?;
         if !v.is_finite() {
             return Err(format!("line {}: '{}' is not a finite number", t.line, t.s));
         }
         data.push(v);
     }
-    Ok(Bvh { joints: p.joints, frame_time, frames, num_channels: nch, data })
+    Ok(Bvh {
+        joints: p.joints,
+        frame_time,
+        frames,
+        num_channels: nch,
+        data,
+    })
 }

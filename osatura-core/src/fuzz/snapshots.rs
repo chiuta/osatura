@@ -54,21 +54,69 @@ pub(super) fn snapshot(frame: &Frame) -> Vec<Snap> {
                         loops.push((0, k));
                     }
                     let fl = p.flatten_t(1.0);
-                    let outline = (fl.iter().map(|f| f.0).collect::<Vec<_>>(), fl.iter().map(|f| f.1.min(k - 1)).collect::<Vec<_>>(), p.closed);
-                    out.push(Snap { name: format!("{}#{}", n.name, if p.name.is_empty() { pi.to_string() } else { p.name.clone() }), kind: GeoKind::Path, pts, tris: vec![], edges, outlines: vec![outline], loops, world: n.world });
+                    let outline = (
+                        fl.iter().map(|f| f.0).collect::<Vec<_>>(),
+                        fl.iter().map(|f| f.1.min(k - 1)).collect::<Vec<_>>(),
+                        p.closed,
+                    );
+                    out.push(Snap {
+                        name: format!(
+                            "{}#{}",
+                            n.name,
+                            if p.name.is_empty() {
+                                pi.to_string()
+                            } else {
+                                p.name.clone()
+                            }
+                        ),
+                        kind: GeoKind::Path,
+                        pts,
+                        tris: vec![],
+                        edges,
+                        outlines: vec![outline],
+                        loops,
+                        world: n.world,
+                    });
                 }
             }
             NodeKind::Image => {
                 if let Some(img) = &n.image {
                     match &img.mesh {
                         Some(m) => {
-                            let tris = m.tris.iter().map(|t| [t[0] as usize, t[1] as usize, t[2] as usize]).collect();
-                            out.push(Snap { name: format!("{}#mesh", n.name), kind: GeoKind::Mesh, pts: m.positions.clone(), tris, edges: vec![], outlines: vec![], loops: vec![], world: n.world });
+                            let tris = m
+                                .tris
+                                .iter()
+                                .map(|t| [t[0] as usize, t[1] as usize, t[2] as usize])
+                                .collect();
+                            out.push(Snap {
+                                name: format!("{}#mesh", n.name),
+                                kind: GeoKind::Mesh,
+                                pts: m.positions.clone(),
+                                tris,
+                                edges: vec![],
+                                outlines: vec![],
+                                loops: vec![],
+                                world: n.world,
+                            });
                         }
                         None => {
                             let (o, s) = (img.origin, img.size);
-                            let pts = vec![o, Vec2::new(o.x + s.x, o.y), o + s, Vec2::new(o.x, o.y + s.y)];
-                            out.push(Snap { name: format!("{}#quad", n.name), kind: GeoKind::Quad, pts, tris: vec![[0, 1, 2], [0, 2, 3]], edges: vec![], outlines: vec![], loops: vec![], world: n.world });
+                            let pts = vec![
+                                o,
+                                Vec2::new(o.x + s.x, o.y),
+                                o + s,
+                                Vec2::new(o.x, o.y + s.y),
+                            ];
+                            out.push(Snap {
+                                name: format!("{}#quad", n.name),
+                                kind: GeoKind::Quad,
+                                pts,
+                                tris: vec![[0, 1, 2], [0, 2, 3]],
+                                edges: vec![],
+                                outlines: vec![],
+                                loops: vec![],
+                                world: n.world,
+                            });
                         }
                     }
                 }
@@ -200,7 +248,13 @@ pub(super) fn engine_for(p: Project, asset_dir: Option<&Path>) -> Result<Engine,
 }
 
 impl Fuzzer {
-    pub fn new(project: &Project, asset_dir: Option<&Path>, popts: &ParamOptions, th: Thresholds, frame: f32) -> Result<Fuzzer, String> {
+    pub fn new(
+        project: &Project,
+        asset_dir: Option<&Path>,
+        popts: &ParamOptions,
+        th: Thresholds,
+        frame: f32,
+    ) -> Result<Fuzzer, String> {
         let params = enumerate_params(project, popts);
         if params.is_empty() {
             return Err("the rig has no parameters to fuzz".into());
@@ -208,7 +262,13 @@ impl Fuzzer {
         Fuzzer::with_params(project, asset_dir, params, th, frame)
     }
 
-    pub fn with_params(project: &Project, asset_dir: Option<&Path>, params: Vec<Param>, th: Thresholds, frame: f32) -> Result<Fuzzer, String> {
+    pub fn with_params(
+        project: &Project,
+        asset_dir: Option<&Path>,
+        params: Vec<Param>,
+        th: Thresholds,
+        frame: f32,
+    ) -> Result<Fuzzer, String> {
         if !frame.is_finite() {
             return Err("frame must be a number".into());
         }
@@ -224,30 +284,71 @@ impl Fuzzer {
         let geos: Vec<Geo> = snaps
             .into_iter()
             .map(|s| {
-                let rest_self = s.outlines.iter().map(|(p, _, c)| self_intersections(p, *c, 1000).len()).collect();
-                let rest_area = s.loops.iter().map(|&(a, b)| signed_area(&s.pts[a..b])).collect();
-                let rest_inside = bbox(&s.pts, &s.world).is_some_and(|(lo, hi)| hi.x >= 0.0 && lo.x <= w && hi.y >= 0.0 && lo.y <= h);
-                Geo { snap: s, rest_self, rest_area, rest_inside }
+                let rest_self = s
+                    .outlines
+                    .iter()
+                    .map(|(p, _, c)| self_intersections(p, *c, 1000).len())
+                    .collect();
+                let rest_area = s
+                    .loops
+                    .iter()
+                    .map(|&(a, b)| signed_area(&s.pts[a..b]))
+                    .collect();
+                let rest_inside = bbox(&s.pts, &s.world)
+                    .is_some_and(|(lo, hi)| hi.x >= 0.0 && lo.x <= w && hi.y >= 0.0 && lo.y <= h);
+                Geo {
+                    snap: s,
+                    rest_self,
+                    rest_area,
+                    rest_inside,
+                }
             })
             .collect();
         let rest_bones = project
             .bones
             .iter()
             .zip(&rest_frame.world)
-            .map(|(b, m)| (b.name.clone(), m.apply(Vec2::ZERO), m.apply(Vec2::new(b.length, 0.0))))
+            .map(|(b, m)| {
+                (
+                    b.name.clone(),
+                    m.apply(Vec2::ZERO),
+                    m.apply(Vec2::new(b.length, 0.0)),
+                )
+            })
             .collect();
         // probe engine
         let mut pp = project.clone();
         pp.channel_meta.clear();
-        pp.channels.retain(|c| !params.iter().any(|q| q.target == c.target && q.prop == c.prop));
+        pp.channels.retain(|c| {
+            !params
+                .iter()
+                .any(|q| q.target == c.target && q.prop == c.prop)
+        });
         let mut probes: Vec<Channel> = params
             .iter()
-            .map(|q| Channel::keys(&q.target, q.prop, Track::with_keys(&[(0.0, q.rest, Ease::Step)])).with_mode(Mode::Replace))
+            .map(|q| {
+                Channel::keys(
+                    &q.target,
+                    q.prop,
+                    Track::with_keys(&[(0.0, q.rest, Ease::Step)]),
+                )
+                .with_mode(Mode::Replace)
+            })
             .collect();
         probes.append(&mut pp.channels);
         pp.channels = probes;
         let engine = engine_for(pp, asset_dir)?;
-        Ok(Fuzzer { params, thresholds: th, frame, ignore: vec![], engine, geos, canvas: (w, h), rest_bones, evals: 0 })
+        Ok(Fuzzer {
+            params,
+            thresholds: th,
+            frame,
+            ignore: vec![],
+            engine,
+            geos,
+            canvas: (w, h),
+            rest_bones,
+            evals: 0,
+        })
     }
 
     pub fn rest_values(&self) -> Vec<f32> {
@@ -267,8 +368,17 @@ impl Fuzzer {
         self.evals += 1;
         let n_geo = self.geos.len();
         let mut norm = Norm::default();
-        let mut mt = SampleMetrics { min_det: 1.0, max_area_ratio: 1.0, max_edge_stretch: 1.0, ..Default::default() };
-        let mut stress: Vec<Vec<f32>> = self.geos.iter().map(|g| vec![0.0; g.snap.pts.len()]).collect();
+        let mut mt = SampleMetrics {
+            min_det: 1.0,
+            max_area_ratio: 1.0,
+            max_edge_stretch: 1.0,
+            ..Default::default()
+        };
+        let mut stress: Vec<Vec<f32>> = self
+            .geos
+            .iter()
+            .map(|g| vec![0.0; g.snap.pts.len()])
+            .collect();
         // set probes
         for (i, v) in values.iter().enumerate().take(self.params.len()) {
             if let Source::Keys { track } = &mut self.engine.project.channels[i].source {
@@ -298,18 +408,33 @@ impl Fuzzer {
                 return self.finish(index, values, mt, norm, stress);
             }
         };
-        if fr.world.iter().any(|m| ![m.a, m.b, m.c, m.d, m.tx, m.ty].iter().all(|x| x.is_finite())) {
+        if fr.world.iter().any(|m| {
+            ![m.a, m.b, m.c, m.d, m.tx, m.ty]
+                .iter()
+                .all(|x| x.is_finite())
+        }) {
             mt.non_finite = true;
         }
         // IK
         let p = &self.engine.project;
         for c in &p.ik {
-            let mix = self.params.iter().zip(values).find(|(q, _)| q.prop == Prop::IkMix && q.target == c.name).map_or(c.mix, |(_, v)| *v);
+            let mix = self
+                .params
+                .iter()
+                .zip(values)
+                .find(|(q, _)| q.prop == Prop::IkMix && q.target == c.name)
+                .map_or(c.mix, |(_, v)| *v);
             if mix < 0.05 {
                 continue;
             }
             let ix = |n: &str| p.bones.iter().position(|b| b.name == n);
-            let (Some(first), Some(last), Some(tg)) = (c.bones.first().and_then(|n| ix(n)), c.bones.last().and_then(|n| ix(n)), ix(&c.target)) else { continue };
+            let (Some(first), Some(last), Some(tg)) = (
+                c.bones.first().and_then(|n| ix(n)),
+                c.bones.last().and_then(|n| ix(n)),
+                ix(&c.target),
+            ) else {
+                continue;
+            };
             if first >= fr.world.len() || last >= fr.world.len() || tg >= fr.world.len() {
                 continue;
             }
@@ -319,7 +444,9 @@ impl Fuzzer {
             let mut reach = 0.0;
             for n in &c.bones {
                 if let Some(bi) = ix(n) {
-                    reach += (fr.world[bi].apply(Vec2::new(p.bones[bi].length, 0.0)) - fr.world[bi].apply(Vec2::ZERO)).length();
+                    reach += (fr.world[bi].apply(Vec2::new(p.bones[bi].length, 0.0))
+                        - fr.world[bi].apply(Vec2::ZERO))
+                    .length();
                 }
             }
             let err = tip.distance(target);
@@ -344,7 +471,9 @@ impl Fuzzer {
         }
         let (mut min_det, mut max_det) = (f32::INFINITY, f32::NEG_INFINITY);
         for s in &snaps {
-            let Some(&gi) = by_name.get(s.name.as_str()) else { continue };
+            let Some(&gi) = by_name.get(s.name.as_str()) else {
+                continue;
+            };
             let g = &self.geos[gi];
             if g.snap.pts.len() != s.pts.len() {
                 continue; // topology changed (generated geometry): not comparable
@@ -355,7 +484,8 @@ impl Fuzzer {
             }
             if let Some((lo, hi)) = bbox(&s.pts, &s.world) {
                 let mx = th.canvas_margin * cw.max(chh);
-                if g.rest_inside && (hi.x < -mx || lo.x > cw + mx || hi.y < -mx || lo.y > chh + mx) {
+                if g.rest_inside && (hi.x < -mx || lo.x > cw + mx || hi.y < -mx || lo.y > chh + mx)
+                {
                     mt.layers_off_canvas += 1;
                 }
                 if (hi - lo).length() > th.max_extent * diag {
@@ -385,7 +515,8 @@ impl Fuzzer {
                         for sg in [*i, *j] {
                             if let Some(&a) = anchor_of.get(sg) {
                                 if a < st.len() {
-                                    st[a] = st[a].max(1.0 + 0.1 * (hits.len() - rest_n).min(50) as f32);
+                                    st[a] =
+                                        st[a].max(1.0 + 0.1 * (hits.len() - rest_n).min(50) as f32);
                                 }
                             }
                         }
@@ -411,17 +542,32 @@ impl Fuzzer {
             mt.min_det = min_det;
             mt.max_area_ratio = max_det.max(1.0);
         }
-        norm.fold = if mt.min_det <= th.min_det { 1.0 + (th.min_det - mt.min_det) } else { ((1.0 - mt.min_det) / (1.0 - th.min_det)).max(0.0) }.min(CAP);
+        norm.fold = if mt.min_det <= th.min_det {
+            1.0 + (th.min_det - mt.min_det)
+        } else {
+            ((1.0 - mt.min_det) / (1.0 - th.min_det)).max(0.0)
+        }
+        .min(CAP);
         norm.stretch = ((mt.max_edge_stretch - 1.0) / (th.max_stretch - 1.0)).min(CAP);
         norm.shear = (mt.max_shear / th.max_shear).min(CAP);
         // not `clamp`: `f32::max/min` map a NaN ratio (0/0 area threshold) to a bound, `clamp` would keep NaN
         #[allow(clippy::manual_clamp)]
         {
-            norm.area = ((mt.max_area_ratio - 1.0) / (th.max_area - 1.0)).max(0.0).min(CAP);
+            norm.area = ((mt.max_area_ratio - 1.0) / (th.max_area - 1.0))
+                .max(0.0)
+                .min(CAP);
         }
         norm.spike = (mt.max_spike / th.max_spike).min(CAP);
-        norm.self_intersection = if mt.new_self_intersections > 0 { 1.0 + 0.1 * mt.new_self_intersections.min(50) as f32 } else { 0.0 };
-        norm.off_canvas = if mt.layers_off_canvas + mt.layers_exploded > 0 { 1.0 } else { 0.0 };
+        norm.self_intersection = if mt.new_self_intersections > 0 {
+            1.0 + 0.1 * mt.new_self_intersections.min(50) as f32
+        } else {
+            0.0
+        };
+        norm.off_canvas = if mt.layers_off_canvas + mt.layers_exploded > 0 {
+            1.0
+        } else {
+            0.0
+        };
         if mt.non_finite {
             norm.non_finite = CAP;
         }
@@ -429,7 +575,14 @@ impl Fuzzer {
         self.finish(index, values, mt, norm, stress)
     }
 
-    pub(super) fn finish(&mut self, index: usize, values: &[f32], mut mt: SampleMetrics, norm: Norm, stress: Vec<Vec<f32>>) -> EvalOut {
+    pub(super) fn finish(
+        &mut self,
+        index: usize,
+        values: &[f32],
+        mut mt: SampleMetrics,
+        norm: Norm,
+        stress: Vec<Vec<f32>>,
+    ) -> EvalOut {
         let mut items: Vec<(&'static str, f32)> = norm.items().to_vec();
         items.retain(|x| !self.ignore.iter().any(|i| i == x.0));
         let severity = items.iter().map(|x| x.1).fold(0.0f32, f32::max);
@@ -437,6 +590,17 @@ impl Fuzzer {
         items.sort_by(|a, b| b.1.total_cmp(&a.1));
         let kinds = items.iter().map(|x| x.0.to_string()).collect();
         mt.norm = norm;
-        EvalOut { result: SampleResult { index, values: values.to_vec(), severity, failed: severity >= 1.0, kinds, metrics: mt }, stress, _pad: () }
+        EvalOut {
+            result: SampleResult {
+                index,
+                values: values.to_vec(),
+                severity,
+                failed: severity >= 1.0,
+                kinds,
+                metrics: mt,
+            },
+            stress,
+            _pad: (),
+        }
     }
 }

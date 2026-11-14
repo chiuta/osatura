@@ -78,9 +78,19 @@ pub struct Suggestions {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Constraint {
     /// Hold a bone's rotation (degrees) at `value`.
-    Angle { bone: String, value: f32, #[serde(default = "w1")] weight: f32 },
+    Angle {
+        bone: String,
+        value: f32,
+        #[serde(default = "w1")]
+        weight: f32,
+    },
     /// Put the tip of `bone` at stage position `at`.
-    Reach { bone: String, at: [f32; 2], #[serde(default = "w_reach")] weight: f32 },
+    Reach {
+        bone: String,
+        at: [f32; 2],
+        #[serde(default = "w_reach")]
+        weight: f32,
+    },
 }
 
 pub(super) fn w1() -> f32 {
@@ -143,12 +153,22 @@ impl Suggester {
             }
         }
         let step = median(&mut steps).max(1.0);
-        Ok(Suggester { db, space, spacing, step, zs })
+        Ok(Suggester {
+            db,
+            space,
+            spacing,
+            step,
+            zs,
+        })
     }
 
     pub(super) fn check_pose(&self, x: &[f32], what: &str) -> Result<(), String> {
         if x.len() != self.db.dim() {
-            return Err(format!("{what}: expected {} values, got {}", self.db.dim(), x.len()));
+            return Err(format!(
+                "{what}: expected {} values, got {}",
+                self.db.dim(),
+                x.len()
+            ));
         }
         if x.iter().any(|v| !v.is_finite()) {
             return Err(format!("{what}: non-finite value"));
@@ -158,7 +178,13 @@ impl Suggester {
 
     /// Library poses nearest to `x` (RMS degrees), closest first.
     pub fn nearest(&self, x: &[f32], n: usize) -> Vec<(usize, f32)> {
-        let mut v: Vec<(usize, f32)> = self.db.poses.iter().enumerate().map(|(i, p)| (i, rms(x, p))).collect();
+        let mut v: Vec<(usize, f32)> = self
+            .db
+            .poses
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (i, rms(x, p)))
+            .collect();
         v.sort_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)));
         v.truncate(n);
         v
@@ -169,15 +195,39 @@ impl Suggester {
         1.0 / (1.0 + (d - self.spacing).max(0.0) / self.spacing)
     }
 
-    pub(super) fn cand(&self, method: &str, label: &str, pose: Vec<f32>, score: f32, plaus: f32) -> Candidate {
-        Candidate { method: method.into(), label: label.into(), score, plausibility: plaus, values: vec![], constraint_error: None, frame: None, notes: vec![], pose }
+    pub(super) fn cand(
+        &self,
+        method: &str,
+        label: &str,
+        pose: Vec<f32>,
+        score: f32,
+        plaus: f32,
+    ) -> Candidate {
+        Candidate {
+            method: method.into(),
+            label: label.into(),
+            score,
+            plausibility: plaus,
+            values: vec![],
+            constraint_error: None,
+            frame: None,
+            notes: vec![],
+            pose,
+        }
     }
 
     // ---- between -------------------------------------------------------------------------
 
     /// In-between poses at fraction `t` of the way from `a` to `b`. `snap` (0..1) is how far the PCA blend is
     /// pulled toward the kernel average of its `k` nearest library poses.
-    pub fn between(&self, a: &[f32], b: &[f32], t: f32, snap: f32, k: usize) -> Result<Vec<Candidate>, String> {
+    pub fn between(
+        &self,
+        a: &[f32],
+        b: &[f32],
+        t: f32,
+        snap: f32,
+        k: usize,
+    ) -> Result<Vec<Candidate>, String> {
         self.check_pose(a, "pose A")?;
         self.check_pose(b, "pose B")?;
         if !(0.0..=1.0).contains(&t) || !(0.0..=1.0).contains(&snap) || k == 0 {
@@ -189,16 +239,41 @@ impl Suggester {
             let plaus = this.plausibility(x);
             (plaus / (1.0 + detour), plaus)
         };
-        let lin: Vec<f32> = a.iter().zip(b).map(|(x, y)| x * (1.0 - t) + y * t).collect();
+        let lin: Vec<f32> = a
+            .iter()
+            .zip(b)
+            .map(|(x, y)| x * (1.0 - t) + y * t)
+            .collect();
         let (za, zb) = (self.space.project(a), self.space.project(b));
-        let zt: Vec<f32> = za.iter().zip(&zb).map(|(x, y)| x * (1.0 - t) + y * t).collect();
+        let zt: Vec<f32> = za
+            .iter()
+            .zip(&zb)
+            .map(|(x, y)| x * (1.0 - t) + y * t)
+            .collect();
         let pca = self.space.reconstruct(&zt);
         // kernel pull toward the library, neighbours measured in PCA coordinates
-        let mut nb: Vec<(usize, f32)> = self.zs.iter().enumerate().map(|(i, z)| (i, z.iter().zip(&zt).map(|(p, q)| (p - q) * (p - q)).sum::<f32>().sqrt())).collect();
+        let mut nb: Vec<(usize, f32)> = self
+            .zs
+            .iter()
+            .enumerate()
+            .map(|(i, z)| {
+                (
+                    i,
+                    z.iter()
+                        .zip(&zt)
+                        .map(|(p, q)| (p - q) * (p - q))
+                        .sum::<f32>()
+                        .sqrt(),
+                )
+            })
+            .collect();
         nb.sort_by(|x, y| x.1.total_cmp(&y.1).then(x.0.cmp(&y.0)));
         nb.truncate(k.min(self.db.poses.len()));
         let h = (nb.iter().map(|p| p.1).sum::<f32>() / nb.len() as f32).max(1e-3);
-        let ws: Vec<f32> = nb.iter().map(|p| (-(p.1 / h).powi(2) * 0.5).exp()).collect();
+        let ws: Vec<f32> = nb
+            .iter()
+            .map(|p| (-(p.1 / h).powi(2) * 0.5).exp())
+            .collect();
         let wsum: f32 = ws.iter().sum::<f32>().max(1e-12);
         let mut kernel = vec![0.0f32; a.len()];
         for ((i, _), w) in nb.iter().zip(&ws) {
@@ -206,7 +281,11 @@ impl Suggester {
                 *kj += w * pj / wsum;
             }
         }
-        let manifold: Vec<f32> = pca.iter().zip(&kernel).map(|(p, q)| p * (1.0 - snap) + q * snap).collect();
+        let manifold: Vec<f32> = pca
+            .iter()
+            .zip(&kernel)
+            .map(|(p, q)| p * (1.0 - snap) + q * snap)
+            .collect();
         // the library pose with the smallest detour near the requested fraction
         let mut best: Option<(f32, usize)> = None;
         for (i, p) in self.db.poses.iter().enumerate() {
@@ -220,15 +299,29 @@ impl Suggester {
             }
         }
         let mut out = Vec::new();
-        for (m, l, p) in [("linear", "linear blend of the angles", lin), ("pca", "blend in PCA space", pca), ("manifold", "PCA blend pulled toward the library", manifold)] {
+        for (m, l, p) in [
+            ("linear", "linear blend of the angles", lin),
+            ("pca", "blend in PCA space", pca),
+            ("manifold", "PCA blend pulled toward the library", manifold),
+        ] {
             let (s, pl) = score_of(&p, self);
             out.push(self.cand(m, l, p, s, pl));
         }
         if let Some((_, i)) = best {
             let p = self.db.poses[i].clone();
             let (s, pl) = score_of(&p, self);
-            let mut c = self.cand("library", &format!("library pose {} of '{}'", self.db.meta[i].idx, self.db.sequences[self.db.meta[i].seq].name), p, s, pl);
-            c.notes.push("an existing pose from the library, not an interpolation".into());
+            let mut c = self.cand(
+                "library",
+                &format!(
+                    "library pose {} of '{}'",
+                    self.db.meta[i].idx, self.db.sequences[self.db.meta[i].seq].name
+                ),
+                p,
+                s,
+                pl,
+            );
+            c.notes
+                .push("an existing pose from the library, not an interpolation".into());
             out.push(c);
         }
         out.sort_by(|x, y| y.score.total_cmp(&x.score));
@@ -253,7 +346,12 @@ impl Suggester {
         model: Option<&Mlp>,
     ) -> Result<Vec<Candidate>, String> {
         self.check_pose(current, "current pose")?;
-        if !matches!(prior.partial_cmp(&0.0), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) || !prior.is_finite() || top == 0 {
+        if !matches!(
+            prior.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
+        ) || !prior.is_finite()
+            || top == 0
+        {
             return Err("prior must be >= 0 and top >= 1".into());
         }
         let d = self.db.dim();
@@ -280,9 +378,17 @@ impl Suggester {
         let mut reach_dep: Vec<usize> = Vec::new();
         for c in constraints {
             match c {
-                Constraint::Angle { bone, value, weight } => {
-                    let i = ix(bone).ok_or_else(|| format!("bone '{bone}' is not in the pose database"))?;
-                    if !value.is_finite() || ((*weight).partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !weight.is_finite() {
+                Constraint::Angle {
+                    bone,
+                    value,
+                    weight,
+                } => {
+                    let i = ix(bone)
+                        .ok_or_else(|| format!("bone '{bone}' is not in the pose database"))?;
+                    if !value.is_finite()
+                        || ((*weight).partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
+                        || !weight.is_finite()
+                    {
                         return Err("constraint values must be finite and weights positive".into());
                     }
                     if locked.contains(bone) {
@@ -292,9 +398,17 @@ impl Suggester {
                     rcs.push(Rc::A(i, *value, *weight));
                 }
                 Constraint::Reach { bone, at, weight } => {
-                    let p = project.ok_or("a reach constraint needs the project (for its bone lengths)")?;
-                    let pi = p.bones.iter().position(|b| b.name == *bone).ok_or_else(|| format!("unknown bone '{bone}'"))?;
-                    if at.iter().any(|v| !v.is_finite()) || ((*weight).partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !weight.is_finite() {
+                    let p = project
+                        .ok_or("a reach constraint needs the project (for its bone lengths)")?;
+                    let pi = p
+                        .bones
+                        .iter()
+                        .position(|b| b.name == *bone)
+                        .ok_or_else(|| format!("unknown bone '{bone}'"))?;
+                    if at.iter().any(|v| !v.is_finite())
+                        || ((*weight).partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
+                        || !weight.is_finite()
+                    {
                         return Err("constraint values must be finite and weights positive".into());
                     }
                     reach_dep.push(pi);
@@ -306,11 +420,19 @@ impl Suggester {
             return Err("give at least one constraint (a fixed angle or a reach target)".into());
         }
         let project_ix: Vec<Option<usize>> = match project {
-            Some(p) => self.db.bones.iter().map(|b| p.bones.iter().position(|x| x.name == *b)).collect(),
+            Some(p) => self
+                .db
+                .bones
+                .iter()
+                .map(|b| p.bones.iter().position(|x| x.name == *b))
+                .collect(),
             None => vec![None; d],
         };
         let limits: Vec<Option<[f32; 2]>> = match project {
-            Some(p) => project_ix.iter().map(|i| i.and_then(|i| p.bones[i].angle_limits)).collect(),
+            Some(p) => project_ix
+                .iter()
+                .map(|i| i.and_then(|i| p.bones[i].angle_limits))
+                .collect(),
             None => vec![None; d],
         };
         let clamp_pose = |x: &mut Vec<f32>| {
@@ -322,7 +444,9 @@ impl Suggester {
         };
         let tip_of = |x: &[f32], pi: usize| -> [f32; 2] {
             let p = project.expect("checked");
-            let mut ang: Vec<f32> = base_angles.map(|b| b.to_vec()).unwrap_or_else(|| vec![0.0; p.bones.len()]);
+            let mut ang: Vec<f32> = base_angles
+                .map(|b| b.to_vec())
+                .unwrap_or_else(|| vec![0.0; p.bones.len()]);
             ang.resize(p.bones.len(), 0.0);
             for (j, pj) in project_ix.iter().enumerate() {
                 if let Some(pj) = pj {
@@ -357,7 +481,12 @@ impl Suggester {
             }
             r
         };
-        let cost = |z: &[f32]| residuals(z).iter().map(|v| (*v as f64) * (*v as f64)).sum::<f64>();
+        let cost = |z: &[f32]| {
+            residuals(z)
+                .iter()
+                .map(|v| (*v as f64) * (*v as f64))
+                .sum::<f64>()
+        };
         let linear = reach_dep.is_empty();
         let solve = |z0: Vec<f32>| -> Vec<f32> {
             let mut z = z0;
@@ -422,7 +551,12 @@ impl Suggester {
         };
         // starts: the mean pose and the library poses that already satisfy the constraints best
         let mut starts: Vec<Vec<f32>> = vec![vec![0.0; k]];
-        let mut ranked: Vec<(f64, usize)> = self.zs.iter().enumerate().map(|(i, z)| (cost(z), i)).collect();
+        let mut ranked: Vec<(f64, usize)> = self
+            .zs
+            .iter()
+            .enumerate()
+            .map(|(i, z)| (cost(z), i))
+            .collect();
         ranked.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
         for (_, i) in ranked.iter().take(4) {
             starts.push(self.zs[*i].clone());
@@ -459,7 +593,13 @@ impl Suggester {
         for (n, (_, x)) in sols.iter().take(top).enumerate() {
             let e = const_err(x);
             let pl = self.plausibility(x);
-            let mut c = self.cand("pca-ls", &format!("regularised least squares in PCA space (start {})", n + 1), x.clone(), pl / (1.0 + e / 5.0), pl);
+            let mut c = self.cand(
+                "pca-ls",
+                &format!("regularised least squares in PCA space (start {})", n + 1),
+                x.clone(),
+                pl / (1.0 + e / 5.0),
+                pl,
+            );
             c.constraint_error = Some(e);
             out.push(c);
         }
@@ -478,7 +618,13 @@ impl Suggester {
             .min_by(|a, b| a.0.total_cmp(&b.0));
         if let Some((e, x)) = lib_best {
             let pl = self.plausibility(&x);
-            let mut c = self.cand("library-nn", "best-fitting library pose (nearest-neighbour baseline)", x, pl / (1.0 + e / 5.0), pl);
+            let mut c = self.cand(
+                "library-nn",
+                "best-fitting library pose (nearest-neighbour baseline)",
+                x,
+                pl / (1.0 + e / 5.0),
+                pl,
+            );
             c.constraint_error = Some(e);
             out.push(c);
         }
@@ -486,7 +632,10 @@ impl Suggester {
             if !reach_dep.is_empty() {
                 // the network sees only angles
                 if let Some(c) = out.first_mut() {
-                    c.notes.push("the MLP was skipped: it handles fixed angles only, not reach targets".into());
+                    c.notes.push(
+                        "the MLP was skipped: it handles fixed angles only, not reach targets"
+                            .into(),
+                    );
                 }
             } else {
                 let mut obs: Vec<Option<f32>> = vec![None; d];
@@ -504,7 +653,13 @@ impl Suggester {
                 clamp_pose(&mut x);
                 let e = const_err(&x);
                 let pl = self.plausibility(&x);
-                let mut c = self.cand("mlp", "user-supplied small network", x, pl / (1.0 + e / 5.0), pl);
+                let mut c = self.cand(
+                    "mlp",
+                    "user-supplied small network",
+                    x,
+                    pl / (1.0 + e / 5.0),
+                    pl,
+                );
                 c.constraint_error = Some(e);
                 out.push(c);
             }
@@ -518,7 +673,13 @@ impl Suggester {
     /// Candidates for the pose that follows `current`: the motion that followed the nearest library poses, applied
     /// to `current`. `frame` is the current frame; candidates carry `frame + gap` where `gap` is the weighted
     /// frame spacing of the voting successors.
-    pub fn next(&self, current: &[f32], frame: f32, k: usize, top: usize) -> Result<Vec<Candidate>, String> {
+    pub fn next(
+        &self,
+        current: &[f32],
+        frame: f32,
+        k: usize,
+        top: usize,
+    ) -> Result<Vec<Candidate>, String> {
         self.check_pose(current, "current pose")?;
         if k == 0 || top == 0 {
             return Err("k and top must be at least 1".into());
@@ -530,16 +691,28 @@ impl Suggester {
             }
         }
         if voters.is_empty() {
-            return Err("the library has no consecutive poses (every sequence is a single pose)".into());
+            return Err(
+                "the library has no consecutive poses (every sequence is a single pose)".into(),
+            );
         }
         voters.sort_by(|a, b| a.2.total_cmp(&b.2).then(a.0.cmp(&b.0)));
         voters.truncate(k);
-        let h = (voters.iter().map(|v| v.2).sum::<f32>() / voters.len() as f32).max(self.spacing * 0.5);
-        let ws: Vec<f32> = voters.iter().map(|v| (-(v.2 / h).powi(2) * 0.5).exp()).collect();
+        let h =
+            (voters.iter().map(|v| v.2).sum::<f32>() / voters.len() as f32).max(self.spacing * 0.5);
+        let ws: Vec<f32> = voters
+            .iter()
+            .map(|v| (-(v.2 / h).powi(2) * 0.5).exp())
+            .collect();
         let wsum: f32 = ws.iter().sum::<f32>().max(1e-12);
         let d = current.len();
-        let delta_of = |(i, j, _): &(usize, usize, f32)| -> Vec<f32> { (0..d).map(|b| self.db.poses[*j][b] - self.db.poses[*i][b]).collect() };
-        let gap_of = |(i, j, _): &(usize, usize, f32)| (self.db.meta[*j].frame - self.db.meta[*i].frame).max(0.0);
+        let delta_of = |(i, j, _): &(usize, usize, f32)| -> Vec<f32> {
+            (0..d)
+                .map(|b| self.db.poses[*j][b] - self.db.poses[*i][b])
+                .collect()
+        };
+        let gap_of = |(i, j, _): &(usize, usize, f32)| {
+            (self.db.meta[*j].frame - self.db.meta[*i].frame).max(0.0)
+        };
         let mut mean_delta = vec![0.0f32; d];
         let mut mean_gap = 0.0f32;
         for (v, w) in voters.iter().zip(&ws) {
@@ -548,21 +721,41 @@ impl Suggester {
             }
             mean_gap += w * gap_of(v) / wsum;
         }
-        let spread = (voters.iter().zip(&ws).map(|(v, w)| w * rms(&delta_of(v), &mean_delta).powi(2)).sum::<f32>() / wsum).sqrt();
-        let apply = |delta: &[f32]| -> Vec<f32> { current.iter().zip(delta).map(|(c, dv)| c + dv).collect() };
+        let spread = (voters
+            .iter()
+            .zip(&ws)
+            .map(|(v, w)| w * rms(&delta_of(v), &mean_delta).powi(2))
+            .sum::<f32>()
+            / wsum)
+            .sqrt();
+        let apply = |delta: &[f32]| -> Vec<f32> {
+            current.iter().zip(delta).map(|(c, dv)| c + dv).collect()
+        };
         let far = voters[0].2 / self.spacing;
         let mut out = Vec::new();
         let mp = apply(&mean_delta);
         let mpl = self.plausibility(&mp);
-        let mut mc = self.cand("markov-mean", "kernel-weighted mean of the following motions", mp, (1.0 / (1.0 + spread / self.step)) * mpl, mpl);
+        let mut mc = self.cand(
+            "markov-mean",
+            "kernel-weighted mean of the following motions",
+            mp,
+            (1.0 / (1.0 + spread / self.step)) * mpl,
+            mpl,
+        );
         mc.frame = Some(frame + mean_gap);
         out.push(mc);
         // individual successors, near-duplicates merged
         let mut singles: Vec<(f32, Vec<f32>, f32, String)> = Vec::new();
         for (v, w) in voters.iter().zip(&ws) {
             let p = apply(&delta_of(v));
-            let label = format!("what followed pose {} of '{}'", self.db.meta[v.0].idx, self.db.sequences[self.db.meta[v.0].seq].name);
-            match singles.iter_mut().find(|s| rms(&s.1, &p) < 0.5 * self.step.min(self.spacing).max(0.25)) {
+            let label = format!(
+                "what followed pose {} of '{}'",
+                self.db.meta[v.0].idx, self.db.sequences[self.db.meta[v.0].seq].name
+            );
+            match singles
+                .iter_mut()
+                .find(|s| rms(&s.1, &p) < 0.5 * self.step.min(self.spacing).max(0.25))
+            {
                 Some(s) => s.0 += w / wsum,
                 None => singles.push((w / wsum, p, gap_of(v), label)),
             }
@@ -587,12 +780,19 @@ impl Suggester {
 
     /// Fill `values` of each candidate: project bones only, locked channels and bones outside `free` removed.
     /// Returns the names of locked channels that were left out.
-    pub fn bind(&self, cands: &mut [Candidate], project: &Project, free: Option<&[String]>) -> Vec<String> {
+    pub fn bind(
+        &self,
+        cands: &mut [Candidate],
+        project: &Project,
+        free: Option<&[String]>,
+    ) -> Vec<String> {
         let mut skipped: Vec<String> = Vec::new();
         for c in cands.iter_mut() {
             c.values.clear();
             for (b, v) in self.db.bones.iter().zip(&c.pose) {
-                if !project.bones.iter().any(|x| x.name == *b) || free.is_some_and(|f| !f.contains(b)) {
+                if !project.bones.iter().any(|x| x.name == *b)
+                    || free.is_some_and(|f| !f.contains(b))
+                {
                     continue;
                 }
                 if crate::chanmeta::is_locked(project, b, Prop::BoneAngle) {
@@ -601,7 +801,10 @@ impl Suggester {
                     }
                     continue;
                 }
-                c.values.push(BoneValue { bone: b.clone(), angle: *v });
+                c.values.push(BoneValue {
+                    bone: b.clone(),
+                    angle: *v,
+                });
             }
         }
         skipped

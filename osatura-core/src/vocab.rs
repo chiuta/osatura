@@ -10,9 +10,31 @@ use crate::project::{Layer, Project};
 
 /// Roles OSATURA understands, in head-to-toe order.
 pub const ROLES: &[&str] = &[
-    "head", "neck", "torso", "hips", "face.eye.l", "face.eye.r", "face.brow.l", "face.brow.r", "face.mouth", "face.nose", "face.jaw",
-    "arm.upper.l", "arm.lower.l", "hand.l", "arm.upper.r", "arm.lower.r", "hand.r",
-    "leg.upper.l", "leg.lower.l", "foot.l", "leg.upper.r", "leg.lower.r", "foot.r", "tail", "hair",
+    "head",
+    "neck",
+    "torso",
+    "hips",
+    "face.eye.l",
+    "face.eye.r",
+    "face.brow.l",
+    "face.brow.r",
+    "face.mouth",
+    "face.nose",
+    "face.jaw",
+    "arm.upper.l",
+    "arm.lower.l",
+    "hand.l",
+    "arm.upper.r",
+    "arm.lower.r",
+    "hand.r",
+    "leg.upper.l",
+    "leg.lower.l",
+    "foot.l",
+    "leg.upper.r",
+    "leg.lower.r",
+    "foot.r",
+    "tail",
+    "hair",
 ];
 
 #[derive(Clone, Debug, PartialEq)]
@@ -109,7 +131,9 @@ pub fn role_of(name: &str) -> Option<(String, f32)> {
     if (has(&t, &["arm"]) && has(&t, &["upper", "up"])) || has(&t, &["bicep", "humerus"]) {
         return sided("arm.upper", 0.9);
     }
-    if has(&t, &["forearm", "elbow", "radius"]) || (has(&t, &["arm"]) && has(&t, &["lower", "low", "fore"])) {
+    if has(&t, &["forearm", "elbow", "radius"])
+        || (has(&t, &["arm"]) && has(&t, &["lower", "low", "fore"]))
+    {
         return sided("arm.lower", 0.9);
     }
     if has(&t, &["hips", "hip", "pelvis"]) {
@@ -129,9 +153,18 @@ pub fn role_of(name: &str) -> Option<(String, f32)> {
 
 fn walk(ls: &[Layer], prefix: &str, out: &mut Vec<Tag>) {
     for l in ls {
-        let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
+        let path = if prefix.is_empty() {
+            l.name.clone()
+        } else {
+            format!("{prefix}/{}", l.name)
+        };
         if let Some((role, confidence)) = role_of(&l.name) {
-            out.push(Tag { kind: "layer", name: path.clone(), role, confidence });
+            out.push(Tag {
+                kind: "layer",
+                name: path.clone(),
+                role,
+                confidence,
+            });
         }
         walk(l.children(), &path, out);
     }
@@ -152,7 +185,12 @@ pub fn tag_rig(p: &Project) -> Vec<Tag> {
     let mut out = Vec::new();
     for b in &p.bones {
         if let Some((role, confidence)) = role_of(&b.name) {
-            out.push(Tag { kind: "bone", name: b.name.clone(), role, confidence });
+            out.push(Tag {
+                kind: "bone",
+                name: b.name.clone(),
+                role,
+                confidence,
+            });
         }
     }
     walk(&p.layers, "", &mut out);
@@ -161,8 +199,16 @@ pub fn tag_rig(p: &Project) -> Vec<Tag> {
 
 /// Roles from [`ROLES`] that no *bone* carries (useful to see what a humanoid rig lacks).
 pub fn missing_bone_roles(p: &Project) -> Vec<&'static str> {
-    let have: Vec<String> = tag_rig(p).into_iter().filter(|t| t.kind == "bone").map(|t| t.role).collect();
-    ROLES.iter().copied().filter(|r| !have.iter().any(|h| h == r)).collect()
+    let have: Vec<String> = tag_rig(p)
+        .into_iter()
+        .filter(|t| t.kind == "bone")
+        .map(|t| t.role)
+        .collect();
+    ROLES
+        .iter()
+        .copied()
+        .filter(|r| !have.iter().any(|h| h == r))
+        .collect()
 }
 
 #[cfg(test)]
@@ -188,7 +234,11 @@ mod tests {
         assert_eq!(r("thigh").as_deref(), Some("leg.upper.l"));
         assert_eq!(r("mouth").as_deref(), Some("face.mouth"));
         assert_eq!(r("sunset"), None);
-        assert_eq!(r("gura"), Some("face.mouth".to_string()), "Romanian words work too");
+        assert_eq!(
+            r("gura"),
+            Some("face.mouth".to_string()),
+            "Romanian words work too"
+        );
         let (_, conf_unsided) = role_of("thigh").unwrap();
         let (_, conf_sided) = role_of("thigh_L").unwrap();
         assert!(conf_sided > conf_unsided);
@@ -198,9 +248,18 @@ mod tests {
     fn tags_the_demo_rig() {
         let p = demo::project();
         let tags = tag_rig(&p);
-        assert!(tags.iter().any(|t| t.kind == "bone" && t.role.starts_with("arm.")));
-        assert!(tags.iter().any(|t| t.kind == "layer" && t.role == "face.mouth"), "{tags:?}");
+        assert!(tags
+            .iter()
+            .any(|t| t.kind == "bone" && t.role.starts_with("arm.")));
+        assert!(
+            tags.iter()
+                .any(|t| t.kind == "layer" && t.role == "face.mouth"),
+            "{tags:?}"
+        );
         let missing = missing_bone_roles(&p);
-        assert!(missing.contains(&"face.eye.l") && !missing.contains(&"hand.l"), "{missing:?}");
+        assert!(
+            missing.contains(&"face.eye.l") && !missing.contains(&"hand.l"),
+            "{missing:?}"
+        );
     }
 }

@@ -27,7 +27,11 @@ impl Strategy {
             "sweep" => Strategy::Sweep,
             "corners" => Strategy::Corners,
             "pca" => Strategy::Pca,
-            _ => return Err(format!("unknown strategy '{s}' (random, lhs, halton, sweep, corners, pca)")),
+            _ => {
+                return Err(format!(
+                    "unknown strategy '{s}' (random, lhs, halton, sweep, corners, pca)"
+                ))
+            }
         })
     }
     pub fn name(self) -> &'static str {
@@ -70,7 +74,10 @@ impl PcaSampler {
         let mut cols = Vec::new();
         let mut src = Vec::new();
         for (j, b) in db.bones.iter().enumerate() {
-            if let Some(pi) = params.iter().position(|p| p.id == format!("bone:{b}:angle")) {
+            if let Some(pi) = params
+                .iter()
+                .position(|p| p.id == format!("bone:{b}:angle"))
+            {
                 cols.push(pi);
                 src.push(j);
             }
@@ -78,7 +85,11 @@ impl PcaSampler {
         if cols.is_empty() {
             return Err("the pose database shares no bone with the rig's angle parameters".into());
         }
-        let poses: Vec<Vec<f32>> = db.poses.iter().map(|p| src.iter().map(|&j| p[j]).collect()).collect();
+        let poses: Vec<Vec<f32>> = db
+            .poses
+            .iter()
+            .map(|p| src.iter().map(|&j| p[j]).collect())
+            .collect();
         let space = PoseSpace::fit(&poses, 0.95, 8)?;
         Ok(PcaSampler { space, cols })
     }
@@ -95,7 +106,13 @@ pub const MAX_SAMPLE_VALUES: usize = 50_000_000;
 
 /// Parameter vectors for a strategy. `n` is the requested number of samples (sweep and corners may return
 /// a different count, see their notes). Deterministic for a given `seed`.
-pub fn generate(params: &[Param], strategy: Strategy, n: usize, seed: u64, pca: Option<&PcaSampler>) -> Result<Vec<Vec<f32>>, String> {
+pub fn generate(
+    params: &[Param],
+    strategy: Strategy,
+    n: usize,
+    seed: u64,
+    pca: Option<&PcaSampler>,
+) -> Result<Vec<Vec<f32>>, String> {
     let d = params.len();
     if d == 0 {
         return Err("the rig has no parameters to fuzz".into());
@@ -104,16 +121,29 @@ pub fn generate(params: &[Param], strategy: Strategy, n: usize, seed: u64, pca: 
         return Err("--samples must be at least 1".into());
     }
     if n > MAX_SAMPLES {
-        return Err(format!("--samples {n} is more than the limit of {MAX_SAMPLES}"));
+        return Err(format!(
+            "--samples {n} is more than the limit of {MAX_SAMPLES}"
+        ));
     }
     if n.saturating_mul(d) > MAX_SAMPLE_VALUES {
         return Err(format!("--samples {n} x {d} parameters = {} numbers, more than the limit of {MAX_SAMPLE_VALUES}; use fewer samples", n.saturating_mul(d)));
     }
     let mut rng = Rng::new(seed);
-    let map = |u: &[f32]| -> Vec<f32> { params.iter().zip(u).map(|(p, &u)| p.lo + u * (p.hi - p.lo)).collect() };
+    let map = |u: &[f32]| -> Vec<f32> {
+        params
+            .iter()
+            .zip(u)
+            .map(|(p, &u)| p.lo + u * (p.hi - p.lo))
+            .collect()
+    };
     Ok(match strategy {
-        Strategy::Random => (0..n).map(|_| map(&(0..d).map(|_| rng.unit()).collect::<Vec<_>>())).collect(),
-        Strategy::Lhs => latin_hypercube(n, d, &mut rng).iter().map(|u| map(u)).collect(),
+        Strategy::Random => (0..n)
+            .map(|_| map(&(0..d).map(|_| rng.unit()).collect::<Vec<_>>()))
+            .collect(),
+        Strategy::Lhs => latin_hypercube(n, d, &mut rng)
+            .iter()
+            .map(|u| map(u))
+            .collect(),
         Strategy::Halton => (1..=n as u64).map(|i| map(&halton_point(i, d))).collect(),
         Strategy::Sweep => {
             // one axis at a time, others at rest; both ends of the range included
@@ -131,9 +161,24 @@ pub fn generate(params: &[Param], strategy: Strategy, n: usize, seed: u64, pca: 
         Strategy::Corners => {
             // all 2^d corners when they fit into n, else n random corners
             if d <= 20 && (1usize << d) <= n {
-                (0..1usize << d).map(|m| params.iter().enumerate().map(|(k, p)| if m >> k & 1 == 1 { p.hi } else { p.lo }).collect()).collect()
+                (0..1usize << d)
+                    .map(|m| {
+                        params
+                            .iter()
+                            .enumerate()
+                            .map(|(k, p)| if m >> k & 1 == 1 { p.hi } else { p.lo })
+                            .collect()
+                    })
+                    .collect()
             } else {
-                (0..n).map(|_| params.iter().map(|p| if rng.next_u64() & 1 == 1 { p.hi } else { p.lo }).collect()).collect()
+                (0..n)
+                    .map(|_| {
+                        params
+                            .iter()
+                            .map(|p| if rng.next_u64() & 1 == 1 { p.hi } else { p.lo })
+                            .collect()
+                    })
+                    .collect()
             }
         }
         Strategy::Pca => {
@@ -141,7 +186,9 @@ pub fn generate(params: &[Param], strategy: Strategy, n: usize, seed: u64, pca: 
             let k = s.space.k();
             (0..n)
                 .map(|_| {
-                    let z: Vec<f32> = (0..k).map(|i| (rng.gauss() * 2.0).clamp(-3.0, 3.0) * s.space.eig[i].sqrt()).collect();
+                    let z: Vec<f32> = (0..k)
+                        .map(|i| (rng.gauss() * 2.0).clamp(-3.0, 3.0) * s.space.eig[i].sqrt())
+                        .collect();
                     let x = s.space.reconstruct(&z);
                     let mut v: Vec<f32> = params.iter().map(|q| q.rest).collect();
                     for (c, &pi) in s.cols.iter().enumerate() {
@@ -181,7 +228,16 @@ pub struct Thresholds {
 
 impl Default for Thresholds {
     fn default() -> Self {
-        Thresholds { min_det: 0.0, max_stretch: 3.0, max_shear: 2.0, max_area: 6.0, max_spike: 1.0, ik_error: 0.03, canvas_margin: 0.0, max_extent: 20.0 }
+        Thresholds {
+            min_det: 0.0,
+            max_stretch: 3.0,
+            max_shear: 2.0,
+            max_area: 6.0,
+            max_spike: 1.0,
+            ik_error: 0.03,
+            canvas_margin: 0.0,
+            max_extent: 20.0,
+        }
     }
 }
 
@@ -210,10 +266,25 @@ pub(super) fn det2(a: Vec2, b: Vec2) -> f32 {
 
 /// Deformation-gradient metrics of a triangle mesh against its rest shape. `edges` may add extra edges
 /// (open or closed paths use them instead of triangles). Triangles whose rest area is ~0 are skipped.
-pub fn mesh_metrics(rest: &[Vec2], def: &[Vec2], tris: &[[usize; 3]], edges: &[[usize; 2]], th: &Thresholds) -> MeshMetrics {
+pub fn mesh_metrics(
+    rest: &[Vec2],
+    def: &[Vec2],
+    tris: &[[usize; 3]],
+    edges: &[[usize; 2]],
+    th: &Thresholds,
+) -> MeshMetrics {
     let n = rest.len().min(def.len());
     let mut stress = vec![0.0f32; n];
-    let mut m = MeshMetrics { triangles: 0, min_det: f32::INFINITY, max_det: f32::NEG_INFINITY, flips: 0, max_stretch: 1.0, max_shear: 0.0, max_spike: 0.0, stress: vec![] };
+    let mut m = MeshMetrics {
+        triangles: 0,
+        min_det: f32::INFINITY,
+        max_det: f32::NEG_INFINITY,
+        flips: 0,
+        max_stretch: 1.0,
+        max_shear: 0.0,
+        max_spike: 0.0,
+        stress: vec![],
+    };
     let mut all_edges: Vec<[usize; 2]> = edges.to_vec();
     for t in tris {
         all_edges.extend([[t[0], t[1]], [t[1], t[2]], [t[2], t[0]]]);
@@ -226,7 +297,11 @@ pub fn mesh_metrics(rest: &[Vec2], def: &[Vec2], tris: &[[usize; 3]], edges: &[[
                 c += 1;
             }
         }
-        if c == 0 { 0.0 } else { s / c as f32 }
+        if c == 0 {
+            0.0
+        } else {
+            s / c as f32
+        }
     };
     for t in tris {
         if t.iter().any(|&i| i >= n) {
@@ -241,13 +316,31 @@ pub fn mesh_metrics(rest: &[Vec2], def: &[Vec2], tris: &[[usize; 3]], edges: &[[
         let (d1, d2) = (def[t[1]] - def[t[0]], def[t[2]] - def[t[0]]);
         let det = det2(d1, d2) / a_rest;
         // F = [d1 d2] [e1 e2]^-1
-        let inv = [[e2.y / a_rest, -e2.x / a_rest], [-e1.y / a_rest, e1.x / a_rest]];
-        let f = [[d1.x * inv[0][0] + d2.x * inv[1][0], d1.x * inv[0][1] + d2.x * inv[1][1]], [d1.y * inv[0][0] + d2.y * inv[1][0], d1.y * inv[0][1] + d2.y * inv[1][1]]];
+        let inv = [
+            [e2.y / a_rest, -e2.x / a_rest],
+            [-e1.y / a_rest, e1.x / a_rest],
+        ];
+        let f = [
+            [
+                d1.x * inv[0][0] + d2.x * inv[1][0],
+                d1.x * inv[0][1] + d2.x * inv[1][1],
+            ],
+            [
+                d1.y * inv[0][0] + d2.y * inv[1][0],
+                d1.y * inv[0][1] + d2.y * inv[1][1],
+            ],
+        ];
         let s1 = f[0][0] * f[0][0] + f[0][1] * f[0][1] + f[1][0] * f[1][0] + f[1][1] * f[1][1];
         let disc = (s1 * s1 - 4.0 * det * det).max(0.0).sqrt();
         let smax = ((s1 + disc) * 0.5).sqrt();
         let smin = if smax > 1e-12 { det.abs() / smax } else { 0.0 };
-        let shear = if det <= th.min_det { 0.0 } else if smin > 1e-9 { smax / smin - 1.0 } else { 1e3 };
+        let shear = if det <= th.min_det {
+            0.0
+        } else if smin > 1e-9 {
+            smax / smin - 1.0
+        } else {
+            1e3
+        };
         m.triangles += 1;
         m.min_det = m.min_det.min(det);
         m.max_det = m.max_det.max(det);
@@ -255,8 +348,17 @@ pub fn mesh_metrics(rest: &[Vec2], def: &[Vec2], tris: &[[usize; 3]], edges: &[[
             m.flips += 1;
         }
         m.max_shear = m.max_shear.max(shear);
-        let n_fold = if det <= th.min_det { 1.0 + (th.min_det - det) } else { (1.0 - det) / (1.0 - th.min_det) }.max(0.0);
-        let n_area = if det > 1.0 { (det - 1.0) / (th.max_area - 1.0) } else { 0.0 };
+        let n_fold = if det <= th.min_det {
+            1.0 + (th.min_det - det)
+        } else {
+            (1.0 - det) / (1.0 - th.min_det)
+        }
+        .max(0.0);
+        let n_area = if det > 1.0 {
+            (det - 1.0) / (th.max_area - 1.0)
+        } else {
+            0.0
+        };
         let n_shear = shear / th.max_shear;
         let s = n_fold.max(n_area).max(n_shear).min(CAP);
         for &i in t {
@@ -303,7 +405,10 @@ pub fn mesh_metrics(rest: &[Vec2], def: &[Vec2], tris: &[[usize; 3]], edges: &[[
             lr += rest[i].distance(rest[j]);
             ld += def[i].distance(def[j]);
         }
-        let (lap_r, lap_d) = ((cr * (1.0 / k) - rest[i]).length(), (cd * (1.0 / k) - def[i]).length());
+        let (lap_r, lap_d) = (
+            (cr * (1.0 / k) - rest[i]).length(),
+            (cd * (1.0 / k) - def[i]).length(),
+        );
         let (er, ed) = (lr / k, ld / k);
         if er < 1e-6 {
             continue;
@@ -326,7 +431,12 @@ pub(super) fn orient(a: Vec2, b: Vec2, c: Vec2) -> f32 {
 
 /// Do segments `ab` and `cd` cross properly (interiors intersect, not merely touch)?
 pub fn segments_cross(a: Vec2, b: Vec2, c: Vec2, d: Vec2) -> bool {
-    let (o1, o2, o3, o4) = (orient(a, b, c), orient(a, b, d), orient(c, d, a), orient(c, d, b));
+    let (o1, o2, o3, o4) = (
+        orient(a, b, c),
+        orient(a, b, d),
+        orient(c, d, a),
+        orient(c, d, b),
+    );
     o1 * o2 < 0.0 && o3 * o4 < 0.0
 }
 

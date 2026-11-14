@@ -12,4 +12,7 @@ pub mod compare;
 pub mod gpu;
 pub mod tess;
 
-pub use gpu::{render, render_frame, AdapterChoice, AdapterSummary, GpuContext, GpuError, GpuImage, GpuOptions, Timing};
+pub use gpu::{
+    render, render_frame, AdapterChoice, AdapterSummary, GpuContext, GpuError, GpuImage,
+    GpuOptions, Timing,
+};

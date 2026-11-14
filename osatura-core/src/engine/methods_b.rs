@@ -57,20 +57,35 @@ impl Engine {
         match &layer.kind {
             LayerKind::Vector { paths } => Some(crate::links::UnitRest {
                 stage,
-                paths: paths.iter().map(|p| p.anchors.iter().map(|a| a.pos).collect()).collect(),
+                paths: paths
+                    .iter()
+                    .map(|p| p.anchors.iter().map(|a| a.pos).collect())
+                    .collect(),
                 closed: paths.iter().map(|p| p.closed).collect(),
                 tris: Vec::new(),
                 is_image: false,
                 has_mesh: true,
             }),
-            LayerKind::Image { origin, size, mesh, .. } => {
+            LayerKind::Image {
+                origin, size, mesh, ..
+            } => {
                 let data = self.images[id].as_ref()?;
-                let size = size.unwrap_or(Vec2::new(data.pixmap.width() as f32, data.pixmap.height() as f32));
+                let size = size.unwrap_or(Vec2::new(
+                    data.pixmap.width() as f32,
+                    data.pixmap.height() as f32,
+                ));
                 let (verts, tris) = match mesh {
                     Some(m) => (m.rest_vertices(*origin, size), m.tri_indices()),
                     None => (Vec::new(), Vec::new()),
                 };
-                Some(crate::links::UnitRest { stage, paths: vec![verts], closed: vec![false], tris, is_image: true, has_mesh: mesh.is_some() })
+                Some(crate::links::UnitRest {
+                    stage,
+                    paths: vec![verts],
+                    closed: vec![false],
+                    tris,
+                    is_image: true,
+                    has_mesh: mesh.is_some(),
+                })
             }
             _ => None,
         }
@@ -80,7 +95,12 @@ impl Engine {
     }
 
     /// Enabled effects of node `id` with channel-driven values filled in.
-    pub(super) fn node_effects(&self, id: usize, layer: &Layer, st: &State) -> Vec<crate::layerfx::LayerEffect> {
+    pub(super) fn node_effects(
+        &self,
+        id: usize,
+        layer: &Layer,
+        st: &State,
+    ) -> Vec<crate::layerfx::LayerEffect> {
         let mut out = Vec::new();
         for (ei, e) in layer.effects.iter().enumerate() {
             if !e.enabled {
@@ -127,22 +147,39 @@ impl Engine {
         State {
             bones: vec![BonePose::default(); p.bones.len()],
             layers,
-            cam: CamProps { x: pos.x, y: pos.y, zoom: p.camera.zoom.max(0.01), rot: p.camera.rotation, focus: p.camera.focus, blur: p.camera.blur.max(0.0) },
+            cam: CamProps {
+                x: pos.x,
+                y: pos.y,
+                zoom: p.camera.zoom.max(0.01),
+                rot: p.camera.rotation,
+                focus: p.camera.focus,
+                blur: p.camera.blur.max(0.0),
+            },
             ik_mix: p.ik.iter().map(|c| c.mix.clamp(0.0, 1.0)).collect(),
-            cweight: p.constraints.iter().map(|c| c.weight.clamp(0.0, 1.0)).collect(),
+            cweight: p
+                .constraints
+                .iter()
+                .map(|c| c.weight.clamp(0.0, 1.0))
+                .collect(),
             pvals: self.pslot_init.clone(),
         }
     }
 
     /// Current value of `target.prop` (used by expressions); 0 if unknown.
     pub(super) fn lookup(&self, st: &State, target: &str, prop: &str) -> f32 {
-        let Some(prop) = Prop::parse(prop) else { return 0.0 };
+        let Some(prop) = Prop::parse(prop) else {
+            return 0.0;
+        };
         let slot = match prop.target_kind() {
             TargetKind::Bone => self.bone_ix.get(target).copied(),
             TargetKind::Layer => self.node_ix.get(target).copied(),
             TargetKind::Camera => Some(0),
             TargetKind::Ik => self.project.ik.iter().position(|c| c.name == target),
-            TargetKind::Constraint => self.project.constraints.iter().position(|c| c.name == target),
+            TargetKind::Constraint => self
+                .project
+                .constraints
+                .iter()
+                .position(|c| c.name == target),
             TargetKind::Sub => self.slot_ix.get(&(target.to_string(), prop)).copied(),
         };
         slot.map(|s| st.read(prop, s)).unwrap_or(0.0)
@@ -156,10 +193,20 @@ impl Engine {
                 Source::Keys { track } => track.eval(frame),
                 Source::Expr { .. } => {
                     let get = |t: &str, pr: &str| self.lookup(st, t, pr);
-                    let ctx = Ctx { frame, fps: p.fps, frames: p.frames as f32, get: &get };
+                    let ctx = Ctx {
+                        frame,
+                        fps: p.fps,
+                        frames: p.frames as f32,
+                        get: &get,
+                    };
                     c.expr.as_ref().map(|e| e.eval(&ctx))
                 }
-                Source::Noise { amp, freq, seed, octaves } => Some(amp * fbm1(frame / p.fps * freq, *seed, *octaves)),
+                Source::Noise {
+                    amp,
+                    freq,
+                    seed,
+                    octaves,
+                } => Some(amp * fbm1(frame / p.fps * freq, *seed, *octaves)),
                 Source::Driven { curve, .. } => {
                     let (ip, is) = c.input.expect("resolved at compile time");
                     curve.eval(st.read(ip, is))
@@ -204,12 +251,22 @@ impl Engine {
 
     /// Solve one IK chain, writing blended pose angles (and, for stretchy chains, the root
     /// bone's scale) into `poses`.
-    pub(super) fn solve_ik(&self, chain: &IkResolved, mix: f32, poses: &mut [BonePose], world: &[Affine2]) {
+    pub(super) fn solve_ik(
+        &self,
+        chain: &IkResolved,
+        mix: f32,
+        poses: &mut [BonePose],
+        world: &[Affine2],
+    ) {
         let bones = &self.project.bones;
         let raw_target = world[chain.target].apply(Vec2::ZERO);
         let root_head = world[chain.bones[0]].apply(Vec2::ZERO);
         let last = *chain.bones.last().unwrap();
-        let mut joints: Vec<Vec2> = chain.bones.iter().map(|&b| world[b].apply(Vec2::ZERO)).collect();
+        let mut joints: Vec<Vec2> = chain
+            .bones
+            .iter()
+            .map(|&b| world[b].apply(Vec2::ZERO))
+            .collect();
         joints.push(world[last].apply(Vec2::new(bones[last].length, 0.0)));
         let n = chain.bones.len();
         let lengths: Vec<f32> = (0..n).map(|i| joints[i].distance(joints[i + 1])).collect();
@@ -233,7 +290,16 @@ impl Engine {
         }
         let old: Vec<f32> = chain.bones.iter().map(|&b| poses[b].angle).collect();
         let new: Vec<f32> = if n == 2 {
-            match solve_two_bone_scaled(bones, &self.parent, world, chain.bones[0], chain.bones[1], target, chain.bend, scale) {
+            match solve_two_bone_scaled(
+                bones,
+                &self.parent,
+                world,
+                chain.bones[0],
+                chain.bones[1],
+                target,
+                chain.bend,
+                scale,
+            ) {
                 Some((a, b)) => vec![a, b],
                 None => return,
             }
@@ -242,9 +308,17 @@ impl Engine {
                 return;
             }
             let scaled: Vec<f32> = lengths.iter().map(|l| l * scale).collect();
-            solve_fabrik(&mut joints, &scaled, target, (chain.iterations as usize).max(crate::rig::FABRIK_MAX_ITERS), crate::rig::FABRIK_TOLERANCE);
+            solve_fabrik(
+                &mut joints,
+                &scaled,
+                target,
+                (chain.iterations as usize).max(crate::rig::FABRIK_MAX_ITERS),
+                crate::rig::FABRIK_TOLERANCE,
+            );
             let root = chain.bones[0];
-            let mut parent_rot = self.parent[root].map(|p| world[p].rotation()).unwrap_or(0.0);
+            let mut parent_rot = self.parent[root]
+                .map(|p| world[p].rotation())
+                .unwrap_or(0.0);
             let mut out = Vec::with_capacity(n);
             for i in 0..n {
                 let d = joints[i + 1] - joints[i];
@@ -262,7 +336,13 @@ impl Engine {
         }
     }
 
-    pub(super) fn apply_constraint(&self, c: &ConstraintResolved, weight: f32, poses: &mut [BonePose], world: &[Affine2]) {
+    pub(super) fn apply_constraint(
+        &self,
+        c: &ConstraintResolved,
+        weight: f32,
+        poses: &mut [BonePose],
+        world: &[Affine2],
+    ) {
         let head = world[c.bone].apply(Vec2::ZERO);
         match c.kind {
             CKind::Aim { target, offset } => {
@@ -325,7 +405,11 @@ impl Engine {
         }
         let n = self.project.frames as usize;
         let dt = 1.0 / self.project.fps;
-        let passes = if self.springs.iter().any(|s| s.warmup) { 2 } else { 1 };
+        let passes = if self.springs.iter().any(|s| s.warmup) {
+            2
+        } else {
+            1
+        };
         let mut sim = vec![SpringState::default(); self.springs.len()];
         let mut baked = vec![vec![0.0f32; self.springs.len()]; n];
         for pass in 0..passes {
@@ -341,7 +425,8 @@ impl Engine {
                     }
                     sim[k].step(target, sp.frequency, sp.damping, dt, 8);
                     let parent_rot = self.parent[bi].map(|p| world[p].rotation()).unwrap_or(0.0);
-                    st.bones[bi].angle = sim[k].x - parent_rot - self.project.bones[bi].rest_angle.to_radians();
+                    st.bones[bi].angle =
+                        sim[k].x - parent_rot - self.project.bones[bi].rest_angle.to_radians();
                     world = fk(&self.project.bones, &self.parent, &st.bones);
                     if pass == passes - 1 {
                         baked[f][k] = st.bones[bi].angle;
@@ -366,7 +451,13 @@ impl Engine {
 
     // ---- geometry ---------------------------------------------------------------------------
 
-    pub(super) fn lattice_disp(rect: [f32; 4], cols: usize, rows: usize, offs: &[Vec2], p: Vec2) -> Vec2 {
+    pub(super) fn lattice_disp(
+        rect: [f32; 4],
+        cols: usize,
+        rows: usize,
+        offs: &[Vec2],
+        p: Vec2,
+    ) -> Vec2 {
         let u = ((p.x - rect[0]) / rect[2]).clamp(0.0, 1.0);
         let v = ((p.y - rect[1]) / rect[3]).clamp(0.0, 1.0);
         let mut d = Vec2::ZERO;
@@ -380,10 +471,19 @@ impl Engine {
     }
 
     /// Bilinear per-vertex displacement (exact at the grid vertices).
-    pub(super) fn cloth_disp(rect: [f32; 4], cols: usize, rows: usize, offs: &[Vec2], p: Vec2) -> Vec2 {
+    pub(super) fn cloth_disp(
+        rect: [f32; 4],
+        cols: usize,
+        rows: usize,
+        offs: &[Vec2],
+        p: Vec2,
+    ) -> Vec2 {
         let u = ((p.x - rect[0]) / rect[2]).clamp(0.0, 1.0) * cols as f32;
         let v = ((p.y - rect[1]) / rect[3]).clamp(0.0, 1.0) * rows as f32;
-        let (c, r) = ((u.floor() as usize).min(cols - 1), (v.floor() as usize).min(rows - 1));
+        let (c, r) = (
+            (u.floor() as usize).min(cols - 1),
+            (v.floor() as usize).min(rows - 1),
+        );
         let (fu, fv) = (u - c as f32, v - r as f32);
         let at = |cc: usize, rr: usize| offs[rr * (cols + 1) + cc];
         let top = at(c, r) * (1.0 - fu) + at(c + 1, r) * fu;
@@ -391,7 +491,13 @@ impl Engine {
         top * (1.0 - fv) + bot * fv
     }
 
-    pub(super) fn spine_disp(rest_pts: &[Vec2], rest_poly: &Polyline, offs: &[Vec2], radius: Option<f32>, p: Vec2) -> Vec2 {
+    pub(super) fn spine_disp(
+        rest_pts: &[Vec2],
+        rest_poly: &Polyline,
+        offs: &[Vec2],
+        radius: Option<f32>,
+        p: Vec2,
+    ) -> Vec2 {
         let def_pts: Vec<Vec2> = rest_pts.iter().zip(offs).map(|(&r, &o)| r + o).collect();
         let def_poly = VPath::smooth_through("", &def_pts, false, 1.0).polyline(0.5);
         let (rest_len, def_len) = (rest_poly.length(), def_poly.length());
@@ -414,29 +520,73 @@ impl Engine {
     }
 
     /// Apply all deformers, then wobble, to a point (rest space).
-    pub(super) fn deform_point(&self, id: usize, st: &State, tick: f32, p: Vec2, mesh_vertex: Option<usize>) -> Vec2 {
+    pub(super) fn deform_point(
+        &self,
+        id: usize,
+        st: &State,
+        tick: f32,
+        p: Vec2,
+        mesh_vertex: Option<usize>,
+    ) -> Vec2 {
         let mut out = p;
         for (di, d) in self.geo[id].deformers.iter().enumerate() {
             let disp = match d {
-                DefInfo::Lattice { cols, rows, rect, slots } => {
-                    let offs: Vec<Vec2> = slots.iter().map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]])).collect();
+                DefInfo::Lattice {
+                    cols,
+                    rows,
+                    rect,
+                    slots,
+                } => {
+                    let offs: Vec<Vec2> = slots
+                        .iter()
+                        .map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]]))
+                        .collect();
                     Self::lattice_disp(*rect, *cols, *rows, &offs, out)
                 }
-                DefInfo::Cloth { cols, rows, rect, slots } => {
-                    let offs: Vec<Vec2> = slots.iter().map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]])).collect();
+                DefInfo::Cloth {
+                    cols,
+                    rows,
+                    rect,
+                    slots,
+                } => {
+                    let offs: Vec<Vec2> = slots
+                        .iter()
+                        .map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]]))
+                        .collect();
                     Self::cloth_disp(*rect, *cols, *rows, &offs, out)
                 }
-                DefInfo::Spine { rest_pts, rest_poly, slots, radius } => {
-                    let offs: Vec<Vec2> = slots.iter().map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]])).collect();
+                DefInfo::Spine {
+                    rest_pts,
+                    rest_poly,
+                    slots,
+                    radius,
+                } => {
+                    let offs: Vec<Vec2> = slots
+                        .iter()
+                        .map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]]))
+                        .collect();
                     Self::spine_disp(rest_pts, rest_poly, &offs, *radius, out)
                 }
                 DefInfo::Pin { solver, slots } => {
-                    let offs: Vec<Vec2> = slots.iter().map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]])).collect();
+                    let offs: Vec<Vec2> = slots
+                        .iter()
+                        .map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]]))
+                        .collect();
                     solver.displacement(&offs, out)
                 }
-                DefInfo::Cage { solver, slots, mesh_w } => {
-                    let offs: Vec<Vec2> = slots.iter().map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]])).collect();
-                    match mesh_vertex.filter(|_| di == 0).and_then(|vi| mesh_w.get(vi)) {
+                DefInfo::Cage {
+                    solver,
+                    slots,
+                    mesh_w,
+                } => {
+                    let offs: Vec<Vec2> = slots
+                        .iter()
+                        .map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]]))
+                        .collect();
+                    match mesh_vertex
+                        .filter(|_| di == 0)
+                        .and_then(|vi| mesh_w.get(vi))
+                    {
                         Some(w) => crate::cage::CageSolver::apply_weights(w, &offs),
                         None => solver.displacement(&offs, out),
                     }
@@ -453,8 +603,16 @@ impl Engine {
         out
     }
 
-    pub(super) fn vector_geometry(&self, id: usize, st: &State, skin_mats: &[Affine2], tick: f32) -> Vec<VPath> {
-        let LayerKind::Vector { paths } = &self.layer_ref(id).kind else { return Vec::new() };
+    pub(super) fn vector_geometry(
+        &self,
+        id: usize,
+        st: &State,
+        skin_mats: &[Affine2],
+        tick: f32,
+    ) -> Vec<VPath> {
+        let LayerKind::Vector { paths } = &self.layer_ref(id).kind else {
+            return Vec::new();
+        };
         let has_deform = !self.geo[id].deformers.is_empty() || st.layers[id].wobble != 0.0;
         paths
             .iter()
@@ -470,7 +628,10 @@ impl Engine {
                     let m = &path.morphs[mi];
                     for (ai, a) in o.anchors.iter_mut().enumerate() {
                         let (b, t) = (&path.anchors[ai], &m.anchors[ai]);
-                        let (hin, hout) = (a.hin() + (t.hin() - b.hin()) * w, a.hout() + (t.hout() - b.hout()) * w);
+                        let (hin, hout) = (
+                            a.hin() + (t.hin() - b.hin()) * w,
+                            a.hout() + (t.hout() - b.hout()) * w,
+                        );
                         a.pos += (t.pos - b.pos) * w;
                         if b.handle_in.is_some() || t.handle_in.is_some() {
                             a.handle_in = Some(hin);
@@ -490,7 +651,11 @@ impl Engine {
                 }
                 // animated gradient handles
                 if let Some(gs) = self.geo[id].grad_slots.get(pi) {
-                    let d = |k: usize| gs[k].map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]])).unwrap_or(Vec2::ZERO);
+                    let d = |k: usize| {
+                        gs[k]
+                            .map(|s| Vec2::new(st.pvals[s[0]], st.pvals[s[1]]))
+                            .unwrap_or(Vec2::ZERO)
+                    };
                     if let Some(f) = &mut o.fill {
                         shift_gradient(f, d(0), d(1));
                     }
@@ -523,5 +688,4 @@ impl Engine {
             })
             .collect()
     }
-
 }

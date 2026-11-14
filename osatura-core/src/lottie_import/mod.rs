@@ -27,12 +27,12 @@ use crate::style::{Blend, Paint, Rgba, Stop, StrokeStyle};
 use serde_json::Value;
 
 mod base;
-mod layers;
 mod effects;
+mod layers;
 
 pub use base::*;
-use layers::*;
 pub use effects::*;
+use layers::*;
 
 #[cfg(test)]
 mod tests;

@@ -38,7 +38,11 @@ pub(super) struct Quadric {
 
 impl Quadric {
     pub(super) fn zero(d: usize) -> Quadric {
-        Quadric { a: vec![0.0; d * d], b: vec![0.0; d], c: 0.0 }
+        Quadric {
+            a: vec![0.0; d * d],
+            b: vec![0.0; d],
+            c: 0.0,
+        }
     }
     pub(super) fn add(&mut self, o: &Quadric) {
         for (x, y) in self.a.iter_mut().zip(&o.a) {
@@ -119,7 +123,10 @@ impl PartialOrd for Cand {
 impl Ord for Cand {
     fn cmp(&self, o: &Self) -> std::cmp::Ordering {
         // smaller cost = greater priority; ties by (u, v) ascending
-        o.cost.total_cmp(&self.cost).then(o.u.cmp(&self.u)).then(o.v.cmp(&self.v))
+        o.cost
+            .total_cmp(&self.cost)
+            .then(o.u.cmp(&self.u))
+            .then(o.v.cmp(&self.v))
     }
 }
 
@@ -129,7 +136,11 @@ pub(super) fn area2(a: P, b: P, c: P) -> f64 {
 
 /// Clip the triangle `t` (a convex polygon) against triangle `o`; returns the polygon corners.
 pub(super) fn clip_tri(t: [P; 3], o: [P; 3], tol: f64) -> Vec<P> {
-    let sgn = if area2(o[0], o[1], o[2]) >= 0.0 { 1.0 } else { -1.0 };
+    let sgn = if area2(o[0], o[1], o[2]) >= 0.0 {
+        1.0
+    } else {
+        -1.0
+    };
     let mut poly: Vec<P> = t.to_vec();
     for k in 0..3 {
         let (a, b) = (o[k], o[(k + 1) % 3]);
@@ -170,8 +181,19 @@ pub(super) fn bary(p: P, t: [P; 3]) -> [f64; 3] {
 pub fn qem_simplify(inp: &QemInput, eps_px: f64) -> QemOutput {
     let n = inp.rest.len();
     let nt = inp.tris.len();
-    let identity = || QemOutput { keep: (0..n).collect(), tris: inp.tris.to_vec(), bound_px: 0.0, collapses: 0 };
-    if n == 0 || nt == 0 || (eps_px.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || inp.y.is_empty() || inp.y.iter().any(|f| f.len() != n) || inp.s.len() != inp.y.len() {
+    let identity = || QemOutput {
+        keep: (0..n).collect(),
+        tris: inp.tris.to_vec(),
+        bound_px: 0.0,
+        collapses: 0,
+    };
+    if n == 0
+        || nt == 0
+        || (eps_px.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
+        || inp.y.is_empty()
+        || inp.y.iter().any(|f| f.len() != n)
+        || inp.s.len() != inp.y.len()
+    {
         return identity();
     }
     let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
@@ -200,7 +222,8 @@ pub fn qem_simplify(inp: &QemInput, eps_px: f64) -> QemOutput {
     let mut quad: Vec<Quadric> = vec![Quadric::zero(d); n];
     for tr in &tris {
         let (a, b, c) = (xv(tr[0]), xv(tr[1]), xv(tr[2]));
-        let w = area2(inp.rest[tr[0]], inp.rest[tr[1]], inp.rest[tr[2]]).abs() * 0.5 / (diag * diag);
+        let w =
+            area2(inp.rest[tr[0]], inp.rest[tr[1]], inp.rest[tr[2]]).abs() * 0.5 / (diag * diag);
         if let Some(q) = tri_quadric(&a, &b, &c, w) {
             for &v in tr {
                 quad[v].add(&q);
@@ -212,12 +235,22 @@ pub fn qem_simplify(inp: &QemInput, eps_px: f64) -> QemOutput {
     let mut ver = vec![0u32; n];
 
     let neighbours = |adj: &Vec<Vec<usize>>, tris: &Vec<[usize; 3]>, v: usize| -> Vec<usize> {
-        let mut s: Vec<usize> = adj[v].iter().flat_map(|&t| tris[t].iter().copied()).filter(|&x| x != v).collect();
+        let mut s: Vec<usize> = adj[v]
+            .iter()
+            .flat_map(|&t| tris[t].iter().copied())
+            .filter(|&x| x != v)
+            .collect();
         s.sort_unstable();
         s.dedup();
         s
     };
-    let common_tris = |adj: &Vec<Vec<usize>>, u: usize, v: usize| -> Vec<usize> { adj[u].iter().copied().filter(|t| adj[v].contains(t)).collect() };
+    let common_tris = |adj: &Vec<Vec<usize>>, u: usize, v: usize| -> Vec<usize> {
+        adj[u]
+            .iter()
+            .copied()
+            .filter(|t| adj[v].contains(t))
+            .collect()
+    };
 
     // validity of the collapse of u into v (topology, domain, orientation)
     let valid = |adj: &Vec<Vec<usize>>, tris: &Vec<[usize; 3]>, u: usize, v: usize| -> bool {
@@ -245,7 +278,11 @@ pub fn qem_simplify(inp: &QemInput, eps_px: f64) -> QemOutput {
         // link condition
         let nv = neighbours(adj, tris, v);
         let common: BTreeSet<usize> = nu.iter().copied().filter(|x| nv.contains(x)).collect();
-        let apex: BTreeSet<usize> = tuv.iter().flat_map(|&t| tris[t].iter().copied()).filter(|&x| x != u && x != v).collect();
+        let apex: BTreeSet<usize> = tuv
+            .iter()
+            .flat_map(|&t| tris[t].iter().copied())
+            .filter(|&x| x != u && x != v)
+            .collect();
         if common != apex {
             return false;
         }
@@ -277,7 +314,13 @@ pub fn qem_simplify(inp: &QemInput, eps_px: f64) -> QemOutput {
     for u in 0..n {
         for v in neighbours(&adj, &tris, u) {
             if valid(&adj, &tris, u, v) {
-                heap.push(Cand { cost: qcost(&quad, u, v), u, v, vu: 0, vv: 0 });
+                heap.push(Cand {
+                    cost: qcost(&quad, u, v),
+                    u,
+                    v,
+                    vu: 0,
+                    vv: 0,
+                });
             }
         }
     }
@@ -347,7 +390,10 @@ pub fn qem_simplify(inp: &QemInput, eps_px: f64) -> QemOutput {
         }
         // certify
         let tuv = common_tris(&adj, u, v);
-        let mut union: Vec<usize> = adj[u].iter().flat_map(|&t| cover[t].iter().copied()).collect();
+        let mut union: Vec<usize> = adj[u]
+            .iter()
+            .flat_map(|&t| cover[t].iter().copied())
+            .collect();
         union.sort_unstable();
         union.dedup();
         let mut news: Vec<(usize, [usize; 3], f64)> = Vec::new();
@@ -400,10 +446,22 @@ pub fn qem_simplify(inp: &QemInput, eps_px: f64) -> QemOutput {
         for &x in &aff {
             for y in neighbours(&adj, &tris, x) {
                 if valid(&adj, &tris, x, y) {
-                    heap.push(Cand { cost: qcost(&quad, x, y), u: x, v: y, vu: ver[x], vv: ver[y] });
+                    heap.push(Cand {
+                        cost: qcost(&quad, x, y),
+                        u: x,
+                        v: y,
+                        vu: ver[x],
+                        vv: ver[y],
+                    });
                 }
                 if !aff.contains(&y) && valid(&adj, &tris, y, x) {
-                    heap.push(Cand { cost: qcost(&quad, y, x), u: y, v: x, vu: ver[y], vv: ver[x] });
+                    heap.push(Cand {
+                        cost: qcost(&quad, y, x),
+                        u: y,
+                        v: x,
+                        vu: ver[y],
+                        vv: ver[x],
+                    });
                 }
             }
         }
@@ -430,5 +488,10 @@ pub fn qem_simplify(inp: &QemInput, eps_px: f64) -> QemOutput {
         }
     }
     let keep: Vec<usize> = (0..n).filter(|&v| used[v] || !referenced[v]).collect();
-    QemOutput { keep, tris: out_tris, bound_px: bound, collapses }
+    QemOutput {
+        keep,
+        tris: out_tris,
+        bound_px: bound,
+        collapses,
+    }
 }

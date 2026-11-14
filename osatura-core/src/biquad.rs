@@ -47,7 +47,11 @@ impl FilterKind {
 
     /// `lowpass`, `highpass`, `bandpass`, `notch`, `allpass`, `peaking`, `lowshelf`, `highshelf` (case-insensitive; `-` and `_` ignored).
     pub fn parse(s: &str) -> Result<FilterKind, String> {
-        let t: String = s.chars().filter(|c| *c != '-' && *c != '_').collect::<String>().to_ascii_lowercase();
+        let t: String = s
+            .chars()
+            .filter(|c| *c != '-' && *c != '_')
+            .collect::<String>()
+            .to_ascii_lowercase();
         Ok(match t.as_str() {
             "lowpass" => FilterKind::LowPass,
             "highpass" => FilterKind::HighPass,
@@ -87,13 +91,19 @@ pub struct Coeffs {
 /// Checks the parameters against the sample rate.
 pub fn check(fs: f64, s: &BiquadSpec) -> Result<(), String> {
     if !(fs.is_finite() && fs > 0.0) {
-        return Err(format!("sample rate must be a positive finite number, got {fs}"));
+        return Err(format!(
+            "sample rate must be a positive finite number, got {fs}"
+        ));
     }
     if !(s.f0.is_finite() && s.q.is_finite() && s.gain_db.is_finite()) {
         return Err("filter parameters must be finite".into());
     }
     if s.f0 <= 0.0 || s.f0 >= fs / 2.0 {
-        return Err(format!("frequency {} Hz must be above 0 and below half the sample rate ({} Hz)", s.f0, fs / 2.0));
+        return Err(format!(
+            "frequency {} Hz must be above 0 and below half the sample rate ({} Hz)",
+            s.f0,
+            fs / 2.0
+        ));
     }
     if s.q <= 0.0 {
         return Err(format!("Q must be positive, got {}", s.q));
@@ -121,29 +131,63 @@ pub fn coefficients(fs: f64, s: &BiquadSpec) -> Result<Coeffs, String> {
     let alpha = sn / (2.0 * s.q);
     let a = 10f64.powf(s.gain_db / 40.0);
     let (b, ar) = match s.kind {
-        FilterKind::LowPass => ([(1.0 - c) / 2.0, 1.0 - c, (1.0 - c) / 2.0], [1.0 + alpha, -2.0 * c, 1.0 - alpha]),
-        FilterKind::HighPass => ([(1.0 + c) / 2.0, -(1.0 + c), (1.0 + c) / 2.0], [1.0 + alpha, -2.0 * c, 1.0 - alpha]),
+        FilterKind::LowPass => (
+            [(1.0 - c) / 2.0, 1.0 - c, (1.0 - c) / 2.0],
+            [1.0 + alpha, -2.0 * c, 1.0 - alpha],
+        ),
+        FilterKind::HighPass => (
+            [(1.0 + c) / 2.0, -(1.0 + c), (1.0 + c) / 2.0],
+            [1.0 + alpha, -2.0 * c, 1.0 - alpha],
+        ),
         FilterKind::BandPass => ([alpha, 0.0, -alpha], [1.0 + alpha, -2.0 * c, 1.0 - alpha]),
         FilterKind::Notch => ([1.0, -2.0 * c, 1.0], [1.0 + alpha, -2.0 * c, 1.0 - alpha]),
-        FilterKind::AllPass => ([1.0 - alpha, -2.0 * c, 1.0 + alpha], [1.0 + alpha, -2.0 * c, 1.0 - alpha]),
-        FilterKind::Peaking => ([1.0 + alpha * a, -2.0 * c, 1.0 - alpha * a], [1.0 + alpha / a, -2.0 * c, 1.0 - alpha / a]),
+        FilterKind::AllPass => (
+            [1.0 - alpha, -2.0 * c, 1.0 + alpha],
+            [1.0 + alpha, -2.0 * c, 1.0 - alpha],
+        ),
+        FilterKind::Peaking => (
+            [1.0 + alpha * a, -2.0 * c, 1.0 - alpha * a],
+            [1.0 + alpha / a, -2.0 * c, 1.0 - alpha / a],
+        ),
         FilterKind::LowShelf => {
             let t = 2.0 * a.sqrt() * alpha;
             (
-                [a * ((a + 1.0) - (a - 1.0) * c + t), 2.0 * a * ((a - 1.0) - (a + 1.0) * c), a * ((a + 1.0) - (a - 1.0) * c - t)],
-                [(a + 1.0) + (a - 1.0) * c + t, -2.0 * ((a - 1.0) + (a + 1.0) * c), (a + 1.0) + (a - 1.0) * c - t],
+                [
+                    a * ((a + 1.0) - (a - 1.0) * c + t),
+                    2.0 * a * ((a - 1.0) - (a + 1.0) * c),
+                    a * ((a + 1.0) - (a - 1.0) * c - t),
+                ],
+                [
+                    (a + 1.0) + (a - 1.0) * c + t,
+                    -2.0 * ((a - 1.0) + (a + 1.0) * c),
+                    (a + 1.0) + (a - 1.0) * c - t,
+                ],
             )
         }
         FilterKind::HighShelf => {
             let t = 2.0 * a.sqrt() * alpha;
             (
-                [a * ((a + 1.0) + (a - 1.0) * c + t), -2.0 * a * ((a - 1.0) + (a + 1.0) * c), a * ((a + 1.0) + (a - 1.0) * c - t)],
-                [(a + 1.0) - (a - 1.0) * c + t, 2.0 * ((a - 1.0) - (a + 1.0) * c), (a + 1.0) - (a - 1.0) * c - t],
+                [
+                    a * ((a + 1.0) + (a - 1.0) * c + t),
+                    -2.0 * a * ((a - 1.0) + (a + 1.0) * c),
+                    a * ((a + 1.0) + (a - 1.0) * c - t),
+                ],
+                [
+                    (a + 1.0) - (a - 1.0) * c + t,
+                    2.0 * ((a - 1.0) - (a + 1.0) * c),
+                    (a + 1.0) - (a - 1.0) * c - t,
+                ],
             )
         }
     };
     let k = ar[0];
-    Ok(Coeffs { b0: b[0] / k, b1: b[1] / k, b2: b[2] / k, a1: ar[1] / k, a2: ar[2] / k })
+    Ok(Coeffs {
+        b0: b[0] / k,
+        b1: b[1] / k,
+        b2: b[2] / k,
+        a1: ar[1] / k,
+        a2: ar[2] / k,
+    })
 }
 
 /// Running filter state (one per channel).
@@ -159,7 +203,13 @@ pub struct Biquad {
 impl Biquad {
     /// A filter with zero initial state.
     pub fn new(c: Coeffs) -> Biquad {
-        Biquad { c, x1: 0.0, x2: 0.0, y1: 0.0, y2: 0.0 }
+        Biquad {
+            c,
+            x1: 0.0,
+            x2: 0.0,
+            y1: 0.0,
+            y2: 0.0,
+        }
     }
 
     /// One sample in, one sample out.
@@ -196,7 +246,12 @@ pub fn filter(samples: &[f32], fs: f64, s: &BiquadSpec) -> Result<Vec<f32>, Stri
 }
 
 /// Filters interleaved multi-channel audio, each channel separately.
-pub fn filter_interleaved(samples: &[f32], channels: usize, fs: f64, s: &BiquadSpec) -> Result<Vec<f32>, String> {
+pub fn filter_interleaved(
+    samples: &[f32],
+    channels: usize,
+    fs: f64,
+    s: &BiquadSpec,
+) -> Result<Vec<f32>, String> {
     if channels == 0 || !samples.len().is_multiple_of(channels) {
         return Err("the sample count does not match the channel count".into());
     }
@@ -206,7 +261,10 @@ pub fn filter_interleaved(samples: &[f32], channels: usize, fs: f64, s: &BiquadS
     for (i, &x) in samples.iter().enumerate() {
         let y = states[i % channels].process(f64::from(x));
         if !y.is_finite() {
-            return Err(format!("the filter output is not finite at sample {}", i / channels));
+            return Err(format!(
+                "the filter output is not finite at sample {}",
+                i / channels
+            ));
         }
         out.push(y.clamp(-1.0, 1.0) as f32);
     }
@@ -231,7 +289,12 @@ mod tests {
     const Q: f64 = std::f64::consts::FRAC_1_SQRT_2;
 
     fn spec(kind: FilterKind, q: f64, gain_db: f64) -> BiquadSpec {
-        BiquadSpec { kind, f0: FS / 4.0, q, gain_db }
+        BiquadSpec {
+            kind,
+            f0: FS / 4.0,
+            q,
+            gain_db,
+        }
     }
 
     fn near(a: f64, b: f64, tol: f64) {
@@ -249,7 +312,10 @@ mod tests {
         let mut x = vec![0.0; 6];
         x[0] = 1.0;
         let y = filter_f64(&x, FS, &spec(FilterKind::LowPass, Q, 0.0)).unwrap();
-        for (got, want) in y.iter().zip([0.292893, 0.585786, 0.242641, -0.100505, -0.041631, 0.017244]) {
+        for (got, want) in y
+            .iter()
+            .zip([0.292893, 0.585786, 0.242641, -0.100505, -0.041631, 0.017244])
+        {
             near(*got, want, 1e-5);
         }
     }
@@ -263,7 +329,9 @@ mod tests {
     #[test]
     fn high_pass_nyquist_and_dc() {
         let s = spec(FilterKind::HighPass, Q, 0.0);
-        let alt: Vec<f64> = (0..400).map(|i| if i % 2 == 0 { 1.0 } else { -1.0 }).collect();
+        let alt: Vec<f64> = (0..400)
+            .map(|i| if i % 2 == 0 { 1.0 } else { -1.0 })
+            .collect();
         let y = filter_f64(&alt, FS, &s).unwrap();
         near(y[398].abs(), 1.0, 1e-5);
         near(y[399].abs(), 1.0, 1e-5);
@@ -287,7 +355,9 @@ mod tests {
 
     #[test]
     fn peaking_with_zero_gain_is_identity() {
-        let x: Vec<f64> = (0..200).map(|i| ((i * 37 % 101) as f64 / 50.0) - 1.0).collect();
+        let x: Vec<f64> = (0..200)
+            .map(|i| ((i * 37 % 101) as f64 / 50.0) - 1.0)
+            .collect();
         let y = filter_f64(&x, FS, &spec(FilterKind::Peaking, 1.0, 0.0)).unwrap();
         for (a, b) in x.iter().zip(&y) {
             near(*a, *b, 1e-12);
@@ -349,7 +419,13 @@ mod tests {
         assert!(y.iter().all(|v| (-1.0..=1.0).contains(v)));
         assert!(filter(&[0.1, f32::NAN], FS, &s).is_err());
         assert!(filter(&[], FS, &s).unwrap().is_empty());
-        let two = filter_interleaved(&[0.5, -0.5, 0.5, -0.5], 2, FS, &spec(FilterKind::LowPass, Q, 0.0)).unwrap();
+        let two = filter_interleaved(
+            &[0.5, -0.5, 0.5, -0.5],
+            2,
+            FS,
+            &spec(FilterKind::LowPass, Q, 0.0),
+        )
+        .unwrap();
         near(f64::from(two[0]), -f64::from(two[1]), 1e-6);
         assert!(filter_interleaved(&[0.5; 3], 2, FS, &s).is_err());
         assert_eq!(FilterKind::parse("Low-Pass").unwrap(), FilterKind::LowPass);

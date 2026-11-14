@@ -7,7 +7,12 @@ use super::*;
 // Rectangles
 // ---------------------------------------------------------------------------------------------
 
-pub(super) fn pin_axis(lo: Option<f32>, hi: Option<f32>, size: Option<f32>, total: f32) -> (f32, f32) {
+pub(super) fn pin_axis(
+    lo: Option<f32>,
+    hi: Option<f32>,
+    size: Option<f32>,
+    total: f32,
+) -> (f32, f32) {
     match (lo, hi, size) {
         (Some(l), Some(h), _) => (l, (total - l - h).max(0.0)),
         (Some(l), None, Some(s)) => (l, s),
@@ -23,12 +28,25 @@ pub(super) fn pin_axis(lo: Option<f32>, hi: Option<f32>, size: Option<f32>, tota
 pub fn resolve_rule(rule: &RectRule, cw: f32, ch: f32, hug: [f32; 2]) -> [f32; 4] {
     match rule {
         RectRule::Fixed { x, y, w, h } => [*x, *y, *w, *h],
-        RectRule::Pin { left, top, right, bottom, width, height } => {
+        RectRule::Pin {
+            left,
+            top,
+            right,
+            bottom,
+            width,
+            height,
+        } => {
             let (x, w) = pin_axis(*left, *right, *width, cw);
             let (y, h) = pin_axis(*top, *bottom, *height, ch);
             [x, y, w, h]
         }
-        RectRule::Aspect { ratio, mode, margin, ax, ay } => {
+        RectRule::Aspect {
+            ratio,
+            mode,
+            margin,
+            ax,
+            ay,
+        } => {
             let (aw, ah) = ((cw - 2.0 * margin).max(0.0), (ch - 2.0 * margin).max(0.0));
             let wider = ah > 0.0 && aw / ah > *ratio;
             let (w, h) = match (mode, wider) {
@@ -61,12 +79,23 @@ pub(super) struct Prep<'a> {
 }
 
 pub(super) fn dirx(d: Dir) -> usize {
-    if d == Dir::Row { 0 } else { 1 }
+    if d == Dir::Row {
+        0
+    } else {
+        1
+    }
 }
 
 /// Share `avail` over items: grow when there is room, shrink (weighted by basis) when there is
 /// not; members at their min / max are frozen and the remainder is re-shared.
-pub(super) fn distribute(basis: &[f32], grow: &[f32], shrink: &[f32], lo: &[f32], hi: &[f32], avail: f32) -> Vec<f32> {
+pub(super) fn distribute(
+    basis: &[f32],
+    grow: &[f32],
+    shrink: &[f32],
+    lo: &[f32],
+    hi: &[f32],
+    avail: f32,
+) -> Vec<f32> {
     let n = basis.len();
     let mut size: Vec<f32> = basis.to_vec();
     let total: f32 = basis.iter().sum();
@@ -74,10 +103,20 @@ pub(super) fn distribute(basis: &[f32], grow: &[f32], shrink: &[f32], lo: &[f32]
     if !growing && avail >= total {
         return size;
     }
-    let weight: Vec<f32> = (0..n).map(|i| if growing { grow[i] } else { shrink[i] * basis[i] }).collect();
+    let weight: Vec<f32> = (0..n)
+        .map(|i| {
+            if growing {
+                grow[i]
+            } else {
+                shrink[i] * basis[i]
+            }
+        })
+        .collect();
     let mut frozen: Vec<bool> = weight.iter().map(|w| *w <= 0.0).collect();
     for _ in 0..=n {
-        let used: f32 = (0..n).map(|i| if frozen[i] { size[i] } else { basis[i] }).sum();
+        let used: f32 = (0..n)
+            .map(|i| if frozen[i] { size[i] } else { basis[i] })
+            .sum();
         let free = avail - used;
         let wsum: f32 = (0..n).filter(|&i| !frozen[i]).map(|i| weight[i]).sum();
         if wsum <= 0.0 || free.abs() < 1e-6 {
@@ -128,9 +167,24 @@ type BaselineGroup = (Vec<Option<f32>>, f32);
 
 impl<'a> Solver<'a> {
     pub(super) fn new(p: &'a Project) -> Solver<'a> {
-        let ids = p.containers.iter().enumerate().map(|(i, c)| (c.id.as_str(), i)).collect();
-        let scroll_of = p.scrolls.iter().enumerate().map(|(i, s)| (s.content.as_str(), i)).collect();
-        Solver { p, ids, scroll_of, sol: Solution::default() }
+        let ids = p
+            .containers
+            .iter()
+            .enumerate()
+            .map(|(i, c)| (c.id.as_str(), i))
+            .collect();
+        let scroll_of = p
+            .scrolls
+            .iter()
+            .enumerate()
+            .map(|(i, s)| (s.content.as_str(), i))
+            .collect();
+        Solver {
+            p,
+            ids,
+            scroll_of,
+            sol: Solution::default(),
+        }
     }
 
     pub(super) fn prep(&self, c: &'a Container, depth: usize) -> Vec<Prep<'a>> {
@@ -162,11 +216,22 @@ impl<'a> Solver<'a> {
     }
 
     /// Break members into lines along the main axis.
-    pub(super) fn lines(&self, c: &Container, preps: &[Prep], inner_main: Option<f32>) -> Vec<Vec<usize>> {
+    pub(super) fn lines(
+        &self,
+        c: &Container,
+        preps: &[Prep],
+        inner_main: Option<f32>,
+    ) -> Vec<Vec<usize>> {
         let m = dirx(c.axis);
         let limit = match (c.wrap, inner_main) {
             (Wrap::Wrap, Some(l)) => l,
-            _ => return if preps.is_empty() { vec![] } else { vec![(0..preps.len()).collect()] },
+            _ => {
+                return if preps.is_empty() {
+                    vec![]
+                } else {
+                    vec![(0..preps.len()).collect()]
+                }
+            }
         };
         let mut lines: Vec<Vec<usize>> = Vec::new();
         let mut cur: Vec<usize> = Vec::new();
@@ -195,8 +260,16 @@ impl<'a> Solver<'a> {
         let c = &self.p.containers[ci];
         let m = dirx(c.axis);
         let x = 1 - m;
-        let pad_main = if m == 0 { c.padding[0] + c.padding[2] } else { c.padding[1] + c.padding[3] };
-        let pad_cross = if m == 0 { c.padding[1] + c.padding[3] } else { c.padding[0] + c.padding[2] };
+        let pad_main = if m == 0 {
+            c.padding[0] + c.padding[2]
+        } else {
+            c.padding[1] + c.padding[3]
+        };
+        let pad_cross = if m == 0 {
+            c.padding[1] + c.padding[3]
+        } else {
+            c.padding[0] + c.padding[2]
+        };
         let preps = self.prep(c, depth);
         let inner_main = avail[m].map(|a| (a - pad_main).max(0.0));
         let lines = self.lines(c, &preps, inner_main);
@@ -224,14 +297,28 @@ impl<'a> Solver<'a> {
     /// Baseline alignment of one line of a row container: for each member of `line` the cross offset when it is aligned with
     /// `Align::Baseline` (`None` for the others), and the cross size of the baseline group. `None` as a whole when the container is a
     /// column or no member of the line asks for it.
-    pub(super) fn baseline_group(&self, c: &Container, preps: &[Prep], line: &[usize]) -> Result<Option<BaselineGroup>, String> {
+    pub(super) fn baseline_group(
+        &self,
+        c: &Container,
+        preps: &[Prep],
+        line: &[usize],
+    ) -> Result<Option<BaselineGroup>, String> {
         let wants = |i: usize| preps[i].m.align.unwrap_or(c.align) == Align::Baseline;
         if c.axis != Dir::Row || !line.iter().any(|&i| wants(i)) {
             return Ok(None);
         }
         let which: Vec<usize> = line.iter().copied().filter(|&i| wants(i)).collect();
-        let members: Vec<crate::baseline::Member> = which.iter().map(|&i| crate::baseline::Member::on_baseline(f64::from(preps[i].m.clamp(1, preps[i].nat[1])), preps[i].m.baseline.map(f64::from))).collect();
-        let l = crate::baseline::align_line(&members, None, true).map_err(|e| format!("container '{}': {e}", c.id))?;
+        let members: Vec<crate::baseline::Member> = which
+            .iter()
+            .map(|&i| {
+                crate::baseline::Member::on_baseline(
+                    f64::from(preps[i].m.clamp(1, preps[i].nat[1])),
+                    preps[i].m.baseline.map(f64::from),
+                )
+            })
+            .collect();
+        let l = crate::baseline::align_line(&members, None, true)
+            .map_err(|e| format!("container '{}': {e}", c.id))?;
         let mut out = vec![None; line.len()];
         for (k, &i) in which.iter().enumerate() {
             if let Some(slot) = line.iter().position(|&j| j == i) {
@@ -242,7 +329,10 @@ impl<'a> Solver<'a> {
     }
 
     pub(super) fn place(&mut self, path: &str, pr: &Prep, slot: [f32; 4]) -> Result<(), String> {
-        let l = self.p.find_layer(path).ok_or_else(|| format!("unknown layer '{path}'"))?;
+        let l = self
+            .p
+            .find_layer(path)
+            .ok_or_else(|| format!("unknown layer '{path}'"))?;
         let pl = placement(path, l, pr.bounds, slot, pr.m.resize)?;
         self.sol.layers.push(pl);
         Ok(())
@@ -271,9 +361,14 @@ impl<'a> Solver<'a> {
             let line_cross = if single {
                 inner[x]
             } else {
-                line.iter().map(|&i| preps[i].m.clamp(x, preps[i].nat[x])).fold(base.as_ref().map_or(0.0, |b| b.1), f32::max)
+                line.iter()
+                    .map(|&i| preps[i].m.clamp(x, preps[i].nat[x]))
+                    .fold(base.as_ref().map_or(0.0, |b| b.1), f32::max)
             };
-            let basis: Vec<f32> = line.iter().map(|&i| preps[i].m.clamp(m, preps[i].nat[m])).collect();
+            let basis: Vec<f32> = line
+                .iter()
+                .map(|&i| preps[i].m.clamp(m, preps[i].nat[m]))
+                .collect();
             let grow: Vec<f32> = line.iter().map(|&i| preps[i].m.grow).collect();
             let shrink: Vec<f32> = line.iter().map(|&i| preps[i].m.shrink).collect();
             let lo: Vec<f32> = line.iter().map(|&i| preps[i].m.limits(m).0).collect();
@@ -327,24 +422,57 @@ impl<'a> Solver<'a> {
 
 /// Offset / scale of a layer so that its rest bounding box lands in `slot` (resize) or at the
 /// slot origin (no resize).
-pub(super) fn placement(path: &str, l: &Layer, bounds: Option<(Vec2, Vec2)>, slot: [f32; 4], resize: bool) -> Result<Placement, String> {
+pub(super) fn placement(
+    path: &str,
+    l: &Layer,
+    bounds: Option<(Vec2, Vec2)>,
+    slot: [f32; 4],
+    resize: bool,
+) -> Result<Placement, String> {
     let t = &l.transform;
     match bounds {
         Some((lo, hi)) => {
             if resize {
-                let (cl, ch) = content_bounds(l).ok_or_else(|| format!("layer '{path}' has no measurable geometry"))?;
+                let (cl, ch) = content_bounds(l)
+                    .ok_or_else(|| format!("layer '{path}' has no measurable geometry"))?;
                 let (w, h) = (hi.x - lo.x, hi.y - lo.y);
-                let kx = if w > 1e-6 { (slot[2] / w).max(1e-4) } else { 1.0 };
-                let ky = if h > 1e-6 { (slot[3] / h).max(1e-4) } else { 1.0 };
+                let kx = if w > 1e-6 {
+                    (slot[2] / w).max(1e-4)
+                } else {
+                    1.0
+                };
+                let ky = if h > 1e-6 {
+                    (slot[3] / h).max(1e-4)
+                } else {
+                    1.0
+                };
                 let (sx, sy) = (t.scale.x * kx, t.scale.y * ky);
                 let minx = (sx * (cl.x - t.anchor.x)).min(sx * (ch.x - t.anchor.x));
                 let miny = (sy * (cl.y - t.anchor.y)).min(sy * (ch.y - t.anchor.y));
-                Ok(Placement { layer: path.into(), dx: slot[0] - minx - t.position.x, dy: slot[1] - miny - t.position.y, kx, ky })
+                Ok(Placement {
+                    layer: path.into(),
+                    dx: slot[0] - minx - t.position.x,
+                    dy: slot[1] - miny - t.position.y,
+                    kx,
+                    ky,
+                })
             } else {
-                Ok(Placement { layer: path.into(), dx: slot[0] - lo.x, dy: slot[1] - lo.y, kx: 1.0, ky: 1.0 })
+                Ok(Placement {
+                    layer: path.into(),
+                    dx: slot[0] - lo.x,
+                    dy: slot[1] - lo.y,
+                    kx: 1.0,
+                    ky: 1.0,
+                })
             }
         }
-        None => Ok(Placement { layer: path.into(), dx: slot[0] - t.position.x, dy: slot[1] - t.position.y, kx: 1.0, ky: 1.0 }),
+        None => Ok(Placement {
+            layer: path.into(),
+            dx: slot[0] - t.position.x,
+            dy: slot[1] - t.position.y,
+            kx: 1.0,
+            ky: 1.0,
+        }),
     }
 }
 
@@ -391,7 +519,11 @@ pub fn solve(p: &Project, w: f32, h: f32) -> Result<Solution, String> {
     }
     let mut s = Solver::new(p);
     s.sol.canvas = (w, h);
-    let members: HashSet<&str> = p.containers.iter().flat_map(|c| c.members.iter().filter_map(|m| m.container.as_deref())).collect();
+    let members: HashSet<&str> = p
+        .containers
+        .iter()
+        .flat_map(|c| c.members.iter().filter_map(|m| m.container.as_deref()))
+        .collect();
     let mut infos: Vec<(usize, ScrollInfo)> = Vec::new();
     for (ci, c) in p.containers.iter().enumerate() {
         if members.contains(c.id.as_str()) {
@@ -400,7 +532,10 @@ pub fn solve(p: &Project, w: f32, h: f32) -> Result<Solution, String> {
         if let Some(&si) = s.scroll_of.get(c.id.as_str()) {
             let sc = &p.scrolls[si];
             let vp = resolve_rule(&sc.viewport, w, h, [0.0, 0.0]);
-            let avail = [if sc.scrolls(0) { None } else { Some(vp[2]) }, if sc.scrolls(1) { None } else { Some(vp[3]) }];
+            let avail = [
+                if sc.scrolls(0) { None } else { Some(vp[2]) },
+                if sc.scrolls(1) { None } else { Some(vp[3]) },
+            ];
             let intr = s.measure(ci, avail, 0);
             let mut size = [vp[2], vp[3]];
             let mut max = [0.0f32; 2];
@@ -414,9 +549,20 @@ pub fn solve(p: &Project, w: f32, h: f32) -> Result<Solution, String> {
             }
             let rect = [vp[0] - off[0], vp[1] - off[1], size[0], size[1]];
             s.layout(ci, rect, 0)?;
-            infos.push((si, ScrollInfo { id: sc.id.clone(), viewport: vp, content: rect, max, offset: off }));
+            infos.push((
+                si,
+                ScrollInfo {
+                    id: sc.id.clone(),
+                    viewport: vp,
+                    content: rect,
+                    max,
+                    offset: off,
+                },
+            ));
             if let Some(cl) = &sc.clip_layer {
-                let l = p.find_layer(cl).ok_or_else(|| format!("unknown clip layer '{cl}'"))?;
+                let l = p
+                    .find_layer(cl)
+                    .ok_or_else(|| format!("unknown clip layer '{cl}'"))?;
                 let pl = placement(cl, l, layer_bounds(l), vp, true)?;
                 s.sol.layers.push(pl);
             }
@@ -434,7 +580,16 @@ pub fn solve(p: &Project, w: f32, h: f32) -> Result<Solution, String> {
         }
     }
     for sc in &s.sol.scrolls {
-        if ![sc.viewport.as_slice(), sc.content.as_slice(), sc.max.as_slice(), sc.offset.as_slice()].concat().iter().all(|v| v.is_finite()) {
+        if ![
+            sc.viewport.as_slice(),
+            sc.content.as_slice(),
+            sc.max.as_slice(),
+            sc.offset.as_slice(),
+        ]
+        .concat()
+        .iter()
+        .all(|v| v.is_finite())
+        {
             return Err(format!("non-finite value in the layout of scroll '{}' (a size, padding or gap is too large)", sc.id));
         }
     }
@@ -447,11 +602,15 @@ pub fn solve_project(p: &Project) -> Result<Solution, String> {
 }
 
 /// Layout offsets per engine node id (`[dx, dy, kx, ky]`), for the project's own canvas.
-pub(crate) fn node_offsets(engine: &crate::engine::Engine) -> Result<Vec<Option<[f32; 4]>>, String> {
+pub(crate) fn node_offsets(
+    engine: &crate::engine::Engine,
+) -> Result<Vec<Option<[f32; 4]>>, String> {
     let sol = solve_project(&engine.project)?;
     let mut out = vec![None; engine.node_count()];
     for pl in &sol.layers {
-        let id = engine.node_index(&pl.layer).ok_or_else(|| format!("unknown layer '{}'", pl.layer))?;
+        let id = engine
+            .node_index(&pl.layer)
+            .ok_or_else(|| format!("unknown layer '{}'", pl.layer))?;
         out[id] = Some([pl.dx, pl.dy, pl.kx, pl.ky]);
     }
     Ok(out)
@@ -460,7 +619,12 @@ pub(crate) fn node_offsets(engine: &crate::engine::Engine) -> Result<Vec<Option<
 /// Add the clip mask to every content layer of a scroll that names a `clip_layer`.
 /// Call after [`validate`] succeeded.
 pub fn apply_clip_masks(p: &mut Project) {
-    let ids: HashMap<&str, usize> = p.containers.iter().enumerate().map(|(i, c)| (c.id.as_str(), i)).collect();
+    let ids: HashMap<&str, usize> = p
+        .containers
+        .iter()
+        .enumerate()
+        .map(|(i, c)| (c.id.as_str(), i))
+        .collect();
     let mut todo: Vec<(String, String)> = Vec::new();
     for s in &p.scrolls {
         if let Some(cl) = &s.clip_layer {
@@ -471,7 +635,10 @@ pub fn apply_clip_masks(p: &mut Project) {
     }
     for (path, clip) in todo {
         if let Some(l) = p.find_layer_mut(&path) {
-            l.mask = Some(MaskRef { layer: clip, invert: false });
+            l.mask = Some(MaskRef {
+                layer: clip,
+                invert: false,
+            });
         }
     }
 }

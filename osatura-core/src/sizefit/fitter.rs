@@ -60,7 +60,19 @@ pub struct FitOptions {
 
 impl FitOptions {
     pub fn new(format: Format, budget: usize) -> FitOptions {
-        FitOptions { format, budget, measure: Measure::Raw, min_ssim: None, sample_frames: 8, search: Search::Descent, max_evals: 120, max_seconds: 60.0, grid_max: 250, audit: false, baseline: true }
+        FitOptions {
+            format,
+            budget,
+            measure: Measure::Raw,
+            min_ssim: None,
+            sample_frames: 8,
+            search: Search::Descent,
+            max_evals: 120,
+            max_seconds: 60.0,
+            grid_max: 250,
+            audit: false,
+            baseline: true,
+        }
     }
 }
 
@@ -172,7 +184,9 @@ pub(super) fn sample_list(n: usize, k: usize) -> Vec<usize> {
     if k == 1 || n <= 1 {
         return vec![0];
     }
-    let mut v: Vec<usize> = (0..k).map(|i| (i * (n - 1) + (k - 1) / 2) / (k - 1)).collect();
+    let mut v: Vec<usize> = (0..k)
+        .map(|i| (i * (n - 1) + (k - 1) / 2) / (k - 1))
+        .collect();
     v.dedup();
     v
 }
@@ -189,14 +203,27 @@ impl<'a> Fit<'a> {
             }
         }
         if o.format == Format::Webm && !ffmpeg_available() {
-            return Err("webm needs ffmpeg on PATH (it is not available); choose gif or apng".into());
+            return Err(
+                "webm needs ffmpeg on PATH (it is not available); choose gif or apng".into(),
+            );
         }
-        let ref_engine = Engine::new(src.clone()).map_err(|e| format!("project does not validate: {}", e.join("; ")))?;
+        let ref_engine = Engine::new(src.clone())
+            .map_err(|e| format!("project does not validate: {}", e.join("; ")))?;
         let n = src.frames.max(1) as usize;
-        let (pre_project, dead) = if matches!(o.format, Format::Lottie | Format::Html | Format::Project) { drop_dead_layers(src) } else { (src.clone(), vec![]) };
-        let pre_engine = Engine::new(pre_project.clone()).map_err(|e| format!("reduced project does not validate: {}", e.join("; ")))?;
+        let (pre_project, dead) =
+            if matches!(o.format, Format::Lottie | Format::Html | Format::Project) {
+                drop_dead_layers(src)
+            } else {
+                (src.clone(), vec![])
+            };
+        let pre_engine = Engine::new(pre_project.clone())
+            .map_err(|e| format!("reduced project does not validate: {}", e.join("; ")))?;
         let samples = sample_list(n, o.sample_frames);
-        let ro = RasterOptions { scale: 1.0, show_bones: false, transparent: false };
+        let ro = RasterOptions {
+            scale: 1.0,
+            show_bones: false,
+            transparent: false,
+        };
         let mut refs = Vec::new();
         for &f in &samples {
             let (w, h, d) = render_rgba(&ref_engine, f as f32, &ro);
@@ -204,7 +231,29 @@ impl<'a> Fit<'a> {
         }
         let axes = axes(o.format);
         let order = chain(o.format);
-        Ok(Fit { fmt: o.format, o, axes, n, samples, pre_engine, pre_project, dead, refs, ref_engine, frames_cache: (0..n).map(|_| None).collect(), lottie_base: None, raster_cache: HashMap::new(), cache: HashMap::new(), quant_cache: Vec::new(), order, evals: 0, started, time_limited: std::cell::Cell::new(false), grace: std::cell::Cell::new(false), src })
+        Ok(Fit {
+            fmt: o.format,
+            o,
+            axes,
+            n,
+            samples,
+            pre_engine,
+            pre_project,
+            dead,
+            refs,
+            ref_engine,
+            frames_cache: (0..n).map(|_| None).collect(),
+            lottie_base: None,
+            raster_cache: HashMap::new(),
+            cache: HashMap::new(),
+            quant_cache: Vec::new(),
+            order,
+            evals: 0,
+            started,
+            time_limited: std::cell::Cell::new(false),
+            grace: std::cell::Cell::new(false),
+            src,
+        })
     }
 
     pub(super) fn ensure_frame(&mut self, f: usize) {
@@ -240,8 +289,14 @@ impl<'a> Fit<'a> {
     pub(super) fn fill_raster(&mut self, scale: f32, frames: &[usize]) -> Result<(), String> {
         let key = scale.to_bits();
         let n = self.n;
-        self.raster_cache.entry(key).or_insert_with(|| (0, 0, (0..n).map(|_| None).collect()));
-        let opts = RasterOptions { scale, show_bones: false, transparent: false };
+        self.raster_cache
+            .entry(key)
+            .or_insert_with(|| (0, 0, (0..n).map(|_| None).collect()));
+        let opts = RasterOptions {
+            scale,
+            show_bones: false,
+            transparent: false,
+        };
         for &f in frames {
             if self.raster_cache[&key].2[f].is_none() {
                 if self.expired() {
@@ -256,7 +311,13 @@ impl<'a> Fit<'a> {
             }
         }
         if self.raster_cache.len() > 3 {
-            let drop: Vec<u32> = self.raster_cache.keys().copied().filter(|&k| k != key).take(self.raster_cache.len() - 3).collect();
+            let drop: Vec<u32> = self
+                .raster_cache
+                .keys()
+                .copied()
+                .filter(|&k| k != key)
+                .take(self.raster_cache.len() - 3)
+                .collect();
             for k in drop {
                 self.raster_cache.remove(&k);
             }
@@ -264,7 +325,13 @@ impl<'a> Fit<'a> {
         Ok(())
     }
 
-    pub(super) fn sample_imgs_from_frames(&self, w: usize, h: usize, decoded: &[Vec<u8>], step: usize) -> Result<Vec<Img>, String> {
+    pub(super) fn sample_imgs_from_frames(
+        &self,
+        w: usize,
+        h: usize,
+        decoded: &[Vec<u8>],
+        step: usize,
+    ) -> Result<Vec<Img>, String> {
         let (rw, rh) = (self.refs[0].w, self.refs[0].h);
         let mut out = Vec::new();
         for &f in &self.samples {
@@ -281,7 +348,11 @@ impl<'a> Fit<'a> {
     /// Produce the export for `s` and the decoded sample frames at the reference size.
     pub(super) fn produce(&mut self, s: &Settings) -> Result<(Vec<u8>, Vec<Img>), String> {
         let step = s.frame_step.max(1) as usize;
-        let ro = RasterOptions { scale: 1.0, show_bones: false, transparent: false };
+        let ro = RasterOptions {
+            scale: 1.0,
+            show_bones: false,
+            transparent: false,
+        };
         match self.fmt {
             Format::Lottie => {
                 if self.lottie_base.is_none() {
@@ -297,9 +368,18 @@ impl<'a> Fit<'a> {
                     self.time_up()?;
                     let f = self.samples[k];
                     self.ensure_frame(f);
-                    let fr = lottie_model_frame(self.frames_cache[f].as_ref().unwrap(), &parsed, &map, f);
+                    let fr = lottie_model_frame(
+                        self.frames_cache[f].as_ref().unwrap(),
+                        &parsed,
+                        &map,
+                        f,
+                    );
                     let pm = pixmap_from_frame(&self.pre_engine, &fr, f as f32, &ro);
-                    imgs.push(Img::new(pm.width() as usize, pm.height() as usize, to_straight_rgba(&pm))?);
+                    imgs.push(Img::new(
+                        pm.width() as usize,
+                        pm.height() as usize,
+                        to_straight_rgba(&pm),
+                    )?);
                 }
                 Ok((bytes, imgs))
             }
@@ -312,7 +392,12 @@ impl<'a> Fit<'a> {
                     self.ensure_frame(f);
                     let mut fr = clone_frame(self.frames_cache[f].as_ref().unwrap());
                     simplify_frame_paths(&mut fr, s.path_eps as f64);
-                    let svg = crate::svg::render_evaluated(&self.pre_engine, &fr, f as f32, &crate::svg::RenderOptions::default());
+                    let svg = crate::svg::render_evaluated(
+                        &self.pre_engine,
+                        &fr,
+                        f as f32,
+                        &crate::svg::RenderOptions::default(),
+                    );
                     strs.push(svg_round(&svg, s.decimals));
                     sim.push(fr);
                 }
@@ -328,7 +413,13 @@ impl<'a> Fit<'a> {
                 }
                 let identity = x.iter().enumerate().all(|(i, &v)| i == v);
                 let p = &self.pre_project;
-                let page = html_page(&p.name, p.width, p.fps / step as f32, &uniq, if identity { None } else { Some(&x) });
+                let page = html_page(
+                    &p.name,
+                    p.width,
+                    p.fps / step as f32,
+                    &uniq,
+                    if identity { None } else { Some(&x) },
+                );
                 let mut imgs = Vec::new();
                 for &f in &self.samples {
                     self.time_up()?;
@@ -336,14 +427,20 @@ impl<'a> Fit<'a> {
                     let mut fr = clone_frame(&sim[m]);
                     round_frame(&mut fr, s.decimals);
                     let pm = pixmap_from_frame(&self.pre_engine, &fr, (m * step) as f32, &ro);
-                    imgs.push(Img::new(pm.width() as usize, pm.height() as usize, to_straight_rgba(&pm))?);
+                    imgs.push(Img::new(
+                        pm.width() as usize,
+                        pm.height() as usize,
+                        to_straight_rgba(&pm),
+                    )?);
                 }
                 Ok((page.into_bytes(), imgs))
             }
             Format::Project => {
                 let bytes = project_bytes(&self.pre_project, s)?;
-                let p2: Project = serde_json::from_slice(&bytes).map_err(|e| format!("reduced project does not parse: {e}"))?;
-                let e2 = Engine::new(p2).map_err(|e| format!("reduced project does not validate: {}", e.join("; ")))?;
+                let p2: Project = serde_json::from_slice(&bytes)
+                    .map_err(|e| format!("reduced project does not parse: {e}"))?;
+                let e2 = Engine::new(p2)
+                    .map_err(|e| format!("reduced project does not validate: {}", e.join("; ")))?;
                 let mut imgs = Vec::new();
                 for &f in &self.samples {
                     self.time_up()?;
@@ -370,7 +467,14 @@ impl<'a> Fit<'a> {
                         let q = match self.quant_cache.iter().find(|(k, _)| *k == key) {
                             Some((_, q)) => q.clone(),
                             None => {
-                                let q = std::rc::Rc::new(quantize(&refs, w, h, s.colors as usize, s.dither, reserve));
+                                let q = std::rc::Rc::new(quantize(
+                                    &refs,
+                                    w,
+                                    h,
+                                    s.colors as usize,
+                                    s.dither,
+                                    reserve,
+                                ));
                                 self.quant_cache.push((key, q.clone()));
                                 if self.quant_cache.len() > 4 {
                                     self.quant_cache.remove(0);
@@ -394,7 +498,14 @@ impl<'a> Fit<'a> {
                             let q = match self.quant_cache.iter().find(|(k, _)| *k == key) {
                                 Some((_, q)) => q.clone(),
                                 None => {
-                                    let q = std::rc::Rc::new(quantize(&refs, w, h, s.colors as usize, s.dither, reserve));
+                                    let q = std::rc::Rc::new(quantize(
+                                        &refs,
+                                        w,
+                                        h,
+                                        s.colors as usize,
+                                        s.dither,
+                                        reserve,
+                                    ));
                                     self.quant_cache.push((key, q.clone()));
                                     if self.quant_cache.len() > 4 {
                                         self.quant_cache.remove(0);
@@ -443,8 +554,18 @@ impl<'a> Fit<'a> {
                         Err(e) => err = Some(e),
                     }
                 }
-                let worst = per.iter().cloned().fold((0usize, f64::INFINITY), |a, b| if b.1 < a.1 { b } else { a });
-                let mean = if per.is_empty() { 0.0 } else { per.iter().map(|p| p.1).sum::<f64>() / per.len() as f64 };
+                let worst = per.iter().cloned().fold((0usize, f64::INFINITY), |a, b| {
+                    if b.1 < a.1 {
+                        b
+                    } else {
+                        a
+                    }
+                });
+                let mean = if per.is_empty() {
+                    0.0
+                } else {
+                    per.iter().map(|p| p.1).sum::<f64>() / per.len() as f64
+                };
                 Candidate {
                     pos: pos.to_vec(),
                     settings,
@@ -452,7 +573,11 @@ impl<'a> Fit<'a> {
                     error: err,
                     raw,
                     gzip: gz,
-                    budgeted: if self.o.measure == Measure::Raw { raw } else { gz_budget },
+                    budgeted: if self.o.measure == Measure::Raw {
+                        raw
+                    } else {
+                        gz_budget
+                    },
                     ssim_mean: mean,
                     ssim_min: if worst.1.is_finite() { worst.1 } else { 0.0 },
                     worst_frame: worst.0,
@@ -462,9 +587,33 @@ impl<'a> Fit<'a> {
             Err(e) if e == TIME_UP => {
                 // interrupted by the time budget: not a result, not remembered
                 self.evals -= 1;
-                return Candidate { pos: pos.to_vec(), settings, valid: false, error: Some(e), raw: 0, gzip: 0, budgeted: usize::MAX, ssim_mean: 0.0, ssim_min: 0.0, worst_frame: 0, per_frame: vec![] };
+                return Candidate {
+                    pos: pos.to_vec(),
+                    settings,
+                    valid: false,
+                    error: Some(e),
+                    raw: 0,
+                    gzip: 0,
+                    budgeted: usize::MAX,
+                    ssim_mean: 0.0,
+                    ssim_min: 0.0,
+                    worst_frame: 0,
+                    per_frame: vec![],
+                };
             }
-            Err(e) => Candidate { pos: pos.to_vec(), settings, valid: false, error: Some(e), raw: 0, gzip: 0, budgeted: usize::MAX, ssim_mean: 0.0, ssim_min: 0.0, worst_frame: 0, per_frame: vec![] },
+            Err(e) => Candidate {
+                pos: pos.to_vec(),
+                settings,
+                valid: false,
+                error: Some(e),
+                raw: 0,
+                gzip: 0,
+                budgeted: usize::MAX,
+                ssim_mean: 0.0,
+                ssim_min: 0.0,
+                worst_frame: 0,
+                per_frame: vec![],
+            },
         };
         self.cache.insert(pos.to_vec(), c.clone());
         c
@@ -567,14 +716,28 @@ impl<'a> Fit<'a> {
 
     /// All grid positions, axes thinned (endpoints kept) so that the product is at most `max`.
     pub fn grid_positions(&self, max: usize) -> Vec<Vec<usize>> {
-        let mut idx: Vec<Vec<usize>> = self.axes.iter().map(|a| (0..a.values.len()).collect()).collect();
+        let mut idx: Vec<Vec<usize>> = self
+            .axes
+            .iter()
+            .map(|a| (0..a.values.len()).collect())
+            .collect();
         while idx.iter().map(|v| v.len()).product::<usize>() > max {
-            let (k, _) = idx.iter().enumerate().max_by(|a, b| a.1.len().cmp(&b.1.len()).then(b.0.cmp(&a.0))).unwrap();
+            let (k, _) = idx
+                .iter()
+                .enumerate()
+                .max_by(|a, b| a.1.len().cmp(&b.1.len()).then(b.0.cmp(&a.0)))
+                .unwrap();
             if idx[k].len() <= 2 {
                 break;
             }
             let last = idx[k].len() - 1;
-            let mut v: Vec<usize> = idx[k].iter().copied().enumerate().filter(|(i, _)| i % 2 == 0).map(|(_, x)| x).collect();
+            let mut v: Vec<usize> = idx[k]
+                .iter()
+                .copied()
+                .enumerate()
+                .filter(|(i, _)| i % 2 == 0)
+                .map(|(_, x)| x)
+                .collect();
             if v.last() != Some(&idx[k][last]) {
                 v.push(idx[k][last]);
             }
@@ -599,7 +762,14 @@ impl<'a> Fit<'a> {
     /// monotonicity check over everything probed and a linear-scan fallback.
     pub(super) fn ladder(&mut self, chain: &[Vec<usize>], audit: bool) -> Ladder {
         let n = chain.len();
-        let mut out = Ladder { idx: None, probes: Vec::new(), monotone: true, fallback: false, audit_agrees: None, len: n };
+        let mut out = Ladder {
+            idx: None,
+            probes: Vec::new(),
+            monotone: true,
+            fallback: false,
+            audit_agrees: None,
+            len: n,
+        };
         let probe = |me: &mut Self, i: usize, probes: &mut Vec<(usize, usize)>| -> Candidate {
             let c = me.eval(&chain[i]);
             if !probes.iter().any(|p| p.0 == i) {
@@ -637,7 +807,8 @@ impl<'a> Fit<'a> {
         let monotone_of = |probes: &[(usize, usize)]| {
             let mut p = probes.to_vec();
             p.sort();
-            p.windows(2).all(|w| w[1].1 <= w[0].1 || w[1].1 == usize::MAX && w[0].1 == usize::MAX)
+            p.windows(2)
+                .all(|w| w[1].1 <= w[0].1 || w[1].1 == usize::MAX && w[0].1 == usize::MAX)
         };
         out.monotone = monotone_of(&out.probes);
         if !out.monotone || audit {
@@ -679,7 +850,14 @@ impl<'a> Fit<'a> {
                 let mut q = vec![0usize; na];
                 q[a] = r;
                 let c = self.eval(&q);
-                scan[a].push((if c.valid { c.budgeted as f64 } else { f64::INFINITY }, if c.valid { c.ssim_mean } else { 0.0 }));
+                scan[a].push((
+                    if c.valid {
+                        c.budgeted as f64
+                    } else {
+                        f64::INFINITY
+                    },
+                    if c.valid { c.ssim_mean } else { 0.0 },
+                ));
             }
         }
         let mut pos = vec![0usize; na];
@@ -692,7 +870,11 @@ impl<'a> Fit<'a> {
                     continue;
                 }
                 let ((s0, q0), (s1, q1)) = (scan[a][r], scan[a][r + 1]);
-                let saved = if s1.is_infinite() || s0.is_infinite() { f64::NEG_INFINITY } else { s0 - s1 };
+                let saved = if s1.is_infinite() || s0.is_infinite() {
+                    f64::NEG_INFINITY
+                } else {
+                    s0 - s1
+                };
                 let ratio = saved / (q0 - q1).max(1e-4);
                 if best.is_none_or(|(b, _)| ratio > b) {
                     best = Some((ratio, a));
@@ -711,7 +893,14 @@ impl<'a> Fit<'a> {
         let chosen: Option<Candidate>;
         let mut reason: Option<String> = None;
         let static_chain = self.order.clone();
-        let mut primary = Ladder { idx: None, probes: Vec::new(), monotone: true, fallback: false, audit_agrees: None, len: static_chain.len() };
+        let mut primary = Ladder {
+            idx: None,
+            probes: Vec::new(),
+            monotone: true,
+            fallback: false,
+            audit_agrees: None,
+            len: static_chain.len(),
+        };
         let mut chain_kind = "static";
         let mut static_start: Option<Vec<usize>> = None;
         let mut adaptive_start: Option<Vec<usize>> = None;
@@ -725,7 +914,11 @@ impl<'a> Fit<'a> {
                 }
             }
             let top_ok = primary.idx == Some(0) && static_start.is_some();
-            if self.o.search == Search::Descent && !top_ok && primary.idx.is_some() && !self.out_of_time() {
+            if self.o.search == Search::Descent
+                && !top_ok
+                && primary.idx.is_some()
+                && !self.out_of_time()
+            {
                 let ach = self.adaptive_chain();
                 let lo = self.ladder(&ach, false);
                 if let Some(i) = lo.idx {
@@ -744,13 +937,22 @@ impl<'a> Fit<'a> {
         let mut best_pos: Option<Vec<usize>> = static_start.clone().or(adaptive_start.clone());
         if self.o.search == Search::Descent {
             let mut scored: Vec<(Vec<usize>, Candidate)> = Vec::new();
-            for q in [static_start.clone(), adaptive_start.clone()].into_iter().flatten() {
+            for q in [static_start.clone(), adaptive_start.clone()]
+                .into_iter()
+                .flatten()
+            {
                 if !scored.iter().any(|(p, _)| *p == q) {
                     let c = self.eval(&q);
                     scored.push((q, c));
                 }
             }
-            scored.sort_by(|a, b| if Self::better(&a.1, &b.1) { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater });
+            scored.sort_by(|a, b| {
+                if Self::better(&a.1, &b.1) {
+                    std::cmp::Ordering::Less
+                } else {
+                    std::cmp::Ordering::Greater
+                }
+            });
             let mut best: Option<Candidate> = None;
             for (q, _) in scored {
                 let end = self.descend(q);
@@ -761,9 +963,19 @@ impl<'a> Fit<'a> {
             }
             best_pos = best.map(|c| c.pos).or(best_pos);
         }
-        let (probes, monotone, fallback, audit_agrees, n) = (primary.probes.clone(), primary.monotone, primary.fallback, primary.audit_agrees, primary.len);
+        let (probes, monotone, fallback, audit_agrees, n) = (
+            primary.probes.clone(),
+            primary.monotone,
+            primary.fallback,
+            primary.audit_agrees,
+            primary.len,
+        );
         // grid: asked for, or the only way left to satisfy the constraints
-        let need_grid = self.o.search == Search::Grid || (self.o.search == Search::Descent && best_pos.is_none() && self.o.min_ssim.is_some() && ladder_idx.is_some());
+        let need_grid = self.o.search == Search::Grid
+            || (self.o.search == Search::Descent
+                && best_pos.is_none()
+                && self.o.min_ssim.is_some()
+                && ladder_idx.is_some());
         if need_grid {
             let mut gbest: Option<Candidate> = best_pos.as_ref().map(|p| self.eval(p));
             for p in self.grid_positions(self.o.grid_max) {
@@ -796,25 +1008,48 @@ impl<'a> Fit<'a> {
             met = false;
             // best achievable: smallest valid size seen; if constraints were the problem, say so
             let all: Vec<Candidate> = self.cache.values().filter(|c| c.valid).cloned().collect();
-            let smallest = all.iter().min_by(|a, b| a.budgeted.cmp(&b.budgeted).then(a.pos.cmp(&b.pos))).cloned();
+            let smallest = all
+                .iter()
+                .min_by(|a, b| a.budgeted.cmp(&b.budgeted).then(a.pos.cmp(&b.pos)))
+                .cloned();
             let fitting_any = all.iter().any(|c| c.budgeted <= budget);
-            let time_note = if self.time_limited.get() { format!(" [time budget of {} s exhausted: the search was cut short, a longer --max-seconds may find a fit]", self.o.max_seconds) } else { String::new() };
+            let time_note = if self.time_limited.get() {
+                format!(" [time budget of {} s exhausted: the search was cut short, a longer --max-seconds may find a fit]", self.o.max_seconds)
+            } else {
+                String::new()
+            };
             reason = Some(if fitting_any {
-                format!("a candidate fits {budget} bytes but none reaches --min-ssim {:.4}", self.o.min_ssim.unwrap_or(0.0))
+                format!(
+                    "a candidate fits {budget} bytes but none reaches --min-ssim {:.4}",
+                    self.o.min_ssim.unwrap_or(0.0)
+                )
             } else {
                 format!("the smallest export found is {} bytes ({}), above the budget of {budget} bytes: every knob is at its floor", smallest.as_ref().map_or(0, |c| c.budgeted), self.o.measure.name())
             });
             if self.o.search != Search::Grid {
                 // an unmet size budget is only a statement about the chain floor and the probes
                 if !fitting_any {
-                    reason = reason.map(|r| format!("{r} (checked the chain floor and {} probes; sizes assumed monotone)", probes.len()));
+                    reason = reason.map(|r| {
+                        format!(
+                            "{r} (checked the chain floor and {} probes; sizes assumed monotone)",
+                            probes.len()
+                        )
+                    });
                 }
             }
             reason = reason.map(|r| format!("{r}{time_note}"));
             chosen = smallest.or_else(|| all.first().cloned());
             if chosen.is_none() {
-                let errs: Vec<String> = self.cache.values().filter_map(|c| c.error.clone()).take(3).collect();
-                return Err(format!("no candidate could be produced: {}", errs.join("; ")));
+                let errs: Vec<String> = self
+                    .cache
+                    .values()
+                    .filter_map(|c| c.error.clone())
+                    .take(3)
+                    .collect();
+                return Err(format!(
+                    "no candidate could be produced: {}",
+                    errs.join("; ")
+                ));
             }
         }
         let chosen = chosen.unwrap();
@@ -828,7 +1063,11 @@ impl<'a> Fit<'a> {
             de_max = de_max.max(d.max_de_raw);
             per.push((self.samples[k], d.ssim, d.max_de_raw));
         }
-        let worst = per.iter().cloned().fold((0usize, f64::INFINITY, 0.0), |a, b| if b.1 < a.1 { b } else { a });
+        let worst =
+            per.iter().cloned().fold(
+                (0usize, f64::INFINITY, 0.0),
+                |a, b| if b.1 < a.1 { b } else { a },
+            );
         let quality = Quality {
             ssim_mean: per.iter().map(|p| p.1).sum::<f64>() / per.len().max(1) as f64,
             ssim_min: worst.1,
@@ -836,9 +1075,23 @@ impl<'a> Fit<'a> {
             per_frame: per,
             de_max,
         };
-        let baseline = if self.o.baseline && !self.time_limited.get() { self.baseline().ok() } else { None };
-        let last = self.axes.iter().map(|a| a.values.len() - 1).collect::<Vec<_>>();
-        let floors: Vec<String> = self.axes.iter().enumerate().filter(|(i, a)| a.in_chain && chosen.pos[*i] == last[*i]).map(|(_, a)| a.name.to_string()).collect();
+        let baseline = if self.o.baseline && !self.time_limited.get() {
+            self.baseline().ok()
+        } else {
+            None
+        };
+        let last = self
+            .axes
+            .iter()
+            .map(|a| a.values.len() - 1)
+            .collect::<Vec<_>>();
+        let floors: Vec<String> = self
+            .axes
+            .iter()
+            .enumerate()
+            .filter(|(i, a)| a.in_chain && chosen.pos[*i] == last[*i])
+            .map(|(_, a)| a.name.to_string())
+            .collect();
         let mut all: Vec<Candidate> = self.cache.values().cloned().collect();
         all.sort_by(|a, b| a.pos.cmp(&b.pos));
         Ok(FitResult {
@@ -861,14 +1114,20 @@ impl<'a> Fit<'a> {
             dead_layers: self.dead.clone(),
             sample_frames: self.samples.clone(),
             all,
-            axes: self.axes.iter().map(|a| (a.name.to_string(), a.values.clone())).collect(),
+            axes: self
+                .axes
+                .iter()
+                .map(|a| (a.name.to_string(), a.values.clone()))
+                .collect(),
         })
     }
 
     /// Size of the existing exporter at its default settings: (raw, gzip).
     pub(super) fn baseline(&mut self) -> Result<(usize, usize), String> {
         let bytes: Vec<u8> = match self.fmt {
-            Format::Lottie => crate::export::lottie_json(&self.ref_engine).to_string().into_bytes(),
+            Format::Lottie => crate::export::lottie_json(&self.ref_engine)
+                .to_string()
+                .into_bytes(),
             Format::Html => crate::export::html_player(&self.ref_engine).into_bytes(),
             Format::Gif => crate::export::gif_bytes(&self.ref_engine, 1.0)?,
             Format::Apng => crate::open_formats::apng_bytes(&self.ref_engine, 1.0)?,

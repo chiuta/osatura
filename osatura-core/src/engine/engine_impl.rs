@@ -64,12 +64,19 @@ pub(super) fn build_nodes(
     errs: &mut Vec<String>,
 ) {
     for (i, l) in layers.iter().enumerate() {
-        let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
+        let path = if prefix.is_empty() {
+            l.name.clone()
+        } else {
+            format!("{prefix}/{}", l.name)
+        };
         let id = nodes.len();
         let mut idx_path = idx_prefix.to_vec();
         idx_path.push(i);
         if l.name.is_empty() || l.name.contains('/') || l.name.contains("::") {
-            errs.push(format!("layer name '{}' must be non-empty and contain neither '/' nor '::'", l.name));
+            errs.push(format!(
+                "layer name '{}' must be non-empty and contain neither '/' nor '::'",
+                l.name
+            ));
         }
         if node_ix.insert(path.clone(), id).is_some() {
             errs.push(format!("duplicate layer path '{path}'"));
@@ -86,7 +93,16 @@ pub(super) fn build_nodes(
         if let Some(p) = parent {
             nodes[p].children.push(id);
         }
-        build_nodes(l.children(), Some(id), &path, &idx_path, Some(root.unwrap_or(id)), nodes, node_ix, errs);
+        build_nodes(
+            l.children(),
+            Some(id),
+            &path,
+            &idx_path,
+            Some(root.unwrap_or(id)),
+            nodes,
+            node_ix,
+            errs,
+        );
     }
 }
 
@@ -98,23 +114,37 @@ pub(super) fn validate_free_mesh(f: &crate::project::FreeMesh) -> Result<(), Str
     if f.vertices.len() > 200_000 || f.triangles.len() > 400_000 {
         return Err("too large (max 200000 vertices / 400000 triangles)".into());
     }
-    if f.vertices.iter().any(|v| !v.x.is_finite() || !v.y.is_finite()) {
+    if f.vertices
+        .iter()
+        .any(|v| !v.x.is_finite() || !v.y.is_finite())
+    {
         return Err("vertex coordinates must be finite".into());
     }
-    if !f.uvs.is_empty() && (f.uvs.len() != f.vertices.len() || f.uvs.iter().any(|v| !v.x.is_finite() || !v.y.is_finite())) {
+    if !f.uvs.is_empty()
+        && (f.uvs.len() != f.vertices.len()
+            || f.uvs.iter().any(|v| !v.x.is_finite() || !v.y.is_finite()))
+    {
         return Err("uvs must be empty or one finite pair per vertex".into());
     }
     let n = f.vertices.len() as u32;
     if let Some(t) = f.triangles.iter().find(|t| t.iter().any(|&i| i >= n)) {
-        return Err(format!("triangle {:?} refers to a missing vertex (have {n})", t));
+        return Err(format!(
+            "triangle {:?} refers to a missing vertex (have {n})",
+            t
+        ));
     }
     Ok(())
 }
 
-pub(super) fn load_image(src: &ImageSource, asset_dir: &std::path::Path) -> Result<ImageData, String> {
+pub(super) fn load_image(
+    src: &ImageSource,
+    asset_dir: &std::path::Path,
+) -> Result<ImageData, String> {
     let png = match (&src.png_base64, &src.file) {
         (Some(b64), _) => crate::base64::decode(b64)?,
-        (None, Some(f)) => crate::assets::read(asset_dir, f, crate::assets::MAX_IMAGE_BYTES, "image")?,
+        (None, Some(f)) => {
+            crate::assets::read(asset_dir, f, crate::assets::MAX_IMAGE_BYTES, "image")?
+        }
         (None, None) => return Err("image has neither 'png_base64' nor 'file'".into()),
     };
     let pixmap = crate::assets::decode_png_checked(&png)?;
@@ -151,7 +181,10 @@ impl Engine {
     }
 
     /// Validate and compile. Returns every problem found, not just the first.
-    pub fn with_asset_dir(mut project: Project, asset_dir: &std::path::Path) -> Result<Engine, Vec<String>> {
+    pub fn with_asset_dir(
+        mut project: Project,
+        asset_dir: &std::path::Path,
+    ) -> Result<Engine, Vec<String>> {
         let mut errs: Vec<String> = Vec::new();
 
         if !(project.fps > 0.0 && project.fps <= 1000.0) {
@@ -168,7 +201,10 @@ impl Engine {
         } else if project.width > MAX_STAGE || project.height > MAX_STAGE {
             errs.push(format!("width and height must be at most {MAX_STAGE}"));
         }
-        if !project.camera.focus.is_finite() || !project.camera.blur.is_finite() || project.camera.blur < 0.0 {
+        if !project.camera.focus.is_finite()
+            || !project.camera.blur.is_finite()
+            || project.camera.blur < 0.0
+        {
             errs.push("camera focus must be finite and camera blur a finite number >= 0".into());
         }
         errs.extend(crate::soundtrack::validate(&project));
@@ -198,24 +234,48 @@ impl Engine {
                 errs.push(format!("bone '{}' has invalid length", b.name));
             }
             if let Some([lo, hi]) = b.angle_limits {
-                if !matches!(lo.partial_cmp(&hi), Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal)) {
-                    errs.push(format!("bone '{}': angle_limits min must be <= max", b.name));
+                if !matches!(
+                    lo.partial_cmp(&hi),
+                    Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal)
+                ) {
+                    errs.push(format!(
+                        "bone '{}': angle_limits min must be <= max",
+                        b.name
+                    ));
                 }
             }
             if let Some([lo, hi]) = b.scale_limits {
                 if !(lo <= hi && lo > 0.0) {
-                    errs.push(format!("bone '{}': scale_limits must satisfy 0 < min <= max", b.name));
+                    errs.push(format!(
+                        "bone '{}': scale_limits must satisfy 0 < min <= max",
+                        b.name
+                    ));
                 }
             }
         }
-        let bone_ix: HashMap<String, usize> =
-            project.bones.iter().enumerate().map(|(i, b)| (b.name.clone(), i)).collect();
+        let bone_ix: HashMap<String, usize> = project
+            .bones
+            .iter()
+            .enumerate()
+            .map(|(i, b)| (b.name.clone(), i))
+            .collect();
 
         // Layer tree → arena (preorder).
         let mut nodes: Vec<NodeInfo> = Vec::new();
         let mut node_ix: HashMap<String, usize> = HashMap::new();
-        build_nodes(&project.layers, None, "", &[], None, &mut nodes, &mut node_ix, &mut errs);
-        let roots: Vec<usize> = (0..nodes.len()).filter(|&i| nodes[i].parent.is_none()).collect();
+        build_nodes(
+            &project.layers,
+            None,
+            "",
+            &[],
+            None,
+            &mut nodes,
+            &mut node_ix,
+            &mut errs,
+        );
+        let roots: Vec<usize> = (0..nodes.len())
+            .filter(|&i| nodes[i].parent.is_none())
+            .collect();
 
         // Per-layer references: bone attachment, masks.
         // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
@@ -232,7 +292,10 @@ impl Engine {
                 match node_ix.get(&m.layer) {
                     Some(&mi) if mi != id => nodes[id].mask = Some((mi, m.invert)),
                     Some(_) => errs.push(format!("layer '{}' cannot mask itself", nodes[id].path)),
-                    None => errs.push(format!("layer '{}': unknown mask layer '{}'", nodes[id].path, m.layer)),
+                    None => errs.push(format!(
+                        "layer '{}': unknown mask layer '{}'",
+                        nodes[id].path, m.layer
+                    )),
                 }
             }
         }
@@ -258,35 +321,69 @@ impl Engine {
                 }
             }
             if !(0.0..=0.9).contains(&c.soft) || !(1.0..=4.0).contains(&c.stretch) {
-                errs.push(format!("ik '{}': soft must be within 0..0.9 and stretch within 1..4", c.name));
+                errs.push(format!(
+                    "ik '{}': soft must be within 0..0.9 and stretch within 1..4",
+                    c.name
+                ));
             }
             let target = bone_ix.get(&c.target).copied();
             if target.is_none() {
-                errs.push(format!("ik '{}': unknown target bone '{}'", c.name, c.target));
+                errs.push(format!(
+                    "ik '{}': unknown target bone '{}'",
+                    c.name, c.target
+                ));
             }
             if ids.len() == c.bones.len() {
                 if ids.len() < 2 {
                     errs.push(format!("ik '{}': needs at least two bones", c.name));
                 } else if ids.windows(2).any(|w| parent[w[1]] != Some(w[0])) {
-                    errs.push(format!("ik '{}': each bone must be a direct child of the previous one", c.name));
+                    errs.push(format!(
+                        "ik '{}': each bone must be a direct child of the previous one",
+                        c.name
+                    ));
                 } else if target.map(|t| ids.contains(&t)).unwrap_or(false) {
-                    errs.push(format!("ik '{}': target must not be part of the chain", c.name));
+                    errs.push(format!(
+                        "ik '{}': target must not be part of the chain",
+                        c.name
+                    ));
                 } else if let Some(target) = target {
-                    ik.push(IkResolved { bones: ids, target, bend: c.bend, iterations: c.iterations.max(1), soft: c.soft, stretch: c.stretch });
+                    ik.push(IkResolved {
+                        bones: ids,
+                        target,
+                        bend: c.bend,
+                        iterations: c.iterations.max(1),
+                        soft: c.soft,
+                        stretch: c.stretch,
+                    });
                     continue;
                 }
             }
             // keep indices aligned with project.ik even on error (we return Err below anyway)
-            ik.push(IkResolved { bones: vec![], target: 0, bend: 1.0, iterations: 1, soft: 0.0, stretch: 1.0 });
+            ik.push(IkResolved {
+                bones: vec![],
+                target: 0,
+                bend: 1.0,
+                iterations: 1,
+                soft: 0.0,
+                stretch: 1.0,
+            });
         }
-        let ik_ix: HashMap<&str, usize> = project.ik.iter().enumerate().map(|(i, c)| (c.name.as_str(), i)).collect();
+        let ik_ix: HashMap<&str, usize> = project
+            .ik
+            .iter()
+            .enumerate()
+            .map(|(i, c)| (c.name.as_str(), i))
+            .collect();
 
         // Constraints
         let mut constraints = Vec::new();
         for c in &project.constraints {
             let b = bone_ix.get(&c.bone).copied();
             if b.is_none() {
-                errs.push(format!("constraint '{}': unknown bone '{}'", c.name, c.bone));
+                errs.push(format!(
+                    "constraint '{}': unknown bone '{}'",
+                    c.name, c.bone
+                ));
             }
             let other = |n: &str, errs: &mut Vec<String>| {
                 let r = bone_ix.get(n).copied();
@@ -297,12 +394,17 @@ impl Engine {
             };
             let kind = match &c.kind {
                 ConstraintKind::Aim { target, offset } => {
-                    other(target, &mut errs).map(|t| CKind::Aim { target: t, offset: *offset })
+                    other(target, &mut errs).map(|t| CKind::Aim {
+                        target: t,
+                        offset: *offset,
+                    })
                 }
                 ConstraintKind::CopyRotation { source } => {
                     other(source, &mut errs).map(|s| CKind::CopyRotation { source: s })
                 }
-                ConstraintKind::Pin { target } => other(target, &mut errs).map(|t| CKind::Pin { target: t }),
+                ConstraintKind::Pin { target } => {
+                    other(target, &mut errs).map(|t| CKind::Pin { target: t })
+                }
             };
             if let (Some(bone), Some(kind)) = (b, kind) {
                 let partner = match kind {
@@ -310,28 +412,48 @@ impl Engine {
                     CKind::CopyRotation { source } => source,
                 };
                 if partner == bone {
-                    errs.push(format!("constraint '{}': bone cannot constrain itself", c.name));
+                    errs.push(format!(
+                        "constraint '{}': bone cannot constrain itself",
+                        c.name
+                    ));
                 }
                 constraints.push(ConstraintResolved { bone, kind });
             } else {
-                constraints.push(ConstraintResolved { bone: 0, kind: CKind::Pin { target: 0 } });
+                constraints.push(ConstraintResolved {
+                    bone: 0,
+                    kind: CKind::Pin { target: 0 },
+                });
             }
         }
-        let cons_ix: HashMap<&str, usize> =
-            project.constraints.iter().enumerate().map(|(i, c)| (c.name.as_str(), i)).collect();
+        let cons_ix: HashMap<&str, usize> = project
+            .constraints
+            .iter()
+            .enumerate()
+            .map(|(i, c)| (c.name.as_str(), i))
+            .collect();
 
         // Springs
         let mut springs = Vec::new();
         for s in &project.springs {
             match bone_ix.get(&s.bone) {
                 Some(&b) => {
-                    if !(s.frequency > 0.0 && s.frequency <= 30.0) || !(s.damping >= 0.0 && s.damping.is_finite()) {
-                        errs.push(format!("spring on '{}': frequency must be in (0, 30] Hz and damping >= 0", s.bone));
+                    if !(s.frequency > 0.0 && s.frequency <= 30.0)
+                        || !(s.damping >= 0.0 && s.damping.is_finite())
+                    {
+                        errs.push(format!(
+                            "spring on '{}': frequency must be in (0, 30] Hz and damping >= 0",
+                            s.bone
+                        ));
                     }
                     if springs.iter().any(|x: &SpringResolved| x.bone == b) {
                         errs.push(format!("spring on '{}': bone already has a spring", s.bone));
                     }
-                    springs.push(SpringResolved { bone: b, frequency: s.frequency, damping: s.damping, warmup: s.warmup });
+                    springs.push(SpringResolved {
+                        bone: b,
+                        frequency: s.frequency,
+                        damping: s.damping,
+                        warmup: s.warmup,
+                    });
                 }
                 None => errs.push(format!("spring: unknown bone '{}'", s.bone)),
             }
@@ -351,15 +473,23 @@ impl Engine {
             let i = pslot_init.len();
             pslot_init.push(init);
             if slot_ix.insert(key.clone(), i).is_some() {
-                errs.push(format!("duplicate animatable target '{}' ({:?})", key.0, key.1));
+                errs.push(format!(
+                    "duplicate animatable target '{}' ({:?})",
+                    key.0, key.1
+                ));
             }
             i
         };
-        let normalise = |ws: &[crate::path::BoneWeight], what: &str, errs: &mut Vec<String>| -> Vec<(usize, f32)> {
+        let normalise = |ws: &[crate::path::BoneWeight],
+                         what: &str,
+                         errs: &mut Vec<String>|
+         -> Vec<(usize, f32)> {
             let mut out: Vec<(usize, f32)> = Vec::new();
             for w in ws {
                 match bone_ix.get(w.bone.as_str()) {
-                    Some(&bi) if w.weight.is_finite() && w.weight >= 0.0 => out.push((bi, w.weight)),
+                    Some(&bi) if w.weight.is_finite() && w.weight >= 0.0 => {
+                        out.push((bi, w.weight))
+                    }
                     Some(_) => errs.push(format!("{what}: invalid weight for '{}'", w.bone)),
                     None => errs.push(format!("{what}: unknown bone '{}'", w.bone)),
                 }
@@ -386,16 +516,27 @@ impl Engine {
                 LayerKind::Vector { paths } => {
                     let mut seen_paths = HashSet::new();
                     for (pi, p) in paths.iter().enumerate() {
-                        let pname = if p.name.is_empty() { format!("path{pi}") } else { p.name.clone() };
+                        let pname = if p.name.is_empty() {
+                            format!("path{pi}")
+                        } else {
+                            p.name.clone()
+                        };
                         if p.name.contains("::") {
-                            errs.push(format!("layer '{}': path name '{}' must not contain '::'", node.path, p.name));
+                            errs.push(format!(
+                                "layer '{}': path name '{}' must not contain '::'",
+                                node.path, p.name
+                            ));
                         }
                         if !seen_paths.insert(pname.clone()) {
-                            errs.push(format!("layer '{}': duplicate path name '{}'", node.path, pname));
+                            errs.push(format!(
+                                "layer '{}': duplicate path name '{}'",
+                                node.path, pname
+                            ));
                         }
                         let mut pa = Vec::new();
                         for (ai, a) in p.anchors.iter().enumerate() {
-                            let what = format!("layer '{}' path '{}' anchor {}", node.path, pname, ai);
+                            let what =
+                                format!("layer '{}' path '{}' anchor {}", node.path, pname, ai);
                             pa.push(normalise(&a.weights, &what, &mut errs));
                         }
                         lp.push(pa);
@@ -413,7 +554,10 @@ impl Engine {
                                 ));
                             }
                             mslots.push(new_slot(
-                                (format!("{}::{}::{}", node.path, pname, m.name), Prop::PathMorph),
+                                (
+                                    format!("{}::{}::{}", node.path, pname, m.name),
+                                    Prop::PathMorph,
+                                ),
                                 0.0,
                                 &mut errs,
                             ));
@@ -428,8 +572,28 @@ impl Engine {
                         }
                         g.point_slots.push(pslots);
                         let mut gs: [Option<[usize; 2]>; 4] = [None; 4];
-                        let is_grad = |pt: &crate::style::Paint| matches!(pt, crate::style::Paint::Linear { .. } | crate::style::Paint::Radial { .. });
-                        for (k, (has, name)) in [(p.fill.as_ref().is_some_and(is_grad), "fill.from"), (p.fill.as_ref().is_some_and(is_grad), "fill.to"), (p.stroke.as_ref().is_some_and(|s| is_grad(&s.paint)), "stroke.from"), (p.stroke.as_ref().is_some_and(|s| is_grad(&s.paint)), "stroke.to")].into_iter().enumerate() {
+                        let is_grad = |pt: &crate::style::Paint| {
+                            matches!(
+                                pt,
+                                crate::style::Paint::Linear { .. }
+                                    | crate::style::Paint::Radial { .. }
+                            )
+                        };
+                        for (k, (has, name)) in [
+                            (p.fill.as_ref().is_some_and(is_grad), "fill.from"),
+                            (p.fill.as_ref().is_some_and(is_grad), "fill.to"),
+                            (
+                                p.stroke.as_ref().is_some_and(|s| is_grad(&s.paint)),
+                                "stroke.from",
+                            ),
+                            (
+                                p.stroke.as_ref().is_some_and(|s| is_grad(&s.paint)),
+                                "stroke.to",
+                            ),
+                        ]
+                        .into_iter()
+                        .enumerate()
+                        {
                             if has {
                                 let key = format!("{}::{}::{}", node.path, pname, name);
                                 let dx = new_slot((key.clone(), Prop::GradDx), 0.0, &mut errs);
@@ -450,7 +614,10 @@ impl Engine {
                                 }
                             }
                             if m.free.is_none() && (m.cols == 0 || m.rows == 0) {
-                                errs.push(format!("layer '{}': mesh needs cols >= 1 and rows >= 1", node.path));
+                                errs.push(format!(
+                                    "layer '{}': mesh needs cols >= 1 and rows >= 1",
+                                    node.path
+                                ));
                             } else if !m.weights.is_empty() && m.weights.len() != n {
                                 errs.push(format!(
                                     "layer '{}': mesh has {} weight lists, expected {}",
@@ -469,12 +636,28 @@ impl Engine {
                     }
                     Err(e) => errs.push(format!("layer '{}': {e}", node.path)),
                 },
-                LayerKind::Metaball { blobs, threshold, cell, .. } => {
+                LayerKind::Metaball {
+                    blobs,
+                    threshold,
+                    cell,
+                    ..
+                } => {
                     if blobs.is_empty() {
-                        errs.push(format!("layer '{}': liquid needs at least one blob", node.path));
+                        errs.push(format!(
+                            "layer '{}': liquid needs at least one blob",
+                            node.path
+                        ));
                     }
-                    if ((*threshold).partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !matches!((*cell).partial_cmp(&0.25), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) {
-                        errs.push(format!("layer '{}': liquid needs threshold > 0 and cell >= 0.25", node.path));
+                    if ((*threshold).partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
+                        || !matches!(
+                            (*cell).partial_cmp(&0.25),
+                            Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
+                        )
+                    {
+                        errs.push(format!(
+                            "layer '{}': liquid needs threshold > 0 and cell >= 0.25",
+                            node.path
+                        ));
                     }
                     for b in blobs {
                         if b.radius.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater) {
@@ -482,14 +665,20 @@ impl Engine {
                         }
                         if let Some(n) = &b.bone {
                             if !bone_ix.contains_key(n) {
-                                errs.push(format!("layer '{}': blob bound to unknown bone '{n}'", node.path));
+                                errs.push(format!(
+                                    "layer '{}': blob bound to unknown bone '{n}'",
+                                    node.path
+                                ));
                             }
                         }
                     }
                 }
                 LayerKind::Boolean { paths, .. } => {
                     if paths.len() < 2 {
-                        errs.push(format!("layer '{}': boolean needs at least two paths", node.path));
+                        errs.push(format!(
+                            "layer '{}': boolean needs at least two paths",
+                            node.path
+                        ));
                     }
                 }
                 LayerKind::Emitter { spec } => {
@@ -498,7 +687,10 @@ impl Engine {
                     }
                     if let Some(n) = &spec.bone {
                         if !bone_ix.contains_key(n) {
-                            errs.push(format!("layer '{}': emitter bound to unknown bone '{n}'", node.path));
+                            errs.push(format!(
+                                "layer '{}': emitter bound to unknown bone '{n}'",
+                                node.path
+                            ));
                         }
                     }
                 }
@@ -509,13 +701,34 @@ impl Engine {
             let mut seen_def = HashSet::new();
             for d in &l.deformers {
                 if !seen_def.insert(d.name().to_string()) {
-                    errs.push(format!("layer '{}': duplicate deformer name '{}'", node.path, d.name()));
+                    errs.push(format!(
+                        "layer '{}': duplicate deformer name '{}'",
+                        node.path,
+                        d.name()
+                    ));
                 }
                 if d.name().contains("::") {
-                    errs.push(format!("layer '{}': deformer name '{}' must not contain '::'", node.path, d.name()));
+                    errs.push(format!(
+                        "layer '{}': deformer name '{}' must not contain '::'",
+                        node.path,
+                        d.name()
+                    ));
                 }
                 match d {
-                    Deformer::Lattice { name, cols, rows, rect, offsets } | Deformer::Cloth { name, cols, rows, rect, offsets } => {
+                    Deformer::Lattice {
+                        name,
+                        cols,
+                        rows,
+                        rect,
+                        offsets,
+                    }
+                    | Deformer::Cloth {
+                        name,
+                        cols,
+                        rows,
+                        rect,
+                        offsets,
+                    } => {
                         let is_cloth = matches!(d, Deformer::Cloth { .. });
                         let (cols, rows) = (*cols, *rows);
                         let n = (cols + 1) * (rows + 1);
@@ -527,13 +740,19 @@ impl Engine {
                             continue;
                         }
                         if !offsets.is_empty() && offsets.len() != n {
-                            errs.push(format!("layer '{}' lattice '{}': offsets must have {} entries", node.path, name, n));
+                            errs.push(format!(
+                                "layer '{}' lattice '{}': offsets must have {} entries",
+                                node.path, name, n
+                            ));
                             continue;
                         }
                         let mut slots = Vec::with_capacity(n);
                         for r in 0..=rows {
                             for c in 0..=cols {
-                                let off = offsets.get(r * (cols + 1) + c).copied().unwrap_or(Vec2::ZERO);
+                                let off = offsets
+                                    .get(r * (cols + 1) + c)
+                                    .copied()
+                                    .unwrap_or(Vec2::ZERO);
                                 let key = format!("{}::{}::{},{}", node.path, name, c, r);
                                 let dx = new_slot((key.clone(), Prop::LatticeDx), off.x, &mut errs);
                                 let dy = new_slot((key, Prop::LatticeDy), off.y, &mut errs);
@@ -541,18 +760,39 @@ impl Engine {
                             }
                         }
                         g.deformers.push(if is_cloth {
-                            DefInfo::Cloth { cols, rows, rect: *rect, slots }
+                            DefInfo::Cloth {
+                                cols,
+                                rows,
+                                rect: *rect,
+                                slots,
+                            }
                         } else {
-                            DefInfo::Lattice { cols, rows, rect: *rect, slots }
+                            DefInfo::Lattice {
+                                cols,
+                                rows,
+                                rect: *rect,
+                                slots,
+                            }
                         });
                     }
-                    Deformer::Spine { name, rest, offsets, radius } => {
+                    Deformer::Spine {
+                        name,
+                        rest,
+                        offsets,
+                        radius,
+                    } => {
                         if rest.len() < 2 {
-                            errs.push(format!("layer '{}' spine '{}': needs at least two points", node.path, name));
+                            errs.push(format!(
+                                "layer '{}' spine '{}': needs at least two points",
+                                node.path, name
+                            ));
                             continue;
                         }
                         if !offsets.is_empty() && offsets.len() != rest.len() {
-                            errs.push(format!("layer '{}' spine '{}': offsets must match the point count", node.path, name));
+                            errs.push(format!(
+                                "layer '{}' spine '{}': offsets must match the point count",
+                                node.path, name
+                            ));
                             continue;
                         }
                         let mut slots = Vec::with_capacity(rest.len());
@@ -564,17 +804,33 @@ impl Engine {
                             slots.push([dx, dy]);
                         }
                         let rest_poly = VPath::smooth_through("", rest, false, 1.0).polyline(0.5);
-                        g.deformers.push(DefInfo::Spine { rest_pts: rest.clone(), rest_poly, slots, radius: *radius });
+                        g.deformers.push(DefInfo::Spine {
+                            rest_pts: rest.clone(),
+                            rest_poly,
+                            slots,
+                            radius: *radius,
+                        });
                     }
-                    Deformer::Pin { name, pins, offsets, radius } => {
+                    Deformer::Pin {
+                        name,
+                        pins,
+                        offsets,
+                        radius,
+                    } => {
                         if !offsets.is_empty() && offsets.len() != pins.len() {
-                            errs.push(format!("layer '{}' pin warp '{}': offsets must match the pin count", node.path, name));
+                            errs.push(format!(
+                                "layer '{}' pin warp '{}': offsets must match the pin count",
+                                node.path, name
+                            ));
                             continue;
                         }
                         let solver = match crate::pinwarp::PinSolver::new(pins, *radius) {
                             Ok(s) => s,
                             Err(m) => {
-                                errs.push(format!("layer '{}' pin warp '{}': {m}", node.path, name));
+                                errs.push(format!(
+                                    "layer '{}' pin warp '{}': {m}",
+                                    node.path, name
+                                ));
                                 continue;
                             }
                         };
@@ -588,9 +844,16 @@ impl Engine {
                         }
                         g.deformers.push(DefInfo::Pin { solver, slots });
                     }
-                    Deformer::Cage { name, rest, offsets } => {
+                    Deformer::Cage {
+                        name,
+                        rest,
+                        offsets,
+                    } => {
                         if !offsets.is_empty() && offsets.len() != rest.len() {
-                            errs.push(format!("layer '{}' cage '{}': offsets must match the vertex count", node.path, name));
+                            errs.push(format!(
+                                "layer '{}' cage '{}': offsets must match the vertex count",
+                                node.path, name
+                            ));
                             continue;
                         }
                         let solver = match crate::cage::CageSolver::new(rest) {
@@ -612,7 +875,13 @@ impl Engine {
                         // because later deformers see already displaced points)
                         let mut mesh_w = Vec::new();
                         if g.deformers.is_empty() {
-                            if let (LayerKind::Image { origin, size, mesh, .. }, Some(d)) = (&l.kind, &img) {
+                            if let (
+                                LayerKind::Image {
+                                    origin, size, mesh, ..
+                                },
+                                Some(d),
+                            ) = (&l.kind, &img)
+                            {
                                 let (pw, ph) = (d.pixmap.width() as f32, d.pixmap.height() as f32);
                                 let sz = size.unwrap_or(Vec2::new(pw, ph));
                                 let (c, r) = match mesh {
@@ -626,20 +895,36 @@ impl Engine {
                                 if rest_v.len() * rest.len() <= 4_000_000 {
                                     let mut w = Vec::new();
                                     for v in rest_v {
-                                        mesh_w.push(if solver.weights(v, &mut w) { w.clone() } else { Vec::new() });
+                                        mesh_w.push(if solver.weights(v, &mut w) {
+                                            w.clone()
+                                        } else {
+                                            Vec::new()
+                                        });
                                     }
                                 }
                             }
                         }
-                        g.deformers.push(DefInfo::Cage { solver, slots, mesh_w });
+                        g.deformers.push(DefInfo::Cage {
+                            solver,
+                            slots,
+                            mesh_w,
+                        });
                     }
                 }
             }
-            if !l.deformers.is_empty() && !matches!(l.kind, LayerKind::Vector { .. } | LayerKind::Image { .. }) {
-                errs.push(format!("layer '{}': deformers only apply to vector and image layers", node.path));
+            if !l.deformers.is_empty()
+                && !matches!(l.kind, LayerKind::Vector { .. } | LayerKind::Image { .. })
+            {
+                errs.push(format!(
+                    "layer '{}': deformers only apply to vector and image layers",
+                    node.path
+                ));
             }
 
-            errs.extend(crate::layerfx::validate_list(&format!("layer '{}'", node.path), &l.effects));
+            errs.extend(crate::layerfx::validate_list(
+                &format!("layer '{}'", node.path),
+                &l.effects,
+            ));
             let mut fxs = Vec::new();
             for (ei, e) in l.effects.iter().enumerate() {
                 let key = crate::layerfx::target(&node.path, ei);
@@ -672,13 +957,19 @@ impl Engine {
         let mut chans = Vec::new();
         for (ci, c) in project.channels.iter().enumerate() {
             let Some(slot) = resolve(&c.target, c.prop) else {
-                errs.push(format!("channel {ci}: unknown target '{}' for {:?}", c.target, c.prop));
+                errs.push(format!(
+                    "channel {ci}: unknown target '{}' for {:?}",
+                    c.target, c.prop
+                ));
                 continue;
             };
             if c.prop == Prop::LayerSwitch {
                 let l = layer_at(&project, &nodes[slot].idx_path);
                 if !matches!(l.kind, LayerKind::Selector { .. }) {
-                    errs.push(format!("channel {ci}: layer_switch needs a switch layer, '{}' is not one", c.target));
+                    errs.push(format!(
+                        "channel {ci}: layer_switch needs a switch layer, '{}' is not one",
+                        c.target
+                    ));
                 }
             }
             if !c.weight.is_finite() {
@@ -686,9 +977,15 @@ impl Engine {
             }
             let check_track = |t: &crate::anim::Track, errs: &mut Vec<String>| {
                 let sorted = t.keys.windows(2).all(|w| w[0].frame < w[1].frame);
-                let finite = t.keys.iter().all(|k| k.frame.is_finite() && k.value.is_finite());
+                let finite = t
+                    .keys
+                    .iter()
+                    .all(|k| k.frame.is_finite() && k.value.is_finite());
                 if !sorted || !finite {
-                    errs.push(format!("channel {ci} ('{}'): keys must be finite and strictly increasing in frame", c.target));
+                    errs.push(format!(
+                        "channel {ci} ('{}'): keys must be finite and strictly increasing in frame",
+                        c.target
+                    ));
                 }
             };
             let (mut parsed, mut input) = (None, None);
@@ -701,36 +998,62 @@ impl Engine {
                         for (t, p) in gets {
                             match Prop::parse(&p) {
                                 Some(pp) if resolve(&t, pp).is_some() => {}
-                                Some(_) => errs.push(format!("channel {ci}: get(\"{t}\", \"{p}\"): unknown target")),
-                                None => errs.push(format!("channel {ci}: get(\"{t}\", \"{p}\"): unknown property")),
+                                Some(_) => errs.push(format!(
+                                    "channel {ci}: get(\"{t}\", \"{p}\"): unknown target"
+                                )),
+                                None => errs.push(format!(
+                                    "channel {ci}: get(\"{t}\", \"{p}\"): unknown property"
+                                )),
                             }
                         }
                         parsed = Some(e);
                     }
-                    Err(m) => errs.push(format!("channel {ci} ('{}'): expression error: {m}", c.target)),
+                    Err(m) => errs.push(format!(
+                        "channel {ci} ('{}'): expression error: {m}",
+                        c.target
+                    )),
                 },
                 Source::Noise { amp, freq, .. } => {
                     if !(amp.is_finite() && freq.is_finite()) {
                         errs.push(format!("channel {ci}: noise amp/freq must be finite"));
                     }
                 }
-                Source::Driven { input: it, input_prop, curve } => {
+                Source::Driven {
+                    input: it,
+                    input_prop,
+                    curve,
+                } => {
                     check_track(curve, &mut errs);
                     match resolve(it, *input_prop) {
                         Some(s) => input = Some((*input_prop, s)),
-                        None => errs.push(format!("channel {ci}: unknown driver input '{it}' for {input_prop:?}")),
+                        None => errs.push(format!(
+                            "channel {ci}: unknown driver input '{it}' for {input_prop:?}"
+                        )),
                     }
                 }
             }
-            chans.push(ChanResolved { prop: c.prop, slot, chan: ci, expr: parsed, input });
+            chans.push(ChanResolved {
+                prop: c.prop,
+                slot,
+                chan: ci,
+                expr: parsed,
+                input,
+            });
         }
 
         if !errs.is_empty() {
             return Err(errs);
         }
 
-        let rest = fk(&project.bones, &parent, &vec![BonePose::default(); project.bones.len()]);
-        let inv_rest = rest.iter().map(|m| m.inverse().unwrap_or(Affine2::IDENTITY)).collect();
+        let rest = fk(
+            &project.bones,
+            &parent,
+            &vec![BonePose::default(); project.bones.len()],
+        );
+        let inv_rest = rest
+            .iter()
+            .map(|m| m.inverse().unwrap_or(Affine2::IDENTITY))
+            .collect();
 
         let trial = crate::machine::trial_errors(&project, asset_dir);
         if !trial.is_empty() {
@@ -767,5 +1090,4 @@ impl Engine {
         }
         Ok(engine)
     }
-
 }

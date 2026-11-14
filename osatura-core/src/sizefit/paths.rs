@@ -42,12 +42,18 @@ pub(super) fn seg_ctrl(a: &PNode, b: &PNode) -> [[f64; 2]; 4] {
 pub(super) fn dist_pt_seg(p: [f64; 2], a: [f64; 2], b: [f64; 2]) -> f64 {
     let ab = sub2(b, a);
     let l2 = dot2(ab, ab);
-    let t = if l2 < 1e-18 { 0.0 } else { (dot2(sub2(p, a), ab) / l2).clamp(0.0, 1.0) };
+    let t = if l2 < 1e-18 {
+        0.0
+    } else {
+        (dot2(sub2(p, a), ab) / l2).clamp(0.0, 1.0)
+    };
     len2(sub2(p, [a[0] + ab[0] * t, a[1] + ab[1] * t]))
 }
 
 pub(super) fn dist_pt_poly(p: [f64; 2], poly: &[[f64; 2]]) -> f64 {
-    poly.windows(2).map(|w| dist_pt_seg(p, w[0], w[1])).fold(f64::INFINITY, f64::min)
+    poly.windows(2)
+        .map(|w| dist_pt_seg(p, w[0], w[1]))
+        .fold(f64::INFINITY, f64::min)
 }
 
 pub(super) fn unit_or(v: [f64; 2], fallbacks: &[[f64; 2]]) -> [f64; 2] {
@@ -90,8 +96,14 @@ pub(super) fn merge_fit(a: &PNode, k: &PNode, b: &PNode) -> ([f64; 2], [f64; 2],
         if total < 1e-12 || chord < 1e-12 {
             (zero, zero)
         } else {
-            let t1 = unit_or(sub2(s1[1], s1[0]), &[sub2(s1[2], s1[0]), sub2(s1[3], s1[0])]);
-            let t2 = unit_or(sub2(s2[2], s2[3]), &[sub2(s2[1], s2[3]), sub2(s2[0], s2[3])]);
+            let t1 = unit_or(
+                sub2(s1[1], s1[0]),
+                &[sub2(s1[2], s1[0]), sub2(s1[3], s1[0])],
+            );
+            let t2 = unit_or(
+                sub2(s2[2], s2[3]),
+                &[sub2(s2[1], s2[3]), sub2(s2[0], s2[3])],
+            );
             let (mut c11, mut c12, mut c22, mut x1, mut x2) = (0.0, 0.0, 0.0, 0.0, 0.0);
             for j in 0..pts.len() {
                 let t = u[j] / total;
@@ -114,7 +126,13 @@ pub(super) fn merge_fit(a: &PNode, k: &PNode, b: &PNode) -> ([f64; 2], [f64; 2],
             let (mut al1, mut al2) = (chord / 3.0, chord / 3.0);
             if det.abs() > 1e-12 * (c11 * c22).abs().max(1e-30) {
                 let (s, e) = ((x1 * c22 - x2 * c12) / det, (c11 * x2 - c12 * x1) / det);
-                if s.is_finite() && e.is_finite() && s > 1e-6 * chord && e > 1e-6 * chord && s < 4.0 * total && e < 4.0 * total {
+                if s.is_finite()
+                    && e.is_finite()
+                    && s > 1e-6 * chord
+                    && e > 1e-6 * chord
+                    && s < 4.0 * total
+                    && e < 4.0 * total
+                {
                     al1 = s;
                     al2 = e;
                 }
@@ -125,9 +143,17 @@ pub(super) fn merge_fit(a: &PNode, k: &PNode, b: &PNode) -> ([f64; 2], [f64; 2],
     let na = PNode { o: o_new, ..*a };
     let nb = PNode { i: i_new, ..*b };
     let merged = seg_ctrl(&na, &nb);
-    let mp: Vec<[f64; 2]> = (0..=24).map(|j| cubic_at(&merged, j as f64 / 24.0)).collect();
-    let e1 = pts.iter().map(|&p| dist_pt_poly(p, &mp)).fold(0.0, f64::max);
-    let e2 = mp.iter().map(|&p| dist_pt_poly(p, &pts)).fold(0.0, f64::max);
+    let mp: Vec<[f64; 2]> = (0..=24)
+        .map(|j| cubic_at(&merged, j as f64 / 24.0))
+        .collect();
+    let e1 = pts
+        .iter()
+        .map(|&p| dist_pt_poly(p, &mp))
+        .fold(0.0, f64::max);
+    let e2 = mp
+        .iter()
+        .map(|&p| dist_pt_poly(p, &pts))
+        .fold(0.0, f64::max);
     (o_new, i_new, e1.max(e2))
 }
 
@@ -135,7 +161,9 @@ pub(super) fn merge_fit(a: &PNode, k: &PNode, b: &PNode) -> ([f64; 2], [f64; 2],
 /// while the sampled geometric deviation stays within `eps` in *every* frame. All frames lose the same
 /// vertices, so the topology stays consistent over time. Returns the number of removed vertices.
 pub fn simplify_paths(frames: &mut [Vec<PNode>], closed: bool, eps: f64) -> usize {
-    let Some(n) = frames.first().map(|f| f.len()) else { return 0 };
+    let Some(n) = frames.first().map(|f| f.len()) else {
+        return 0;
+    };
     if eps <= 0.0 || frames.iter().any(|f| f.len() != n) {
         return 0;
     }
@@ -151,7 +179,10 @@ pub fn simplify_paths(frames: &mut [Vec<PNode>], closed: bool, eps: f64) -> usiz
             let id = alive[j];
             let c = *cost.entry(id).or_insert_with(|| {
                 let (pi, ni) = (alive[(j + m - 1) % m], alive[(j + 1) % m]);
-                frames.iter().map(|f| merge_fit(&f[pi], &f[id], &f[ni]).2).fold(0.0, f64::max)
+                frames
+                    .iter()
+                    .map(|f| merge_fit(&f[pi], &f[id], &f[ni]).2)
+                    .fold(0.0, f64::max)
             });
             if best.is_none_or(|(bc, _)| c < bc) {
                 best = Some((c, j));
@@ -207,15 +238,32 @@ pub fn anchors_of(nodes: &[PNode]) -> Vec<Anchor> {
         .iter()
         .map(|n| {
             let pos = Vec2::new(n.p[0] as f32, n.p[1] as f32);
-            let h = |r: [f64; 2]| if r == [0.0, 0.0] { None } else { Some(Vec2::new((n.p[0] + r[0]) as f32, (n.p[1] + r[1]) as f32)) };
-            Anchor { pos, handle_in: h(n.i), handle_out: h(n.o), weights: Vec::new() }
+            let h = |r: [f64; 2]| {
+                if r == [0.0, 0.0] {
+                    None
+                } else {
+                    Some(Vec2::new((n.p[0] + r[0]) as f32, (n.p[1] + r[1]) as f32))
+                }
+            };
+            Anchor {
+                pos,
+                handle_in: h(n.i),
+                handle_out: h(n.o),
+                weights: Vec::new(),
+            }
         })
         .collect()
 }
 
 /// Simplify one evaluated path with tolerance `eps` (path units). Paths with a width profile are left alone.
 pub fn simplify_vpath(path: &mut VPath, eps: f64) -> usize {
-    if eps <= 0.0 || path.anchors.len() < 3 || path.stroke.as_ref().is_some_and(|s| !s.width_profile.is_empty()) {
+    if eps <= 0.0
+        || path.anchors.len() < 3
+        || path
+            .stroke
+            .as_ref()
+            .is_some_and(|s| !s.width_profile.is_empty())
+    {
         return 0;
     }
     let mut fr = vec![pnodes_of(path)];

@@ -35,7 +35,27 @@ pub struct Tag {
     pub conf: f32,
 }
 
-pub(super) const NOISE: &[&str] = &["bip", "biped", "mixamorig", "def", "org", "mch", "jnt", "joint", "bone", "bn", "sk", "skel", "skeleton", "rig", "armature", "cc", "base", "char", "character"];
+pub(super) const NOISE: &[&str] = &[
+    "bip",
+    "biped",
+    "mixamorig",
+    "def",
+    "org",
+    "mch",
+    "jnt",
+    "joint",
+    "bone",
+    "bn",
+    "sk",
+    "skel",
+    "skeleton",
+    "rig",
+    "armature",
+    "cc",
+    "base",
+    "char",
+    "character",
+];
 pub(super) const LEFT: &[&str] = &["left", "l", "lt", "lft"];
 pub(super) const RIGHT: &[&str] = &["right", "r", "rt", "rgt"];
 pub(super) const UPW: &[&str] = &["up", "upper", "upr"];
@@ -49,17 +69,92 @@ pub(super) const CLAV_W: &[&str] = &["shoulder", "clavicle", "collar", "scapula"
 pub(super) const FOOT_W: &[&str] = &["foot", "feet", "ankle"];
 pub(super) const TOE_W: &[&str] = &["toe", "toes", "toebase", "ball"];
 pub(super) const HIPS_W: &[&str] = &["hips", "hip", "pelvis", "pelvic", "root", "cog"];
-pub(super) const SPINE_W: &[&str] = &["spine", "chest", "abdomen", "torso", "back", "waist", "stomach", "thorax", "trunk", "belly", "lowerback", "upperback", "ribcage", "sternum"];
+pub(super) const SPINE_W: &[&str] = &[
+    "spine",
+    "chest",
+    "abdomen",
+    "torso",
+    "back",
+    "waist",
+    "stomach",
+    "thorax",
+    "trunk",
+    "belly",
+    "lowerback",
+    "upperback",
+    "ribcage",
+    "sternum",
+];
 pub(super) const NECK_W: &[&str] = &["neck", "lowerneck", "upperneck"];
 pub(super) const HEAD_W: &[&str] = &["head", "skull", "cranium"];
-pub(super) const FINGER_W: &[&str] = &["thumb", "index", "middle", "ring", "pinky", "pinkie", "little", "finger", "fingers", "digit"];
+pub(super) const FINGER_W: &[&str] = &[
+    "thumb", "index", "middle", "ring", "pinky", "pinkie", "little", "finger", "fingers", "digit",
+];
 pub(super) const OTHER_W: &[&str] = &[
-    "jaw", "eye", "eyes", "eyelid", "brow", "ear", "nose", "tongue", "teeth", "hair", "cheek", "lip", "lips", "mouth", "face", "tail", "wing", "cape", "skirt", "cloth", "breast", "twist", "roll",
-    "corrective", "helper", "end", "site", "nub", "tip", "null", "dummy", "prop", "weapon", "gun", "sword", "ik", "pole", "target", "ctrl", "control",
+    "jaw",
+    "eye",
+    "eyes",
+    "eyelid",
+    "brow",
+    "ear",
+    "nose",
+    "tongue",
+    "teeth",
+    "hair",
+    "cheek",
+    "lip",
+    "lips",
+    "mouth",
+    "face",
+    "tail",
+    "wing",
+    "cape",
+    "skirt",
+    "cloth",
+    "breast",
+    "twist",
+    "roll",
+    "corrective",
+    "helper",
+    "end",
+    "site",
+    "nub",
+    "tip",
+    "null",
+    "dummy",
+    "prop",
+    "weapon",
+    "gun",
+    "sword",
+    "ik",
+    "pole",
+    "target",
+    "ctrl",
+    "control",
 ];
 
 pub(super) fn in_vocab(t: &str) -> bool {
-    [THIGH_W, SHIN_W, UPARM_W, FORE_W, HAND_W, CLAV_W, FOOT_W, TOE_W, HIPS_W, SPINE_W, NECK_W, HEAD_W, FINGER_W, OTHER_W, UPW, LOWW, &["arm", "arms", "leg", "legs"]].iter().any(|l| l.contains(&t))
+    [
+        THIGH_W,
+        SHIN_W,
+        UPARM_W,
+        FORE_W,
+        HAND_W,
+        CLAV_W,
+        FOOT_W,
+        TOE_W,
+        HIPS_W,
+        SPINE_W,
+        NECK_W,
+        HEAD_W,
+        FINGER_W,
+        OTHER_W,
+        UPW,
+        LOWW,
+        &["arm", "arms", "leg", "legs"],
+    ]
+    .iter()
+    .any(|l| l.contains(&t))
 }
 
 /// Split a bone name into lower-case tokens: namespaces (`mixamorig:`, `Armature|`) dropped,
@@ -142,7 +237,10 @@ pub fn classify(name: &str) -> Tag {
     let mut side = None;
     let mut index: Option<u32> = None;
     let mut ws: Vec<String> = Vec::new();
-    let non_side = toks.iter().filter(|t| !LEFT.contains(&t.as_str()) && !RIGHT.contains(&t.as_str())).count();
+    let non_side = toks
+        .iter()
+        .filter(|t| !LEFT.contains(&t.as_str()) && !RIGHT.contains(&t.as_str()))
+        .count();
     for t in &toks {
         if t.chars().all(|c| c.is_ascii_digit()) {
             index = t.parse().ok();
@@ -156,7 +254,11 @@ pub fn classify(name: &str) -> Tag {
     }
     let _ = index;
     let t = |role, conf| Tag { role, side, conf };
-    let other = Tag { role: Role::Other, side, conf: 0.0 };
+    let other = Tag {
+        role: Role::Other,
+        side,
+        conf: 0.0,
+    };
     if ws.is_empty() || any_of(&ws, OTHER_W) {
         return other;
     }
@@ -218,7 +320,11 @@ pub fn classify(name: &str) -> Tag {
         return t(Role::Hips, 0.95);
     }
     if has(&ws, "hip") {
-        return if side.is_some() { t(Role::Thigh, 0.5) } else { t(Role::Hips, 0.9) };
+        return if side.is_some() {
+            t(Role::Thigh, 0.5)
+        } else {
+            t(Role::Hips, 0.9)
+        };
     }
     if has(&ws, "root") {
         return t(Role::Hips, 0.55);

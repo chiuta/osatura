@@ -62,7 +62,9 @@ impl Tol {
         }
         let nonneg = |v: Option<f64>, n: &str| -> Result<(), String> {
             match v {
-                Some(x) if !(x.is_finite() && x >= 0.0) => Err(format!("{what}: {n} must be a number >= 0")),
+                Some(x) if !(x.is_finite() && x >= 0.0) => {
+                    Err(format!("{what}: {n} must be a number >= 0"))
+                }
                 _ => Ok(()),
             }
         };
@@ -89,13 +91,21 @@ impl Tol {
     }
 
     pub fn resolve(&self, base: &Tol) -> Resolved {
-        let metric = self.metric.as_deref().or(base.metric.as_deref()).and_then(|m| DeMetric::parse(m).ok()).unwrap_or(DeMetric::De2000);
+        let metric = self
+            .metric
+            .as_deref()
+            .or(base.metric.as_deref())
+            .and_then(|m| DeMetric::parse(m).ok())
+            .unwrap_or(DeMetric::De2000);
         Resolved {
             metric,
             pixel_de: self.pixel_de.or(base.pixel_de).unwrap_or(1.0),
             max_de: self.max_de.or(base.max_de).unwrap_or(8.0),
             min_ssim: self.min_ssim.or(base.min_ssim).unwrap_or(0.99),
-            max_diff_fraction: self.max_diff_fraction.or(base.max_diff_fraction).unwrap_or(0.001),
+            max_diff_fraction: self
+                .max_diff_fraction
+                .or(base.max_diff_fraction)
+                .unwrap_or(0.001),
             aa_isolated: self.aa_isolated.or(base.aa_isolated).unwrap_or(2),
             aa_edge_de: self.aa_edge_de.or(base.aa_edge_de).unwrap_or(0.0),
             max_phash_distance: self.max_phash_distance.or(base.max_phash_distance),
@@ -341,7 +351,11 @@ pub struct Manifest {
 }
 
 pub(super) fn safe_name(n: &str) -> bool {
-    !n.is_empty() && n.len() <= 64 && n.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')) && !n.starts_with('.')
+    !n.is_empty()
+        && n.len() <= 64
+        && n.chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+        && !n.starts_with('.')
 }
 
 pub(super) fn validate_scale(s: f32, what: &str) -> Result<(), String> {
@@ -351,7 +365,11 @@ pub(super) fn validate_scale(s: f32, what: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub(super) fn validate_frames(frames: &Option<Vec<u32>>, step: &Option<u32>, what: &str) -> Result<(), String> {
+pub(super) fn validate_frames(
+    frames: &Option<Vec<u32>>,
+    step: &Option<u32>,
+    what: &str,
+) -> Result<(), String> {
     if frames.is_some() && step.is_some() {
         return Err(format!("{what}: give either 'frames' or 'step', not both"));
     }
@@ -366,7 +384,14 @@ pub(super) fn validate_frames(frames: &Option<Vec<u32>>, step: &Option<u32>, wha
 
 /// Paths in a manifest are relative to the manifest's directory: not empty, not absolute, no `..`, no NUL.
 pub fn manifest_path_ok(what: &str, p: &str) -> Result<(), String> {
-    if p.is_empty() || p.contains('\0') || p.starts_with('/') || p.starts_with('\\') || Path::new(p).is_absolute() || p.as_bytes().get(1) == Some(&b':') || p.split(['/', '\\']).any(|c| c == "..") {
+    if p.is_empty()
+        || p.contains('\0')
+        || p.starts_with('/')
+        || p.starts_with('\\')
+        || Path::new(p).is_absolute()
+        || p.as_bytes().get(1) == Some(&b':')
+        || p.split(['/', '\\']).any(|c| c == "..")
+    {
         return Err(format!("{what} must be a relative path inside the manifest directory (no '..', no absolute path), got '{p}'"));
     }
     Ok(())
@@ -375,7 +400,8 @@ pub fn manifest_path_ok(what: &str, p: &str) -> Result<(), String> {
 impl Manifest {
     /// Parse and validate. All problems found in the manifest itself are reported together.
     pub fn parse(text: &str) -> Result<Manifest, String> {
-        let m: Manifest = serde_json::from_str(text).map_err(|e| format!("invalid manifest: {e}"))?;
+        let m: Manifest =
+            serde_json::from_str(text).map_err(|e| format!("invalid manifest: {e}"))?;
         m.validate()?;
         Ok(m)
     }
@@ -383,7 +409,10 @@ impl Manifest {
     pub fn validate(&self) -> Result<(), String> {
         let mut errs: Vec<String> = Vec::new();
         if self.schema != MANIFEST_SCHEMA {
-            errs.push(format!("schema must be '{MANIFEST_SCHEMA}', got '{}'", self.schema));
+            errs.push(format!(
+                "schema must be '{MANIFEST_SCHEMA}', got '{}'",
+                self.schema
+            ));
         }
         if let Err(e) = manifest_path_ok("goldens", &self.goldens) {
             errs.push(e);
@@ -411,7 +440,9 @@ impl Manifest {
                 errs.push(format!("duplicate check name '{n}'"));
             }
             match c.project(&self.project) {
-                None => errs.push(format!("{what}: no project (set 'project' on the check or in the manifest)")),
+                None => errs.push(format!(
+                    "{what}: no project (set 'project' on the check or in the manifest)"
+                )),
                 Some(p) => {
                     if let Err(e) = manifest_path_ok(&format!("{what}: project"), p) {
                         errs.push(e);
@@ -425,29 +456,40 @@ impl Manifest {
                         validate_frames(&r.frames, &r.step, &what)?;
                         r.thresholds.validate(&what)?;
                         if !["raster", "float", "svg"].contains(&r.renderer.as_str()) {
-                            return Err(format!("{what}: unknown renderer '{}' (raster, float, svg)", r.renderer));
+                            return Err(format!(
+                                "{what}: unknown renderer '{}' (raster, float, svg)",
+                                r.renderer
+                            ));
                         }
                         if let Some(s) = &r.size {
                             crate::containers::parse_size(s).map_err(|e| format!("{what}: {e}"))?;
                         }
                         for g in &r.ignore {
                             if !g.iter().all(|v| v.is_finite()) || g[2] <= 0.0 || g[3] <= 0.0 {
-                                return Err(format!("{what}: ignore rectangles are [x, y, w, h] with w, h > 0"));
+                                return Err(format!(
+                                    "{what}: ignore rectangles are [x, y, w, h] with w, h > 0"
+                                ));
                             }
                         }
                         if r.renderer == "svg" && !r.ignore.is_empty() {
-                            return Err(format!("{what}: ignore regions need a pixel renderer (raster or float)"));
+                            return Err(format!(
+                                "{what}: ignore regions need a pixel renderer (raster or float)"
+                            ));
                         }
                     }
                     Check::Validate(v) => {
                         if let Some(l) = &v.lint {
                             if !["error", "warn", "info", "off"].contains(&l.as_str()) {
-                                return Err(format!("{what}: lint must be error, warn, info or off"));
+                                return Err(format!(
+                                    "{what}: lint must be error, warn, info or off"
+                                ));
                             }
                         }
                     }
                     Check::Fuzz(f) => {
-                        if matches!(f.samples, Some(0)) || matches!(f.samples, Some(n) if n > 100_000) {
+                        if matches!(f.samples, Some(0))
+                            || matches!(f.samples, Some(n) if n > 100_000)
+                        {
                             return Err(format!("{what}: samples must be 1..100000"));
                         }
                         if matches!(f.max_fail_rate, Some(r) if !(0.0..=1.0).contains(&r)) {
@@ -458,14 +500,25 @@ impl Manifest {
                         }
                     }
                     Check::Limits(l) => {
-                        if l.max_layers.is_none() && l.max_bones.is_none() && l.max_channels.is_none() && l.max_frames.is_none() && l.max_canvas_pixels.is_none() && l.max_file_bytes.is_none() {
+                        if l.max_layers.is_none()
+                            && l.max_bones.is_none()
+                            && l.max_channels.is_none()
+                            && l.max_frames.is_none()
+                            && l.max_canvas_pixels.is_none()
+                            && l.max_file_bytes.is_none()
+                        {
                             return Err(format!("{what}: set at least one limit"));
                         }
                     }
                     Check::ExportSize(e) => {
                         validate_scale(e.scale, &what)?;
-                        if !["gif", "apng", "lottie", "html", "svg-frames"].contains(&e.format.as_str()) {
-                            return Err(format!("{what}: unknown format '{}' (gif, apng, lottie, html, svg-frames)", e.format));
+                        if !["gif", "apng", "lottie", "html", "svg-frames"]
+                            .contains(&e.format.as_str())
+                        {
+                            return Err(format!(
+                                "{what}: unknown format '{}' (gif, apng, lottie, html, svg-frames)",
+                                e.format
+                            ));
                         }
                         if e.max_bytes == 0 {
                             return Err(format!("{what}: max_bytes must be at least 1"));
@@ -476,13 +529,17 @@ impl Manifest {
                         validate_frames(&d.frames, &d.step, &what)?;
                         for r in &d.renderers {
                             if !["raster", "float", "svg"].contains(&r.as_str()) {
-                                return Err(format!("{what}: unknown renderer '{r}' (raster, float, svg)"));
+                                return Err(format!(
+                                    "{what}: unknown renderer '{r}' (raster, float, svg)"
+                                ));
                             }
                         }
                     }
                     Check::Loop(l) => {
                         validate_scale(l.scale, &what)?;
-                        if matches!(l.max_seam_ratio, Some(r) if !(r.is_finite() && r >= 0.0)) || matches!(l.max_seam_mad, Some(r) if !(r.is_finite() && r >= 0.0)) {
+                        if matches!(l.max_seam_ratio, Some(r) if !(r.is_finite() && r >= 0.0))
+                            || matches!(l.max_seam_mad, Some(r) if !(r.is_finite() && r >= 0.0))
+                        {
                             return Err(format!("{what}: seam limits must be numbers >= 0"));
                         }
                     }

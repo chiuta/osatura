@@ -24,7 +24,10 @@ pub(super) fn samp_of_shape(closed: bool, nodes: &[PNode], d: u8) -> Samp {
     for n in nodes {
         v.extend(n.o.iter().map(|&x| round_dec(x, d)));
     }
-    Samp { sig: (closed, nodes.len()), v }
+    Samp {
+        sig: (closed, nodes.len()),
+        v,
+    }
 }
 
 pub(super) fn shape_of_samp(s: &Samp) -> Value {
@@ -38,14 +41,28 @@ pub(super) fn shape_of_samp(s: &Samp) -> Value {
 
 pub(super) fn parse_shape(v: &Value) -> Option<(bool, Vec<PNode>)> {
     let arr = |k: &str| -> Option<Vec<[f64; 2]>> {
-        v.get(k)?.as_array()?.iter().map(|p| { let a = p.as_array()?; Some([a.first()?.as_f64()?, a.get(1)?.as_f64()?]) }).collect()
+        v.get(k)?
+            .as_array()?
+            .iter()
+            .map(|p| {
+                let a = p.as_array()?;
+                Some([a.first()?.as_f64()?, a.get(1)?.as_f64()?])
+            })
+            .collect()
     };
     let (vv, ii, oo) = (arr("v")?, arr("i")?, arr("o")?);
     if vv.len() != ii.len() || vv.len() != oo.len() {
         return None;
     }
     let closed = v.get("c").and_then(Value::as_bool).unwrap_or(false);
-    Some((closed, vv.iter().zip(&ii).zip(&oo).map(|((&p, &i), &o)| PNode { p, i, o }).collect()))
+    Some((
+        closed,
+        vv.iter()
+            .zip(&ii)
+            .zip(&oo)
+            .map(|((&p, &i), &o)| PNode { p, i, o })
+            .collect(),
+    ))
 }
 
 /// Choose the keyframes of a series. `step` keeps every `step`-th frame; with `linear` the kept frames are
@@ -85,7 +102,9 @@ pub(super) fn select_keys(s: &[Samp], step: usize, tol: f64, linear: bool) -> Ve
             let mut worst = (0.0f64, 0usize);
             for j in a + 1..b {
                 let t = (k[j] as f64 - fa) / (fb - fa);
-                let e = (0..s[k[j]].v.len()).map(|c| (s[k[j]].v[c] - lerp(s[k[a]].v[c], s[k[b]].v[c], t)).abs()).fold(0.0, f64::max);
+                let e = (0..s[k[j]].v.len())
+                    .map(|c| (s[k[j]].v[c] - lerp(s[k[a]].v[c], s[k[b]].v[c], t)).abs())
+                    .fold(0.0, f64::max);
                 if e > worst.0 {
                     worst = (e, j);
                 }
@@ -111,13 +130,20 @@ pub(super) fn select_keys(s: &[Samp], step: usize, tol: f64, linear: bool) -> Ve
     }
     (0..out.len())
         .map(|q| {
-            let hold = out.get(q + 1).is_none_or(|&nx| s[k[nx]].sig != s[k[out[q]]].sig);
+            let hold = out
+                .get(q + 1)
+                .is_none_or(|&nx| s[k[nx]].sig != s[k[out[q]]].sig);
             (k[out[q]], hold)
         })
         .collect()
 }
 
-pub(super) fn emit_keys(s: &[Samp], keys: &[(usize, bool)], linear: bool, mk: &dyn Fn(&Samp) -> Value) -> Value {
+pub(super) fn emit_keys(
+    s: &[Samp],
+    keys: &[(usize, bool)],
+    linear: bool,
+    mk: &dyn Fn(&Samp) -> Value,
+) -> Value {
     if keys.len() <= 1 {
         let f = keys.first().map_or(0, |k| k.0);
         return json!({"a": 0, "k": mk(&s[f])});
@@ -145,7 +171,13 @@ pub(super) fn emit_keys(s: &[Samp], keys: &[(usize, bool)], linear: bool, mk: &d
 
 /// Hold keyframes (exact at the kept frames) or, when `linear`, linear keyframes within `tol`, whichever
 /// serialises smaller: linear keys carry easing handles, so they only pay off when they remove enough keys.
-pub(super) fn pick_encoding(s: &[Samp], step: usize, tol: f64, linear: bool, mk: &dyn Fn(&Samp) -> Value) -> Value {
+pub(super) fn pick_encoding(
+    s: &[Samp],
+    step: usize,
+    tol: f64,
+    linear: bool,
+    mk: &dyn Fn(&Samp) -> Value,
+) -> Value {
     let hold = emit_keys(s, &select_keys(s, step, 0.0, false), false, mk);
     if !linear {
         return hold;

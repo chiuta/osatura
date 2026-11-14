@@ -21,6 +21,7 @@
 //!
 //! Exit codes (see [`CiReport::exit_code`]): 0 all pass, 1 some check failed, 2 a check or the
 //! manifest could not be evaluated.
+use crate::clock::Stamp;
 use crate::engine::Engine;
 use crate::percep::{self, CompareOptions, DeMetric, Img, Region};
 use crate::project::Project;
@@ -29,15 +30,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use crate::clock::Stamp;
 
+mod checks;
 mod manifest;
 mod results;
-mod checks;
 
+pub use checks::*;
 pub use manifest::*;
 pub use results::*;
-pub use checks::*;
 
 #[cfg(test)]
 mod tests;

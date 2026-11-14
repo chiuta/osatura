@@ -91,7 +91,11 @@ pub fn lottie_json_mapped(engine: &Engine) -> (Value, Vec<LottieLayerMap>) {
 
 fn lottie_shape(path: &VPath, world: &Affine2) -> Value {
     let n = path.anchors.len();
-    let (mut v, mut i, mut o) = (Vec::with_capacity(n), Vec::with_capacity(n), Vec::with_capacity(n));
+    let (mut v, mut i, mut o) = (
+        Vec::with_capacity(n),
+        Vec::with_capacity(n),
+        Vec::with_capacity(n),
+    );
     for a in &path.anchors {
         let p = world.apply(a.pos);
         let (hi, ho) = (world.apply(a.hin()), world.apply(a.hout()));
@@ -135,7 +139,10 @@ fn anim_scalar(vals: &[f32]) -> Value {
 }
 
 fn anim_vec2(vals: &[[f32; 2]]) -> Value {
-    if vals.iter().all(|v| (v[0] - vals[0][0]).abs() < 1e-4 && (v[1] - vals[0][1]).abs() < 1e-4) {
+    if vals
+        .iter()
+        .all(|v| (v[0] - vals[0][0]).abs() < 1e-4 && (v[1] - vals[0][1]).abs() < 1e-4)
+    {
         json!({"a": 0, "k": [vals[0][0], vals[0][1]]})
     } else {
         json!({"a": 1, "k": vals.iter().enumerate().map(|(t, v)| json!({"t": t, "s": [v[0], v[1]], "h": 1})).collect::<Vec<_>>()})
@@ -150,9 +157,18 @@ fn geo_scale(m: &Affine2) -> f32 {
 /// Largest / smallest singular value of the linear part (1 = similarity, shear and non-uniform scale > 1).
 fn anisotropy(m: &Affine2) -> f32 {
     let t = m.a * m.a + m.b * m.b + m.c * m.c + m.d * m.d;
-    let d = ((m.a * m.a + m.b * m.b - m.c * m.c - m.d * m.d).powi(2) + 4.0 * (m.a * m.c + m.b * m.d).powi(2)).sqrt();
-    let (hi, lo) = (((t + d) * 0.5).max(0.0).sqrt(), ((t - d) * 0.5).max(0.0).sqrt());
-    if lo < 1e-9 { f32::INFINITY } else { hi / lo }
+    let d = ((m.a * m.a + m.b * m.b - m.c * m.c - m.d * m.d).powi(2)
+        + 4.0 * (m.a * m.c + m.b * m.d).powi(2))
+    .sqrt();
+    let (hi, lo) = (
+        ((t + d) * 0.5).max(0.0).sqrt(),
+        ((t - d) * 0.5).max(0.0).sqrt(),
+    );
+    if lo < 1e-9 {
+        f32::INFINITY
+    } else {
+        hi / lo
+    }
 }
 
 /// Colour stops (`[t,r,g,b]*`) followed, when any stop is translucent, by alpha stops (`[t,a]*`):
@@ -189,7 +205,11 @@ fn gradient_points(p: &Paint, world: &Affine2) -> ([f32; 2], [f32; 2]) {
         Paint::Radial { center, radius, .. } => {
             let c = world.apply(*center);
             let ax = Vec2::new(world.a, world.b);
-            let dir = if ax.length() > 1e-9 { ax * (1.0 / ax.length()) } else { Vec2::new(1.0, 0.0) };
+            let dir = if ax.length() > 1e-9 {
+                ax * (1.0 / ax.length())
+            } else {
+                Vec2::new(1.0, 0.0)
+            };
             let e = c + dir * (radius * geo_scale(world));
             ([c.x, c.y], [e.x, e.y])
         }
@@ -234,7 +254,9 @@ fn lottie_effects(evals: &[Frame], pars: &[Vec<Option<usize>>], id: usize) -> Ve
         for k in 0..evals[0].nodes[nid].effects.len() {
             let at = |fi: usize| evals[fi].nodes[nid].effects.get(k);
             let per = |f: &dyn Fn(&crate::layerfx::EffectKind) -> f32| -> Vec<f32> {
-                (0..evals.len()).map(|fi| at(fi).map_or(0.0, |e| f(&e.kind))).collect()
+                (0..evals.len())
+                    .map(|fi| at(fi).map_or(0.0, |e| f(&e.kind)))
+                    .collect()
             };
             use crate::layerfx::EffectKind as K;
             let col = |c: crate::style::Rgba| json!({"a": 0, "k": [c.r, c.g, c.b, 1.0]});
@@ -274,7 +296,11 @@ fn tidy(v: &mut Value) {
         Value::Number(n) => {
             if let Some(x) = n.as_f64() {
                 if n.is_f64() && x.is_finite() && (x as f32) as f64 == x {
-                    if let Some(y) = format!("{}", x as f32).parse::<f64>().ok().and_then(serde_json::Number::from_f64) {
+                    if let Some(y) = format!("{}", x as f32)
+                        .parse::<f64>()
+                        .ok()
+                        .and_then(serde_json::Number::from_f64)
+                    {
                         *n = y;
                     }
                 }
@@ -305,8 +331,16 @@ struct Builder<'a> {
 
 impl<'a> Builder<'a> {
     fn warn(&mut self, code: &'static str, layer: &str, message: String) {
-        if !self.warns.iter().any(|w| w.code == code && w.layer == layer) {
-            self.warns.push(LottieWarning { code, layer: layer.to_string(), message });
+        if !self
+            .warns
+            .iter()
+            .any(|w| w.code == code && w.layer == layer)
+        {
+            self.warns.push(LottieWarning {
+                code,
+                layer: layer.to_string(),
+                message,
+            });
         }
     }
 
@@ -357,7 +391,13 @@ impl<'a> Builder<'a> {
         let ops: Vec<f32> = (0..self.nf())
             .map(|fi| {
                 let (o, vis) = self.factor(fi, from, stop);
-                if force_on { 100.0 } else if vis { o * 100.0 } else { 0.0 }
+                if force_on {
+                    100.0
+                } else if vis {
+                    o * 100.0
+                } else {
+                    0.0
+                }
             })
             .collect();
         anim_scalar(&ops)
@@ -365,7 +405,12 @@ impl<'a> Builder<'a> {
 
     /// Layers for `leaves` (bottom to top draw order), top of the stack first. `stop` = the group
     /// whose precomp this is (its own opacity is applied by the caller), `top` = the main composition.
-    fn emit(&mut self, leaves: &[usize], stop: Option<usize>, map: Option<&mut Vec<LottieLayerMap>>) -> Vec<Value> {
+    fn emit(
+        &mut self,
+        leaves: &[usize],
+        stop: Option<usize>,
+        map: Option<&mut Vec<LottieLayerMap>>,
+    ) -> Vec<Value> {
         enum Unit {
             Leaf(usize),
             Block(usize, Vec<usize>),
@@ -387,7 +432,8 @@ impl<'a> Builder<'a> {
             match unit {
                 Unit::Leaf(id) => {
                     let mask = self.evals[0].nodes[id].mask;
-                    let valid = mask.filter(|&(mid, _)| self.evals[0].nodes[mid].kind == NodeKind::Vector);
+                    let valid =
+                        mask.filter(|&(mid, _)| self.evals[0].nodes[mid].kind == NodeKind::Vector);
                     if let (Some((mid, _)), None) = (mask, valid) {
                         let nm = self.name(id);
                         let src = self.name(mid);
@@ -395,15 +441,34 @@ impl<'a> Builder<'a> {
                     }
                     match valid {
                         Some((mid, inverted)) => {
-                            local_map.push(LottieLayerMap { index: layers.len(), node: mid, matte_copy: true });
+                            local_map.push(LottieLayerMap {
+                                index: layers.len(),
+                                node: mid,
+                                matte_copy: true,
+                            });
                             layers.push(self.make(mid, ind, true, true, None, stop));
                             ind += 1;
-                            local_map.push(LottieLayerMap { index: layers.len(), node: id, matte_copy: false });
-                            layers.push(self.make(id, ind, false, false, Some(if inverted { 2 } else { 1 }), stop));
+                            local_map.push(LottieLayerMap {
+                                index: layers.len(),
+                                node: id,
+                                matte_copy: false,
+                            });
+                            layers.push(self.make(
+                                id,
+                                ind,
+                                false,
+                                false,
+                                Some(if inverted { 2 } else { 1 }),
+                                stop,
+                            ));
                             ind += 1;
                         }
                         None => {
-                            local_map.push(LottieLayerMap { index: layers.len(), node: id, matte_copy: false });
+                            local_map.push(LottieLayerMap {
+                                index: layers.len(),
+                                node: id,
+                                matte_copy: false,
+                            });
                             layers.push(self.make(id, ind, false, false, None, stop));
                             ind += 1;
                         }
@@ -412,20 +477,33 @@ impl<'a> Builder<'a> {
                 Unit::Block(x, ids) => {
                     let inner = self.emit(&ids, Some(x), None);
                     let asset_id = format!("comp_{}", self.assets.len());
-                    self.assets.push(json!({"id": asset_id, "nm": self.name(x), "layers": inner}));
+                    self.assets
+                        .push(json!({"id": asset_id, "nm": self.name(x), "layers": inner}));
                     let (w, h) = (self.p.width, self.p.height);
                     let xn = &self.evals[0].nodes[x];
                     let bm = lottie_blend(xn.blend);
                     let (blend, mask, fxn) = (xn.blend, xn.mask.is_some(), !xn.effects.is_empty());
                     let nm = self.name(x);
                     if blend == crate::style::Blend::Add {
-                        self.warn("blend-add", &nm, "blend mode 'add' has no Lottie equivalent; 'screen' is used".into());
+                        self.warn(
+                            "blend-add",
+                            &nm,
+                            "blend mode 'add' has no Lottie equivalent; 'screen' is used".into(),
+                        );
                     }
                     if mask {
-                        self.warn("group-mask", &nm, "a mask on a group is not exported (masks on single layers are)".into());
+                        self.warn(
+                            "group-mask",
+                            &nm,
+                            "a mask on a group is not exported (masks on single layers are)".into(),
+                        );
                     }
                     if fxn {
-                        self.warn("group-effect", &nm, "layer effects on a group are not exported".into());
+                        self.warn(
+                            "group-effect",
+                            &nm,
+                            "layer effects on a group are not exported".into(),
+                        );
                     }
                     let o = self.opacity_value(x, stop, false);
                     layers.push(json!({
@@ -444,13 +522,28 @@ impl<'a> Builder<'a> {
     }
 
     /// One shape layer for the vector node `id`.
-    fn make(&mut self, id: usize, ind: usize, force_on: bool, matte: bool, tt: Option<u8>, stop: Option<usize>) -> Value {
+    fn make(
+        &mut self,
+        id: usize,
+        ind: usize,
+        force_on: bool,
+        matte: bool,
+        tt: Option<u8>,
+        stop: Option<usize>,
+    ) -> Value {
         let nf = self.nf();
         let layer_name = self.evals[0].nodes[id].name.clone();
-        let npaths = (0..nf).map(|fi| self.evals[fi].nodes[id].paths.len()).max().unwrap_or(0);
+        let npaths = (0..nf)
+            .map(|fi| self.evals[fi].nodes[id].paths.len())
+            .max()
+            .unwrap_or(0);
         let mut shapes = Vec::new();
         for pi in (0..npaths).rev() {
-            let template = self.evals.iter().find_map(|f| f.nodes[id].paths.get(pi)).cloned();
+            let template = self
+                .evals
+                .iter()
+                .find_map(|f| f.nodes[id].paths.get(pi))
+                .cloned();
             let Some(tmpl) = template else { continue };
             let keyframes: Vec<Value> = (0..nf)
                 .map(|fi| {
@@ -466,19 +559,29 @@ impl<'a> Builder<'a> {
                 .collect();
             // a path that never changes is written as a static shape (smaller file, and readers need no keyframes)
             let all_same = keyframes.windows(2).all(|w| w[0]["s"] == w[1]["s"]);
-            let ks = if all_same { json!({"a": 0, "k": keyframes[0]["s"][0].clone()}) } else { json!({"a": 1, "k": keyframes}) };
+            let ks = if all_same {
+                json!({"a": 0, "k": keyframes[0]["s"][0].clone()})
+            } else {
+                json!({"a": 1, "k": keyframes})
+            };
             let mut items = vec![json!({"ty": "sh", "nm": format!("path{pi}"), "ks": ks})];
             // the paint of this path on every frame (falls back to the template where it is absent)
             let paint_at = |fi: usize, stroke: bool| -> Option<Paint> {
                 let pth = self.evals[fi].nodes[id].paths.get(pi).unwrap_or(&tmpl);
-                if stroke { pth.stroke.as_ref().map(|s| s.paint.clone()) } else { pth.fill.clone() }
+                if stroke {
+                    pth.stroke.as_ref().map(|s| s.paint.clone())
+                } else {
+                    pth.fill.clone()
+                }
             };
             let world_at = |fi: usize| self.evals[fi].nodes[id].world;
             let mut gradient_world_warn = false;
             let mut fill_item: Option<Value> = None;
             if let Some(fill) = &tmpl.fill {
                 match fill {
-                    Paint::Linear { .. } | Paint::Radial { .. } if fill.degenerate_color().is_none() => {
+                    Paint::Linear { .. } | Paint::Radial { .. }
+                        if fill.degenerate_color().is_none() =>
+                    {
                         let (np, k) = gradient_stops(gradient_stops_of(fill));
                         let mut se = (Vec::new(), Vec::new());
                         for fi in 0..nf {
@@ -491,22 +594,41 @@ impl<'a> Builder<'a> {
                             se.0.push(s);
                             se.1.push(e);
                         }
-                        fill_item = Some(json!({"ty": "gf", "nm": "gradient fill", "o": {"a": 0, "k": 100}, "r": 1, "t": if matches!(fill, Paint::Radial { .. }) { 2 } else { 1 },
+                        fill_item = Some(
+                            json!({"ty": "gf", "nm": "gradient fill", "o": {"a": 0, "k": 100}, "r": 1, "t": if matches!(fill, Paint::Radial { .. }) { 2 } else { 1 },
                             "s": anim_vec2(&se.0), "e": anim_vec2(&se.1), "h": {"a": 0, "k": 0}, "a": {"a": 0, "k": 0},
-                            "g": {"p": np, "k": {"a": 0, "k": k}}}));
+                            "g": {"p": np, "k": {"a": 0, "k": k}}}),
+                        );
                     }
                     _ => {
                         let c = fill.degenerate_color().unwrap_or_else(|| fill.base_color());
-                        fill_item = Some(json!({"ty": "fl", "c": {"a": 0, "k": lottie_color(c)}, "o": {"a": 0, "k": c.a * 100.0}, "r": 1}));
+                        fill_item = Some(
+                            json!({"ty": "fl", "c": {"a": 0, "k": lottie_color(c)}, "o": {"a": 0, "k": c.a * 100.0}, "r": 1}),
+                        );
                     }
                 }
             }
             if let Some(st) = &tmpl.stroke {
                 let scales: Vec<f32> = (0..nf).map(|fi| geo_scale(&world_at(fi))).collect();
-                let aniso = (0..nf).map(|fi| anisotropy(&world_at(fi))).fold(1.0f32, f32::max);
-                let width = anim_scalar(&scales.iter().map(|s| st.width.max(0.0) * s).collect::<Vec<_>>());
-                let lc = match st.cap { Cap::Butt => 1, Cap::Round => 2, Cap::Square => 3 };
-                let lj = match st.join { Join::Miter => 1, Join::Round => 2, Join::Bevel => 3 };
+                let aniso = (0..nf)
+                    .map(|fi| anisotropy(&world_at(fi)))
+                    .fold(1.0f32, f32::max);
+                let width = anim_scalar(
+                    &scales
+                        .iter()
+                        .map(|s| st.width.max(0.0) * s)
+                        .collect::<Vec<_>>(),
+                );
+                let lc = match st.cap {
+                    Cap::Butt => 1,
+                    Cap::Round => 2,
+                    Cap::Square => 3,
+                };
+                let lj = match st.join {
+                    Join::Miter => 1,
+                    Join::Round => 2,
+                    Join::Bevel => 3,
+                };
                 let dash = dash_entries(st, &scales);
                 let mut item = if is_gradient(&st.paint) && st.paint.degenerate_color().is_none() {
                     let (np, k) = gradient_stops(gradient_stops_of(&st.paint));
@@ -525,7 +647,10 @@ impl<'a> Builder<'a> {
                         "s": anim_vec2(&se.0), "e": anim_vec2(&se.1), "h": {"a": 0, "k": 0}, "a": {"a": 0, "k": 0},
                         "g": {"p": np, "k": {"a": 0, "k": k}}, "lc": lc, "lj": lj, "ml": 4})
                 } else {
-                    let c = st.paint.degenerate_color().unwrap_or_else(|| st.paint.base_color());
+                    let c = st
+                        .paint
+                        .degenerate_color()
+                        .unwrap_or_else(|| st.paint.base_color());
                     json!({"ty": "st", "nm": "stroke", "c": {"a": 0, "k": lottie_color(c)}, "o": {"a": 0, "k": c.a * 100.0}, "w": width, "lc": lc, "lj": lj, "ml": 4})
                 };
                 if !dash.is_empty() {
@@ -551,7 +676,11 @@ impl<'a> Builder<'a> {
         let first = &self.evals[0].nodes[id];
         let blend = first.blend;
         if blend == crate::style::Blend::Add {
-            self.warn("blend-add", &layer_name, "blend mode 'add' has no Lottie equivalent; 'screen' is used".into());
+            self.warn(
+                "blend-add",
+                &layer_name,
+                "blend mode 'add' has no Lottie equivalent; 'screen' is used".into(),
+            );
         }
         let o_val = self.opacity_value(id, stop, force_on);
         let mut layer = json!({
@@ -577,7 +706,8 @@ impl<'a> Builder<'a> {
 /// Lottie `d` entries (dash, gap, ..., offset), lengths scaled by the layer scale per frame.
 /// Same validity rule as the rasteriser: an even number (>= 2) of positive lengths.
 fn dash_entries(st: &StrokeStyle, scales: &[f32]) -> Vec<Value> {
-    if !(st.dash.len() >= 2 && st.dash.len().is_multiple_of(2) && st.dash.iter().all(|d| *d > 0.0)) {
+    if !(st.dash.len() >= 2 && st.dash.len().is_multiple_of(2) && st.dash.iter().all(|d| *d > 0.0))
+    {
         return vec![];
     }
     let mut out = Vec::new();
@@ -633,7 +763,10 @@ pub fn lottie_export(engine: &Engine) -> LottieExport {
         })
         .collect();
     let iso: Vec<bool> = (0..n_nodes)
-        .map(|i| matches!(evals[0].nodes[i].kind, NodeKind::Group | NodeKind::Switch) && evals.iter().any(|f| f.nodes[i].opacity < 0.999))
+        .map(|i| {
+            matches!(evals[0].nodes[i].kind, NodeKind::Group | NodeKind::Switch)
+                && evals.iter().any(|f| f.nodes[i].opacity < 0.999)
+        })
         .collect();
 
     // Visible vector leaves in draw order (bottom to top): the union over frames (switch selection varies).
@@ -663,7 +796,16 @@ pub fn lottie_export(engine: &Engine) -> LottieExport {
     }
     order.sort_unstable(); // preorder ids = draw order within a tree
 
-    let mut b = Builder { p, evals, pars, par_any, drawn, iso, warns: Vec::new(), assets: Vec::new() };
+    let mut b = Builder {
+        p,
+        evals,
+        pars,
+        par_any,
+        drawn,
+        iso,
+        warns: Vec::new(),
+        assets: Vec::new(),
+    };
 
     // things that are not written at all
     for id in 0..n_nodes {
@@ -676,16 +818,29 @@ pub fn lottie_export(engine: &Engine) -> LottieExport {
                     vis
                 });
                 if ever {
-                    b.warn("image-layer", &name, "image layers are not exported (Lottie output holds vector layers only)".into());
+                    b.warn(
+                        "image-layer",
+                        &name,
+                        "image layers are not exported (Lottie output holds vector layers only)"
+                            .into(),
+                    );
                 }
             }
             NodeKind::Group | NodeKind::Switch if !b.iso[id] => {
                 let (blend, mask, fxn) = (n0.blend, n0.mask.is_some(), !n0.effects.is_empty());
                 if blend != crate::style::Blend::Normal {
-                    b.warn("group-blend", &name, "a blend mode on a group is not exported".into());
+                    b.warn(
+                        "group-blend",
+                        &name,
+                        "a blend mode on a group is not exported".into(),
+                    );
                 }
                 if mask {
-                    b.warn("group-mask", &name, "a mask on a group is not exported (masks on single layers are)".into());
+                    b.warn(
+                        "group-mask",
+                        &name,
+                        "a mask on a group is not exported (masks on single layers are)".into(),
+                    );
                 }
                 if fxn {
                     let mut leaves = 0;
@@ -697,7 +852,11 @@ pub fn lottie_export(engine: &Engine) -> LottieExport {
                         }
                     }
                     if leaves != 1 {
-                        b.warn("group-effect", &name, "layer effects on a group of several layers are not exported".into());
+                        b.warn(
+                            "group-effect",
+                            &name,
+                            "layer effects on a group of several layers are not exported".into(),
+                        );
                     }
                 }
             }
@@ -705,10 +864,26 @@ pub fn lottie_export(engine: &Engine) -> LottieExport {
         }
     }
     if !p.sounds.is_empty() {
-        b.warn("audio", "", format!("Lottie cannot carry audio; {} sound track(s) are not included", p.sounds.len()));
+        b.warn(
+            "audio",
+            "",
+            format!(
+                "Lottie cannot carry audio; {} sound track(s) are not included",
+                p.sounds.len()
+            ),
+        );
     }
-    if p.channels.iter().any(|c| matches!(c.prop, crate::project::Prop::CameraFocus | crate::project::Prop::CameraBlur)) {
-        b.warn("depth-of-field", "", "depth-of-field channels (camera focus / blur) are not applied; use dof-export".into());
+    if p.channels.iter().any(|c| {
+        matches!(
+            c.prop,
+            crate::project::Prop::CameraFocus | crate::project::Prop::CameraBlur
+        )
+    }) {
+        b.warn(
+            "depth-of-field",
+            "",
+            "depth-of-field channels (camera focus / blur) are not applied; use dof-export".into(),
+        );
     }
 
     let mut map = Vec::new();
@@ -729,7 +904,11 @@ pub fn lottie_export(engine: &Engine) -> LottieExport {
         "nm": p.name, "ddd": 0, "assets": b.assets, "layers": layers
     });
     tidy(&mut doc);
-    LottieExport { doc, map, warnings: b.warns }
+    LottieExport {
+        doc,
+        map,
+        warnings: b.warns,
+    }
 }
 
 #[cfg(test)]
@@ -759,7 +938,10 @@ mod tests {
         doc["layers"][layer]["shapes"][0]["it"].as_array().unwrap()
     }
     fn item<'a>(doc: &'a Value, layer: usize, ty: &str) -> &'a Value {
-        items(doc, layer).iter().find(|i| i["ty"] == ty).unwrap_or_else(|| panic!("no {ty} item"))
+        items(doc, layer)
+            .iter()
+            .find(|i| i["ty"] == ty)
+            .unwrap_or_else(|| panic!("no {ty} item"))
     }
 
     /// C3a: translucent gradient stops are written in Lottie's colour-then-alpha layout.
@@ -767,22 +949,50 @@ mod tests {
     fn gradient_stop_alpha_is_written() {
         let g = json!({"from": [0, 0], "to": [100, 0], "stops": [{"offset": 1, "color": "#0000ff00"}, {"offset": 0, "color": "#ff0000ff"}]});
         let st = json!({"paint": {"from": [0, 0], "to": [100, 0], "stops": [{"offset": 0, "color": "#ff000080"}, {"offset": 1, "color": "#0000ffff"}]}, "width": 4});
-        let e = project(vec![vec_layer("a", vec![rect(0.0, 0.0, 100.0, 50.0, json!({"fill": g, "stroke": st}))])], 12.0);
+        let e = project(
+            vec![vec_layer(
+                "a",
+                vec![rect(
+                    0.0,
+                    0.0,
+                    100.0,
+                    50.0,
+                    json!({"fill": g, "stroke": st}),
+                )],
+            )],
+            12.0,
+        );
         let x = lottie_export(&e);
         let gf = item(&x.doc, 0, "gf");
         assert_eq!(gf["g"]["p"], 2);
-        let k: Vec<f64> = gf["g"]["k"]["k"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+        let k: Vec<f64> = gf["g"]["k"]["k"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_f64().unwrap())
+            .collect();
         assert_eq!(k.len(), 2 * 4 + 2 * 2, "colour stops then alpha stops");
         // unsorted input is sorted: offset 0 (red, alpha 1) first
         assert_eq!(&k[..4], &[0.0, 1.0, 0.0, 0.0]);
         assert_eq!(&k[8..], &[0.0, 1.0, 1.0, 0.0]);
         // d) a gradient stroke is a `gs`, with its alpha stop 0.5 (128/255)
         let gs = item(&x.doc, 0, "gs");
-        let ks: Vec<f64> = gs["g"]["k"]["k"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+        let ks: Vec<f64> = gs["g"]["k"]["k"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_f64().unwrap())
+            .collect();
         assert!((ks[9] - 128.0 / 255.0).abs() < 1e-3, "{ks:?}");
-        assert!(items(&x.doc, 0).iter().all(|i| i["ty"] != "st"), "no first-stop solid stroke");
+        assert!(
+            items(&x.doc, 0).iter().all(|i| i["ty"] != "st"),
+            "no first-stop solid stroke"
+        );
         // the stroke is listed before the fill: Lottie draws the first item on top, the raster draws the stroke over the fill
-        let order: Vec<&str> = items(&x.doc, 0).iter().map(|i| i["ty"].as_str().unwrap()).collect();
+        let order: Vec<&str> = items(&x.doc, 0)
+            .iter()
+            .map(|i| i["ty"].as_str().unwrap())
+            .collect();
         assert_eq!(order, ["sh", "gs", "gf", "tr"]);
     }
 
@@ -791,11 +1001,26 @@ mod tests {
     fn dash_caps_joins_and_miter_limit() {
         let st = json!({"paint": "#000000", "width": 8, "cap": "square", "join": "bevel", "dash": [12, 6], "dash_offset": 3});
         let st2 = json!({"paint": "#000000", "width": 8, "cap": "butt", "join": "miter"});
-        let e = project(vec![vec_layer("a", vec![rect(10.0, 10.0, 50.0, 50.0, json!({"stroke": st}))]), vec_layer("b", vec![rect(10.0, 10.0, 50.0, 50.0, json!({"stroke": st2}))])], 12.0);
+        let e = project(
+            vec![
+                vec_layer(
+                    "a",
+                    vec![rect(10.0, 10.0, 50.0, 50.0, json!({"stroke": st}))],
+                ),
+                vec_layer(
+                    "b",
+                    vec![rect(10.0, 10.0, 50.0, 50.0, json!({"stroke": st2}))],
+                ),
+            ],
+            12.0,
+        );
         let doc = lottie_json(&e);
         // layers are top first: b, a
         let s = item(&doc, 1, "st");
-        assert_eq!((s["lc"].as_i64(), s["lj"].as_i64(), s["ml"].as_f64()), (Some(3), Some(3), Some(4.0)));
+        assert_eq!(
+            (s["lc"].as_i64(), s["lj"].as_i64(), s["ml"].as_f64()),
+            (Some(3), Some(3), Some(4.0))
+        );
         let d = s["d"].as_array().unwrap();
         let tags: Vec<&str> = d.iter().map(|x| x["n"].as_str().unwrap()).collect();
         assert_eq!(tags, ["d", "g", "o"]);
@@ -815,16 +1040,30 @@ mod tests {
         let e = project(vec![g], 12.0);
         let doc = lottie_json(&e);
         let layers = doc["layers"].as_array().unwrap();
-        let pre = layers.iter().find(|l| l["ty"] == 0).expect("a precomp layer");
+        let pre = layers
+            .iter()
+            .find(|l| l["ty"] == 0)
+            .expect("a precomp layer");
         assert_eq!(pre["ks"]["o"]["k"], 50.0);
-        let asset = doc["assets"].as_array().unwrap().iter().find(|a| a["id"] == pre["refId"]).unwrap();
+        let asset = doc["assets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|a| a["id"] == pre["refId"])
+            .unwrap();
         let inner = asset["layers"].as_array().unwrap();
         assert_eq!(inner.len(), 2);
         for l in inner {
-            assert_eq!(l["ks"]["o"]["k"], 100.0, "children keep full opacity inside the precomp");
+            assert_eq!(
+                l["ks"]["o"]["k"], 100.0,
+                "children keep full opacity inside the precomp"
+            );
         }
         // no top-level shape layer carries the group's 50 %
-        assert!(layers.iter().filter(|l| l["ty"] == 4).all(|l| l["ks"]["o"]["k"] != 50.0));
+        assert!(layers
+            .iter()
+            .filter(|l| l["ty"] == 4)
+            .all(|l| l["ks"]["o"]["k"] != 50.0));
         // nested groups nest precomps
         let inner_g = json!({"name": "in", "type": "group", "layers": [vec_layer("p", vec![rect(0.0, 0.0, 10.0, 10.0, json!({"fill": "#000000"}))]), vec_layer("q", vec![rect(5.0, 5.0, 10.0, 10.0, json!({"fill": "#ff0000"}))])], "transform": tr(), "opacity": 0.5, "visible": true, "blend": "normal"});
         let outer = json!({"name": "out", "type": "group", "layers": [inner_g], "transform": tr(), "opacity": 0.8, "visible": true, "blend": "normal"});
@@ -836,7 +1075,10 @@ mod tests {
     #[test]
     fn gradient_follows_the_animated_transform() {
         let g = json!({"from": [-10, 0], "to": [10, 0], "stops": [{"offset": 0, "color": "#ff0000"}, {"offset": 1, "color": "#0000ff"}]});
-        let mut l = vec_layer("a", vec![rect(-10.0, -10.0, 20.0, 20.0, json!({"fill": g}))]);
+        let mut l = vec_layer(
+            "a",
+            vec![rect(-10.0, -10.0, 20.0, 20.0, json!({"fill": g}))],
+        );
         l["transform"]["position"] = json!([50, 50]);
         let d = json!({"format": 1, "name": "t", "width": 200, "height": 160, "fps": 12, "frames": 3, "background": "#ffffff", "camera": {"position": null, "zoom": 1, "rotation": 0}, "bones": [], "layers": [l],
             "channels": [{"target": "a", "prop": "layer_x", "source": "keys", "track": {"keys": [{"frame": 0, "value": 0, "ease": {"type": "linear"}}, {"frame": 2, "value": 40, "ease": {"type": "linear"}}], "extrapolate": "hold"}, "mode": "replace", "weight": 1.0}]});
@@ -845,41 +1087,92 @@ mod tests {
         let gf = item(&doc, 0, "gf");
         assert_eq!(gf["s"]["a"], 1, "start point is animated");
         let k = gf["s"]["k"].as_array().unwrap();
-        assert!((k[2]["s"][0].as_f64().unwrap() - k[0]["s"][0].as_f64().unwrap() - 40.0).abs() < 1e-3, "moves with the layer");
+        assert!(
+            (k[2]["s"][0].as_f64().unwrap() - k[0]["s"][0].as_f64().unwrap() - 40.0).abs() < 1e-3,
+            "moves with the layer"
+        );
     }
 
     /// C3g-i, k: unsupported features are reported, never dropped silently.
     #[test]
     fn unsupported_features_are_warned_about() {
         let st = json!({"paint": "#000000", "width": 8, "width_profile": [[0, 1], [1, 0.2]]});
-        let mut add = vec_layer("add", vec![rect(0.0, 0.0, 20.0, 20.0, json!({"fill": "#ffffff"}))]);
+        let mut add = vec_layer(
+            "add",
+            vec![rect(0.0, 0.0, 20.0, 20.0, json!({"fill": "#ffffff"}))],
+        );
         add["blend"] = json!("add");
-        let mut sk = vec_layer("skew", vec![rect(-10.0, -10.0, 20.0, 20.0, json!({"stroke": {"paint": "#000000", "width": 4}}))]);
+        let mut sk = vec_layer(
+            "skew",
+            vec![rect(
+                -10.0,
+                -10.0,
+                20.0,
+                20.0,
+                json!({"stroke": {"paint": "#000000", "width": 4}}),
+            )],
+        );
         sk["transform"]["scale"] = json!([2, 1]);
         let img = json!({"name": "pic", "type": "image", "source": {"embedded": "iVBORw0KGgo="}, "transform": tr(), "opacity": 1.0, "visible": true, "blend": "normal"});
         let _ = img;
         let mut grp = json!({"name": "g", "type": "group", "layers": [vec_layer("c", vec![rect(0.0, 0.0, 5.0, 5.0, json!({"fill": "#000000"}))])], "transform": tr(), "opacity": 1.0, "visible": true, "blend": "multiply"});
         grp["blend"] = json!("multiply");
-        let e = project(vec![vec_layer("vw", vec![rect(0.0, 0.0, 30.0, 30.0, json!({"stroke": st}))]), add, sk, grp], 12.0);
+        let e = project(
+            vec![
+                vec_layer(
+                    "vw",
+                    vec![rect(0.0, 0.0, 30.0, 30.0, json!({"stroke": st}))],
+                ),
+                add,
+                sk,
+                grp,
+            ],
+            12.0,
+        );
         let x = lottie_export(&e);
         let codes: Vec<&str> = x.warnings.iter().map(|w| w.code).collect();
-        for c in ["variable-width-stroke", "blend-add", "stroke-anisotropic", "group-blend"] {
+        for c in [
+            "variable-width-stroke",
+            "blend-add",
+            "stroke-anisotropic",
+            "group-blend",
+        ] {
             assert!(codes.contains(&c), "missing {c}: {codes:?}");
         }
-        let add_layer = x.doc["layers"].as_array().unwrap().iter().find(|l| l["nm"] == "add").unwrap();
+        let add_layer = x.doc["layers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|l| l["nm"] == "add")
+            .unwrap();
         assert_eq!(add_layer["bm"], 2, "mapped to screen, with the warning");
         let rep = lottie_report_json(&x.warnings);
         assert_eq!(rep["count"].as_u64().unwrap() as usize, x.warnings.len());
         assert!(rep["warnings"][0]["message"].is_string());
         // a clean project has no warnings
-        let clean = project(vec![vec_layer("a", vec![rect(0.0, 0.0, 10.0, 10.0, json!({"fill": "#ff0000"}))])], 12.0);
+        let clean = project(
+            vec![vec_layer(
+                "a",
+                vec![rect(0.0, 0.0, 10.0, 10.0, json!({"fill": "#ff0000"}))],
+            )],
+            12.0,
+        );
         assert!(lottie_export(&clean).warnings.is_empty());
     }
 
     /// C3i: the stroke width follows the layer scale (it used to ignore it).
     #[test]
     fn stroke_width_follows_layer_scale() {
-        let mut l = vec_layer("s", vec![rect(-10.0, -10.0, 20.0, 20.0, json!({"stroke": {"paint": "#000000", "width": 4}}))]);
+        let mut l = vec_layer(
+            "s",
+            vec![rect(
+                -10.0,
+                -10.0,
+                20.0,
+                20.0,
+                json!({"stroke": {"paint": "#000000", "width": 4}}),
+            )],
+        );
         l["transform"]["scale"] = json!([2, 2]);
         let doc = lottie_json(&project(vec![l], 12.0));
         assert_eq!(item(&doc, 0, "st")["w"]["k"], 8.0);
@@ -888,12 +1181,35 @@ mod tests {
     /// C3j: the frame rate is an exact decimal, and no f32 artefacts leak into the file.
     #[test]
     fn frame_rate_is_exact_decimal() {
-        for (fps, text) in [(23.976, "23.976"), (29.97, "29.97"), (12.5, "12.5"), (24.0, "24.0"), (59.94, "59.94")] {
-            let e = project(vec![vec_layer("a", vec![rect(0.0, 0.0, 10.0, 10.0, json!({"fill": "#ff0000"}))])], fps);
+        for (fps, text) in [
+            (23.976, "23.976"),
+            (29.97, "29.97"),
+            (12.5, "12.5"),
+            (24.0, "24.0"),
+            (59.94, "59.94"),
+        ] {
+            let e = project(
+                vec![vec_layer(
+                    "a",
+                    vec![rect(0.0, 0.0, 10.0, 10.0, json!({"fill": "#ff0000"}))],
+                )],
+                fps,
+            );
             let s = lottie_json(&e).to_string();
-            assert!(s.contains(&format!("\"fr\":{text}")), "{fps}: {}", &s[..120.min(s.len())]);
+            assert!(
+                s.contains(&format!("\"fr\":{text}")),
+                "{fps}: {}",
+                &s[..120.min(s.len())]
+            );
         }
-        let s = lottie_json(&project(vec![vec_layer("a", vec![rect(0.1, 0.0, 10.0, 10.0, json!({"fill": "#ff0000"}))])], 12.0)).to_string();
+        let s = lottie_json(&project(
+            vec![vec_layer(
+                "a",
+                vec![rect(0.1, 0.0, 10.0, 10.0, json!({"fill": "#ff0000"}))],
+            )],
+            12.0,
+        ))
+        .to_string();
         assert!(!s.contains("0.10000000149"), "f32 widening artefacts");
     }
 
@@ -902,7 +1218,19 @@ mod tests {
     fn round_trips_through_the_importer() {
         let g = json!({"from": [0, 0], "to": [100, 0], "stops": [{"offset": 0, "color": "#ff0000ff"}, {"offset": 1, "color": "#ff000000"}]});
         let st = json!({"paint": {"from": [0, 0], "to": [100, 0], "stops": [{"offset": 0, "color": "#0000ffff"}, {"offset": 1, "color": "#00ff00ff"}]}, "width": 6, "cap": "butt", "join": "bevel", "dash": [10, 5]});
-        let e = project(vec![vec_layer("a", vec![rect(0.0, 0.0, 100.0, 50.0, json!({"fill": g, "stroke": st}))])], 12.0);
+        let e = project(
+            vec![vec_layer(
+                "a",
+                vec![rect(
+                    0.0,
+                    0.0,
+                    100.0,
+                    50.0,
+                    json!({"fill": g, "stroke": st}),
+                )],
+            )],
+            12.0,
+        );
         let doc = lottie_json(&e);
         let imp = crate::lottie_import::import_lottie(&doc.to_string()).unwrap();
         let mut found = false;
@@ -910,7 +1238,8 @@ mod tests {
             if let crate::project::LayerKind::Vector { paths } = &l.kind {
                 for p in paths {
                     if let Some(Paint::Linear { stops, .. }) = &p.fill {
-                        if stops.last().is_some_and(|s| s.color.a < 0.01) && stops[0].color.a > 0.99 {
+                        if stops.last().is_some_and(|s| s.color.a < 0.01) && stops[0].color.a > 0.99
+                        {
                             let s = p.stroke.as_ref().expect("stroke");
                             assert_eq!(s.dash, vec![10.0, 5.0]);
                             assert_eq!((s.cap, s.join), (Cap::Butt, Join::Bevel));
@@ -927,6 +1256,15 @@ mod tests {
         for l in &imp.project.layers {
             walk(l, &mut found);
         }
-        assert!(found, "gradient alpha, dash, cap and join survive the round trip: {:?} {:#?}", imp.warnings, imp.project.layers.iter().map(|l| format!("{:?}", l.kind)).collect::<Vec<_>>());
+        assert!(
+            found,
+            "gradient alpha, dash, cap and join survive the round trip: {:?} {:#?}",
+            imp.warnings,
+            imp.project
+                .layers
+                .iter()
+                .map(|l| format!("{:?}", l.kind))
+                .collect::<Vec<_>>()
+        );
     }
 }

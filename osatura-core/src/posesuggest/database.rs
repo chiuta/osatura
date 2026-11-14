@@ -51,7 +51,10 @@ impl PoseDb {
 
     pub fn validate(&self) -> Result<(), String> {
         if self.format != "osatura-posedb" || self.version != 1 {
-            return Err(format!("not an osatura-posedb version 1 file (format '{}', version {})", self.format, self.version));
+            return Err(format!(
+                "not an osatura-posedb version 1 file (format '{}', version {})",
+                self.format, self.version
+            ));
         }
         if self.bones.is_empty() {
             return Err("pose database has no bones".into());
@@ -85,7 +88,8 @@ impl PoseDb {
     pub fn successor(&self, i: usize) -> Option<usize> {
         let m = &self.meta[i];
         let j = i + 1;
-        (j < self.poses.len() && self.meta[j].seq == m.seq && self.meta[j].idx == m.idx + 1).then_some(j)
+        (j < self.poses.len() && self.meta[j].seq == m.seq && self.meta[j].idx == m.idx + 1)
+            .then_some(j)
     }
 }
 
@@ -94,9 +98,15 @@ pub(super) type NamedTracks = Vec<(String, Track)>;
 pub(super) fn project_tracks(p: &Project) -> NamedTracks {
     p.channels
         .iter()
-        .filter(|c| c.prop == Prop::BoneAngle && c.mode == Mode::Replace && !crate::skins::is_collapse_channel(c))
+        .filter(|c| {
+            c.prop == Prop::BoneAngle
+                && c.mode == Mode::Replace
+                && !crate::skins::is_collapse_channel(c)
+        })
         .filter_map(|c| match &c.source {
-            Source::Keys { track } if !track.keys.is_empty() => Some((c.target.clone(), track.clone())),
+            Source::Keys { track } if !track.keys.is_empty() => {
+                Some((c.target.clone(), track.clone()))
+            }
             _ => None,
         })
         .collect()
@@ -106,13 +116,25 @@ pub(super) fn take_tracks(t: &crate::motionlib::Take) -> NamedTracks {
     t.tracks
         .iter()
         .filter(|tr| tr.prop == Prop::BoneAngle && !tr.keys.is_empty())
-        .map(|tr| (tr.target.clone(), Track { keys: tr.keys.clone(), extrapolate: Default::default() }))
+        .map(|tr| {
+            (
+                tr.target.clone(),
+                Track {
+                    keys: tr.keys.clone(),
+                    extrapolate: Default::default(),
+                },
+            )
+        })
         .collect()
 }
 
 /// Build the database from a project's keyed bone rotations and/or a motion library.
 /// `step`: sample every `step` frames instead of at the key frames. Bones a sequence does not animate are 0.
-pub fn build_db(project: Option<&Project>, lib: Option<&Library>, step: Option<f32>) -> Result<PoseDb, String> {
+pub fn build_db(
+    project: Option<&Project>,
+    lib: Option<&Library>,
+    step: Option<f32>,
+) -> Result<PoseDb, String> {
     if let Some(s) = step {
         if (s.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !s.is_finite() {
             return Err("step must be a positive number of frames".into());
@@ -140,7 +162,9 @@ pub fn build_db(project: Option<&Project>, lib: Option<&Library>, step: Option<f
     // project bones first, in their order, so database columns follow the rig
     if let Some(p) = project {
         for b in &p.bones {
-            if seqs.iter().any(|s| s.2.iter().any(|(t, _)| *t == b.name)) && !bones.contains(&b.name) {
+            if seqs.iter().any(|s| s.2.iter().any(|(t, _)| *t == b.name))
+                && !bones.contains(&b.name)
+            {
                 bones.push(b.name.clone());
             }
         }
@@ -152,7 +176,14 @@ pub fn build_db(project: Option<&Project>, lib: Option<&Library>, step: Option<f
             }
         }
     }
-    let mut db = PoseDb { format: db_format(), version: 1, bones, poses: vec![], meta: vec![], sequences: vec![] };
+    let mut db = PoseDb {
+        format: db_format(),
+        version: 1,
+        bones,
+        poses: vec![],
+        meta: vec![],
+        sequences: vec![],
+    };
     for (name, source, tracks) in &seqs {
         let mut frames: Vec<f32> = Vec::new();
         match step {
@@ -164,8 +195,14 @@ pub fn build_db(project: Option<&Project>, lib: Option<&Library>, step: Option<f
                 frames.dedup_by(|a, b| (*a - *b).abs() < 1e-3);
             }
             Some(s) => {
-                let lo = tracks.iter().filter_map(|(_, t)| t.first_frame()).fold(f32::MAX, f32::min);
-                let hi = tracks.iter().filter_map(|(_, t)| t.last_frame()).fold(f32::MIN, f32::max);
+                let lo = tracks
+                    .iter()
+                    .filter_map(|(_, t)| t.first_frame())
+                    .fold(f32::MAX, f32::min);
+                let hi = tracks
+                    .iter()
+                    .filter_map(|(_, t)| t.last_frame())
+                    .fold(f32::MIN, f32::max);
                 let mut f = lo;
                 while f < hi {
                     frames.push(f);
@@ -182,14 +219,28 @@ pub fn build_db(project: Option<&Project>, lib: Option<&Library>, step: Option<f
         }
         let seq = db.sequences.len();
         for (idx, &f) in frames.iter().enumerate() {
-            let pose: Vec<f32> = db.bones.iter().map(|b| tracks.iter().find(|(t, _)| t == b).and_then(|(_, tr)| tr.eval(f)).unwrap_or(0.0)).collect();
+            let pose: Vec<f32> = db
+                .bones
+                .iter()
+                .map(|b| {
+                    tracks
+                        .iter()
+                        .find(|(t, _)| t == b)
+                        .and_then(|(_, tr)| tr.eval(f))
+                        .unwrap_or(0.0)
+                })
+                .collect();
             if pose.iter().any(|v| !v.is_finite()) {
                 return Err("non-finite angle in the source".into());
             }
             db.poses.push(pose);
             db.meta.push(PoseMeta { seq, idx, frame: f });
         }
-        db.sequences.push(SeqInfo { name: name.clone(), source: (*source).into(), poses: frames.len() });
+        db.sequences.push(SeqInfo {
+            name: name.clone(),
+            source: (*source).into(),
+            poses: frames.len(),
+        });
     }
     if db.poses.len() < 2 {
         return Err("a pose database needs at least two poses".into());
@@ -206,7 +257,13 @@ pub fn pose_at(project: &Project, bones: &[String], frame: f32) -> Vec<f32> {
             project
                 .channels
                 .iter()
-                .find(|c| c.target == *b && c.prop == Prop::BoneAngle && c.mode == Mode::Replace && matches!(c.source, Source::Keys { .. }) && !crate::skins::is_collapse_channel(c))
+                .find(|c| {
+                    c.target == *b
+                        && c.prop == Prop::BoneAngle
+                        && c.mode == Mode::Replace
+                        && matches!(c.source, Source::Keys { .. })
+                        && !crate::skins::is_collapse_channel(c)
+                })
                 .and_then(|c| match &c.source {
                     Source::Keys { track } => track.eval(frame),
                     _ => None,
@@ -238,7 +295,10 @@ pub fn jacobi_eigen(mut a: Vec<Vec<f64>>) -> (Vec<f64>, Vec<Vec<f64>>) {
         v[i][i] = 1.0;
     }
     for _ in 0..80 {
-        let off: f64 = (0..n).flat_map(|i| (0..n).filter(move |&j| j != i).map(move |j| (i, j))).map(|(i, j)| a[i][j] * a[i][j]).sum();
+        let off: f64 = (0..n)
+            .flat_map(|i| (0..n).filter(move |&j| j != i).map(move |j| (i, j)))
+            .map(|(i, j)| a[i][j] * a[i][j])
+            .sum();
         let diag: f64 = (0..n).map(|i| a[i][i] * a[i][i]).sum::<f64>().max(1e-300);
         if off <= 1e-24 * diag {
             break;
@@ -287,7 +347,9 @@ pub fn power_iteration(a: &[Vec<f64>], iters: usize, seed: u64) -> (f64, Vec<f64
     let mut x: Vec<f64> = (0..n).map(|_| rng.unit() as f64 + 0.1).collect();
     let mut lambda = 0.0;
     for _ in 0..iters {
-        let y: Vec<f64> = (0..n).map(|i| (0..n).map(|j| a[i][j] * x[j]).sum()).collect();
+        let y: Vec<f64> = (0..n)
+            .map(|i| (0..n).map(|j| a[i][j] * x[j]).sum())
+            .collect();
         let norm = y.iter().map(|v| v * v).sum::<f64>().sqrt();
         if norm < 1e-300 {
             return (0.0, x);
@@ -321,7 +383,9 @@ impl PoseSpace {
         }
         let d = poses[0].len();
         let n = poses.len();
-        let mean: Vec<f64> = (0..d).map(|j| poses.iter().map(|p| p[j] as f64).sum::<f64>() / n as f64).collect();
+        let mean: Vec<f64> = (0..d)
+            .map(|j| poses.iter().map(|p| p[j] as f64).sum::<f64>() / n as f64)
+            .collect();
         let mut cov = vec![vec![0.0f64; d]; d];
         for p in poses {
             for i in 0..d {
@@ -351,12 +415,17 @@ impl PoseSpace {
         let (mut comps, mut eig, mut explained) = (Vec::new(), Vec::new(), Vec::new());
         let mut acc = 0.0;
         for &c in &order {
-            if comps.len() >= max_k || (!comps.is_empty() && (acc / total >= var_keep as f64 || vals[c] < 1e-9 * total)) {
+            if comps.len() >= max_k
+                || (!comps.is_empty() && (acc / total >= var_keep as f64 || vals[c] < 1e-9 * total))
+            {
                 break;
             }
             let mut axis: Vec<f64> = (0..d).map(|r| vecs[r][c]).collect();
             // sign convention: largest-magnitude entry positive (deterministic)
-            let big = axis.iter().cloned().fold(0.0f64, |m, v| if v.abs() > m.abs() { v } else { m });
+            let big = axis
+                .iter()
+                .cloned()
+                .fold(0.0f64, |m, v| if v.abs() > m.abs() { v } else { m });
             if big < 0.0 {
                 axis.iter_mut().for_each(|v| *v = -*v);
             }
@@ -365,14 +434,29 @@ impl PoseSpace {
             eig.push(vals[c].max(1e-12) as f32);
             explained.push((acc / total) as f32);
         }
-        Ok(PoseSpace { mean: mean.iter().map(|&v| v as f32).collect(), comps, eig, total_var: total as f32, explained })
+        Ok(PoseSpace {
+            mean: mean.iter().map(|&v| v as f32).collect(),
+            comps,
+            eig,
+            total_var: total as f32,
+            explained,
+        })
     }
 
     pub fn k(&self) -> usize {
         self.comps.len()
     }
     pub fn project(&self, x: &[f32]) -> Vec<f32> {
-        self.comps.iter().map(|c| c.iter().zip(x).zip(&self.mean).map(|((a, v), m)| a * (v - m)).sum()).collect()
+        self.comps
+            .iter()
+            .map(|c| {
+                c.iter()
+                    .zip(x)
+                    .zip(&self.mean)
+                    .map(|((a, v), m)| a * (v - m))
+                    .sum()
+            })
+            .collect()
     }
     pub fn reconstruct(&self, z: &[f32]) -> Vec<f32> {
         let mut x = self.mean.clone();

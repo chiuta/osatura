@@ -58,19 +58,19 @@
 //! ```
 use crate::anim::Ease;
 use crate::edit::Editor;
-use crate::project::{Prop, Project};
+use crate::project::{Project, Prop};
 use crate::raster::{render_png, render_rgba, RasterOptions};
 use crate::svg::{render_frame, RenderOptions};
 use std::fmt;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
+mod ci_write;
 mod facade;
 mod vcs;
-mod ci_write;
 
+pub use ci_write::*;
 pub use facade::*;
 pub use vcs::*;
-pub use ci_write::*;
 
 #[cfg(test)]
 mod tests;

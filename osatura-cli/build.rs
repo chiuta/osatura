@@ -22,12 +22,21 @@ fn embed() {
         return;
     }
     let pkg = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
-    let version = std::env::var("OSATURA_VERSION").ok().filter(|v| !v.trim().is_empty()).unwrap_or(pkg);
+    let version = std::env::var("OSATURA_VERSION")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or(pkg);
     let mut r = winresource::WindowsResource::new();
     r.set("ProductName", "OSATURA")
-        .set("FileDescription", "OSATURA command-line tool and browser studio")
+        .set(
+            "FileDescription",
+            "OSATURA command-line tool and browser studio",
+        )
         .set("CompanyName", "Alexandru-Ionuț Chiuță (Alexio)")
-        .set("LegalCopyright", "Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio). AGPL-3.0-or-later")
+        .set(
+            "LegalCopyright",
+            "Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio). AGPL-3.0-or-later",
+        )
         .set("OriginalFilename", "osatura.exe")
         .set("InternalName", "osatura")
         .set("ProductVersion", &version)

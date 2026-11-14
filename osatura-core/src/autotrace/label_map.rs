@@ -129,7 +129,10 @@ pub fn despeckle(lab: &mut [u16], w: usize, h: usize, min_area: usize) {
                 }
             }
             tally.remove(&own);
-            if let Some((&best, _)) = tally.iter().max_by_key(|(l, n)| (**n, std::cmp::Reverse(**l))) {
+            if let Some((&best, _)) = tally
+                .iter()
+                .max_by_key(|(l, n)| (**n, std::cmp::Reverse(**l)))
+            {
                 for &p in &pixels[c] {
                     lab[p] = best;
                 }
@@ -172,7 +175,9 @@ pub(super) const DY: [i32; 4] = [0, 1, 0, -1];
 pub fn border_loops(w: usize, h: usize, inside: &dyn Fn(usize, usize) -> bool) -> Vec<Loop> {
     let vw = w + 1;
     let mut edge = vec![0u8; vw * (h + 1)];
-    let fg = |x: i32, y: i32| x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h && inside(x as usize, y as usize);
+    let fg = |x: i32, y: i32| {
+        x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h && inside(x as usize, y as usize)
+    };
     for y in 0..h as i32 {
         for x in 0..w as i32 {
             if !fg(x, y) {

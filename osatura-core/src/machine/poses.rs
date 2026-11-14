@@ -30,7 +30,9 @@ impl Pose {
 
     /// Value and coverage of one entry.
     pub fn get(&self, target: &str, prop: Prop) -> Option<(f32, f32)> {
-        self.ix.get(&(target.to_string(), prop)).map(|&i| (self.items[i].2, self.items[i].3))
+        self.ix
+            .get(&(target.to_string(), prop))
+            .map(|&i| (self.items[i].2, self.items[i].3))
     }
 
     pub fn len(&self) -> usize {
@@ -114,9 +116,16 @@ pub fn blend_weights(thresholds: &[f32], v: f32) -> Vec<f32> {
     w
 }
 
-pub(super) fn source_leaves(p: &Project, src: &StateSource, mask: &[String]) -> Result<Vec<Leaf>, String> {
+pub(super) fn source_leaves(
+    p: &Project,
+    src: &StateSource,
+    mask: &[String],
+) -> Result<Vec<Leaf>, String> {
     match src {
-        StateSource::Blend { children, .. } => children.iter().map(|c| resolve_leaf(p, &c.source, mask)).collect(),
+        StateSource::Blend { children, .. } => children
+            .iter()
+            .map(|c| resolve_leaf(p, &c.source, mask))
+            .collect(),
         s => Ok(vec![resolve_leaf(p, s, mask)?]),
     }
 }
@@ -149,7 +158,10 @@ pub fn validate_machine(p: &Project, m: &Machine) -> Vec<String> {
             errs.push(format!("machine '{mn}': duplicate input '{}'", i.name));
         }
         if !i.default.is_finite() {
-            errs.push(format!("machine '{mn}': input '{}' default must be finite", i.name));
+            errs.push(format!(
+                "machine '{mn}': input '{}' default must be finite",
+                i.name
+            ));
         }
     }
     if m.layers.is_empty() {
@@ -190,13 +202,19 @@ pub fn validate_machine(p: &Project, m: &Machine) -> Vec<String> {
                 match inputs.get(input.as_str()) {
                     None => errs.push(format!("{sn}: blend input '{input}' does not exist")),
                     Some(InputKind::Number) => {}
-                    Some(_) => errs.push(format!("{sn}: blend input '{input}' must be a number input")),
+                    Some(_) => errs.push(format!(
+                        "{sn}: blend input '{input}' must be a number input"
+                    )),
                 }
                 if children.len() < 2 {
                     errs.push(format!("{sn}: a blend tree needs at least two children"));
                 }
-                if !children.iter().all(|c| c.threshold.is_finite()) || !children.windows(2).all(|w| w[0].threshold < w[1].threshold) {
-                    errs.push(format!("{sn}: blend thresholds must be finite and strictly increasing"));
+                if !children.iter().all(|c| c.threshold.is_finite())
+                    || !children.windows(2).all(|w| w[0].threshold < w[1].threshold)
+                {
+                    errs.push(format!(
+                        "{sn}: blend thresholds must be finite and strictly increasing"
+                    ));
                 }
             }
             match source_leaves(p, &s.source, &l.mask) {
@@ -292,7 +310,11 @@ pub fn validate_machine(p: &Project, m: &Machine) -> Vec<String> {
     }
     for i in 0..layer_targets.len() {
         for j in i + 1..layer_targets.len() {
-            if let Some((t, pr)) = layer_targets[i].1.intersection(&layer_targets[j].1).min_by(|a, b| a.0.cmp(&b.0)) {
+            if let Some((t, pr)) = layer_targets[i]
+                .1
+                .intersection(&layer_targets[j].1)
+                .min_by(|a, b| a.0.cmp(&b.0))
+            {
                 errs.push(format!(
                     "machine '{mn}': layers '{}' and '{}' both drive {t}.{pr:?}; layers need disjoint channel groups (use a mask)",
                     layer_targets[i].0, layer_targets[j].0
@@ -344,7 +366,11 @@ pub fn trial_errors(p: &Project, asset_dir: &std::path::Path) -> Vec<String> {
     let mut seen: HashSet<(String, Prop)> = HashSet::new();
     let mut add = |probe: &mut Project, t: &str, pr: Prop| {
         if seen.insert((t.to_string(), pr)) {
-            probe.channels.push(Channel::keys(t, pr, Track::with_keys(&[(0.0, 0.0, Ease::Linear)])));
+            probe.channels.push(Channel::keys(
+                t,
+                pr,
+                Track::with_keys(&[(0.0, 0.0, Ease::Linear)]),
+            ));
         }
     };
     for m in &p.machines {
@@ -367,6 +393,9 @@ pub fn trial_errors(p: &Project, asset_dir: &std::path::Path) -> Vec<String> {
     }
     match Engine::with_asset_dir(probe, asset_dir) {
         Ok(_) => vec![],
-        Err(e) => e.into_iter().map(|m| format!("machine/binding targets: {m}")).collect(),
+        Err(e) => e
+            .into_iter()
+            .map(|m| format!("machine/binding targets: {m}"))
+            .collect(),
     }
 }

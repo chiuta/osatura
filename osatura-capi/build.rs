@@ -22,12 +22,18 @@ fn embed() {
         return;
     }
     let pkg = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
-    let version = std::env::var("OSATURA_VERSION").ok().filter(|v| !v.trim().is_empty()).unwrap_or(pkg);
+    let version = std::env::var("OSATURA_VERSION")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .unwrap_or(pkg);
     let mut r = winresource::WindowsResource::new();
     r.set("ProductName", "OSATURA")
         .set("FileDescription", "OSATURA C library")
         .set("CompanyName", "Alexandru-Ionuț Chiuță (Alexio)")
-        .set("LegalCopyright", "Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio). MPL-2.0")
+        .set(
+            "LegalCopyright",
+            "Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio). MPL-2.0",
+        )
         .set("OriginalFilename", "osatura_capi.dll")
         .set("InternalName", "osatura_capi")
         .set("ProductVersion", &version)

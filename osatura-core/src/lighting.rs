@@ -36,21 +36,39 @@ pub struct LightSpec {
 impl LightSpec {
     /// A white point light of intensity 1 without attenuation.
     pub fn point(pos: V3) -> LightSpec {
-        LightSpec { pos, color: [1.0; 3], intensity: 1.0, attenuation: (1.0, 0.0, 0.0), direction: [0.0, 0.0, -1.0], cutoff_deg: 180.0, exponent: 0.0 }
+        LightSpec {
+            pos,
+            color: [1.0; 3],
+            intensity: 1.0,
+            attenuation: (1.0, 0.0, 0.0),
+            direction: [0.0, 0.0, -1.0],
+            cutoff_deg: 180.0,
+            exponent: 0.0,
+        }
     }
 
     /// Checks every parameter against its range.
     pub fn validate(&self) -> Result<(), String> {
-        let finite = self.pos.iter().chain(&self.color).chain(&self.direction).all(|v| v.is_finite())
+        let finite = self
+            .pos
+            .iter()
+            .chain(&self.color)
+            .chain(&self.direction)
+            .all(|v| v.is_finite())
             && self.intensity.is_finite()
             && self.cutoff_deg.is_finite()
             && self.exponent.is_finite()
-            && [self.attenuation.0, self.attenuation.1, self.attenuation.2].iter().all(|v| v.is_finite());
+            && [self.attenuation.0, self.attenuation.1, self.attenuation.2]
+                .iter()
+                .all(|v| v.is_finite());
         if !finite {
             return Err("light parameters must be finite".into());
         }
         if self.pos[2] <= 0.0 {
-            return Err(format!("the light must be above the plane (z > 0), got z = {}", self.pos[2]));
+            return Err(format!(
+                "the light must be above the plane (z > 0), got z = {}",
+                self.pos[2]
+            ));
         }
         let (kc, kl, kq) = self.attenuation;
         if kc < 0.0 || kl < 0.0 || kq < 0.0 {
@@ -60,10 +78,16 @@ impl LightSpec {
             return Err("attenuation factors cannot all be zero".into());
         }
         if !((0.0..=90.0).contains(&self.cutoff_deg) || self.cutoff_deg == 180.0) {
-            return Err(format!("the cutoff angle must be in [0, 90] or 180, got {}", self.cutoff_deg));
+            return Err(format!(
+                "the cutoff angle must be in [0, 90] or 180, got {}",
+                self.cutoff_deg
+            ));
         }
         if !(0.0..=128.0).contains(&self.exponent) {
-            return Err(format!("the spot exponent must be in [0, 128], got {}", self.exponent));
+            return Err(format!(
+                "the spot exponent must be in [0, 128], got {}",
+                self.exponent
+            ));
         }
         if self.cutoff_deg != 180.0 && dot(self.direction, self.direction) == 0.0 {
             return Err("the spot direction must not be the zero vector".into());
@@ -126,7 +150,11 @@ pub fn spot_factor(l: &LightSpec, point: V3) -> Result<f64, String> {
     if angle > l.cutoff_deg + 1e-6 {
         return Ok(0.0);
     }
-    Ok(if l.exponent == 0.0 { 1.0 } else { c.max(0.0).powf(l.exponent) })
+    Ok(if l.exponent == 0.0 {
+        1.0
+    } else {
+        c.max(0.0).powf(l.exponent)
+    })
 }
 
 /// Checks the material coefficients.
@@ -146,7 +174,12 @@ pub fn shade(point: V3, normal: V3, l: &LightSpec, m: &Material) -> Result<Contr
 
 /// [`shade`] for callers that checked the light (`LightSpec::validate`) and the material (`validate_material`) once and shade many points
 /// (the `relight` effect): the per-point work is only the finiteness check of `point` and `normal`.
-pub fn shade_prevalidated(point: V3, normal: V3, l: &LightSpec, m: &Material) -> Result<Contribution, String> {
+pub fn shade_prevalidated(
+    point: V3,
+    normal: V3,
+    l: &LightSpec,
+    m: &Material,
+) -> Result<Contribution, String> {
     if !point.iter().chain(&normal).all(|v| v.is_finite()) {
         return Err("point and normal must be finite".into());
     }
@@ -161,12 +194,24 @@ pub fn shade_prevalidated(point: V3, normal: V3, l: &LightSpec, m: &Material) ->
     let k = l.intensity * attenuation(l, dist) * spot_factor(l, point)?;
     let diff = nl * k;
     let h = norm([lv[0], lv[1], lv[2] + 1.0]).ok_or("degenerate half vector")?;
-    let spec = if m.ks > 0.0 { m.ks * dot(n, h).max(0.0).powf(m.shininess) * k } else { 0.0 };
-    Ok(Contribution { diffuse: [l.color[0] * diff, l.color[1] * diff, l.color[2] * diff], specular: [l.color[0] * spec, l.color[1] * spec, l.color[2] * spec] })
+    let spec = if m.ks > 0.0 {
+        m.ks * dot(n, h).max(0.0).powf(m.shininess) * k
+    } else {
+        0.0
+    };
+    Ok(Contribution {
+        diffuse: [l.color[0] * diff, l.color[1] * diff, l.color[2] * diff],
+        specular: [l.color[0] * spec, l.color[1] * spec, l.color[2] * spec],
+    })
 }
 
 /// Sum over several lights; the result does not depend on their order (up to floating-point rounding of the sum).
-pub fn shade_all(point: V3, normal: V3, lights: &[LightSpec], m: &Material) -> Result<Contribution, String> {
+pub fn shade_all(
+    point: V3,
+    normal: V3,
+    lights: &[LightSpec],
+    m: &Material,
+) -> Result<Contribution, String> {
     let mut total = Contribution::default();
     for l in lights {
         let c = shade(point, normal, l, m)?;
@@ -180,7 +225,11 @@ pub fn shade_all(point: V3, normal: V3, lights: &[LightSpec], m: &Material) -> R
 
 /// Limits a colour to the valid range `[0, 1]` (done once, after summing).
 pub fn clamp_color(c: V3) -> V3 {
-    [c[0].clamp(0.0, 1.0), c[1].clamp(0.0, 1.0), c[2].clamp(0.0, 1.0)]
+    [
+        c[0].clamp(0.0, 1.0),
+        c[1].clamp(0.0, 1.0),
+        c[2].clamp(0.0, 1.0),
+    ]
 }
 
 #[cfg(test)]
@@ -194,7 +243,10 @@ mod tests {
         assert!((a - b).abs() < 1e-4, "{a} vs {b}");
     }
     fn mat(s: f64) -> Material {
-        Material { ks: 1.0, shininess: s }
+        Material {
+            ks: 1.0,
+            shininess: s,
+        }
     }
 
     #[test]
@@ -208,7 +260,10 @@ mod tests {
     #[test]
     fn oblique_light_specular_exponents() {
         let l = LightSpec::point([10.0, 0.0, 10.0]);
-        near(shade(O, UP, &l, &mat(2.0)).unwrap().diffuse[0], std::f64::consts::FRAC_1_SQRT_2);
+        near(
+            shade(O, UP, &l, &mat(2.0)).unwrap().diffuse[0],
+            std::f64::consts::FRAC_1_SQRT_2,
+        );
         near(shade(O, UP, &l, &mat(2.0)).unwrap().specular[0], 0.853553);
         near(shade(O, UP, &l, &mat(32.0)).unwrap().specular[0], 0.079376);
         near(shade(O, UP, &l, &mat(8.0)).unwrap().specular[0], 0.530790);
@@ -280,8 +335,23 @@ mod tests {
         l.attenuation = (0.0, 0.0, 0.0);
         assert!(l.validate().is_err());
         assert!(shade(O, [0.0; 3], &LightSpec::point([0.0, 0.0, 1.0]), &mat(1.0)).is_err());
-        assert!(shade(O, UP, &LightSpec::point([0.0, 0.0, 1.0]), &Material { ks: -1.0, shininess: 1.0 }).is_err());
-        assert!(shade([f64::NAN, 0.0, 0.0], UP, &LightSpec::point([0.0, 0.0, 1.0]), &mat(1.0)).is_err());
+        assert!(shade(
+            O,
+            UP,
+            &LightSpec::point([0.0, 0.0, 1.0]),
+            &Material {
+                ks: -1.0,
+                shininess: 1.0
+            }
+        )
+        .is_err());
+        assert!(shade(
+            [f64::NAN, 0.0, 0.0],
+            UP,
+            &LightSpec::point([0.0, 0.0, 1.0]),
+            &mat(1.0)
+        )
+        .is_err());
     }
 
     #[test]
@@ -292,14 +362,26 @@ mod tests {
         let s1 = shade_all(O, [0.0, 0.0, 3.0], &[a.clone(), b.clone()], &mat(8.0)).unwrap();
         let s2 = shade_all(O, UP, &[b, a], &mat(8.0)).unwrap();
         for i in 0..3 {
-            assert!((s1.diffuse[i] - s2.diffuse[i]).abs() < 1e-12 && (s1.specular[i] - s2.specular[i]).abs() < 1e-12);
+            assert!(
+                (s1.diffuse[i] - s2.diffuse[i]).abs() < 1e-12
+                    && (s1.specular[i] - s2.specular[i]).abs() < 1e-12
+            );
         }
         assert_eq!(clamp_color([1.5, -0.2, 0.3]), [1.0, 0.0, 0.3]);
     }
 
     #[test]
     fn zero_specular_coefficient_gives_no_highlight() {
-        let c = shade(O, UP, &LightSpec::point([0.0, 0.0, 10.0]), &Material { ks: 0.0, shininess: 8.0 }).unwrap();
+        let c = shade(
+            O,
+            UP,
+            &LightSpec::point([0.0, 0.0, 10.0]),
+            &Material {
+                ks: 0.0,
+                shininess: 8.0,
+            },
+        )
+        .unwrap();
         assert_eq!(c.specular, [0.0; 3]);
         assert!(c.diffuse[0] > 0.0);
     }

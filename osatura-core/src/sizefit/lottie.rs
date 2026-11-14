@@ -8,12 +8,27 @@ use super::*;
 /// Hold-keyframe list of an animated track expanded to one value per frame (`n` frames).
 pub(super) fn expand_hold(k: &Value, n: usize) -> Option<Vec<Value>> {
     let arr = k.as_array()?;
-    let mut keys: Vec<(usize, &Value)> = arr.iter().filter_map(|e| Some((e.get("t")?.as_f64()? as usize, e.get("s")?.as_array()?.first()?))).collect();
+    let mut keys: Vec<(usize, &Value)> = arr
+        .iter()
+        .filter_map(|e| {
+            Some((
+                e.get("t")?.as_f64()? as usize,
+                e.get("s")?.as_array()?.first()?,
+            ))
+        })
+        .collect();
     keys.sort_by_key(|k| k.0);
     if keys.is_empty() {
         return None;
     }
-    Some((0..n).map(|f| { let i = keys.partition_point(|k| k.0 <= f); keys[i.saturating_sub(1)].1.clone() }).collect())
+    Some(
+        (0..n)
+            .map(|f| {
+                let i = keys.partition_point(|k| k.0 <= f);
+                keys[i.saturating_sub(1)].1.clone()
+            })
+            .collect(),
+    )
 }
 
 pub(super) fn round_doc(v: &mut Value, d: u8, cd: u8, colour: bool) {
@@ -28,7 +43,10 @@ pub(super) fn round_doc(v: &mut Value, d: u8, cd: u8, colour: bool) {
         Value::Array(a) => a.iter_mut().for_each(|e| round_doc(e, d, cd, colour)),
         Value::Object(m) => {
             for (k, e) in m.iter_mut() {
-                if matches!(k.as_str(), "fr" | "w" | "h" | "sw" | "sh" | "ip" | "op" | "t" | "s_") {
+                if matches!(
+                    k.as_str(),
+                    "fr" | "w" | "h" | "sw" | "sh" | "ip" | "op" | "t" | "s_"
+                ) {
                     continue;
                 }
                 round_doc(e, d, cd, colour || k == "c" || k == "g");
@@ -44,26 +62,42 @@ pub(super) fn round_doc(v: &mut Value, d: u8, cd: u8, colour: bool) {
 /// `select_keys`) and `frame_step`. Repeated frames are always merged and constant tracks become static.
 pub fn lottie_reduce(base: &Value, s: &Settings) -> Value {
     let mut doc = base.clone();
-    let n = doc.get("op").and_then(Value::as_f64).unwrap_or(1.0).max(1.0) as usize;
+    let n = doc
+        .get("op")
+        .and_then(Value::as_f64)
+        .unwrap_or(1.0)
+        .max(1.0) as usize;
     let d = s.decimals;
     let linear = s.key_tol > 0.0;
     let tol = s.key_tol as f64;
     let step = s.frame_step.max(1) as usize;
-    let Some(layers) = doc.get_mut("layers").and_then(Value::as_array_mut) else { return doc };
+    let Some(layers) = doc.get_mut("layers").and_then(Value::as_array_mut) else {
+        return doc;
+    };
     for layer in layers.iter_mut() {
         // layer opacity
         if let Some(o) = layer.get_mut("ks").and_then(|k| k.get_mut("o")) {
             if o.get("a").and_then(Value::as_i64) == Some(1) {
                 if let Some(vals) = o.get("k").and_then(|k| expand_hold(k, n)) {
-                    let samp: Vec<Samp> = vals.iter().map(|v| Samp { sig: (false, 1), v: vec![round_dec(v.as_f64().unwrap_or(0.0), d)] }).collect();
+                    let samp: Vec<Samp> = vals
+                        .iter()
+                        .map(|v| Samp {
+                            sig: (false, 1),
+                            v: vec![round_dec(v.as_f64().unwrap_or(0.0), d)],
+                        })
+                        .collect();
                     *o = pick_encoding(&samp, step, tol, linear, &|sm| num(sm.v[0]));
                 }
             }
         }
         // shape tracks
-        let Some(groups) = layer.get_mut("shapes").and_then(Value::as_array_mut) else { continue };
+        let Some(groups) = layer.get_mut("shapes").and_then(Value::as_array_mut) else {
+            continue;
+        };
         for g in groups.iter_mut() {
-            let Some(items) = g.get_mut("it").and_then(Value::as_array_mut) else { continue };
+            let Some(items) = g.get_mut("it").and_then(Value::as_array_mut) else {
+                continue;
+            };
             for it in items.iter_mut() {
                 if it.get("ty").and_then(Value::as_str) != Some("sh") {
                     continue;
@@ -72,23 +106,31 @@ pub fn lottie_reduce(base: &Value, s: &Settings) -> Value {
                 if ks.get("a").and_then(Value::as_i64) != Some(1) {
                     continue;
                 }
-                let Some(vals) = ks.get("k").and_then(|k| expand_hold(k, n)) else { continue };
-                let parsed: Vec<Option<(bool, Vec<PNode>)>> = vals.iter().map(parse_shape).collect();
+                let Some(vals) = ks.get("k").and_then(|k| expand_hold(k, n)) else {
+                    continue;
+                };
+                let parsed: Vec<Option<(bool, Vec<PNode>)>> =
+                    vals.iter().map(parse_shape).collect();
                 if parsed.iter().any(|p| p.is_none()) {
                     continue;
                 }
-                let mut shapes: Vec<(bool, Vec<PNode>)> = parsed.into_iter().map(|p| p.unwrap()).collect();
+                let mut shapes: Vec<(bool, Vec<PNode>)> =
+                    parsed.into_iter().map(|p| p.unwrap()).collect();
                 // spatial simplification when the topology is the same in every frame
                 if s.path_eps > 0.0 {
                     let (c0, n0) = (shapes[0].0, shapes[0].1.len());
                     if n0 >= 3 && shapes.iter().all(|(c, v)| *c == c0 && v.len() == n0) {
-                        let mut fr: Vec<Vec<PNode>> = shapes.iter().map(|(_, v)| v.clone()).collect();
+                        let mut fr: Vec<Vec<PNode>> =
+                            shapes.iter().map(|(_, v)| v.clone()).collect();
                         if simplify_paths(&mut fr, c0, s.path_eps as f64) > 0 {
                             shapes = fr.into_iter().map(|v| (c0, v)).collect();
                         }
                     }
                 }
-                let samp: Vec<Samp> = shapes.iter().map(|(c, v)| samp_of_shape(*c, v, d)).collect();
+                let samp: Vec<Samp> = shapes
+                    .iter()
+                    .map(|(c, v)| samp_of_shape(*c, v, d))
+                    .collect();
                 *ks = pick_encoding(&samp, step, tol, linear, &shape_of_samp);
             }
         }
@@ -104,7 +146,10 @@ pub(super) fn read_shape_at(ks: &Value, f: usize) -> Option<(bool, Vec<PNode>)> 
         return parse_shape(ks.get("k")?);
     }
     let arr = ks.get("k")?.as_array()?;
-    let mut keys: Vec<(usize, &Value)> = arr.iter().filter_map(|e| Some((e.get("t")?.as_f64()? as usize, e))).collect();
+    let mut keys: Vec<(usize, &Value)> = arr
+        .iter()
+        .filter_map(|e| Some((e.get("t")?.as_f64()? as usize, e)))
+        .collect();
     keys.sort_by_key(|k| k.0);
     let i = keys.partition_point(|k| k.0 <= f).saturating_sub(1);
     let (t0, e0) = keys[i];
@@ -120,17 +165,35 @@ pub(super) fn read_shape_at(ks: &Value, f: usize) -> Option<(bool, Vec<PNode>)> 
     }
     let u = (f - t0) as f64 / (t1 - t0) as f64;
     let mix = |p: [f64; 2], q: [f64; 2]| [lerp(p[0], q[0], u), lerp(p[1], q[1], u)];
-    Some((a.0, a.1.iter().zip(&b.1).map(|(x, y)| PNode { p: mix(x.p, y.p), i: mix(x.i, y.i), o: mix(x.o, y.o) }).collect()))
+    Some((
+        a.0,
+        a.1.iter()
+            .zip(&b.1)
+            .map(|(x, y)| PNode {
+                p: mix(x.p, y.p),
+                i: mix(x.i, y.i),
+                o: mix(x.o, y.o),
+            })
+            .collect(),
+    ))
 }
 
 pub(super) fn read_scalar_at(o: &Value, f: usize) -> f64 {
     if o.get("a").and_then(Value::as_i64) != Some(1) {
         return o.get("k").and_then(Value::as_f64).unwrap_or(100.0);
     }
-    let Some(arr) = o.get("k").and_then(Value::as_array) else { return 100.0 };
+    let Some(arr) = o.get("k").and_then(Value::as_array) else {
+        return 100.0;
+    };
     let mut keys: Vec<(usize, f64, bool)> = arr
         .iter()
-        .filter_map(|e| Some((e.get("t")?.as_f64()? as usize, e.get("s")?.as_array()?.first()?.as_f64()?, e.get("h").and_then(Value::as_i64) == Some(1))))
+        .filter_map(|e| {
+            Some((
+                e.get("t")?.as_f64()? as usize,
+                e.get("s")?.as_array()?.first()?.as_f64()?,
+                e.get("h").and_then(Value::as_i64) == Some(1),
+            ))
+        })
         .collect();
     keys.sort_by_key(|a| a.0);
     if keys.is_empty() {
@@ -146,14 +209,25 @@ pub(super) fn read_scalar_at(o: &Value, f: usize) -> f64 {
 }
 
 pub fn clone_frame(f: &Frame) -> Frame {
-    Frame { world: f.world.clone(), camera: f.camera, nodes: f.nodes.clone(), roots: f.roots.clone(), nonfinite: f.nonfinite.clone() }
+    Frame {
+        world: f.world.clone(),
+        camera: f.camera,
+        nodes: f.nodes.clone(),
+        roots: f.roots.clone(),
+        nonfinite: f.nonfinite.clone(),
+    }
 }
 
 /// The picture a Lottie player would show at frame `f`, built from the evaluated engine frame `eval`
 /// (structure, fills, strokes, masks) with the geometry and the layer opacity replaced by what is *read
 /// from the produced document*. Baked vertices are in screen space, so layer transforms become identity;
 /// group opacity is flattened into the leaves, as the exporter does.
-pub fn lottie_model_frame(eval: &Frame, doc: &Value, map: &[crate::export::LottieLayerMap], f: usize) -> Frame {
+pub fn lottie_model_frame(
+    eval: &Frame,
+    doc: &Value,
+    map: &[crate::export::LottieLayerMap],
+    f: usize,
+) -> Frame {
     let mut fr = clone_frame(eval);
     // groups whose opacity lives in a precomp (a vector leaf below them has no top-level layer) keep it
     let mapped: std::collections::HashSet<usize> = map.iter().map(|m| m.node).collect();
@@ -187,18 +261,38 @@ pub fn lottie_model_frame(eval: &Frame, doc: &Value, map: &[crate::export::Lotti
     }
     let layers = doc.get("layers").and_then(Value::as_array);
     for m in map.iter().filter(|m| !m.matte_copy) {
-        let Some(layer) = layers.and_then(|l| l.get(m.index)) else { continue };
+        let Some(layer) = layers.and_then(|l| l.get(m.index)) else {
+            continue;
+        };
         let nd = &mut fr.nodes[m.node];
         nd.world = Affine2::IDENTITY;
         nd.visible = true;
         if let Some(o) = layer.get("ks").and_then(|k| k.get("o")) {
             nd.opacity = (read_scalar_at(o, f) / 100.0).clamp(0.0, 1.0) as f32;
         }
-        for g in layer.get("shapes").and_then(Value::as_array).into_iter().flatten() {
-            let pi: Option<usize> = g.get("nm").and_then(Value::as_str).and_then(|s| s.strip_prefix('g')).and_then(|s| s.parse().ok());
-            let (Some(pi), Some(items)) = (pi, g.get("it").and_then(Value::as_array)) else { continue };
-            let Some(sh) = items.iter().find(|i| i.get("ty").and_then(Value::as_str) == Some("sh")) else { continue };
-            let Some(path) = nd.paths.get_mut(pi) else { continue };
+        for g in layer
+            .get("shapes")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            let pi: Option<usize> = g
+                .get("nm")
+                .and_then(Value::as_str)
+                .and_then(|s| s.strip_prefix('g'))
+                .and_then(|s| s.parse().ok());
+            let (Some(pi), Some(items)) = (pi, g.get("it").and_then(Value::as_array)) else {
+                continue;
+            };
+            let Some(sh) = items
+                .iter()
+                .find(|i| i.get("ty").and_then(Value::as_str) == Some("sh"))
+            else {
+                continue;
+            };
+            let Some(path) = nd.paths.get_mut(pi) else {
+                continue;
+            };
             match sh.get("ks").and_then(|k| read_shape_at(k, f)) {
                 Some((closed, nodes)) if nodes.len() >= 2 => {
                     path.anchors = anchors_of(&nodes);

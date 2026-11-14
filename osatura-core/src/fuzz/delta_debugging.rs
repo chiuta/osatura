@@ -107,10 +107,17 @@ pub fn minimize(f: &mut Fuzzer, values: &[f32], want: Option<&str>) -> Result<Mi
     }
     let kind = match want {
         Some(k) if orig.kinds.iter().any(|x| x == k) => k.to_string(),
-        Some(k) => return Err(format!("the pose does not fail with kind '{k}' (it fails with: {})", orig.kinds.join(", "))),
+        Some(k) => {
+            return Err(format!(
+                "the pose does not fail with kind '{k}' (it fails with: {})",
+                orig.kinds.join(", ")
+            ))
+        }
         None => orig.kinds.first().cloned().unwrap_or_default(),
     };
-    let moved: Vec<usize> = (0..values.len()).filter(|&i| (values[i] - rest[i]).abs() > 1e-6).collect();
+    let moved: Vec<usize> = (0..values.len())
+        .filter(|&i| (values[i] - rest[i]).abs() > 1e-6)
+        .collect();
     let with = |set: &[usize], vals: &[f32]| -> Vec<f32> {
         let mut v = rest.clone();
         for &i in set {
@@ -123,7 +130,13 @@ pub fn minimize(f: &mut Fuzzer, values: &[f32], want: Option<&str>) -> Result<Mi
         r.failed && r.kinds.contains(&kind)
     };
     if fails_kind(f, &rest) {
-        return Ok(Minimal { kind, severity: 0.0, params: vec![], evaluations: f.evaluations() - start, verified: true });
+        return Ok(Minimal {
+            kind,
+            severity: 0.0,
+            params: vec![],
+            evaluations: f.evaluations() - start,
+            verified: true,
+        });
     }
     let mut set = {
         let mut pred = |s: &[usize]| fails_kind(f, &with(s, values));
@@ -162,7 +175,14 @@ pub fn minimize(f: &mut Fuzzer, values: &[f32], want: Option<&str>) -> Result<Mi
     Ok(Minimal {
         kind,
         severity: fin.severity,
-        params: set.iter().map(|&i| MinimalParam { id: f.params[i].id.clone(), value: cur[i], rest: rest[i] }).collect(),
+        params: set
+            .iter()
+            .map(|&i| MinimalParam {
+                id: f.params[i].id.clone(),
+                value: cur[i],
+                rest: rest[i],
+            })
+            .collect(),
         evaluations: f.evaluations() - start,
         verified: fin.failed,
     })
@@ -191,7 +211,18 @@ pub struct FuzzOptions {
 
 impl Default for FuzzOptions {
     fn default() -> Self {
-        FuzzOptions { samples: 200, seed: 1, strategy: Strategy::Random, frame: 0.0, params: ParamOptions::default(), thresholds: Thresholds::default(), minimize: false, db: None, keep_worst: 20, ignore: vec![] }
+        FuzzOptions {
+            samples: 200,
+            seed: 1,
+            strategy: Strategy::Random,
+            frame: 0.0,
+            params: ParamOptions::default(),
+            thresholds: Thresholds::default(),
+            minimize: false,
+            db: None,
+            keep_worst: 20,
+            ignore: vec![],
+        }
     }
 }
 
@@ -292,7 +323,11 @@ impl FuzzReport {
 }
 
 /// Run a fuzz campaign. The project is only read.
-pub fn run(project: &Project, asset_dir: Option<&Path>, o: &FuzzOptions) -> Result<FuzzReport, String> {
+pub fn run(
+    project: &Project,
+    asset_dir: Option<&Path>,
+    o: &FuzzOptions,
+) -> Result<FuzzReport, String> {
     let mut f = Fuzzer::new(project, asset_dir, &o.params, o.thresholds.clone(), o.frame)?;
     for k in &o.ignore {
         if !Norm::default().items().iter().any(|i| i.0 == k) {
@@ -303,7 +338,8 @@ pub fn run(project: &Project, asset_dir: Option<&Path>, o: &FuzzOptions) -> Resu
     let pca = if o.strategy == Strategy::Pca {
         let db = match &o.db {
             Some(d) => d.clone(),
-            None => crate::posesuggest::build_db(Some(project), None, None).map_err(|e| format!("pca strategy: {e}"))?,
+            None => crate::posesuggest::build_db(Some(project), None, None)
+                .map_err(|e| format!("pca strategy: {e}"))?,
         };
         Some(PcaSampler::new(&db, &f.params)?)
     } else {
@@ -350,8 +386,17 @@ pub fn run(project: &Project, asset_dir: Option<&Path>, o: &FuzzOptions) -> Resu
     let (marginals, per_bone) = marginals(&f.params, &results, 5);
     let pairs = pair_scores(&f.params, &results, &marginals, 10, 10);
     let mut order: Vec<usize> = (0..n).collect();
-    order.sort_by(|&a, &b| results[b].severity.total_cmp(&results[a].severity).then(a.cmp(&b)));
-    let worst: Vec<SampleResult> = order.iter().take(o.keep_worst).map(|&i| results[i].clone()).collect();
+    order.sort_by(|&a, &b| {
+        results[b]
+            .severity
+            .total_cmp(&results[a].severity)
+            .then(a.cmp(&b))
+    });
+    let worst: Vec<SampleResult> = order
+        .iter()
+        .take(o.keep_worst)
+        .map(|&i| results[i].clone())
+        .collect();
     let minimal = if o.minimize {
         match order.first().map(|&i| &results[i]) {
             Some(r) if r.failed => Some(minimize(&mut f, &r.values, None)?),
@@ -370,17 +415,26 @@ pub fn run(project: &Project, asset_dir: Option<&Path>, o: &FuzzOptions) -> Resu
             .map(|(gi, g)| HeatGeo {
                 name: g.snap.name.clone(),
                 kind: g.snap.kind,
-                pts: g.snap.pts.iter().map(|p| {
-                    let q = g.snap.world.apply(*p);
-                    [q.x, q.y]
-                }).collect(),
+                pts: g
+                    .snap
+                    .pts
+                    .iter()
+                    .map(|p| {
+                        let q = g.snap.world.apply(*p);
+                        [q.x, q.y]
+                    })
+                    .collect(),
                 tris: g.snap.tris.clone(),
                 edges: g.snap.edges.clone(),
                 max_stress: maxs[gi].clone(),
                 fail_fraction: fails[gi].iter().map(|c| c / n.max(1) as f32).collect(),
             })
             .collect(),
-        bones: f.rest_bones.iter().map(|(nm, a, b)| (nm.clone(), [a.x, a.y], [b.x, b.y])).collect(),
+        bones: f
+            .rest_bones
+            .iter()
+            .map(|(nm, a, b)| (nm.clone(), [a.x, a.y], [b.x, b.y]))
+            .collect(),
     };
     Ok(FuzzReport {
         schema: "osatura-fuzz-report".into(),
@@ -404,12 +458,21 @@ pub fn run(project: &Project, asset_dir: Option<&Path>, o: &FuzzOptions) -> Resu
 /// Per-parameter failure rate in `nbins` equal bins of the parameter range, plus per-bone bars (the worst
 /// increase of the failure rate at the extremes of its range - outer 40% minus inner 60% - among the bone's parameters; this isolates
 /// the parameters that cause failures from those that merely co-occur with them).
-pub fn marginals(params: &[Param], results: &[SampleResult], nbins: usize) -> (Vec<Marginal>, Vec<BoneBar>) {
+pub fn marginals(
+    params: &[Param],
+    results: &[SampleResult],
+    nbins: usize,
+) -> (Vec<Marginal>, Vec<BoneBar>) {
     let nbins = nbins.max(3);
     let mut out = Vec::new();
     for (k, p) in params.iter().enumerate() {
         let mut bins: Vec<Bin> = (0..nbins)
-            .map(|b| Bin { lo: p.lo + (p.hi - p.lo) * b as f32 / nbins as f32, hi: p.lo + (p.hi - p.lo) * (b + 1) as f32 / nbins as f32, n: 0, failures: 0 })
+            .map(|b| Bin {
+                lo: p.lo + (p.hi - p.lo) * b as f32 / nbins as f32,
+                hi: p.lo + (p.hi - p.lo) * (b + 1) as f32 / nbins as f32,
+                n: 0,
+                failures: 0,
+            })
             .collect();
         for r in results {
             let b = bin_of(r.values[k], p.lo, p.hi, nbins);
@@ -419,15 +482,39 @@ pub fn marginals(params: &[Param], results: &[SampleResult], nbins: usize) -> (V
             }
         }
         let rate = |idx: &[usize]| {
-            let (n, f) = idx.iter().fold((0, 0), |(n, f), &i| (n + bins[i].n, f + bins[i].failures));
-            if n == 0 { 0.0 } else { f as f32 / n as f32 }
+            let (n, f) = idx
+                .iter()
+                .fold((0, 0), |(n, f), &i| (n + bins[i].n, f + bins[i].failures));
+            if n == 0 {
+                0.0
+            } else {
+                f as f32 / n as f32
+            }
         };
         let outer = [0, nbins - 1];
         let inner: Vec<usize> = (1..nbins - 1).collect();
-        let rates: Vec<f32> = bins.iter().filter(|b| b.n >= 3).map(|b| b.failures as f32 / b.n as f32).collect();
-        let spread = if rates.is_empty() { 0.0 } else { rates.iter().cloned().fold(0.0, f32::max) - rates.iter().cloned().fold(1.0, f32::min) };
-        let bone = p.id.strip_prefix("bone:").and_then(|s| s.rsplit_once(':')).map(|x| x.0.to_string());
-        out.push(Marginal { id: p.id.clone(), bone, rate_outer: rate(&outer), rate_inner: rate(&inner), spread, bins });
+        let rates: Vec<f32> = bins
+            .iter()
+            .filter(|b| b.n >= 3)
+            .map(|b| b.failures as f32 / b.n as f32)
+            .collect();
+        let spread = if rates.is_empty() {
+            0.0
+        } else {
+            rates.iter().cloned().fold(0.0, f32::max) - rates.iter().cloned().fold(1.0, f32::min)
+        };
+        let bone =
+            p.id.strip_prefix("bone:")
+                .and_then(|s| s.rsplit_once(':'))
+                .map(|x| x.0.to_string());
+        out.push(Marginal {
+            id: p.id.clone(),
+            bone,
+            rate_outer: rate(&outer),
+            rate_inner: rate(&inner),
+            spread,
+            bins,
+        });
     }
     let mut bars: BTreeMap<String, f32> = BTreeMap::new();
     for m in &out {
@@ -435,18 +522,30 @@ pub fn marginals(params: &[Param], results: &[SampleResult], nbins: usize) -> (V
         let e = bars.entry(name).or_insert(0.0);
         *e = e.max((m.rate_outer - m.rate_inner).max(0.0));
     }
-    let mut bars: Vec<BoneBar> = bars.into_iter().map(|(name, rate)| BoneBar { name, rate }).collect();
+    let mut bars: Vec<BoneBar> = bars
+        .into_iter()
+        .map(|(name, rate)| BoneBar { name, rate })
+        .collect();
     bars.sort_by(|a, b| b.rate.total_cmp(&a.rate).then(a.name.cmp(&b.name)));
     (out, bars)
 }
 
 pub(super) fn bin_of(v: f32, lo: f32, hi: f32, n: usize) -> usize {
-    (((v - lo) / (hi - lo).max(1e-12) * n as f32).floor().max(0.0) as usize).min(n - 1)
+    (((v - lo) / (hi - lo).max(1e-12) * n as f32)
+        .floor()
+        .max(0.0) as usize)
+        .min(n - 1)
 }
 
 /// Pairwise interaction: for the `top_k` most influential parameters, how much worse than either single-parameter
 /// bin is the worst tertile cell of the pair?
-pub fn pair_scores(params: &[Param], results: &[SampleResult], marg: &[Marginal], top_k: usize, keep: usize) -> Vec<PairScore> {
+pub fn pair_scores(
+    params: &[Param],
+    results: &[SampleResult],
+    marg: &[Marginal],
+    top_k: usize,
+    keep: usize,
+) -> Vec<PairScore> {
     let mut idx: Vec<usize> = (0..params.len()).collect();
     idx.sort_by(|&a, &b| marg[b].spread.total_cmp(&marg[a].spread).then(a.cmp(&b)));
     idx.truncate(top_k);
@@ -460,13 +559,20 @@ pub fn pair_scores(params: &[Param], results: &[SampleResult], marg: &[Marginal]
                 f += r.failed as usize;
             }
         }
-        if n == 0 { 0.0 } else { f as f32 / n as f32 }
+        if n == 0 {
+            0.0
+        } else {
+            f as f32 / n as f32
+        }
     };
     for (x, &a) in idx.iter().enumerate() {
         for &b in &idx[x + 1..] {
             let mut cells = [[(0usize, 0usize); 3]; 3];
             for r in results {
-                let (i, j) = (bin_of(r.values[a], params[a].lo, params[a].hi, 3), bin_of(r.values[b], params[b].lo, params[b].hi, 3));
+                let (i, j) = (
+                    bin_of(r.values[a], params[a].lo, params[a].hi, 3),
+                    bin_of(r.values[b], params[b].lo, params[b].hi, 3),
+                );
                 cells[i][j].0 += 1;
                 cells[i][j].1 += r.failed as usize;
             }
@@ -489,11 +595,22 @@ pub fn pair_scores(params: &[Param], results: &[SampleResult], marg: &[Marginal]
                 }
             }
             if let Some((s, rate, n)) = best {
-                out.push(PairScore { a: params[a].id.clone(), b: params[b].id.clone(), synergy: s, cell_rate: rate, cell_samples: n });
+                out.push(PairScore {
+                    a: params[a].id.clone(),
+                    b: params[b].id.clone(),
+                    synergy: s,
+                    cell_rate: rate,
+                    cell_samples: n,
+                });
             }
         }
     }
-    out.sort_by(|p, q| q.synergy.total_cmp(&p.synergy).then(p.a.cmp(&q.a)).then(p.b.cmp(&q.b)));
+    out.sort_by(|p, q| {
+        q.synergy
+            .total_cmp(&p.synergy)
+            .then(p.a.cmp(&q.a))
+            .then(p.b.cmp(&q.b))
+    });
     out.truncate(keep);
     out
 }

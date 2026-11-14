@@ -30,6 +30,7 @@
 //! only one frame is probed per run, and a panic inside the engine is caught and reported but the default
 //! panic message still goes to stderr.
 use crate::anim::{Ease, Track};
+use crate::clock::Stamp;
 use crate::engine::{Engine, Frame, NodeKind};
 use crate::math::{Affine2, Vec2};
 use crate::posesuggest::{PoseDb, PoseSpace};
@@ -38,19 +39,18 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::Path;
-use crate::clock::Stamp;
 
+mod delta_debugging;
+mod grid;
 mod random;
 mod sampling;
 mod snapshots;
-mod delta_debugging;
-mod grid;
 
+pub use delta_debugging::*;
+pub use grid::*;
 pub use random::*;
 pub use sampling::*;
 pub use snapshots::*;
-pub use delta_debugging::*;
-pub use grid::*;
 
 #[cfg(test)]
 mod tests;

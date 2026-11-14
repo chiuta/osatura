@@ -59,7 +59,11 @@ impl<'a> Ctx<'a> {
             }
         }
         let bi = |name: &str| p.bones.iter().position(|b| b.name == name);
-        let bone_parent: Vec<Option<usize>> = p.bones.iter().map(|b| b.parent.as_deref().and_then(bi)).collect();
+        let bone_parent: Vec<Option<usize>> = p
+            .bones
+            .iter()
+            .map(|b| b.parent.as_deref().and_then(bi))
+            .collect();
         let nb = p.bones.len();
         let mut sub = vec![vec![false; nb]; nb];
         // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
@@ -72,7 +76,10 @@ impl<'a> Ctx<'a> {
             }
         }
         let rest = p.rest_world()?;
-        let rest_inv: Vec<A> = rest.iter().map(|m| a_inv(&a_of(m)).unwrap_or(A_ID)).collect();
+        let rest_inv: Vec<A> = rest
+            .iter()
+            .map(|m| a_inv(&a_of(m)).unwrap_or(A_ID))
+            .collect();
         let sub_targets: BTreeSet<String> = p
             .channels
             .iter()
@@ -82,7 +89,10 @@ impl<'a> Ctx<'a> {
         let mut complex = vec![false; n];
         let mut skin_pts: Vec<Vec<SkinPt>> = vec![Vec::new(); n];
         let norm_w = |ws: &[crate::path::BoneWeight]| -> Vec<(usize, f64)> {
-            let mut out: Vec<(usize, f64)> = ws.iter().filter_map(|w| bi(&w.bone).map(|b| (b, w.weight as f64))).collect();
+            let mut out: Vec<(usize, f64)> = ws
+                .iter()
+                .filter_map(|w| bi(&w.bone).map(|b| (b, w.weight as f64)))
+                .collect();
             let sum: f64 = out.iter().map(|x| x.1).sum();
             if sum > 0.0 {
                 for x in &mut out {
@@ -94,8 +104,11 @@ impl<'a> Ctx<'a> {
             out
         };
         for i in 0..n {
-            let Some(l) = layer_by_path(p, &paths[i]) else { continue };
-            let mut c = !l.deformers.is_empty() || l.wobble.is_some() || sub_targets.contains(&paths[i]);
+            let Some(l) = layer_by_path(p, &paths[i]) else {
+                continue;
+            };
+            let mut c =
+                !l.deformers.is_empty() || l.wobble.is_some() || sub_targets.contains(&paths[i]);
             match &l.kind {
                 LayerKind::Vector { paths: ps } => {
                     for path in ps {
@@ -113,7 +126,12 @@ impl<'a> Ctx<'a> {
                         }
                     }
                 }
-                LayerKind::Image { mesh: Some(m), origin, size, .. } => {
+                LayerKind::Image {
+                    mesh: Some(m),
+                    origin,
+                    size,
+                    ..
+                } => {
                     // rest vertices need the displayed size: take it from the frame at sample time
                     // (stored lazily); here only the weights are recorded, positions filled by `fill_mesh_rest`.
                     let _ = (origin, size);
@@ -125,7 +143,18 @@ impl<'a> Ctx<'a> {
             }
             complex[i] = c;
         }
-        Ok(Ctx { p, e, paths, parent, children, bone_parent, sub, rest_inv, complex, skin_pts })
+        Ok(Ctx {
+            p,
+            e,
+            paths,
+            parent,
+            children,
+            bone_parent,
+            sub,
+            rest_inv,
+            complex,
+            skin_pts,
+        })
     }
 
     pub(super) fn subtree(&self, id: usize) -> Vec<usize> {
@@ -155,7 +184,8 @@ pub(super) fn touched_bones(p: &Project) -> BTreeSet<usize> {
     for c in &p.constraints {
         t.extend(bi(&c.bone));
         match &c.kind {
-            crate::project::ConstraintKind::Aim { target, .. } | crate::project::ConstraintKind::Pin { target } => t.extend(bi(target)),
+            crate::project::ConstraintKind::Aim { target, .. }
+            | crate::project::ConstraintKind::Pin { target } => t.extend(bi(target)),
             crate::project::ConstraintKind::CopyRotation { source } => t.extend(bi(source)),
         }
     }
@@ -199,15 +229,26 @@ pub(super) fn eligible_channels(c: &Ctx) -> Vec<(usize, LKind)> {
     let referenced = |name: &str| blocked_text.contains(&format!("\"{name}\""));
     let mut out = Vec::new();
     for (i, ch) in p.channels.iter().enumerate() {
-        let Source::Keys { track } = &ch.source else { continue };
-        if track.keys.len() < 3 || ch.mode == Mode::Multiply || (ch.weight.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !ch.weight.is_finite() || (!ch.target.is_empty() && referenced(&ch.target)) {
+        let Source::Keys { track } = &ch.source else {
+            continue;
+        };
+        if track.keys.len() < 3
+            || ch.mode == Mode::Multiply
+            || (ch.weight.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
+            || !ch.weight.is_finite()
+            || (!ch.target.is_empty() && referenced(&ch.target))
+        {
             continue;
         }
         use Prop::*;
         let kind = match ch.prop {
             BoneAngle | BoneOffsetX | BoneOffsetY => {
-                let Some(b) = p.bones.iter().position(|b| b.name == ch.target) else { continue };
-                if touched.contains(&b) || (0..p.bones.len()).any(|k| c.sub[b][k] && touched.contains(&k)) {
+                let Some(b) = p.bones.iter().position(|b| b.name == ch.target) else {
+                    continue;
+                };
+                if touched.contains(&b)
+                    || (0..p.bones.len()).any(|k| c.sub[b][k] && touched.contains(&k))
+                {
                     continue;
                 }
                 if ch.prop == BoneAngle {
@@ -217,7 +258,9 @@ pub(super) fn eligible_channels(c: &Ctx) -> Vec<(usize, LKind)> {
                 }
             }
             LayerX | LayerY | LayerRotation => {
-                let Some(id) = c.e.node_index(&ch.target) else { continue };
+                let Some(id) = c.e.node_index(&ch.target) else {
+                    continue;
+                };
                 match ch.prop {
                     LayerX => LKind::LayerX(id),
                     LayerY => LKind::LayerY(id),

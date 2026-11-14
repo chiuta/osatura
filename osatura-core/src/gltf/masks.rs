@@ -10,12 +10,21 @@ use super::*;
 pub(super) const CLIP_EPS: f32 = 1e-6;
 
 pub(super) fn poly_area(p: &[Vec2]) -> f32 {
-    (0..p.len()).map(|i| cr(p[i], p[(i + 1) % p.len()])).sum::<f32>() * 0.5
+    (0..p.len())
+        .map(|i| cr(p[i], p[(i + 1) % p.len()]))
+        .sum::<f32>()
+        * 0.5
 }
 
 /// Sutherland-Hodgman against one half plane: keep the left of a->b (or the right).
 pub(super) fn clip_half(poly: &[Vec2], a: Vec2, b: Vec2, keep_left: bool) -> Vec<Vec2> {
-    let s = |p: Vec2| if keep_left { cr(b - a, p - a) } else { -cr(b - a, p - a) };
+    let s = |p: Vec2| {
+        if keep_left {
+            cr(b - a, p - a)
+        } else {
+            -cr(b - a, p - a)
+        }
+    };
     let mut out = Vec::with_capacity(poly.len() + 2);
     for i in 0..poly.len() {
         let (c, n) = (poly[i], poly[(i + 1) % poly.len()]);
@@ -71,7 +80,12 @@ pub(super) fn bbox(p: &[Vec2]) -> (Vec2, Vec2) {
 
 /// Clip a triangle mesh against masks (`(counter-clockwise triangles, inverted)`), exactly.
 /// `None` if the result would exceed `limit` pieces.
-pub(super) fn clip_mesh(pos: &[Vec2], tris: &[[u32; 3]], masks: &[(Vec<[Vec2; 3]>, bool)], limit: usize) -> Option<(Vec<Vec2>, Vec<[u32; 3]>)> {
+pub(super) fn clip_mesh(
+    pos: &[Vec2],
+    tris: &[[u32; 3]],
+    masks: &[(Vec<[Vec2; 3]>, bool)],
+    limit: usize,
+) -> Option<(Vec<Vec2>, Vec<[u32; 3]>)> {
     let mut cur: Vec<Vec<Vec2>> = tris
         .iter()
         .map(|t| {
@@ -140,8 +154,20 @@ pub(super) enum GradMap {
 
 pub(super) fn grad_map(p: &Paint) -> Option<GradMap> {
     match p {
-        Paint::Linear { from, to, stops } if stops.len() >= 2 && from.distance(*to) > 1e-6 => Some(GradMap::Linear { from: *from, to: *to }),
-        Paint::Radial { center, radius, stops } if stops.len() >= 2 && *radius > 1e-3 => Some(GradMap::Radial { center: *center, radius: *radius }),
+        Paint::Linear { from, to, stops } if stops.len() >= 2 && from.distance(*to) > 1e-6 => {
+            Some(GradMap::Linear {
+                from: *from,
+                to: *to,
+            })
+        }
+        Paint::Radial {
+            center,
+            radius,
+            stops,
+        } if stops.len() >= 2 && *radius > 1e-3 => Some(GradMap::Radial {
+            center: *center,
+            radius: *radius,
+        }),
         _ => None,
     }
 }
@@ -156,7 +182,10 @@ pub(super) fn grad_uv(m: &GradMap, p: Vec2) -> [f32; 2] {
         }
         GradMap::Radial { center, radius } => {
             let s = (p - *center) * (1.0 / radius);
-            [(0.5 + (s.x + 1.0) * 0.5 * (n - 1.0)) / n, (0.5 + (s.y + 1.0) * 0.5 * (n - 1.0)) / n]
+            [
+                (0.5 + (s.x + 1.0) * 0.5 * (n - 1.0)) / n,
+                (0.5 + (s.y + 1.0) * 0.5 * (n - 1.0)) / n,
+            ]
         }
     }
 }
@@ -170,7 +199,11 @@ pub(super) fn color_at(stops: &[crate::style::Stop], t: f32) -> Rgba {
     for w in s.windows(2) {
         if t <= w[1].offset {
             let span = w[1].offset - w[0].offset;
-            let u = if span <= 1e-9 { 1.0 } else { (t - w[0].offset) / span };
+            let u = if span <= 1e-9 {
+                1.0
+            } else {
+                (t - w[0].offset) / span
+            };
             return w[0].color.lerp(w[1].color, u);
         }
     }
@@ -205,7 +238,10 @@ pub(super) fn gradient_png(p: &Paint) -> Vec<u8> {
             let mut px = Vec::with_capacity(n * n * 4);
             for j in 0..n {
                 for i in 0..n {
-                    let (sx, sy) = (-1.0 + 2.0 * i as f32 / (n - 1) as f32, -1.0 + 2.0 * j as f32 / (n - 1) as f32);
+                    let (sx, sy) = (
+                        -1.0 + 2.0 * i as f32 / (n - 1) as f32,
+                        -1.0 + 2.0 * j as f32 / (n - 1) as f32,
+                    );
                     px.extend_from_slice(&color_at(stops, sx.hypot(sy)).to_u8());
                 }
             }
@@ -218,7 +254,9 @@ pub(super) fn gradient_png(p: &Paint) -> Vec<u8> {
 pub(super) fn stops_translucent(p: &Paint) -> bool {
     match p {
         Paint::Solid(c) => c.a < 0.999,
-        Paint::Linear { stops, .. } | Paint::Radial { stops, .. } => stops.iter().any(|s| s.color.a < 0.999),
+        Paint::Linear { stops, .. } | Paint::Radial { stops, .. } => {
+            stops.iter().any(|s| s.color.a < 0.999)
+        }
     }
 }
 
@@ -235,19 +273,28 @@ pub(super) fn seg_pts(p: &VPath, i: usize) -> [Vec2; 4] {
 pub(super) fn seg_count_for(p: &VPath, i: usize, tol: f32) -> usize {
     let [p0, c1, c2, p1] = seg_pts(p, i);
     let ctrl = p0.distance(c1) + c1.distance(c2) + c2.distance(p1);
-    ((ctrl / tol.max(1e-3)).sqrt() * 0.6).ceil().clamp(1.0, 48.0) as usize
+    ((ctrl / tol.max(1e-3)).sqrt() * 0.6)
+        .ceil()
+        .clamp(1.0, 48.0) as usize
 }
 
 pub(super) fn flatten_fixed(p: &VPath, ns: &[usize]) -> Vec<Vec2> {
     let mut out = Vec::new();
-    let Some(first) = p.anchors.first() else { return out };
+    let Some(first) = p.anchors.first() else {
+        return out;
+    };
     out.push(first.pos);
     for (i, &n) in ns.iter().enumerate().take(p.segment_count()) {
         let [p0, c1, c2, p1] = seg_pts(p, i);
         for k in 1..=n {
             let t = k as f32 / n as f32;
             let m = 1.0 - t;
-            out.push(p0 * (m * m * m) + c1 * (3.0 * m * m * t) + c2 * (3.0 * m * t * t) + p1 * (t * t * t));
+            out.push(
+                p0 * (m * m * m)
+                    + c1 * (3.0 * m * m * t)
+                    + c2 * (3.0 * m * t * t)
+                    + p1 * (t * t * t),
+            );
         }
     }
     if p.closed && out.len() > 1 {
@@ -269,12 +316,26 @@ pub(super) type MorphCache = Option<Vec<(Frame, Vec<Vec<Vec<f32>>>)>>;
 /// Try to express `src`'s morphs as glTF targets. Ok = (base points, triangles, data).
 pub(super) type Tri = [u32; 3];
 
-pub(super) fn try_morph(engine: &Engine, cache: &mut MorphCache, nid: usize, pi: usize, src: &VPath) -> Result<(Vec<Vec2>, Vec<Tri>, MorphData), String> {
+pub(super) fn try_morph(
+    engine: &Engine,
+    cache: &mut MorphCache,
+    nid: usize,
+    pi: usize,
+    src: &VPath,
+) -> Result<(Vec<Vec2>, Vec<Tri>, MorphData), String> {
     let nf = engine.project.frames as usize;
     if nf > 1500 || src.anchors.len() < 3 {
         return Err("too many frames (or too few anchors) to verify morph targets".into());
     }
-    let morph_paths: Vec<VPath> = src.morphs.iter().map(|m| VPath { anchors: m.anchors.clone(), morphs: vec![], ..src.clone() }).collect();
+    let morph_paths: Vec<VPath> = src
+        .morphs
+        .iter()
+        .map(|m| VPath {
+            anchors: m.anchors.clone(),
+            morphs: vec![],
+            ..src.clone()
+        })
+        .collect();
     let ns: Vec<usize> = (0..src.segment_count())
         .map(|i| {
             let mut n = seg_count_for(src, i, 0.5);
@@ -285,13 +346,30 @@ pub(super) fn try_morph(engine: &Engine, cache: &mut MorphCache, nid: usize, pi:
         })
         .collect();
     let base = flatten_fixed(src, &ns);
-    let deltas: Vec<Vec<Vec2>> = morph_paths.iter().map(|mp| flatten_fixed(mp, &ns).iter().zip(&base).map(|(a, b)| *a - *b).collect()).collect();
-    let cache = cache.get_or_insert_with(|| (0..nf).map(|f| (engine.evaluate(f as f32), engine.morph_weights(f as f32))).collect());
+    let deltas: Vec<Vec<Vec2>> = morph_paths
+        .iter()
+        .map(|mp| {
+            flatten_fixed(mp, &ns)
+                .iter()
+                .zip(&base)
+                .map(|(a, b)| *a - *b)
+                .collect()
+        })
+        .collect();
+    let cache = cache.get_or_insert_with(|| {
+        (0..nf)
+            .map(|f| (engine.evaluate(f as f32), engine.morph_weights(f as f32)))
+            .collect()
+    });
     let nt = src.morphs.len();
     let mut frames = Vec::with_capacity(nf * nt);
     let mut tris: Vec<[u32; 3]> = Vec::new();
     for (f, (fr, mw)) in cache.iter().enumerate() {
-        let w = mw.get(nid).and_then(|x| x.get(pi)).cloned().unwrap_or_default();
+        let w = mw
+            .get(nid)
+            .and_then(|x| x.get(pi))
+            .cloned()
+            .unwrap_or_default();
         if w.len() != nt {
             return Err("morph weights unavailable".into());
         }
@@ -308,18 +386,29 @@ pub(super) fn try_morph(engine: &Engine, cache: &mut MorphCache, nid: usize, pi:
                 p
             })
             .collect();
-        let err = recon.iter().zip(&actual).map(|(a, b)| a.distance(*b)).fold(0.0, f32::max);
+        let err = recon
+            .iter()
+            .zip(&actual)
+            .map(|(a, b)| a.distance(*b))
+            .fold(0.0, f32::max);
         if err > 0.05 {
             return Err(format!("geometry at frame {f} is not base + weighted deltas (error {err:.3}); the layer is also deformed by skinning, a deformer, wobble or point offsets"));
         }
         if f == 0 {
-            tris = triangulate(&actual).into_iter().map(|t| [t[0] as u32, t[1] as u32, t[2] as u32]).collect();
+            tris = triangulate(&actual)
+                .into_iter()
+                .map(|t| [t[0] as u32, t[1] as u32, t[2] as u32])
+                .collect();
             if tris.is_empty() {
                 return Err("fill cannot be triangulated".into());
             }
         }
         for t in &tris {
-            let (a, b, c) = (recon[t[0] as usize], recon[t[1] as usize], recon[t[2] as usize]);
+            let (a, b, c) = (
+                recon[t[0] as usize],
+                recon[t[1] as usize],
+                recon[t[2] as usize],
+            );
             if cr(b - a, c - a) < -0.1 {
                 return Err(format!("the frame-0 triangulation folds over at frame {f}"));
             }
@@ -330,5 +419,14 @@ pub(super) fn try_morph(engine: &Engine, cache: &mut MorphCache, nid: usize, pi:
         return Err("morph weights are zero on every frame".into());
     }
     let w0 = frames[..nt].to_vec();
-    Ok((base, tris, MorphData { names: src.morphs.iter().map(|m| m.name.clone()).collect(), deltas, w0, frames }))
+    Ok((
+        base,
+        tris,
+        MorphData {
+            names: src.morphs.iter().map(|m| m.name.clone()).collect(),
+            deltas,
+            w0,
+            frames,
+        },
+    ))
 }

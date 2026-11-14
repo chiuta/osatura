@@ -10,6 +10,9 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Added
+- **Fractal textures** (`osatura_core::fractal`, CLI `texture` and `texture-add`): deterministic, seamlessly tileable surface textures up to 4096x4096 with a lit colour image, a flat albedo, a 16-bit height map and a tangent-space normal map. Noise family: fBm, ridged multifractal, billow, domain warp, cellular cracks, marble veins, with every octave limited to the Nyquist frequency so large sizes gain real detail. Escape-time family: Mandelbrot, Julia and Burning Ship with smooth colouring and supersampling. 14 presets (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` embeds the result as an image layer with its normal map, so it works in every existing export and in `fx --layer-normals`. No project-format change.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Pre-release prepared from `main`; the tag `v0.1.0-alpha.5` is created when the release is published. Crate versions stay `0.1.0`; the release version comes from `OSATURA_VERSION` set by `release.yml`.*

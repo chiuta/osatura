@@ -119,7 +119,11 @@ impl RenderSettings {
     /// Settings with the given scale (other options off). Use this and the `with_*` methods:
     /// the struct is `#[non_exhaustive]`, so it cannot be built with a struct literal.
     pub fn new(scale: f32) -> RenderSettings {
-        RenderSettings { scale, show_bones: false, transparent: false }
+        RenderSettings {
+            scale,
+            show_bones: false,
+            transparent: false,
+        }
     }
     pub fn with_bones(mut self, show_bones: bool) -> RenderSettings {
         self.show_bones = show_bones;
@@ -133,7 +137,11 @@ impl RenderSettings {
 
 impl Default for RenderSettings {
     fn default() -> Self {
-        RenderSettings { scale: 1.0, show_bones: false, transparent: false }
+        RenderSettings {
+            scale: 1.0,
+            show_bones: false,
+            transparent: false,
+        }
     }
 }
 
@@ -231,7 +239,11 @@ pub struct MocapSettings {
 
 impl MocapSettings {
     pub fn new() -> MocapSettings {
-        MocapSettings { in_place: false, mirror: false, smooth: 0 }
+        MocapSettings {
+            in_place: false,
+            mirror: false,
+            smooth: 0,
+        }
     }
     pub fn with_in_place(mut self, in_place: bool) -> MocapSettings {
         self.in_place = in_place;
@@ -392,12 +404,20 @@ pub fn trace_image_svg(image: &[u8], colors: usize) -> Result<String, ApiError> 
     })
 }
 
-pub(super) fn trace_bytes(image: &[u8], colors: usize) -> Result<crate::autotrace::TraceResult, ApiError> {
+pub(super) fn trace_bytes(
+    image: &[u8],
+    colors: usize,
+) -> Result<crate::autotrace::TraceResult, ApiError> {
     if !(2..=64).contains(&colors) {
-        return Err(ApiError::InvalidArgument("colors must be within 2..=64".into()));
+        return Err(ApiError::InvalidArgument(
+            "colors must be within 2..=64".into(),
+        ));
     }
     let img = crate::autotrace::decode_image(image).map_err(ApiError::InvalidArgument)?;
-    let o = crate::autotrace::TraceOptions { colors, ..Default::default() };
+    let o = crate::autotrace::TraceOptions {
+        colors,
+        ..Default::default()
+    };
     o.validate().map_err(ApiError::InvalidArgument)?;
     crate::autotrace::trace(&img, &o).map_err(ApiError::InvalidArgument)
 }
@@ -407,15 +427,30 @@ pub(super) fn trace_bytes(image: &[u8], colors: usize) -> Result<crate::autotrac
 /// an empty list.
 pub fn vcs_log(path: &str, limit: usize) -> Result<Vec<VcsCommit>, ApiError> {
     if !(1..=10_000).contains(&limit) {
-        return Err(ApiError::InvalidArgument("limit must be within 1..=10000".into()));
+        return Err(ApiError::InvalidArgument(
+            "limit must be within 1..=10000".into(),
+        ));
     }
     guard(|| {
-        let repo = crate::vcs::Repo::open(std::path::Path::new(path)).map_err(ApiError::InvalidArgument)?;
-        if repo.head_commit().map_err(ApiError::InvalidArgument)?.is_none() {
+        let repo = crate::vcs::Repo::open(std::path::Path::new(path))
+            .map_err(ApiError::InvalidArgument)?;
+        if repo
+            .head_commit()
+            .map_err(ApiError::InvalidArgument)?
+            .is_none()
+        {
             return Ok(Vec::new());
         }
         let log = repo.log("HEAD", limit).map_err(ApiError::InvalidArgument)?;
-        Ok(log.into_iter().map(|(id, c)| VcsCommit { id, author: c.author, time: c.time, message: c.message }).collect())
+        Ok(log
+            .into_iter()
+            .map(|(id, c)| VcsCommit {
+                id,
+                author: c.author,
+                time: c.time,
+                message: c.message,
+            })
+            .collect())
     })
 }
 
@@ -423,7 +458,11 @@ pub fn vcs_log(path: &str, limit: usize) -> Result<Vec<VcsCommit>, ApiError> {
 /// manifest resolve next to it. A failing check is not an error: look at [`CiOutcome::exit_code`].
 pub fn ci_run(manifest_path: &str) -> Result<CiOutcome, ApiError> {
     guard(|| {
-        let r = crate::ci::run(std::path::Path::new(manifest_path), &crate::ci::RunOptions::default()).map_err(ApiError::InvalidArgument)?;
+        let r = crate::ci::run(
+            std::path::Path::new(manifest_path),
+            &crate::ci::RunOptions::default(),
+        )
+        .map_err(ApiError::InvalidArgument)?;
         Ok(ci_outcome(&r))
     })
 }

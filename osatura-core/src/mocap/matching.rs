@@ -34,8 +34,11 @@ pub struct MatchResult {
 pub type ManualMap = BTreeMap<String, Option<String>>;
 
 pub fn parse_map(json: &str) -> Result<ManualMap, String> {
-    let v: serde_json::Value = serde_json::from_str(json).map_err(|e| format!("bad mapping JSON: {e}"))?;
-    let obj = v.as_object().ok_or("mapping must be a JSON object {\"bvh joint\": \"rig bone\"}")?;
+    let v: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| format!("bad mapping JSON: {e}"))?;
+    let obj = v
+        .as_object()
+        .ok_or("mapping must be a JSON object {\"bvh joint\": \"rig bone\"}")?;
     let obj = match (obj.len(), obj.get("map").or_else(|| obj.get("bones"))) {
         (1, Some(serde_json::Value::Object(inner))) => inner,
         _ => obj,
@@ -58,19 +61,29 @@ pub(super) fn median(v: &mut [f64]) -> Option<f64> {
     }
     v.sort_by(|a, b| a.total_cmp(b));
     let n = v.len();
-    Some(if n % 2 == 1 { v[n / 2] } else { 0.5 * (v[n / 2 - 1] + v[n / 2]) })
+    Some(if n % 2 == 1 {
+        v[n / 2]
+    } else {
+        0.5 * (v[n / 2 - 1] + v[n / 2])
+    })
 }
 
 pub(super) fn find_joint(b: &Bvh, name: &str) -> Option<usize> {
     b.joint_index(name).or_else(|| {
         let l = name.to_lowercase();
-        let hits: Vec<usize> = (0..b.joints.len()).filter(|&i| b.joints[i].name.to_lowercase() == l).collect();
+        let hits: Vec<usize> = (0..b.joints.len())
+            .filter(|&i| b.joints[i].name.to_lowercase() == l)
+            .collect();
         (hits.len() == 1).then(|| hits[0])
     })
 }
 
 /// Match BVH joints to rig bones. See the module docs for the strategy.
-pub fn match_bones(bvh: &Bvh, p: &Project, manual: Option<&ManualMap>) -> Result<MatchResult, String> {
+pub fn match_bones(
+    bvh: &Bvh,
+    p: &Project,
+    manual: Option<&ManualMap>,
+) -> Result<MatchResult, String> {
     if p.bones.is_empty() {
         return Err("project has no bones".into());
     }
@@ -136,7 +149,11 @@ pub fn match_bones(bvh: &Bvh, p: &Project, manual: Option<&ManualMap>) -> Result
             bvh_name: bvh.joints[a.joint].name.clone(),
             rig_name: p.bones[r.joint].name.clone(),
             confidence: a.conf.min(r.conf),
-            via: if a.via == Via::Name && r.via == Via::Name { "name" } else { "topology" },
+            via: if a.via == Via::Name && r.via == Via::Name {
+                "name"
+            } else {
+                "topology"
+            },
             length_ratio: None,
             note: String::new(),
             tip: Tip::Extrap(a.joint),
@@ -176,9 +193,18 @@ pub fn match_bones(bvh: &Bvh, p: &Project, manual: Option<&ManualMap>) -> Result
         }
         // a manual match keeps the canonical slot of the BVH joint (hips, spine.N, upperarm.l, ...): the slot decides the
         // tip, root travel and the "no hips match" warning, so `Hips=bone` must stay the hips
-        let bvh_slot: BTreeMap<usize, String> = ab.single.iter().map(|(k, a)| (a.joint, k.clone())).collect();
+        let bvh_slot: BTreeMap<usize, String> = ab
+            .single
+            .iter()
+            .map(|(k, a)| (a.joint, k.clone()))
+            .collect();
         for (bj, rj) in ov {
-            let inherited = matches.iter().find(|m| m.bvh == bj).map(|m| m.slot.clone()).filter(|sl| sl != "manual").or_else(|| bvh_slot.get(&bj).cloned());
+            let inherited = matches
+                .iter()
+                .find(|m| m.bvh == bj)
+                .map(|m| m.slot.clone())
+                .filter(|sl| sl != "manual")
+                .or_else(|| bvh_slot.get(&bj).cloned());
             matches.retain(|m| m.bvh != bj && Some(m.rig) != rj);
             if let Some(rj) = rj {
                 let slot = match inherited {
@@ -203,14 +229,24 @@ pub fn match_bones(bvh: &Bvh, p: &Project, manual: Option<&ManualMap>) -> Result
 
     // tips: next matched slot in the chain, else the default tip
     let reach = bvh.reach();
-    let by_slot: BTreeMap<String, usize> = matches.iter().map(|m| (m.slot.clone(), m.bvh)).collect();
-    let nspine = matches.iter().filter(|m| m.slot.starts_with("spine.")).count();
+    let by_slot: BTreeMap<String, usize> =
+        matches.iter().map(|m| (m.slot.clone(), m.bvh)).collect();
+    let nspine = matches
+        .iter()
+        .filter(|m| m.slot.starts_with("spine."))
+        .count();
     for m in matches.iter_mut() {
         let next: Vec<String> = match m.slot.split_once('.') {
-            _ if m.slot == "hips" => (0..nspine).map(|i| format!("spine.{i}")).chain(["neck".to_string(), "head".to_string()]).collect(),
+            _ if m.slot == "hips" => (0..nspine)
+                .map(|i| format!("spine.{i}"))
+                .chain(["neck".to_string(), "head".to_string()])
+                .collect(),
             Some(("spine", i)) => {
                 let i: usize = i.parse().unwrap_or(0);
-                ((i + 1)..nspine).map(|k| format!("spine.{k}")).chain(["neck".to_string(), "head".to_string()]).collect()
+                ((i + 1)..nspine)
+                    .map(|k| format!("spine.{k}"))
+                    .chain(["neck".to_string(), "head".to_string()])
+                    .collect()
             }
             _ if m.slot == "neck" => vec!["head".into()],
             Some(("clavicle", s)) => vec![format!("upperarm.{s}")],
@@ -255,10 +291,23 @@ pub fn match_bones(bvh: &Bvh, p: &Project, manual: Option<&ManualMap>) -> Result
             }
         }
     }
-    let mut limb: Vec<f64> = matches.iter().filter(|m| m.via != "manual" && ["upperarm", "forearm", "thigh", "shin"].iter().any(|r| m.slot.starts_with(r))).filter_map(|m| m.length_ratio).collect();
+    let mut limb: Vec<f64> = matches
+        .iter()
+        .filter(|m| {
+            m.via != "manual"
+                && ["upperarm", "forearm", "thigh", "shin"]
+                    .iter()
+                    .any(|r| m.slot.starts_with(r))
+        })
+        .filter_map(|m| m.length_ratio)
+        .collect();
     if let Some(med) = median(&mut limb) {
         for m in matches.iter_mut() {
-            if m.via == "manual" || !["upperarm", "forearm", "thigh", "shin"].iter().any(|r| m.slot.starts_with(r)) {
+            if m.via == "manual"
+                || !["upperarm", "forearm", "thigh", "shin"]
+                    .iter()
+                    .any(|r| m.slot.starts_with(r))
+            {
                 continue;
             }
             if let Some(r) = m.length_ratio {
@@ -276,8 +325,14 @@ pub fn match_bones(bvh: &Bvh, p: &Project, manual: Option<&ManualMap>) -> Result
 
     let mb: BTreeSet<usize> = matches.iter().map(|m| m.bvh).collect();
     let mr: BTreeSet<usize> = matches.iter().map(|m| m.rig).collect();
-    let unmatched_bvh = (0..bvh.joints.len()).filter(|i| !mb.contains(i)).map(|i| bvh.joints[i].name.clone()).collect();
-    let unmatched_rig = (0..p.bones.len()).filter(|i| !mr.contains(i)).map(|i| p.bones[i].name.clone()).collect();
+    let unmatched_bvh = (0..bvh.joints.len())
+        .filter(|i| !mb.contains(i))
+        .map(|i| bvh.joints[i].name.clone())
+        .collect();
+    let unmatched_rig = (0..p.bones.len())
+        .filter(|i| !mr.contains(i))
+        .map(|i| p.bones[i].name.clone())
+        .collect();
     if !matches.iter().any(|m| m.slot == "hips") {
         warnings.push("no hips match: root motion will not be transferred".into());
     }
@@ -292,13 +347,21 @@ pub fn match_bones(bvh: &Bvh, p: &Project, manual: Option<&ManualMap>) -> Result
     if matches.is_empty() {
         warnings.push("no bones matched: supply a --map file".into());
     }
-    Ok(MatchResult { matches, unmatched_bvh, unmatched_rig, warnings })
+    Ok(MatchResult {
+        matches,
+        unmatched_bvh,
+        unmatched_rig,
+        warnings,
+    })
 }
 
 /// Plain-text match table.
 pub fn format_table(r: &MatchResult) -> String {
     let mut s = String::new();
-    s.push_str(&format!("{:<12} {:<26} {:<22} {:>5}  {:<9} {:>7}  {}\n", "slot", "bvh joint", "rig bone", "conf", "via", "len x", "note"));
+    s.push_str(&format!(
+        "{:<12} {:<26} {:<22} {:>5}  {:<9} {:>7}  {}\n",
+        "slot", "bvh joint", "rig bone", "conf", "via", "len x", "note"
+    ));
     for m in &r.matches {
         s.push_str(&format!(
             "{:<12} {:<26} {:<22} {:>5.2}  {:<9} {:>7}  {}\n",
@@ -307,15 +370,22 @@ pub fn format_table(r: &MatchResult) -> String {
             m.rig_name,
             m.confidence,
             m.via,
-            m.length_ratio.map_or("-".to_string(), |v| format!("{v:.2}")),
+            m.length_ratio
+                .map_or("-".to_string(), |v| format!("{v:.2}")),
             m.note
         ));
     }
     if !r.unmatched_bvh.is_empty() {
-        s.push_str(&format!("unmatched BVH joints: {}\n", r.unmatched_bvh.join(", ")));
+        s.push_str(&format!(
+            "unmatched BVH joints: {}\n",
+            r.unmatched_bvh.join(", ")
+        ));
     }
     if !r.unmatched_rig.is_empty() {
-        s.push_str(&format!("unmatched rig bones: {}\n", r.unmatched_rig.join(", ")));
+        s.push_str(&format!(
+            "unmatched rig bones: {}\n",
+            r.unmatched_rig.join(", ")
+        ));
     }
     for w in &r.warnings {
         s.push_str(&format!("warning: {w}\n"));

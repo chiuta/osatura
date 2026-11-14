@@ -9,10 +9,20 @@ use super::*;
 pub(super) type A = [f64; 6];
 
 pub(super) fn a_of(m: &Affine2) -> A {
-    [m.a as f64, m.b as f64, m.c as f64, m.d as f64, m.tx as f64, m.ty as f64]
+    [
+        m.a as f64,
+        m.b as f64,
+        m.c as f64,
+        m.d as f64,
+        m.tx as f64,
+        m.ty as f64,
+    ]
 }
 pub(super) fn a_apply(m: &A, p: P) -> P {
-    [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]]
+    [
+        m[0] * p[0] + m[2] * p[1] + m[4],
+        m[1] * p[0] + m[3] * p[1] + m[5],
+    ]
 }
 pub(super) fn a_mul(l: &A, r: &A) -> A {
     [
@@ -30,13 +40,26 @@ pub(super) fn a_inv(m: &A) -> Option<A> {
         return None;
     }
     let (ia, ib, ic, id) = (m[3] / det, -m[1] / det, -m[2] / det, m[0] / det);
-    Some([ia, ib, ic, id, -(ia * m[4] + ic * m[5]), -(ib * m[4] + id * m[5])])
+    Some([
+        ia,
+        ib,
+        ic,
+        id,
+        -(ia * m[4] + ic * m[5]),
+        -(ib * m[4] + id * m[5]),
+    ])
 }
 /// Largest singular value of the linear part.
 pub(super) fn lin_norm(m: &A) -> f64 {
-    let (p, q, r) = (m[0] * m[0] + m[1] * m[1], m[0] * m[2] + m[1] * m[3], m[2] * m[2] + m[3] * m[3]);
+    let (p, q, r) = (
+        m[0] * m[0] + m[1] * m[1],
+        m[0] * m[2] + m[1] * m[3],
+        m[2] * m[2] + m[3] * m[3],
+    );
     let h = (p + r) * 0.5;
-    (h + (((p - r) * 0.5).powi(2) + q * q).sqrt()).max(0.0).sqrt()
+    (h + (((p - r) * 0.5).powi(2) + q * q).sqrt())
+        .max(0.0)
+        .sqrt()
 }
 pub(super) fn local_matrix(t: &crate::project::Transform2D) -> A {
     a_of(&t.matrix())

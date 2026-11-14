@@ -19,7 +19,12 @@ pub struct VerifyOptions {
 
 impl VerifyOptions {
     pub fn new(scale: f64) -> VerifyOptions {
-        VerifyOptions { scale, frames: 24, pixels: true, pixel_frames: 6 }
+        VerifyOptions {
+            scale,
+            frames: 24,
+            pixels: true,
+            pixel_frames: 6,
+        }
     }
 }
 
@@ -61,7 +66,13 @@ pub(super) fn verify_frames(orig: &Project, lod: &Project, n: usize) -> Vec<f32>
     for p in [orig, lod] {
         for c in &p.channels {
             if let Source::Keys { track } = &c.source {
-                v.extend(track.keys.iter().map(|k| k.frame).filter(|f| *f >= 0.0 && *f < total));
+                v.extend(
+                    track
+                        .keys
+                        .iter()
+                        .map(|k| k.frame)
+                        .filter(|f| *f >= 0.0 && *f < total),
+                );
             }
         }
     }
@@ -134,14 +145,20 @@ pub fn verify(orig: &Project, lod: &Lod, o: &VerifyOptions) -> Result<VerifyRepo
                 if nd.visible && nd.opacity > 0.0 {
                     let pts = node_points(nd, &w0);
                     if !pts.is_empty() {
-                        let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+                        let (mut x0, mut y0, mut x1, mut y1) =
+                            (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
                         for q in &pts {
                             x0 = x0.min(q[0]);
                             y0 = y0.min(q[1]);
                             x1 = x1.max(q[0]);
                             y1 = y1.max(q[1]);
                         }
-                        let hw = nd.paths.iter().filter_map(|pp| pp.stroke.as_ref().map(|s| s.width as f64 * 0.5)).fold(0.0, f64::max) * lin_norm(&w0);
+                        let hw = nd
+                            .paths
+                            .iter()
+                            .filter_map(|pp| pp.stroke.as_ref().map(|s| s.width as f64 * 0.5))
+                            .fold(0.0, f64::max)
+                            * lin_norm(&w0);
                         let d = ((x1 - x0) + 2.0 * hw).hypot((y1 - y0) + 2.0 * hw) * o.scale;
                         m_cull = m_cull.max(d);
                         if d > worst.0 {
@@ -155,7 +172,10 @@ pub fn verify(orig: &Project, lod: &Lod, o: &VerifyOptions) -> Result<VerifyRepo
             let w1 = a_of(&n1.world);
             if nd.paths.len() == n1.paths.len() {
                 for (pa, pb) in nd.paths.iter().zip(&n1.paths) {
-                    let (a, b) = (screen_outline(pa, &w0, o.scale), screen_outline(pb, &w1, o.scale));
+                    let (a, b) = (
+                        screen_outline(pa, &w0, o.scale),
+                        screen_outline(pb, &w1, o.scale),
+                    );
                     let d = hausdorff_upper(&a, &b, 0.002);
                     local_worst = local_worst.max(d);
                     m_paths = m_paths.max(d);
@@ -174,12 +194,24 @@ pub fn verify(orig: &Project, lod: &Lod, o: &VerifyOptions) -> Result<VerifyRepo
                     let probe = probes.entry(nd.name.clone()).or_insert_with(|| {
                         let rest_of = |p: &Project, img: &crate::engine::ImageDraw| -> Vec<P> {
                             match p.find_layer(&nd.name).map(|l| &l.kind) {
-                                Some(LayerKind::Image { mesh: Some(m), origin, .. }) => m.rest_vertices(*origin, img.size).iter().map(|v| p_of(*v)).collect(),
+                                Some(LayerKind::Image {
+                                    mesh: Some(m),
+                                    origin,
+                                    ..
+                                }) => m
+                                    .rest_vertices(*origin, img.size)
+                                    .iter()
+                                    .map(|v| p_of(*v))
+                                    .collect(),
                                 _ => vec![],
                             }
                         };
                         let (ra, rb) = (rest_of(orig, a), rest_of(&lod.project, b));
-                        let tb: Vec<[usize; 3]> = mb.tris.iter().map(|t| [t[0] as usize, t[1] as usize, t[2] as usize]).collect();
+                        let tb: Vec<[usize; 3]> = mb
+                            .tris
+                            .iter()
+                            .map(|t| [t[0] as usize, t[1] as usize, t[2] as usize])
+                            .collect();
                         let mut pts = Vec::new();
                         if ra.len() == ma.positions.len() && rb.len() == mb.positions.len() {
                             for t in &ma.tris {
@@ -194,7 +226,10 @@ pub fn verify(orig: &Project, lod: &Lod, o: &VerifyOptions) -> Result<VerifyRepo
                                     [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0],
                                 ];
                                 for l in cs {
-                                    let p = add(add(mul(ra[t[0]], l[0]), mul(ra[t[1]], l[1])), mul(ra[t[2]], l[2]));
+                                    let p = add(
+                                        add(mul(ra[t[0]], l[0]), mul(ra[t[1]], l[1])),
+                                        mul(ra[t[2]], l[2]),
+                                    );
                                     if let Some((tt, ll)) = locate(&rb, &tb, p) {
                                         pts.push((t, l, tt, ll));
                                     }
@@ -204,8 +239,12 @@ pub fn verify(orig: &Project, lod: &Lod, o: &VerifyOptions) -> Result<VerifyRepo
                         MeshProbe { pts }
                     });
                     for (ta, la, tb_, lb) in &probe.pts {
-                        let ya = (0..3).fold([0.0, 0.0], |acc, j| add(acc, mul(p_of(ma.positions[ta[j]]), la[j])));
-                        let yb = (0..3).fold([0.0, 0.0], |acc, j| add(acc, mul(p_of(mb.positions[tb_[j]]), lb[j])));
+                        let ya = (0..3).fold([0.0, 0.0], |acc, j| {
+                            add(acc, mul(p_of(ma.positions[ta[j]]), la[j]))
+                        });
+                        let yb = (0..3).fold([0.0, 0.0], |acc, j| {
+                            add(acc, mul(p_of(mb.positions[tb_[j]]), lb[j]))
+                        });
                         let d = dist(a_apply(&w0, ya), a_apply(&w1, yb)) * o.scale;
                         m_mesh = m_mesh.max(d);
                         local_worst = local_worst.max(d);
@@ -220,8 +259,14 @@ pub fn verify(orig: &Project, lod: &Lod, o: &VerifyOptions) -> Result<VerifyRepo
     let measured = m_paths.max(m_mesh).max(m_cull).max(worst.0);
     let (mut pmax, mut pde, mut pshift, mut pframes) = (0u32, 0.0f64, 0.0f64, 0usize);
     if o.pixels {
-        let ro = crate::raster::RasterOptions { scale: o.scale as f32, show_bones: false, transparent: false };
-        let mut pf: Vec<f32> = (0..o.pixel_frames.max(1)).map(|i| (i as f32 * orig.frames.max(1) as f32 / o.pixel_frames.max(1) as f32).floor()).collect();
+        let ro = crate::raster::RasterOptions {
+            scale: o.scale as f32,
+            show_bones: false,
+            transparent: false,
+        };
+        let mut pf: Vec<f32> = (0..o.pixel_frames.max(1))
+            .map(|i| (i as f32 * orig.frames.max(1) as f32 / o.pixel_frames.max(1) as f32).floor())
+            .collect();
         pf.push(worst.1);
         pf.sort_by(|a, b| a.total_cmp(b));
         pf.dedup();
@@ -231,10 +276,17 @@ pub fn verify(orig: &Project, lod: &Lod, o: &VerifyOptions) -> Result<VerifyRepo
             let (w, h) = (w as usize, h as usize);
             pframes += 1;
             for (pa, pb) in a.chunks_exact(4).zip(b.chunks_exact(4)) {
-                let d = (0..4).map(|k| (pa[k] as i32 - pb[k] as i32).unsigned_abs()).max().unwrap_or(0);
+                let d = (0..4)
+                    .map(|k| (pa[k] as i32 - pb[k] as i32).unsigned_abs())
+                    .max()
+                    .unwrap_or(0);
                 if d > 0 {
                     pmax = pmax.max(d);
-                    pde = pde.max(crate::percep::pixel_de([pa[0], pa[1], pa[2], pa[3]], [pb[0], pb[1], pb[2], pb[3]], crate::percep::DeMetric::De2000));
+                    pde = pde.max(crate::percep::pixel_de(
+                        [pa[0], pa[1], pa[2], pa[3]],
+                        [pb[0], pb[1], pb[2], pb[3]],
+                        crate::percep::DeMetric::De2000,
+                    ));
                 }
             }
             pshift = pshift.max(shift_estimate(&a, &b, w, h));
@@ -251,7 +303,11 @@ pub fn verify(orig: &Project, lod: &Lod, o: &VerifyOptions) -> Result<VerifyRepo
         worst_layer: worst.2,
         frames_checked: frames.len(),
         holds: measured <= lod.record.declared_px + 1e-6,
-        conservatism: if measured > 1e-9 { Some(lod.record.declared_px / measured) } else { None },
+        conservatism: if measured > 1e-9 {
+            Some(lod.record.declared_px / measured)
+        } else {
+            None
+        },
         pixel_frames: pframes,
         pixel_max_abs: pmax,
         pixel_max_de2000: pde,
@@ -264,15 +320,26 @@ pub(super) fn shift_estimate(a: &[u8], b: &[u8], w: usize, h: usize) -> f64 {
     if w < 3 || h < 3 {
         return 0.0;
     }
-    let lum = |im: &[u8], i: usize| (0.299 * im[i * 4] as f64 + 0.587 * im[i * 4 + 1] as f64 + 0.114 * im[i * 4 + 2] as f64) / 255.0;
+    let lum = |im: &[u8], i: usize| {
+        (0.299 * im[i * 4] as f64 + 0.587 * im[i * 4 + 1] as f64 + 0.114 * im[i * 4 + 2] as f64)
+            / 255.0
+    };
     let mut diff = vec![0.0f64; w * h];
     let mut tv = vec![0.0f64; w * h];
     for y in 0..h {
         for x in 0..w {
             let i = y * w + x;
             diff[i] = (lum(a, i) - lum(b, i)).abs();
-            let dx = if x + 1 < w { lum(a, i + 1) - lum(a, i) } else { 0.0 };
-            let dy = if y + 1 < h { lum(a, i + w) - lum(a, i) } else { 0.0 };
+            let dx = if x + 1 < w {
+                lum(a, i + 1) - lum(a, i)
+            } else {
+                0.0
+            };
+            let dy = if y + 1 < h {
+                lum(a, i + w) - lum(a, i)
+            } else {
+                0.0
+            };
             tv[i] = dx.hypot(dy);
         }
     }
@@ -288,12 +355,19 @@ pub(super) fn shift_estimate(a: &[u8], b: &[u8], w: usize, h: usize) -> f64 {
         s
     };
     let (sd, st) = (integral(&diff), integral(&tv));
-    let rect = |s: &[f64], x0: usize, y0: usize, x1: usize, y1: usize| s[y1 * (w + 1) + x1] - s[y0 * (w + 1) + x1] - s[y1 * (w + 1) + x0] + s[y0 * (w + 1) + x0];
+    let rect = |s: &[f64], x0: usize, y0: usize, x1: usize, y1: usize| {
+        s[y1 * (w + 1) + x1] - s[y0 * (w + 1) + x1] - s[y1 * (w + 1) + x0] + s[y0 * (w + 1) + x0]
+    };
     let r = 4usize;
     let mut best = 0.0f64;
     for y in 0..h {
         for x in 0..w {
-            let (x0, y0, x1, y1) = (x.saturating_sub(r), y.saturating_sub(r), (x + r + 1).min(w), (y + r + 1).min(h));
+            let (x0, y0, x1, y1) = (
+                x.saturating_sub(r),
+                y.saturating_sub(r),
+                (x + r + 1).min(w),
+                (y + r + 1).min(h),
+            );
             let t = rect(&st, x0, y0, x1, y1);
             if t >= 1.0 {
                 best = best.max(rect(&sd, x0, y0, x1, y1) / t);

@@ -86,12 +86,19 @@ pub fn simulate(
     }
     let n = (duration * fps as f64).floor() as usize + 1;
     if n > MAX_SIM_TICKS {
-        return Err(format!("simulation would need more than {MAX_SIM_TICKS} ticks"));
+        return Err(format!(
+            "simulation would need more than {MAX_SIM_TICKS} ticks"
+        ));
     }
     let dt = 1.0 / fps as f64;
     let mut next = 0;
     let mut cur = 0.0f64;
-    let mut log = SimLog { machine: name, fps, ticks: vec![], events: vec![] };
+    let mut log = SimLog {
+        machine: name,
+        fps,
+        ticks: vec![],
+        events: vec![],
+    };
     for k in 0..n {
         let t_end = k as f64 * dt;
         while next < evs.len() && evs[next].t <= t_end + 1e-9 {
@@ -108,7 +115,11 @@ pub fn simulate(
                 let x = match v {
                     serde_json::Value::Bool(b) => *b as u8 as f64,
                     serde_json::Value::Number(x) => x.as_f64().unwrap_or(f64::NAN),
-                    _ => return Err(format!("script input '{n}': value must be a number or boolean")),
+                    _ => {
+                        return Err(format!(
+                            "script input '{n}': value must be a number or boolean"
+                        ))
+                    }
                 };
                 rt.set_input(n, x)?;
             }
@@ -123,8 +134,18 @@ pub fn simulate(
         rt.step((t_end - cur).max(0.0))?;
         cur = cur.max(t_end);
         log.events.extend(rt.take_events());
-        let fading = rt.layers.iter().filter(|l| l.fade.is_some()).map(|l| l.name.clone()).collect();
-        log.ticks.push(Tick { tick: k, time: t_end, states: rt.states(), fading });
+        let fading = rt
+            .layers
+            .iter()
+            .filter(|l| l.fade.is_some())
+            .map(|l| l.name.clone())
+            .collect();
+        log.ticks.push(Tick {
+            tick: k,
+            time: t_end,
+            states: rt.states(),
+            fading,
+        });
         per_tick(k, &rt)?;
     }
     Ok(log)
@@ -150,9 +171,18 @@ pub fn add(p: &mut Project, m: Machine) -> Result<(), String> {
 }
 
 pub fn remove(p: &mut Project, name: &str) -> Result<(), String> {
-    let i = p.machines.iter().position(|m| m.name == name).ok_or_else(|| format!("no machine '{name}'"))?;
-    if let Some(b) = p.bindings.iter().find(|b| matches!(&b.target, crate::binding::Target::Input { machine, .. } if machine == name)) {
-        return Err(format!("binding '{}' still drives machine '{name}'", b.name));
+    let i = p
+        .machines
+        .iter()
+        .position(|m| m.name == name)
+        .ok_or_else(|| format!("no machine '{name}'"))?;
+    if let Some(b) = p.bindings.iter().find(
+        |b| matches!(&b.target, crate::binding::Target::Input { machine, .. } if machine == name),
+    ) {
+        return Err(format!(
+            "binding '{}' still drives machine '{name}'",
+            b.name
+        ));
     }
     p.machines.remove(i);
     Ok(())
@@ -177,7 +207,11 @@ pub fn add_binding(p: &mut Project, b: crate::binding::Binding) -> Result<(), St
 }
 
 pub fn remove_binding(p: &mut Project, name: &str) -> Result<(), String> {
-    let i = p.bindings.iter().position(|b| b.name == name).ok_or_else(|| format!("no binding '{name}'"))?;
+    let i = p
+        .bindings
+        .iter()
+        .position(|b| b.name == name)
+        .ok_or_else(|| format!("no binding '{name}'"))?;
     p.bindings.remove(i);
     Ok(())
 }

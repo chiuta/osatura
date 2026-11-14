@@ -26,7 +26,15 @@ pub struct LodOptions {
 
 impl LodOptions {
     pub fn new(tolerance_px: f64, scale: f64, levels: usize) -> LodOptions {
-        LodOptions { tolerance_px, scale, levels, ratio: 2.0, geometry_share: 0.5, keys_share: 0.4, cull_share: 0.5 }
+        LodOptions {
+            tolerance_px,
+            scale,
+            levels,
+            ratio: 2.0,
+            geometry_share: 0.5,
+            keys_share: 0.4,
+            cull_share: 0.5,
+        }
     }
     pub fn check(&self) -> Result<(), String> {
         let ok = |x: f64| x.is_finite() && x > 0.0;
@@ -42,7 +50,10 @@ impl LodOptions {
         if !ok(self.ratio) || self.ratio < 1.0 || self.ratio > 16.0 {
             return Err("ratio must be in [1, 16]".into());
         }
-        if !ok(self.geometry_share) || !ok(self.keys_share) || self.geometry_share + self.keys_share > 1.0 + 1e-9 {
+        if !ok(self.geometry_share)
+            || !ok(self.keys_share)
+            || self.geometry_share + self.keys_share > 1.0 + 1e-9
+        {
             return Err("geometry and keys shares must be positive and sum to at most 1".into());
         }
         if !ok(self.cull_share) || self.cull_share > 1.0 {
@@ -110,7 +121,9 @@ pub fn count_stats(p: &Project) -> LodStats {
         for l in ls {
             s.layers += 1;
             match &l.kind {
-                LayerKind::Vector { paths } | LayerKind::Boolean { paths, .. } => s.path_anchors += paths.iter().map(|x| x.anchors.len()).sum::<usize>(),
+                LayerKind::Vector { paths } | LayerKind::Boolean { paths, .. } => {
+                    s.path_anchors += paths.iter().map(|x| x.anchors.len()).sum::<usize>()
+                }
                 LayerKind::Image { mesh: Some(m), .. } => s.mesh_vertices += m.vertex_count(),
                 _ => {}
             }

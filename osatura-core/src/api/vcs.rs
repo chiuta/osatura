@@ -63,14 +63,20 @@ pub(super) fn vcs_str<T>(r: Result<T, String>) -> Result<T, ApiError> {
 
 pub(super) fn vcs_no_merge(repo: &crate::vcs::Repo) -> Result<(), ApiError> {
     match vcs_str(repo.merge_state())? {
-        Some(st) => Err(ApiError::MergeInProgress(format!("a {} is unfinished ({} conflict(s) left); resolve and commit, or call vcs_abort", st.kind, st.conflicts.len()))),
+        Some(st) => Err(ApiError::MergeInProgress(format!(
+            "a {} is unfinished ({} conflict(s) left); resolve and commit, or call vcs_abort",
+            st.kind,
+            st.conflicts.len()
+        ))),
         None => Ok(()),
     }
 }
 
 pub(super) fn vcs_clean(repo: &crate::vcs::Repo) -> Result<(), ApiError> {
     if vcs_str(repo.head_commit())?.is_some() && vcs_str(repo.is_dirty())? {
-        return Err(ApiError::DirtyTree("the project file differs from the last commit: commit it first".into()));
+        return Err(ApiError::DirtyTree(
+            "the project file differs from the last commit: commit it first".into(),
+        ));
     }
     Ok(())
 }
@@ -80,8 +86,18 @@ pub(super) fn vcs_conflict(c: &crate::semdiff::Conflict) -> VcsConflict {
         crate::semdiff::Slot::Value(v) => Some(v.to_string()),
         _ => None,
     };
-    let kind = serde_json::to_value(c.kind).ok().and_then(|v| v.as_str().map(String::from)).unwrap_or_else(|| format!("{:?}", c.kind));
-    VcsConflict { path: c.path.clone(), kind, description: c.description.clone(), base: slot(&c.base), ours: slot(&c.ours), theirs: slot(&c.theirs) }
+    let kind = serde_json::to_value(c.kind)
+        .ok()
+        .and_then(|v| v.as_str().map(String::from))
+        .unwrap_or_else(|| format!("{:?}", c.kind));
+    VcsConflict {
+        path: c.path.clone(),
+        kind,
+        description: c.description.clone(),
+        base: slot(&c.base),
+        ours: slot(&c.ours),
+        theirs: slot(&c.theirs),
+    }
 }
 
 pub(super) fn vcs_outcome(o: crate::vcs::MergeOutcome) -> VcsMergeOutcome {
@@ -89,7 +105,9 @@ pub(super) fn vcs_outcome(o: crate::vcs::MergeOutcome) -> VcsMergeOutcome {
         crate::vcs::MergeOutcome::UpToDate => VcsMergeOutcome::UpToDate,
         crate::vcs::MergeOutcome::FastForward(h) => VcsMergeOutcome::FastForward(h),
         crate::vcs::MergeOutcome::Merged(h) => VcsMergeOutcome::Merged(h),
-        crate::vcs::MergeOutcome::Conflicted(cs) => VcsMergeOutcome::Conflicted(cs.iter().map(vcs_conflict).collect()),
+        crate::vcs::MergeOutcome::Conflicted(cs) => {
+            VcsMergeOutcome::Conflicted(cs.iter().map(vcs_conflict).collect())
+        }
     }
 }
 
@@ -112,7 +130,13 @@ pub(super) fn vcs_outcome(o: crate::vcs::MergeOutcome) -> VcsMergeOutcome {
 /// # Ok(()) }
 /// ```
 pub fn vcs_init(project_file: &str, author: Option<&str>) -> Result<(), ApiError> {
-    guard(|| vcs_str(crate::vcs::Repo::init(std::path::Path::new(project_file), author)).map(|_| ()))
+    guard(|| {
+        vcs_str(crate::vcs::Repo::init(
+            std::path::Path::new(project_file),
+            author,
+        ))
+        .map(|_| ())
+    })
 }
 
 /// Commit the project file on the current branch and return the new commit id. With a finished
@@ -135,12 +159,18 @@ pub fn vcs_init(project_file: &str, author: Option<&str>) -> Result<(), ApiError
 /// # std::fs::remove_dir_all(&dir).unwrap();
 /// # Ok(()) }
 /// ```
-pub fn vcs_commit(path: &str, message: Option<&str>, author: Option<&str>) -> Result<String, ApiError> {
+pub fn vcs_commit(
+    path: &str,
+    message: Option<&str>,
+    author: Option<&str>,
+) -> Result<String, ApiError> {
     guard(|| {
         let repo = vcs_open(path)?;
         if let Some(st) = vcs_str(repo.merge_state())? {
             if !st.conflicts.is_empty() {
-                return Err(ApiError::Conflicts(st.conflicts.iter().map(|c| c.path.clone()).collect()));
+                return Err(ApiError::Conflicts(
+                    st.conflicts.iter().map(|c| c.path.clone()).collect(),
+                ));
             }
         }
         vcs_str(repo.commit(message, author))
@@ -271,7 +301,13 @@ pub fn vcs_checkout(path: &str, target: &str, force: bool) -> Result<String, Api
 /// # std::fs::remove_dir_all(&dir).unwrap();
 /// # Ok(()) }
 /// ```
-pub fn vcs_merge(path: &str, rev: &str, no_ff: bool, message: Option<&str>, author: Option<&str>) -> Result<VcsMergeOutcome, ApiError> {
+pub fn vcs_merge(
+    path: &str,
+    rev: &str,
+    no_ff: bool,
+    message: Option<&str>,
+    author: Option<&str>,
+) -> Result<VcsMergeOutcome, ApiError> {
     guard(|| {
         let repo = vcs_open(path)?;
         vcs_no_merge(&repo)?;
@@ -297,7 +333,11 @@ pub fn vcs_merge(path: &str, rev: &str, no_ff: bool, message: Option<&str>, auth
 /// # Ok(()) }
 /// ```
 pub fn vcs_conflicts(path: &str) -> Result<Vec<VcsConflict>, ApiError> {
-    guard(|| Ok(vcs_str(vcs_open(path)?.merge_state())?.map(|s| s.conflicts.iter().map(vcs_conflict).collect()).unwrap_or_default()))
+    guard(|| {
+        Ok(vcs_str(vcs_open(path)?.merge_state())?
+            .map(|s| s.conflicts.iter().map(vcs_conflict).collect())
+            .unwrap_or_default())
+    })
 }
 
 /// Settle one conflict (by [`VcsConflict::path`]). Returns how many conflicts are left; when it
@@ -323,7 +363,9 @@ pub fn vcs_resolve(path: &str, conflict_path: &str, choice: &VcsChoice) -> Resul
         let c = match choice {
             VcsChoice::Ours => crate::semdiff::Choice::Ours,
             VcsChoice::Theirs => crate::semdiff::Choice::Theirs,
-            VcsChoice::Value(t) => crate::semdiff::Choice::Value(serde_json::from_str(t).map_err(|e| ApiError::InvalidJson(e.to_string()))?),
+            VcsChoice::Value(t) => crate::semdiff::Choice::Value(
+                serde_json::from_str(t).map_err(|e| ApiError::InvalidJson(e.to_string()))?,
+            ),
         };
         vcs_str(vcs_open(path)?.resolve(conflict_path, &c))
     })
@@ -374,7 +416,11 @@ pub fn vcs_abort(path: &str) -> Result<(), ApiError> {
 /// # std::fs::remove_dir_all(&dir).unwrap();
 /// # Ok(()) }
 /// ```
-pub fn vcs_cherry_pick(path: &str, rev: &str, author: Option<&str>) -> Result<VcsMergeOutcome, ApiError> {
+pub fn vcs_cherry_pick(
+    path: &str,
+    rev: &str,
+    author: Option<&str>,
+) -> Result<VcsMergeOutcome, ApiError> {
     guard(|| {
         let repo = vcs_open(path)?;
         vcs_no_merge(&repo)?;
@@ -406,7 +452,11 @@ pub fn vcs_cherry_pick(path: &str, rev: &str, author: Option<&str>) -> Result<Vc
 /// # std::fs::remove_dir_all(&dir).unwrap();
 /// # Ok(()) }
 /// ```
-pub fn vcs_revert(path: &str, rev: &str, author: Option<&str>) -> Result<VcsMergeOutcome, ApiError> {
+pub fn vcs_revert(
+    path: &str,
+    rev: &str,
+    author: Option<&str>,
+) -> Result<VcsMergeOutcome, ApiError> {
     guard(|| {
         let repo = vcs_open(path)?;
         vcs_no_merge(&repo)?;
@@ -416,12 +466,27 @@ pub fn vcs_revert(path: &str, rev: &str, author: Option<&str>) -> Result<VcsMerg
 }
 
 pub(super) fn vcs_changes(v: Vec<crate::semdiff::Change>) -> Vec<VcsChange> {
-    v.into_iter().map(|c| VcsChange { kind: format!("{:?}", c.kind), path: c.path, description: c.description }).collect()
+    v.into_iter()
+        .map(|c| VcsChange {
+            kind: format!("{:?}", c.kind),
+            path: c.path,
+            description: c.description,
+        })
+        .collect()
 }
 
 /// (1.4) List the branches, sorted by name. An empty repository has none.
 pub fn vcs_branches(path: &str) -> Result<Vec<VcsBranch>, ApiError> {
-    guard(|| Ok(vcs_str(vcs_open(path)?.branches())?.into_iter().map(|(name, commit, current)| VcsBranch { name, commit, current }).collect()))
+    guard(|| {
+        Ok(vcs_str(vcs_open(path)?.branches())?
+            .into_iter()
+            .map(|(name, commit, current)| VcsBranch {
+                name,
+                commit,
+                current,
+            })
+            .collect())
+    })
 }
 
 /// (1.4) Delete a branch. The checked-out branch and unknown names are refused. Commits stay in
@@ -434,7 +499,13 @@ pub fn vcs_branch_delete(path: &str, name: &str) -> Result<(), ApiError> {
 pub fn vcs_status(path: &str) -> Result<VcsStatus, ApiError> {
     guard(|| {
         let st = vcs_str(vcs_open(path)?.status())?;
-        Ok(VcsStatus { branch: st.branch, head: st.head, changes: vcs_changes(st.changes), merge: st.merge, conflicts: st.conflicts.into_iter().map(|c| c.path).collect() })
+        Ok(VcsStatus {
+            branch: st.branch,
+            head: st.head,
+            changes: vcs_changes(st.changes),
+            merge: st.merge,
+            conflicts: st.conflicts.into_iter().map(|c| c.path).collect(),
+        })
     })
 }
 
@@ -448,7 +519,15 @@ pub fn vcs_diff(path: &str, a: Option<&str>, b: Option<&str>) -> Result<Vec<VcsC
 pub fn vcs_show(path: &str, rev: &str) -> Result<VcsShow, ApiError> {
     guard(|| {
         let (id, c, ch) = vcs_str(vcs_open(path)?.show(rev))?;
-        Ok(VcsShow { commit: VcsCommit { id, author: c.author, time: c.time, message: c.message }, changes: vcs_changes(ch) })
+        Ok(VcsShow {
+            commit: VcsCommit {
+                id,
+                author: c.author,
+                time: c.time,
+                message: c.message,
+            },
+            changes: vcs_changes(ch),
+        })
     })
 }
 
@@ -457,7 +536,10 @@ pub fn vcs_show(path: &str, rev: &str) -> Result<VcsShow, ApiError> {
 pub fn vcs_gc(path: &str) -> Result<VcsGc, ApiError> {
     guard(|| {
         let r = vcs_str(vcs_open(path)?.gc())?;
-        Ok(VcsGc { kept: r.kept, removed: r.removed })
+        Ok(VcsGc {
+            kept: r.kept,
+            removed: r.removed,
+        })
     })
 }
 

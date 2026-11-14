@@ -6,7 +6,9 @@ use super::*;
 // ---------------------------------------------------------------------------------------------
 // presence (cursor, selection, name, colour) with expiry
 
-pub(super) const PALETTE: [&str; 8] = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#008080", "#9a6324", "#d2691e"];
+pub(super) const PALETTE: [&str; 8] = [
+    "#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#008080", "#9a6324", "#d2691e",
+];
 
 pub fn colour_for(replica: ReplicaId) -> String {
     PALETTE[(replica as usize) % PALETTE.len()].to_string()
@@ -44,7 +46,17 @@ pub(super) fn valid_colour(c: &str) -> bool {
 
 impl Presence {
     pub fn new(replica: ReplicaId, name: &str) -> Presence {
-        Presence { replica, name: clean_name(name, replica), colour: colour_for(replica), frame: None, cursor: None, selection: vec![], bounds: None, n: 0, seen_ms: 0 }
+        Presence {
+            replica,
+            name: clean_name(name, replica),
+            colour: colour_for(replica),
+            frame: None,
+            cursor: None,
+            selection: vec![],
+            bounds: None,
+            n: 0,
+            seen_ms: 0,
+        }
     }
     /// Make an untrusted update safe: bounded sizes, finite numbers, a valid `#rrggbb` colour.
     pub fn sanitized(mut self) -> Presence {
@@ -94,7 +106,10 @@ pub struct PresenceBoard {
 
 impl PresenceBoard {
     pub fn new(ttl_ms: u64) -> PresenceBoard {
-        PresenceBoard { entries: BTreeMap::new(), ttl_ms }
+        PresenceBoard {
+            entries: BTreeMap::new(),
+            ttl_ms,
+        }
     }
     /// Returns true when the update was accepted (not older than what is stored).
     pub fn update(&mut self, p: Presence, now_ms: u64) -> bool {
@@ -119,7 +134,12 @@ impl PresenceBoard {
     /// Drop entries not refreshed within the TTL; returns who expired.
     pub fn expire(&mut self, now_ms: u64) -> Vec<ReplicaId> {
         let ttl = self.ttl_ms;
-        let gone: Vec<ReplicaId> = self.entries.iter().filter(|(_, p)| now_ms.saturating_sub(p.seen_ms) > ttl).map(|(r, _)| *r).collect();
+        let gone: Vec<ReplicaId> = self
+            .entries
+            .iter()
+            .filter(|(_, p)| now_ms.saturating_sub(p.seen_ms) > ttl)
+            .map(|(r, _)| *r)
+            .collect();
         for r in &gone {
             self.entries.remove(r);
         }
@@ -205,7 +225,9 @@ pub(super) fn bump_leaf(v: &mut Value, rng: &mut SimRng) -> bool {
         Value::Number(n) => {
             let x = n.as_f64().unwrap_or(0.0);
             let d = (rng.below(21) as f64 - 10.0) / 2.0;
-            *v = serde_json::Number::from_f64(x + d).map(Value::Number).unwrap_or(Value::Null);
+            *v = serde_json::Number::from_f64(x + d)
+                .map(Value::Number)
+                .unwrap_or(Value::Null);
             true
         }
         Value::String(s) => {
@@ -240,9 +262,19 @@ pub fn random_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
     let mut paths = Vec::new();
     collect_paths(doc, &mut String::new(), &mut paths, 0);
     let path = paths[rng.below(paths.len())].clone();
-    let at = if path.is_empty() { doc } else { doc.pointer(&path)? };
+    let at = if path.is_empty() {
+        doc
+    } else {
+        doc.pointer(&path)?
+    };
     let parent_ptr = path.rfind('/').map(|i| path[..i].to_string());
-    let parent = parent_ptr.as_ref().and_then(|p| if p.is_empty() { Some(doc) } else { doc.pointer(p) });
+    let parent = parent_ptr.as_ref().and_then(|p| {
+        if p.is_empty() {
+            Some(doc)
+        } else {
+            doc.pointer(p)
+        }
+    });
     let in_array = parent.map(|p| p.is_array()).unwrap_or(false);
     let fresh = |rng: &mut SimRng| serde_json::json!({"name": format!("n{}", rng.below(50)), "v": rng.below(100), "tags": [rng.below(5), rng.below(5)]});
     match at {
@@ -255,21 +287,40 @@ pub fn random_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
             if in_array && rng.chance(20) {
                 let i = path.rsplit('/').next()?.to_string();
                 let p = parent_ptr?;
-                return Some(Op::Insert { path: format!("{p}/{i}"), value: nv });
+                return Some(Op::Insert {
+                    path: format!("{p}/{i}"),
+                    value: nv,
+                });
             }
             Some(Op::Set { path, value: nv })
         }
-        Value::Null => Some(Op::Set { path, value: Value::from(rng.below(10) as u64) }),
+        Value::Null => Some(Op::Set {
+            path,
+            value: Value::from(rng.below(10) as u64),
+        }),
         Value::Array(a) => {
             let r = rng.below(10);
             if r < 6 || a.is_empty() {
                 let i = rng.below(a.len() + 2);
-                let ptr = if i > a.len() { format!("{path}/-") } else { format!("{path}/{i}") };
-                let v = if !a.is_empty() && rng.chance(40) { a[rng.below(a.len())].clone() } else { fresh(rng) };
-                Some(Op::Insert { path: ptr, value: v })
+                let ptr = if i > a.len() {
+                    format!("{path}/-")
+                } else {
+                    format!("{path}/{i}")
+                };
+                let v = if !a.is_empty() && rng.chance(40) {
+                    a[rng.below(a.len())].clone()
+                } else {
+                    fresh(rng)
+                };
+                Some(Op::Insert {
+                    path: ptr,
+                    value: v,
+                })
             } else if r < 8 {
                 let i = rng.below(a.len());
-                Some(Op::Remove { path: format!("{path}/{i}") })
+                Some(Op::Remove {
+                    path: format!("{path}/{i}"),
+                })
             } else {
                 let mut nv = at.clone();
                 bump_leaf(&mut nv, rng);
@@ -280,12 +331,23 @@ pub fn random_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
             let r = rng.below(10);
             if r < 4 {
                 let k = format!("k{}", rng.below(4));
-                let v = if rng.chance(50) { Value::from(rng.below(100) as u64) } else { fresh(rng) };
-                Some(Op::Set { path: format!("{path}/{k}"), value: v })
+                let v = if rng.chance(50) {
+                    Value::from(rng.below(100) as u64)
+                } else {
+                    fresh(rng)
+                };
+                Some(Op::Set {
+                    path: format!("{path}/{k}"),
+                    value: v,
+                })
             } else if r < 6 && !m.is_empty() && !path.is_empty() {
                 let keys: Vec<&String> = m.keys().collect();
-                let k = keys[rng.below(keys.len())].replace('~', "~0").replace('/', "~1");
-                Some(Op::Remove { path: format!("{path}/{k}") })
+                let k = keys[rng.below(keys.len())]
+                    .replace('~', "~0")
+                    .replace('/', "~1");
+                Some(Op::Remove {
+                    path: format!("{path}/{k}"),
+                })
             } else if r < 9 {
                 // whole-object replacement with one leaf changed: exercises the structural diff
                 let mut nv = at.clone();
@@ -309,7 +371,9 @@ pub fn random_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
 pub fn project_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
     let arr = |p: &str| doc.pointer(p).and_then(Value::as_array);
     let layers = arr("/layers")?;
-    let delta = |rng: &mut SimRng, x: f64, span: usize| x + (rng.below(span * 2 + 1) as f64 - span as f64) / 2.0;
+    let delta = |rng: &mut SimRng, x: f64, span: usize| {
+        x + (rng.below(span * 2 + 1) as f64 - span as f64) / 2.0
+    };
     let num = |v: &Value| v.as_f64();
     for _ in 0..8 {
         match rng.below(9) {
@@ -320,7 +384,10 @@ pub fn project_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
                 }
                 let i = rng.below(bones.len());
                 let x = num(&bones[i]["rest_angle"])?;
-                return Some(Op::Set { path: format!("/bones/{i}/rest_angle"), value: Value::from(delta(rng, x, 10)) });
+                return Some(Op::Set {
+                    path: format!("/bones/{i}/rest_angle"),
+                    value: Value::from(delta(rng, x, 10)),
+                });
             }
             1 => {
                 let bones = arr("/bones")?;
@@ -329,7 +396,10 @@ pub fn project_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
                 }
                 let (i, k) = (rng.below(bones.len()), rng.below(2));
                 let x = num(&bones[i]["rest_offset"][k])?;
-                return Some(Op::Set { path: format!("/bones/{i}/rest_offset/{k}"), value: Value::from(delta(rng, x, 6)) });
+                return Some(Op::Set {
+                    path: format!("/bones/{i}/rest_offset/{k}"),
+                    value: Value::from(delta(rng, x, 6)),
+                });
             }
             2 => {
                 if layers.is_empty() {
@@ -337,7 +407,10 @@ pub fn project_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
                 }
                 let i = rng.below(layers.len());
                 let v = (0.2 + rng.below(81) as f64 / 100.0).min(1.0);
-                return Some(Op::Set { path: format!("/layers/{i}/opacity"), value: Value::from(v) });
+                return Some(Op::Set {
+                    path: format!("/layers/{i}/opacity"),
+                    value: Value::from(v),
+                });
             }
             3 => {
                 if layers.is_empty() {
@@ -345,7 +418,10 @@ pub fn project_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
                 }
                 let (i, k) = (rng.below(layers.len()), rng.below(2));
                 let x = num(&layers[i]["transform"]["position"][k]).unwrap_or(0.0);
-                return Some(Op::Set { path: format!("/layers/{i}/transform/position/{k}"), value: Value::from(delta(rng, x, 20)) });
+                return Some(Op::Set {
+                    path: format!("/layers/{i}/transform/position/{k}"),
+                    value: Value::from(delta(rng, x, 20)),
+                });
             }
             4 => {
                 if layers.is_empty() {
@@ -353,14 +429,30 @@ pub fn project_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
                 }
                 let i = rng.below(layers.len());
                 let v = layers[i]["visible"].as_bool().unwrap_or(true);
-                return Some(Op::Set { path: format!("/layers/{i}/visible"), value: Value::Bool(!v) });
+                return Some(Op::Set {
+                    path: format!("/layers/{i}/visible"),
+                    value: Value::Bool(!v),
+                });
             }
             5 => {
                 // a key value of a position / rotation channel
                 let chans = arr("/channels")?;
-                let ok = ["bone_angle", "bone_offset_x", "bone_offset_y", "layer_x", "layer_y", "layer_rotation"];
+                let ok = [
+                    "bone_angle",
+                    "bone_offset_x",
+                    "bone_offset_y",
+                    "layer_x",
+                    "layer_y",
+                    "layer_rotation",
+                ];
                 let keyed: Vec<usize> = (0..chans.len())
-                    .filter(|&c| chans[c]["source"] == "keys" && chans[c]["prop"].as_str().is_some_and(|p| ok.contains(&p)) && chans[c]["track"]["keys"].as_array().is_some_and(|k| !k.is_empty()))
+                    .filter(|&c| {
+                        chans[c]["source"] == "keys"
+                            && chans[c]["prop"].as_str().is_some_and(|p| ok.contains(&p))
+                            && chans[c]["track"]["keys"]
+                                .as_array()
+                                .is_some_and(|k| !k.is_empty())
+                    })
                     .collect();
                 if keyed.is_empty() {
                     continue;
@@ -369,27 +461,57 @@ pub fn project_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
                 let keys = chans[c]["track"]["keys"].as_array()?;
                 let k = rng.below(keys.len());
                 let x = num(&keys[k]["value"])?;
-                return Some(Op::Set { path: format!("/channels/{c}/track/keys/{k}/value"), value: Value::from(delta(rng, x, 10)) });
+                return Some(Op::Set {
+                    path: format!("/channels/{c}/track/keys/{k}/value"),
+                    value: Value::from(delta(rng, x, 10)),
+                });
             }
             6 => {
                 // insert a fresh layer of our own
                 let name = format!("sim_{}", rng.below(1_000_000_000));
                 let (x, y) = (rng.below(300) as f32, rng.below(300) as f32);
-                let l = crate::project::Layer::vector(&name, vec![crate::path::VPath::rect("r", x, y, 20.0 + rng.below(60) as f32, 20.0 + rng.below(60) as f32).with_fill("#3366aa")]);
+                let l = crate::project::Layer::vector(
+                    &name,
+                    vec![crate::path::VPath::rect(
+                        "r",
+                        x,
+                        y,
+                        20.0 + rng.below(60) as f32,
+                        20.0 + rng.below(60) as f32,
+                    )
+                    .with_fill("#3366aa")],
+                );
                 let at = rng.below(layers.len() + 1);
-                return Some(Op::Insert { path: format!("/layers/{at}"), value: serde_json::to_value(&l).ok()? });
+                return Some(Op::Insert {
+                    path: format!("/layers/{at}"),
+                    value: serde_json::to_value(&l).ok()?,
+                });
             }
             7 => {
-                let own: Vec<usize> = (0..layers.len()).filter(|&i| layers[i]["name"].as_str().is_some_and(|n| n.starts_with("sim_"))).collect();
+                let own: Vec<usize> = (0..layers.len())
+                    .filter(|&i| {
+                        layers[i]["name"]
+                            .as_str()
+                            .is_some_and(|n| n.starts_with("sim_"))
+                    })
+                    .collect();
                 if own.is_empty() {
                     continue;
                 }
-                return Some(Op::Remove { path: format!("/layers/{}", own[rng.below(own.len())]) });
+                return Some(Op::Remove {
+                    path: format!("/layers/{}", own[rng.below(own.len())]),
+                });
             }
             _ => {
                 // move one of our layers: re-create it under a new name at another index (no duplicate names even when two
                 // replicas move the same layer concurrently)
-                let own: Vec<usize> = (0..layers.len()).filter(|&i| layers[i]["name"].as_str().is_some_and(|n| n.starts_with("sim_"))).collect();
+                let own: Vec<usize> = (0..layers.len())
+                    .filter(|&i| {
+                        layers[i]["name"]
+                            .as_str()
+                            .is_some_and(|n| n.starts_with("sim_"))
+                    })
+                    .collect();
                 if own.is_empty() {
                     continue;
                 }
@@ -397,7 +519,17 @@ pub fn project_op(doc: &Value, rng: &mut SimRng) -> Option<Op> {
                 let mut v = layers[i].clone();
                 v["name"] = Value::from(format!("sim_{}", rng.below(1_000_000_000)));
                 let at = rng.below(layers.len());
-                return Some(Op::Batch { ops: vec![Op::Remove { path: format!("/layers/{i}") }, Op::Insert { path: format!("/layers/{}", at.min(layers.len() - 1)), value: v }] });
+                return Some(Op::Batch {
+                    ops: vec![
+                        Op::Remove {
+                            path: format!("/layers/{i}"),
+                        },
+                        Op::Insert {
+                            path: format!("/layers/{}", at.min(layers.len() - 1)),
+                            value: v,
+                        },
+                    ],
+                });
             }
         }
     }
@@ -419,7 +551,14 @@ pub struct SimConfig {
 
 impl SimConfig {
     pub fn new(clients: usize, ops: usize, seed: u64) -> SimConfig {
-        SimConfig { clients, ops, seed, undo_pct: 12, dup_pct: 8, project_aware: false }
+        SimConfig {
+            clients,
+            ops,
+            seed,
+            undo_pct: 12,
+            dup_pct: 8,
+            project_aware: false,
+        }
     }
 }
 
@@ -454,10 +593,19 @@ pub fn simulate(base: &Value, cfg: &SimConfig) -> Result<SimReport, String> {
         return Err("clients must be 1..=64".into());
     }
     let mut rng = SimRng(cfg.seed);
-    let mut reps: Vec<Replica> = (0..cfg.clients).map(|i| Replica::new(i as u32 + 1, base)).collect::<Result<_, _>>()?;
+    let mut reps: Vec<Replica> = (0..cfg.clients)
+        .map(|i| Replica::new(i as u32 + 1, base))
+        .collect::<Result<_, _>>()?;
     let mut inbox: Vec<Vec<Envelope>> = vec![vec![]; cfg.clients];
-    let mut rep = SimReport { clients: cfg.clients, ..Default::default() };
-    let deliver_one = |reps: &mut Vec<Replica>, inbox: &mut Vec<Vec<Envelope>>, who: usize, rng: &mut SimRng, rep: &mut SimReport| {
+    let mut rep = SimReport {
+        clients: cfg.clients,
+        ..Default::default()
+    };
+    let deliver_one = |reps: &mut Vec<Replica>,
+                       inbox: &mut Vec<Vec<Envelope>>,
+                       who: usize,
+                       rng: &mut SimRng,
+                       rep: &mut SimReport| {
         if inbox[who].is_empty() {
             return;
         }
@@ -489,13 +637,26 @@ pub fn simulate(base: &Value, cfg: &SimConfig) -> Result<SimReport, String> {
             }
         } else {
             let cur = reps[c].json();
-            let gen = |cur: &Value, rng: &mut SimRng| if cfg.project_aware { project_op(cur, rng) } else { random_op(cur, rng) };
-            let Some(op) = gen(&cur, &mut rng) else { continue };
+            let gen = |cur: &Value, rng: &mut SimRng| {
+                if cfg.project_aware {
+                    project_op(cur, rng)
+                } else {
+                    random_op(cur, rng)
+                }
+            };
+            let Some(op) = gen(&cur, &mut rng) else {
+                continue;
+            };
             let op = if rng.chance(15) {
                 match gen(&cur, &mut rng) {
                     // indices of the second op were chosen against the same document: after a structural first op (insert /
                     // remove / move) they would hit other elements, so project mode batches plain value sets only
-                    Some(o2) if !cfg.project_aware || (matches!(op, Op::Set { .. }) && matches!(o2, Op::Set { .. })) => Op::Batch { ops: vec![op, o2] },
+                    Some(o2)
+                        if !cfg.project_aware
+                            || (matches!(op, Op::Set { .. }) && matches!(o2, Op::Set { .. })) =>
+                    {
+                        Op::Batch { ops: vec![op, o2] }
+                    }
                     _ => op,
                 }
             } else {

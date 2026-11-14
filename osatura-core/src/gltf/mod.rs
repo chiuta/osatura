@@ -41,14 +41,14 @@ use crate::Engine;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
+pub mod anim;
+mod export;
 mod geometry;
 mod masks;
-mod export;
-pub mod anim;
 
+pub use export::*;
 pub use geometry::*;
 use masks::*;
-pub use export::*;
 
 #[cfg(test)]
 mod tests;

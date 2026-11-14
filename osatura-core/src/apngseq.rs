@@ -35,7 +35,11 @@ pub fn crc32(bytes: &[u8]) -> u32 {
         for (n, e) in t.iter_mut().enumerate() {
             let mut c = n as u32;
             for _ in 0..8 {
-                c = if c & 1 != 0 { 0xEDB8_8320 ^ (c >> 1) } else { c >> 1 };
+                c = if c & 1 != 0 {
+                    0xEDB8_8320 ^ (c >> 1)
+                } else {
+                    c >> 1
+                };
             }
             *e = c;
         }
@@ -71,11 +75,18 @@ fn parse_chunks(bytes: &[u8]) -> Result<Vec<Chunk<'_>>, String> {
         let head = bytes.get(at..at + 8).ok_or("truncated chunk header")?;
         let len = be32(head) as usize;
         let kind = [head[4], head[5], head[6], head[7]];
-        let end = (at + 8).checked_add(len).and_then(|e| e.checked_add(4)).filter(|e| *e <= bytes.len()).ok_or("truncated chunk")?;
+        let end = (at + 8)
+            .checked_add(len)
+            .and_then(|e| e.checked_add(4))
+            .filter(|e| *e <= bytes.len())
+            .ok_or("truncated chunk")?;
         let data = &bytes[at + 8..at + 8 + len];
         let want = be32(&bytes[at + 8 + len..end]);
         if crc32(&bytes[at + 4..at + 8 + len]) != want {
-            return Err(format!("CRC mismatch in chunk {}", String::from_utf8_lossy(&kind)));
+            return Err(format!(
+                "CRC mismatch in chunk {}",
+                String::from_utf8_lossy(&kind)
+            ));
         }
         out.push(Chunk { kind, data });
         at = end;
@@ -133,7 +144,11 @@ fn parse_fctl(d: &[u8]) -> Result<FrameControl, String> {
 }
 
 fn delay_ms(c: &FrameControl) -> u32 {
-    let den = if c.delay_den == 0 { 100 } else { u64::from(c.delay_den) };
+    let den = if c.delay_den == 0 {
+        100
+    } else {
+        u64::from(c.delay_den)
+    };
     ((u64::from(c.delay_num) * 1000 + den / 2) / den).min(u64::from(u32::MAX)) as u32
 }
 
@@ -147,7 +162,13 @@ fn push_chunk(out: &mut Vec<u8>, kind: &[u8; 4], data: &[u8]) {
 }
 
 /// Decodes the compressed data of one frame as a plain PNG of size `w x h` with the header properties of the file, into RGBA8.
-fn decode_region(ihdr: &[u8], extra: &[&Chunk], w: u32, h: u32, idat: &[u8]) -> Result<Vec<u8>, String> {
+fn decode_region(
+    ihdr: &[u8],
+    extra: &[&Chunk],
+    w: u32,
+    h: u32,
+    idat: &[u8],
+) -> Result<Vec<u8>, String> {
     let mut png_bytes = SIGNATURE.to_vec();
     let mut hdr = ihdr.to_vec();
     hdr[0..4].copy_from_slice(&w.to_be_bytes());
@@ -160,17 +181,27 @@ fn decode_region(ihdr: &[u8], extra: &[&Chunk], w: u32, h: u32, idat: &[u8]) -> 
     push_chunk(&mut png_bytes, b"IEND", &[]);
     let mut dec = png::Decoder::new(std::io::Cursor::new(png_bytes));
     dec.set_transformations(png::Transformations::EXPAND | png::Transformations::STRIP_16);
-    let mut reader = dec.read_info().map_err(|e| format!("invalid frame data: {e}"))?;
+    let mut reader = dec
+        .read_info()
+        .map_err(|e| format!("invalid frame data: {e}"))?;
     let size = reader.output_buffer_size().ok_or("frame too large")?;
     let mut buf = vec![0u8; size];
-    let info = reader.next_frame(&mut buf).map_err(|e| format!("invalid frame data: {e}"))?;
+    let info = reader
+        .next_frame(&mut buf)
+        .map_err(|e| format!("invalid frame data: {e}"))?;
     if info.width != w || info.height != h {
         return Err("decoded frame has a different size than its fcTL".into());
     }
     let px = (w as usize) * (h as usize);
     let src = &buf[..info.buffer_size()];
     let mut out = Vec::with_capacity(px * 4);
-    let need = |n: usize| if src.len() == px * n { Ok(()) } else { Err("frame data has an unexpected length".to_string()) };
+    let need = |n: usize| {
+        if src.len() == px * n {
+            Ok(())
+        } else {
+            Err("frame data has an unexpected length".to_string())
+        }
+    };
     match info.color_type {
         png::ColorType::Rgba => {
             need(4)?;
@@ -178,15 +209,18 @@ fn decode_region(ihdr: &[u8], extra: &[&Chunk], w: u32, h: u32, idat: &[u8]) -> 
         }
         png::ColorType::Rgb => {
             need(3)?;
-            src.chunks_exact(3).for_each(|p| out.extend_from_slice(&[p[0], p[1], p[2], 255]));
+            src.chunks_exact(3)
+                .for_each(|p| out.extend_from_slice(&[p[0], p[1], p[2], 255]));
         }
         png::ColorType::Grayscale => {
             need(1)?;
-            src.iter().for_each(|&g| out.extend_from_slice(&[g, g, g, 255]));
+            src.iter()
+                .for_each(|&g| out.extend_from_slice(&[g, g, g, 255]));
         }
         png::ColorType::GrayscaleAlpha => {
             need(2)?;
-            src.chunks_exact(2).for_each(|p| out.extend_from_slice(&[p[0], p[0], p[0], p[1]]));
+            src.chunks_exact(2)
+                .for_each(|p| out.extend_from_slice(&[p[0], p[0], p[0], p[1]]));
         }
         png::ColorType::Indexed => return Err("unexpanded palette data".into()),
     }
@@ -205,7 +239,9 @@ fn over(dst: &mut [u8], src: &[u8]) {
     let da = f64::from(dst[3]) / 255.0;
     let oa = sa + da * (1.0 - sa);
     for i in 0..3 {
-        dst[i] = ((f64::from(src[i]) * sa + f64::from(dst[i]) * da * (1.0 - sa)) / oa).round().clamp(0.0, 255.0) as u8;
+        dst[i] = ((f64::from(src[i]) * sa + f64::from(dst[i]) * da * (1.0 - sa)) / oa)
+            .round()
+            .clamp(0.0, 255.0) as u8;
     }
     dst[3] = (oa * 255.0).round().clamp(0.0, 255.0) as u8;
 }
@@ -224,9 +260,15 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<ApngSequence, String> {
     }
     let canvas_px = u64::from(width) * u64::from(height);
     if canvas_px > limits.max_frame_pixels {
-        return Err(format!("the image ({width}x{height}) exceeds the limit of {} pixels", limits.max_frame_pixels));
+        return Err(format!(
+            "the image ({width}x{height}) exceeds the limit of {} pixels",
+            limits.max_frame_pixels
+        ));
     }
-    let shared: Vec<&Chunk> = chunks.iter().filter(|c| &c.kind == b"PLTE" || &c.kind == b"tRNS").collect();
+    let shared: Vec<&Chunk> = chunks
+        .iter()
+        .filter(|c| &c.kind == b"PLTE" || &c.kind == b"tRNS")
+        .collect();
 
     let mut actl: Option<(u32, u32)> = None;
     let mut seen_idat = false;
@@ -252,7 +294,10 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<ApngSequence, String> {
             b"fcTL" => {
                 let ctl = parse_fctl(c.data)?;
                 if ctl.seq != expected_seq {
-                    return Err(format!("sequence number {} where {expected_seq} was expected", ctl.seq));
+                    return Err(format!(
+                        "sequence number {} where {expected_seq} was expected",
+                        ctl.seq
+                    ));
                 }
                 expected_seq += 1;
                 if frames.len() >= limits.max_frames {
@@ -262,7 +307,10 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<ApngSequence, String> {
                     if frames.is_empty() {
                         in_default_frame = true;
                         if ctl.x != 0 || ctl.y != 0 || ctl.w != width || ctl.h != height {
-                            return Err("the fcTL before IDAT must cover the whole image at offset 0".into());
+                            return Err(
+                                "the fcTL before IDAT must cover the whole image at offset 0"
+                                    .into(),
+                            );
                         }
                     } else {
                         return Err("a second fcTL before IDAT".into());
@@ -271,7 +319,10 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<ApngSequence, String> {
                     after_idat_frames = true;
                     in_default_frame = false;
                 }
-                frames.push(RawFrame { ctl, data: Vec::new() });
+                frames.push(RawFrame {
+                    ctl,
+                    data: Vec::new(),
+                });
             }
             b"IDAT" => {
                 if after_idat_frames {
@@ -291,7 +342,9 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<ApngSequence, String> {
                 }
                 let seq = be32(&c.data[0..4]);
                 if seq != expected_seq {
-                    return Err(format!("sequence number {seq} where {expected_seq} was expected"));
+                    return Err(format!(
+                        "sequence number {seq} where {expected_seq} was expected"
+                    ));
                 }
                 expected_seq += 1;
                 match frames.last_mut() {
@@ -308,23 +361,39 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<ApngSequence, String> {
     let Some((n_frames, plays)) = actl else {
         // an ordinary PNG: one frame
         let rgba = decode_region(ihdr, &shared, width, height, &default_data)?;
-        return Ok(ApngSequence { width, height, plays: None, frames: vec![Frame { rgba, duration_ms: 0 }] });
+        return Ok(ApngSequence {
+            width,
+            height,
+            plays: None,
+            frames: vec![Frame {
+                rgba,
+                duration_ms: 0,
+            }],
+        });
     };
     if n_frames == 0 {
         return Err("acTL declares 0 frames".into());
     }
     if n_frames as usize != frames.len() {
-        return Err(format!("acTL declares {n_frames} frames but the file has {} fcTL chunks", frames.len()));
+        return Err(format!(
+            "acTL declares {n_frames} frames but the file has {} fcTL chunks",
+            frames.len()
+        ));
     }
     if (frames.len() as u64) * canvas_px > limits.max_total_pixels {
-        return Err(format!("the decoded frames would exceed {} pixels in total", limits.max_total_pixels));
+        return Err(format!(
+            "the decoded frames would exceed {} pixels in total",
+            limits.max_total_pixels
+        ));
     }
     for (i, f) in frames.iter().enumerate() {
         let c = &f.ctl;
         if c.w == 0 || c.h == 0 {
             return Err(format!("frame {i} has a zero dimension"));
         }
-        if u64::from(c.x) + u64::from(c.w) > u64::from(width) || u64::from(c.y) + u64::from(c.h) > u64::from(height) {
+        if u64::from(c.x) + u64::from(c.w) > u64::from(width)
+            || u64::from(c.y) + u64::from(c.h) > u64::from(height)
+        {
             return Err(format!("frame {i} lies outside the image"));
         }
         if f.data.is_empty() {
@@ -336,7 +405,8 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<ApngSequence, String> {
     let mut out = Vec::with_capacity(frames.len());
     for (i, f) in frames.iter().enumerate() {
         let c = &f.ctl;
-        let px = decode_region(ihdr, &shared, c.w, c.h, &f.data).map_err(|e| format!("frame {i}: {e}"))?;
+        let px = decode_region(ihdr, &shared, c.w, c.h, &f.data)
+            .map_err(|e| format!("frame {i}: {e}"))?;
         let (x0, y0, fw, fh) = (c.x as usize, c.y as usize, c.w as usize, c.h as usize);
         let saved: Option<Vec<u8>> = if c.dispose == 2 && i > 0 {
             let mut s = Vec::with_capacity(fw * fh * 4);
@@ -359,7 +429,10 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<ApngSequence, String> {
                 }
             }
         }
-        out.push(Frame { rgba: canvas.clone(), duration_ms: delay_ms(c) });
+        out.push(Frame {
+            rgba: canvas.clone(),
+            duration_ms: delay_ms(c),
+        });
         // the first frame's "previous" is treated as "background"
         match (c.dispose, saved) {
             (1, _) | (2, None) => {
@@ -377,7 +450,12 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<ApngSequence, String> {
             _ => {}
         }
     }
-    Ok(ApngSequence { width, height, plays: Some(plays), frames: out })
+    Ok(ApngSequence {
+        width,
+        height,
+        plays: Some(plays),
+        frames: out,
+    })
 }
 
 #[cfg(test)]
@@ -412,7 +490,16 @@ mod tests {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn fctl(seq: u32, w: u32, h: u32, x: u32, y: u32, delay: (u16, u16), dispose: u8, blend: u8) -> Vec<u8> {
+    fn fctl(
+        seq: u32,
+        w: u32,
+        h: u32,
+        x: u32,
+        y: u32,
+        delay: (u16, u16),
+        dispose: u8,
+        blend: u8,
+    ) -> Vec<u8> {
         let mut d = Vec::new();
         for v in [seq, w, h, x, y] {
             d.extend_from_slice(&v.to_be_bytes());
@@ -470,12 +557,22 @@ mod tests {
         assert_eq!(s.frames.len(), 2);
         assert_eq!(&s.frames[0].rgba[..4], &RED);
         assert_eq!(&s.frames[1].rgba[..4], &BLUE);
-        assert_eq!((s.frames[0].duration_ms, s.frames[1].duration_ms), (10, 250));
+        assert_eq!(
+            (s.frames[0].duration_ms, s.frames[1].duration_ms),
+            (10, 250)
+        );
     }
 
     #[test]
     fn default_image_is_the_first_frame_when_fctl_precedes_idat() {
-        let f = file(&[ihdr(2, 2), actl(2, 3), fctl(0, 2, 2, 0, 0, (3, 100), 0, 0), chunk(b"IDAT", &idat_of(2, 2, RED)), fctl(1, 2, 2, 0, 0, (0, 0), 0, 0), fdat(2, &idat_of(2, 2, BLUE))]);
+        let f = file(&[
+            ihdr(2, 2),
+            actl(2, 3),
+            fctl(0, 2, 2, 0, 0, (3, 100), 0, 0),
+            chunk(b"IDAT", &idat_of(2, 2, RED)),
+            fctl(1, 2, 2, 0, 0, (0, 0), 0, 0),
+            fdat(2, &idat_of(2, 2, BLUE)),
+        ]);
         let s = decode(&f, &Limits::default()).unwrap();
         assert_eq!(s.plays, Some(3));
         assert_eq!(s.frames.len(), 2);
@@ -486,12 +583,24 @@ mod tests {
 
     #[test]
     fn first_frame_dispose_previous_acts_as_background() {
-        let f = file(&[ihdr(1, 1), actl(1, 0), fctl(0, 1, 1, 0, 0, (1, 10), 2, 0), chunk(b"IDAT", &idat_of(1, 1, RED))]);
+        let f = file(&[
+            ihdr(1, 1),
+            actl(1, 0),
+            fctl(0, 1, 1, 0, 0, (1, 10), 2, 0),
+            chunk(b"IDAT", &idat_of(1, 1, RED)),
+        ]);
         let s = decode(&f, &Limits::default()).unwrap();
         assert_eq!(s.frames.len(), 1);
         assert_eq!(s.frames[0].rgba, RED);
         // the frame shows the colour; the canvas used for the next frame would be transparent: see the two-frame check below
-        let g = file(&[ihdr(1, 1), actl(2, 0), fctl(0, 1, 1, 0, 0, (1, 10), 2, 0), chunk(b"IDAT", &idat_of(1, 1, RED)), fctl(1, 1, 1, 0, 0, (1, 10), 0, 0), fdat(2, &idat_of(1, 1, [0, 0, 0, 0]))]);
+        let g = file(&[
+            ihdr(1, 1),
+            actl(2, 0),
+            fctl(0, 1, 1, 0, 0, (1, 10), 2, 0),
+            chunk(b"IDAT", &idat_of(1, 1, RED)),
+            fctl(1, 1, 1, 0, 0, (1, 10), 0, 0),
+            fdat(2, &idat_of(1, 1, [0, 0, 0, 0])),
+        ]);
         let s = decode(&g, &Limits::default()).unwrap();
         assert_eq!(s.frames[1].rgba, [0, 0, 0, 0]);
     }
@@ -518,10 +627,23 @@ mod tests {
     #[test]
     fn over_and_source_blending() {
         let mk = |blend: u8| {
-            file(&[ihdr(1, 1), actl(2, 0), fctl(0, 1, 1, 0, 0, (1, 10), 0, 0), chunk(b"IDAT", &idat_of(1, 1, RED)), fctl(1, 1, 1, 0, 0, (1, 10), 0, blend), fdat(2, &idat_of(1, 1, [0, 0, 255, 128]))])
+            file(&[
+                ihdr(1, 1),
+                actl(2, 0),
+                fctl(0, 1, 1, 0, 0, (1, 10), 0, 0),
+                chunk(b"IDAT", &idat_of(1, 1, RED)),
+                fctl(1, 1, 1, 0, 0, (1, 10), 0, blend),
+                fdat(2, &idat_of(1, 1, [0, 0, 255, 128])),
+            ])
         };
-        assert_eq!(decode(&mk(1), &Limits::default()).unwrap().frames[1].rgba, [127, 0, 128, 255]);
-        assert_eq!(decode(&mk(0), &Limits::default()).unwrap().frames[1].rgba, [0, 0, 255, 128]);
+        assert_eq!(
+            decode(&mk(1), &Limits::default()).unwrap().frames[1].rgba,
+            [127, 0, 128, 255]
+        );
+        assert_eq!(
+            decode(&mk(0), &Limits::default()).unwrap().frames[1].rgba,
+            [0, 0, 255, 128]
+        );
     }
 
     #[test]
@@ -529,18 +651,51 @@ mod tests {
         let ok = |parts: Vec<Vec<u8>>| decode(&file(&parts), &Limits::default());
         let idat = || chunk(b"IDAT", &idat_of(1, 1, RED));
         // sequence numbers 0, 2
-        let e = ok(vec![ihdr(1, 1), actl(2, 0), fctl(0, 1, 1, 0, 0, (1, 1), 0, 0), idat(), fctl(2, 1, 1, 0, 0, (1, 1), 0, 0), fdat(3, &idat_of(1, 1, RED))]).unwrap_err();
+        let e = ok(vec![
+            ihdr(1, 1),
+            actl(2, 0),
+            fctl(0, 1, 1, 0, 0, (1, 1), 0, 0),
+            idat(),
+            fctl(2, 1, 1, 0, 0, (1, 1), 0, 0),
+            fdat(3, &idat_of(1, 1, RED)),
+        ])
+        .unwrap_err();
         assert!(e.contains("sequence number"), "{e}");
         // zero frames
         assert!(ok(vec![ihdr(1, 1), actl(0, 0), idat()]).is_err());
         // offset + width beyond the header width
-        assert!(ok(vec![ihdr(1, 1), actl(1, 0), idat(), fctl(0, 1, 1, 1, 0, (1, 1), 0, 0), fdat(1, &idat_of(1, 1, RED))]).unwrap_err().contains("outside"));
+        assert!(ok(vec![
+            ihdr(1, 1),
+            actl(1, 0),
+            idat(),
+            fctl(0, 1, 1, 1, 0, (1, 1), 0, 0),
+            fdat(1, &idat_of(1, 1, RED))
+        ])
+        .unwrap_err()
+        .contains("outside"));
         // frame without fdAT
-        assert!(ok(vec![ihdr(1, 1), actl(1, 0), idat(), fctl(0, 1, 1, 0, 0, (1, 1), 0, 0)]).unwrap_err().contains("no image data"));
+        assert!(ok(vec![
+            ihdr(1, 1),
+            actl(1, 0),
+            idat(),
+            fctl(0, 1, 1, 0, 0, (1, 1), 0, 0)
+        ])
+        .unwrap_err()
+        .contains("no image data"));
         // frame count differs from the number of fcTL
-        assert!(ok(vec![ihdr(1, 1), actl(2, 0), idat(), fctl(0, 1, 1, 0, 0, (1, 1), 0, 0), fdat(1, &idat_of(1, 1, RED))]).unwrap_err().contains("declares 2"));
+        assert!(ok(vec![
+            ihdr(1, 1),
+            actl(2, 0),
+            idat(),
+            fctl(0, 1, 1, 0, 0, (1, 1), 0, 0),
+            fdat(1, &idat_of(1, 1, RED))
+        ])
+        .unwrap_err()
+        .contains("declares 2"));
         // acTL after IDAT
-        assert!(ok(vec![ihdr(1, 1), idat(), actl(1, 0)]).unwrap_err().contains("acTL after"));
+        assert!(ok(vec![ihdr(1, 1), idat(), actl(1, 0)])
+            .unwrap_err()
+            .contains("acTL after"));
         // fdAT without fcTL
         assert!(ok(vec![ihdr(1, 1), actl(1, 0), idat(), fdat(0, &[1, 2, 3])]).is_err());
         // not a PNG, truncated
@@ -551,7 +706,12 @@ mod tests {
 
     #[test]
     fn crc_error_in_fctl() {
-        let mut f = file(&[ihdr(1, 1), actl(1, 0), fctl(0, 1, 1, 0, 0, (1, 1), 0, 0), chunk(b"IDAT", &idat_of(1, 1, RED))]);
+        let mut f = file(&[
+            ihdr(1, 1),
+            actl(1, 0),
+            fctl(0, 1, 1, 0, 0, (1, 1), 0, 0),
+            chunk(b"IDAT", &idat_of(1, 1, RED)),
+        ]);
         let at = f.windows(4).position(|w| w == b"fcTL").unwrap() + 6;
         f[at] ^= 0x40;
         let e = decode(&f, &Limits::default()).unwrap_err();
@@ -563,7 +723,10 @@ mod tests {
         let data: Vec<u8> = (0..4u8).flat_map(|i| [i, i, i, 255]).collect();
         let png = crate::open_formats::encode_rgba_png(2, 2, &data).unwrap();
         let s = decode(&png, &Limits::default()).unwrap();
-        assert_eq!((s.width, s.height, s.frames.len(), s.plays), (2, 2, 1, None));
+        assert_eq!(
+            (s.width, s.height, s.frames.len(), s.plays),
+            (2, 2, 1, None)
+        );
         assert_eq!(s.frames[0].rgba, data);
         assert_eq!(s.frames[0].duration_ms, 0);
     }
@@ -575,7 +738,10 @@ mod tests {
             let mut enc = png::Encoder::new(&mut buf, 2, 1);
             enc.set_color(png::ColorType::Rgb);
             enc.set_depth(png::BitDepth::Eight);
-            enc.write_header().unwrap().write_image_data(&[1, 2, 3, 4, 5, 6]).unwrap();
+            enc.write_header()
+                .unwrap()
+                .write_image_data(&[1, 2, 3, 4, 5, 6])
+                .unwrap();
         }
         let s = decode(&buf, &Limits::default()).unwrap();
         assert_eq!(s.frames[0].rgba, [1, 2, 3, 255, 4, 5, 6, 255]);
@@ -588,7 +754,10 @@ mod tests {
             enc.set_trns(vec![100]);
             enc.write_header().unwrap().write_image_data(&[0]).unwrap();
         }
-        assert_eq!(decode(&buf, &Limits::default()).unwrap().frames[0].rgba, [10, 20, 30, 100]);
+        assert_eq!(
+            decode(&buf, &Limits::default()).unwrap().frames[0].rgba,
+            [10, 20, 30, 100]
+        );
     }
 
     #[test]
@@ -628,9 +797,38 @@ mod tests {
     #[test]
     fn caps_are_checked_before_decoding() {
         let f = file(&[ihdr(2, 2), chunk(b"IDAT", &idat_of(2, 2, RED))]);
-        assert!(decode(&f, &Limits { max_frame_pixels: 3, ..Limits::default() }).unwrap_err().contains("exceeds"));
-        let a = file(&[ihdr(1, 1), actl(2, 0), fctl(0, 1, 1, 0, 0, (1, 1), 0, 0), chunk(b"IDAT", &idat_of(1, 1, RED)), fctl(1, 1, 1, 0, 0, (1, 1), 0, 0), fdat(2, &idat_of(1, 1, RED))]);
-        assert!(decode(&a, &Limits { max_frames: 1, ..Limits::default() }).is_err());
-        assert!(decode(&a, &Limits { max_total_pixels: 1, ..Limits::default() }).is_err());
+        assert!(decode(
+            &f,
+            &Limits {
+                max_frame_pixels: 3,
+                ..Limits::default()
+            }
+        )
+        .unwrap_err()
+        .contains("exceeds"));
+        let a = file(&[
+            ihdr(1, 1),
+            actl(2, 0),
+            fctl(0, 1, 1, 0, 0, (1, 1), 0, 0),
+            chunk(b"IDAT", &idat_of(1, 1, RED)),
+            fctl(1, 1, 1, 0, 0, (1, 1), 0, 0),
+            fdat(2, &idat_of(1, 1, RED)),
+        ]);
+        assert!(decode(
+            &a,
+            &Limits {
+                max_frames: 1,
+                ..Limits::default()
+            }
+        )
+        .is_err());
+        assert!(decode(
+            &a,
+            &Limits {
+                max_total_pixels: 1,
+                ..Limits::default()
+            }
+        )
+        .is_err());
     }
 }

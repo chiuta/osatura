@@ -92,7 +92,10 @@ pub enum StateSource {
     /// A region marker (`Project.markers` entry with an `end`).
     Region { marker: String },
     /// 1-D blend tree: children (leaf sources) mixed by a number input.
-    Blend { input: String, children: Vec<BlendChild> },
+    Blend {
+        input: String,
+        children: Vec<BlendChild>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -196,41 +199,87 @@ pub(super) fn mask_ok(mask: &[String], target: &str) -> bool {
     mask.is_empty() || mask.iter().any(|g| glob(g, target))
 }
 
-pub(super) fn resolve_leaf(p: &Project, src: &StateSource, mask: &[String]) -> Result<Leaf, String> {
+pub(super) fn resolve_leaf(
+    p: &Project,
+    src: &StateSource,
+    mask: &[String],
+) -> Result<Leaf, String> {
     match src {
         StateSource::Clip { clip } => {
-            let c = p.clips.iter().find(|c| &c.name == clip).ok_or_else(|| format!("unknown clip '{clip}'"))?;
+            let c = p
+                .clips
+                .iter()
+                .find(|c| &c.name == clip)
+                .ok_or_else(|| format!("unknown clip '{clip}'"))?;
             if !(c.take.length.is_finite() && c.take.length > 0.0) {
                 return Err(format!("clip '{clip}' has no positive length"));
             }
             let mut tracks = Vec::new();
             for tt in &c.take.tracks {
-                let target = c.rename.iter().find(|(f, _)| f == &tt.target).map_or(tt.target.as_str(), |(_, t)| t.as_str()).to_string();
+                let target = c
+                    .rename
+                    .iter()
+                    .find(|(f, _)| f == &tt.target)
+                    .map_or(tt.target.as_str(), |(_, t)| t.as_str())
+                    .to_string();
                 if tt.keys.is_empty() || !c.passes_mask(&target) || !mask_ok(mask, &target) {
                     continue;
                 }
                 let mut w = c.weight;
-                if let Some(r) = c.track_weights.iter().find(|r| glob(&r.pattern, &target) && r.prop.is_none_or(|pp| pp == tt.prop)) {
+                if let Some(r) = c
+                    .track_weights
+                    .iter()
+                    .find(|r| glob(&r.pattern, &target) && r.prop.is_none_or(|pp| pp == tt.prop))
+                {
                     w *= r.weight;
                 }
-                let t = Track::with_keys(&tt.keys.iter().map(|k| (k.frame, k.value, k.ease)).collect::<Vec<_>>());
+                let t = Track::with_keys(
+                    &tt.keys
+                        .iter()
+                        .map(|k| (k.frame, k.value, k.ease))
+                        .collect::<Vec<_>>(),
+                );
                 tracks.push((target, tt.prop, t, w));
             }
-            Ok(Leaf { len: c.take.length, offset: 0.0, tracks })
+            Ok(Leaf {
+                len: c.take.length,
+                offset: 0.0,
+                tracks,
+            })
         }
         StateSource::Segment { start, end } => {
             if !(start.is_finite() && end.is_finite() && *start >= 0.0 && end > start) {
                 return Err(format!("segment {start}..{end} needs 0 <= start < end"));
             }
             if *end > p.frames as f32 {
-                return Err(format!("segment {start}..{end} lies beyond the {} project frames", p.frames));
+                return Err(format!(
+                    "segment {start}..{end} lies beyond the {} project frames",
+                    p.frames
+                ));
             }
-            Ok(Leaf { len: end - start, offset: *start, tracks: segment_tracks(p, mask) })
+            Ok(Leaf {
+                len: end - start,
+                offset: *start,
+                tracks: segment_tracks(p, mask),
+            })
         }
         StateSource::Region { marker } => {
-            let m = p.markers.iter().find(|m| &m.name == marker).ok_or_else(|| format!("unknown marker '{marker}'"))?;
-            let end = m.end.ok_or_else(|| format!("marker '{marker}' is not a region (no end)"))?;
-            resolve_leaf(p, &StateSource::Segment { start: m.frame, end }, mask)
+            let m = p
+                .markers
+                .iter()
+                .find(|m| &m.name == marker)
+                .ok_or_else(|| format!("unknown marker '{marker}'"))?;
+            let end = m
+                .end
+                .ok_or_else(|| format!("marker '{marker}' is not a region (no end)"))?;
+            resolve_leaf(
+                p,
+                &StateSource::Segment {
+                    start: m.frame,
+                    end,
+                },
+                mask,
+            )
         }
         StateSource::Blend { .. } => Err("a blend tree cannot be nested".into()),
     }
@@ -244,7 +293,12 @@ pub(super) fn segment_tracks(p: &Project, mask: &[String]) -> TrackSet {
             if track.keys.is_empty() || !mask_ok(mask, &c.target) {
                 continue;
             }
-            let item = (c.target.clone(), c.prop, track.clone(), c.weight.clamp(0.0, 1.0));
+            let item = (
+                c.target.clone(),
+                c.prop,
+                track.clone(),
+                c.weight.clamp(0.0, 1.0),
+            );
             match out.iter().position(|o| o.0 == c.target && o.1 == c.prop) {
                 Some(i) => out[i] = item,
                 None => out.push(item),

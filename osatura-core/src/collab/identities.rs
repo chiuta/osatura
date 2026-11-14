@@ -69,7 +69,11 @@ pub struct Stamp {
 }
 
 impl Stamp {
-    pub(super) const ZERO: Stamp = Stamp { lamport: 0, replica: 0, idx: 0 };
+    pub(super) const ZERO: Stamp = Stamp {
+        lamport: 0,
+        replica: 0,
+        idx: 0,
+    };
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -117,12 +121,32 @@ pub(super) enum Slot {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "t", rename_all = "snake_case")]
 pub enum Prim {
-    SetRoot { value: Value },
-    SetKey { obj: Id, key: String, value: Value },
-    DelKey { obj: Id, key: String },
-    SetElem { arr: Id, elem: Id, value: Value },
-    InsElem { arr: Id, after: Option<Id>, value: Value },
-    DelElem { arr: Id, elem: Id },
+    SetRoot {
+        value: Value,
+    },
+    SetKey {
+        obj: Id,
+        key: String,
+        value: Value,
+    },
+    DelKey {
+        obj: Id,
+        key: String,
+    },
+    SetElem {
+        arr: Id,
+        elem: Id,
+        value: Value,
+    },
+    InsElem {
+        arr: Id,
+        after: Option<Id>,
+        value: Value,
+    },
+    DelElem {
+        arr: Id,
+        elem: Id,
+    },
 }
 
 /// The unit that travels between replicas.
@@ -150,7 +174,11 @@ pub(super) struct IdGen {
 
 impl IdGen {
     pub(super) fn peek(&self) -> Id {
-        Id { r: self.r, s: self.s, i: self.next }
+        Id {
+            r: self.r,
+            s: self.s,
+            i: self.next,
+        }
     }
     pub(super) fn take(&mut self) -> Id {
         let id = self.peek();
@@ -162,9 +190,21 @@ impl IdGen {
 /// How to reverse one primitive (kept locally, never sent).
 #[derive(Clone, Debug)]
 pub(super) enum Undo {
-    Restore { slot: Slot, stamp: Stamp, prev: Option<Value> },
-    Remove { arr: Id, elem: Id },
-    Reinsert { arr: Id, elem: Id, left: Option<Id>, value: Value },
+    Restore {
+        slot: Slot,
+        stamp: Stamp,
+        prev: Option<Value>,
+    },
+    Remove {
+        arr: Id,
+        elem: Id,
+    },
+    Reinsert {
+        arr: Id,
+        elem: Id,
+        left: Option<Id>,
+        value: Value,
+    },
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -178,14 +218,31 @@ pub struct Doc {
 
 impl Doc {
     pub fn from_json(v: &Value) -> Doc {
-        let mut d = Doc { nodes: BTreeMap::new(), root: Reg { stamp: Stamp::ZERO, val: Val::Absent } };
-        let mut gen = IdGen { r: 0, s: 0, next: 0 };
+        let mut d = Doc {
+            nodes: BTreeMap::new(),
+            root: Reg {
+                stamp: Stamp::ZERO,
+                val: Val::Absent,
+            },
+        };
+        let mut gen = IdGen {
+            r: 0,
+            s: 0,
+            next: 0,
+        };
         let val = d.build(v, &mut gen, Stamp::ZERO, 0, 0);
         d.root.val = val;
         d
     }
 
-    pub(super) fn build(&mut self, v: &Value, gen: &mut IdGen, stamp: Stamp, ins: u64, depth: usize) -> Val {
+    pub(super) fn build(
+        &mut self,
+        v: &Value,
+        gen: &mut IdGen,
+        stamp: Stamp,
+        ins: u64,
+        depth: usize,
+    ) -> Val {
         if depth > MAX_DEPTH {
             return Val::Scalar(Value::Null);
         }
@@ -208,7 +265,12 @@ impl Doc {
                 for x in a {
                     let eid = gen.take();
                     let val = self.build(x, gen, stamp, ins, depth + 1);
-                    elems.push(Elem { id: eid, ins, reg: Reg { stamp, val }, tomb: None });
+                    elems.push(Elem {
+                        id: eid,
+                        ins,
+                        reg: Reg { stamp, val },
+                        tomb: None,
+                    });
                 }
                 self.nodes.insert(id, Cont::Arr(elems));
                 Val::Ref(id)
@@ -234,7 +296,12 @@ impl Doc {
                     }
                     Some(Value::Object(out))
                 }
-                Some(Cont::Arr(es)) => Some(Value::Array(es.iter().filter(|e| e.tomb.is_none()).filter_map(|e| self.val_json(&e.reg.val, depth + 1)).collect())),
+                Some(Cont::Arr(es)) => Some(Value::Array(
+                    es.iter()
+                        .filter(|e| e.tomb.is_none())
+                        .filter_map(|e| self.val_json(&e.reg.val, depth + 1))
+                        .collect(),
+                )),
                 None => Some(Value::Null),
             },
         }
@@ -259,14 +326,29 @@ impl Doc {
     }
 
     pub(super) fn visible(&self, arr: Id) -> Vec<&Elem> {
-        self.arr(arr).map(|v| v.iter().filter(|e| e.tomb.is_none()).collect()).unwrap_or_default()
+        self.arr(arr)
+            .map(|v| v.iter().filter(|e| e.tomb.is_none()).collect())
+            .unwrap_or_default()
     }
 
     pub(super) fn slot_val(&self, slot: &Slot) -> Result<Val, String> {
         match slot {
             Slot::Root => Ok(self.root.val.clone()),
-            Slot::Key(o, k) => Ok(self.obj(*o).ok_or("unknown object")?.get(k).map(|r| r.val.clone()).unwrap_or(Val::Absent)),
-            Slot::Elem(a, e) => Ok(self.arr(*a).ok_or("unknown array")?.iter().find(|x| x.id == *e).ok_or("unknown element")?.reg.val.clone()),
+            Slot::Key(o, k) => Ok(self
+                .obj(*o)
+                .ok_or("unknown object")?
+                .get(k)
+                .map(|r| r.val.clone())
+                .unwrap_or(Val::Absent)),
+            Slot::Elem(a, e) => Ok(self
+                .arr(*a)
+                .ok_or("unknown array")?
+                .iter()
+                .find(|x| x.id == *e)
+                .ok_or("unknown element")?
+                .reg
+                .val
+                .clone()),
         }
     }
 
@@ -278,7 +360,10 @@ impl Doc {
         match slot {
             Slot::Root => Some(self.root.stamp),
             Slot::Key(o, k) => self.obj(*o).and_then(|m| m.get(k)).map(|r| r.stamp),
-            Slot::Elem(a, e) => self.arr(*a).and_then(|v| v.iter().find(|x| x.id == *e)).map(|x| x.reg.stamp),
+            Slot::Elem(a, e) => self
+                .arr(*a)
+                .and_then(|v| v.iter().find(|x| x.id == *e))
+                .map(|x| x.reg.stamp),
         }
     }
 
@@ -286,11 +371,18 @@ impl Doc {
         match slot {
             Slot::Root => Ok(&mut self.root),
             Slot::Key(o, k) => match self.nodes.get_mut(o) {
-                Some(Cont::Obj(m)) => Ok(m.entry(k.clone()).or_insert(Reg { stamp: Stamp::ZERO, val: Val::Absent })),
+                Some(Cont::Obj(m)) => Ok(m.entry(k.clone()).or_insert(Reg {
+                    stamp: Stamp::ZERO,
+                    val: Val::Absent,
+                })),
                 _ => Err("unknown object".into()),
             },
             Slot::Elem(a, e) => match self.nodes.get_mut(a) {
-                Some(Cont::Arr(v)) => v.iter_mut().find(|x| x.id == *e).map(|x| &mut x.reg).ok_or_else(|| "unknown element".to_string()),
+                Some(Cont::Arr(v)) => v
+                    .iter_mut()
+                    .find(|x| x.id == *e)
+                    .map(|x| &mut x.reg)
+                    .ok_or_else(|| "unknown element".to_string()),
                 _ => Err("unknown array".into()),
             },
         }
@@ -299,7 +391,10 @@ impl Doc {
     pub(super) fn check_slot(&self, slot: &Slot) -> Result<(), String> {
         match slot {
             Slot::Root => Ok(()),
-            Slot::Key(o, _) => self.obj(*o).map(|_| ()).ok_or_else(|| "unknown object".into()),
+            Slot::Key(o, _) => self
+                .obj(*o)
+                .map(|_| ())
+                .ok_or_else(|| "unknown object".into()),
             Slot::Elem(a, e) => {
                 let v = self.arr(*a).ok_or("unknown array")?;
                 if v.iter().any(|x| x.id == *e) {
@@ -313,9 +408,20 @@ impl Doc {
 
     /// LWW write (`value == None` deletes). Identities inside the value are always allocated, even
     /// when the write loses, so that every replica allocates identically.
-    pub(super) fn write(&mut self, slot: &Slot, stamp: Stamp, value: Option<&Value>, gen: &mut IdGen, want_undo: bool) -> Result<Vec<Undo>, String> {
+    pub(super) fn write(
+        &mut self,
+        slot: &Slot,
+        stamp: Stamp,
+        value: Option<&Value>,
+        gen: &mut IdGen,
+        want_undo: bool,
+    ) -> Result<Vec<Undo>, String> {
         self.check_slot(slot)?;
-        let prev = if want_undo { Some(self.slot_json(slot)) } else { None };
+        let prev = if want_undo {
+            Some(self.slot_json(slot))
+        } else {
+            None
+        };
         let new = match value {
             Some(v) => self.build(v, gen, stamp, stamp.lamport, 0),
             None => Val::Absent,
@@ -325,24 +431,54 @@ impl Doc {
             reg.stamp = stamp;
             reg.val = new;
             if let Some(p) = prev {
-                return Ok(vec![Undo::Restore { slot: slot.clone(), stamp, prev: p }]);
+                return Ok(vec![Undo::Restore {
+                    slot: slot.clone(),
+                    stamp,
+                    prev: p,
+                }]);
             }
         }
         Ok(vec![])
     }
 
-    pub(super) fn apply_prim(&mut self, m: &Meta, idx: u32, gen: &mut IdGen, prim: &Prim, want_undo: bool) -> Result<Vec<Undo>, String> {
-        let stamp = Stamp { lamport: m.lamport, replica: m.replica, idx };
+    pub(super) fn apply_prim(
+        &mut self,
+        m: &Meta,
+        idx: u32,
+        gen: &mut IdGen,
+        prim: &Prim,
+        want_undo: bool,
+    ) -> Result<Vec<Undo>, String> {
+        let stamp = Stamp {
+            lamport: m.lamport,
+            replica: m.replica,
+            idx,
+        };
         match prim {
             Prim::SetRoot { value } => self.write(&Slot::Root, stamp, Some(value), gen, want_undo),
-            Prim::SetKey { obj, key, value } => self.write(&Slot::Key(*obj, key.clone()), stamp, Some(value), gen, want_undo),
-            Prim::DelKey { obj, key } => self.write(&Slot::Key(*obj, key.clone()), stamp, None, gen, want_undo),
-            Prim::SetElem { arr, elem, value } => self.write(&Slot::Elem(*arr, *elem), stamp, Some(value), gen, want_undo),
+            Prim::SetKey { obj, key, value } => self.write(
+                &Slot::Key(*obj, key.clone()),
+                stamp,
+                Some(value),
+                gen,
+                want_undo,
+            ),
+            Prim::DelKey { obj, key } => {
+                self.write(&Slot::Key(*obj, key.clone()), stamp, None, gen, want_undo)
+            }
+            Prim::SetElem { arr, elem, value } => {
+                self.write(&Slot::Elem(*arr, *elem), stamp, Some(value), gen, want_undo)
+            }
             Prim::InsElem { arr, after, value } => {
                 let v = self.arr(*arr).ok_or("unknown array")?;
                 let mut pos = match after {
                     None => 0,
-                    Some(a) => v.iter().position(|e| e.id == *a).ok_or("unknown anchor element")? + 1,
+                    Some(a) => {
+                        v.iter()
+                            .position(|e| e.id == *a)
+                            .ok_or("unknown anchor element")?
+                            + 1
+                    }
                 };
                 let id = gen.take();
                 let val = self.build(value, gen, stamp, stamp.lamport, 0);
@@ -354,16 +490,42 @@ impl Doc {
                 while pos < v.len() && (v[pos].ins, v[pos].id) > (stamp.lamport, id) {
                     pos += 1;
                 }
-                v.insert(pos, Elem { id, ins: stamp.lamport, reg: Reg { stamp, val }, tomb: None });
-                Ok(if want_undo { vec![Undo::Remove { arr: *arr, elem: id }] } else { vec![] })
+                v.insert(
+                    pos,
+                    Elem {
+                        id,
+                        ins: stamp.lamport,
+                        reg: Reg { stamp, val },
+                        tomb: None,
+                    },
+                );
+                Ok(if want_undo {
+                    vec![Undo::Remove {
+                        arr: *arr,
+                        elem: id,
+                    }]
+                } else {
+                    vec![]
+                })
             }
             Prim::DelElem { arr, elem } => {
                 let (value, was_tomb, left) = {
                     let v = self.arr(*arr).ok_or("unknown array")?;
-                    let p = v.iter().position(|e| e.id == *elem).ok_or("unknown element")?;
+                    let p = v
+                        .iter()
+                        .position(|e| e.id == *elem)
+                        .ok_or("unknown element")?;
                     let e = &v[p];
                     let left = v[..p].iter().rev().find(|x| x.tomb.is_none()).map(|x| x.id);
-                    (if want_undo && e.tomb.is_none() { self.val_json(&e.reg.val, 0) } else { None }, e.tomb.is_some(), left)
+                    (
+                        if want_undo && e.tomb.is_none() {
+                            self.val_json(&e.reg.val, 0)
+                        } else {
+                            None
+                        },
+                        e.tomb.is_some(),
+                        left,
+                    )
                 };
                 if let Some(Cont::Arr(v)) = self.nodes.get_mut(arr) {
                     if let Some(e) = v.iter_mut().find(|e| e.id == *elem) {
@@ -375,7 +537,12 @@ impl Doc {
                     }
                 }
                 Ok(match (want_undo && !was_tomb, value) {
-                    (true, Some(value)) => vec![Undo::Reinsert { arr: *arr, elem: *elem, left, value }],
+                    (true, Some(value)) => vec![Undo::Reinsert {
+                        arr: *arr,
+                        elem: *elem,
+                        left,
+                        value,
+                    }],
                     _ => vec![],
                 })
             }
