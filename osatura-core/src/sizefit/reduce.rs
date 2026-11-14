@@ -39,10 +39,7 @@ pub fn reduce_track(t: &Track, tol: f32, frames: u32) -> Track {
     let mut keep = vec![false; n];
     keep[0] = true;
     keep[n - 1] = true;
-    let sub = |lo: usize, hi: usize| Track {
-        keys: vec![t.keys[lo], t.keys[hi]],
-        extrapolate: t.extrapolate,
-    };
+    let sub = |lo: usize, hi: usize| Track { keys: vec![t.keys[lo], t.keys[hi]], extrapolate: t.extrapolate };
     let mut stack = vec![(0usize, n - 1)];
     while let Some((lo, hi)) = stack.pop() {
         if hi - lo < 2 {
@@ -61,27 +58,12 @@ pub fn reduce_track(t: &Track, tol: f32, frames: u32) -> Track {
         if worst.0 <= tol {
             continue;
         }
-        let split = (lo + 1..hi)
-            .min_by(|&a, &b| {
-                (t.keys[a].frame - worst.1)
-                    .abs()
-                    .total_cmp(&(t.keys[b].frame - worst.1).abs())
-            })
-            .unwrap();
+        let split = (lo + 1..hi).min_by(|&a, &b| (t.keys[a].frame - worst.1).abs().total_cmp(&(t.keys[b].frame - worst.1).abs())).unwrap();
         keep[split] = true;
         stack.push((lo, split));
         stack.push((split, hi));
     }
-    let build = |keep: &[bool]| Track {
-        keys: t
-            .keys
-            .iter()
-            .zip(keep)
-            .filter(|(_, &k)| k)
-            .map(|(k, _)| *k)
-            .collect(),
-        extrapolate: t.extrapolate,
-    };
+    let build = |keep: &[bool]| Track { keys: t.keys.iter().zip(keep).filter(|(_, &k)| k).map(|(k, _)| *k).collect(), extrapolate: t.extrapolate };
     let mut red = build(&keep);
     loop {
         // find the worst sample of the whole reduced track
@@ -95,11 +77,7 @@ pub fn reduce_track(t: &Track, tol: f32, frames: u32) -> Track {
         if worst.0 <= tol {
             return red;
         }
-        let Some(add) = (0..n).filter(|&i| !keep[i]).min_by(|&a, &b| {
-            (t.keys[a].frame - worst.1)
-                .abs()
-                .total_cmp(&(t.keys[b].frame - worst.1).abs())
-        }) else {
+        let Some(add) = (0..n).filter(|&i| !keep[i]).min_by(|&a, &b| (t.keys[a].frame - worst.1).abs().total_cmp(&(t.keys[b].frame - worst.1).abs())) else {
             return red;
         };
         keep[add] = true;
@@ -134,10 +112,7 @@ pub fn reduce_project_keys(p: &mut Project, tol: f32) -> KeyReduction {
 
 // Dead layers
 
-pub(super) fn mask_targets(
-    ls: &[crate::project::Layer],
-    out: &mut std::collections::HashSet<String>,
-) {
+pub(super) fn mask_targets(ls: &[crate::project::Layer], out: &mut std::collections::HashSet<String>) {
     for l in ls {
         if let Some(m) = &l.mask {
             out.insert(m.layer.clone());
@@ -152,9 +127,7 @@ pub(super) fn mask_targets(
 /// frames at quarter resolution on up to 12 sample frames - otherwise nothing is removed.
 pub fn drop_dead_layers(p: &Project) -> (Project, Vec<String>) {
     let unchanged = || (p.clone(), Vec::new());
-    let Ok(e0) = Engine::new(p.clone()) else {
-        return unchanged();
-    };
+    let Ok(e0) = Engine::new(p.clone()) else { return unchanged() };
     let frames: Vec<Frame> = (0..p.frames).map(|f| e0.evaluate(f as f32)).collect();
     let n = frames.first().map_or(0, |f| f.nodes.len());
     let mut alive = vec![false; n];
@@ -225,14 +198,8 @@ pub fn drop_dead_layers(p: &Project) -> (Project, Vec<String>) {
     if dropped.is_empty() {
         return unchanged();
     }
-    let Ok(e1) = Engine::new(q.clone()) else {
-        return unchanged();
-    };
-    let opts = RasterOptions {
-        scale: 0.25,
-        show_bones: false,
-        transparent: false,
-    };
+    let Ok(e1) = Engine::new(q.clone()) else { return unchanged() };
+    let opts = RasterOptions { scale: 0.25, show_bones: false, transparent: false };
     let m = p.frames.max(1);
     let k = 12.min(m);
     for j in 0..k {

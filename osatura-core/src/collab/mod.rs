@@ -68,14 +68,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 mod identities;
-mod presence;
-mod replica;
 mod translation;
+mod replica;
+mod presence;
 
 pub use identities::*;
-pub use presence::*;
-pub use replica::*;
 use translation::*;
+pub use replica::*;
+pub use presence::*;
 
 #[cfg(test)]
 mod tests;

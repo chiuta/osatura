@@ -14,11 +14,7 @@ pub struct ClipReport {
 
 fn collect(ls: &[Layer], prefix: &str, eyes: &mut Vec<String>, irises: &mut Vec<(String, bool)>) {
     for l in ls {
-        let path = if prefix.is_empty() {
-            l.name.clone()
-        } else {
-            format!("{prefix}/{}", l.name)
-        };
+        let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
         if is_iris(&l.name) {
             irises.push((path.clone(), l.mask.is_some()));
         } else if role_of(&l.name).is_some_and(|(r, _)| r.starts_with("face.eye")) {
@@ -42,22 +38,12 @@ pub fn auto_eye_clip(p: &mut Project) -> ClipReport {
             continue;
         }
         let s = side_of(iris.rsplit('/').next().unwrap_or(&iris));
-        let cands: Vec<&String> = eyes
-            .iter()
-            .filter(|e| side_of(e.rsplit('/').next().unwrap_or(e)) == s)
-            .collect();
-        let pick = cands
-            .iter()
-            .find(|e| parent_of(e) == parent_of(&iris))
-            .or(cands.first())
-            .map(|e| (*e).clone());
+        let cands: Vec<&String> = eyes.iter().filter(|e| side_of(e.rsplit('/').next().unwrap_or(e)) == s).collect();
+        let pick = cands.iter().find(|e| parent_of(e) == parent_of(&iris)).or(cands.first()).map(|e| (*e).clone());
         match pick {
             Some(eye) if cands.len() == 1 || s.is_some() || parent_of(&eye) == parent_of(&iris) => {
                 if let Some(l) = p.find_layer_mut(&iris) {
-                    l.mask = Some(MaskRef {
-                        layer: eye.clone(),
-                        invert: false,
-                    });
+                    l.mask = Some(MaskRef { layer: eye.clone(), invert: false });
                     rep.clipped.push(format!("{iris} <- {eye}"));
                 }
             }
@@ -75,19 +61,8 @@ mod tests {
 
     fn face() -> Project {
         let mut p = Project::new("e", 200.0, 100.0, 24.0, 4);
-        let sh = |n: &str, x: f32| {
-            Layer::vector(
-                n,
-                vec![VPath::rect("r", x, 20.0, 30.0, 20.0).with_fill("#ffffff")],
-            )
-        };
-        p.layers = vec![
-            sh("eye_L", 20.0),
-            sh("iris_L", 25.0),
-            sh("eye_R", 120.0),
-            sh("iris_R", 125.0),
-            sh("pupil", 0.0),
-        ];
+        let sh = |n: &str, x: f32| Layer::vector(n, vec![VPath::rect("r", x, 20.0, 30.0, 20.0).with_fill("#ffffff")]);
+        p.layers = vec![sh("eye_L", 20.0), sh("iris_L", 25.0), sh("eye_R", 120.0), sh("iris_R", 125.0), sh("pupil", 0.0)];
         p
     }
 
@@ -96,18 +71,9 @@ mod tests {
         let mut p = face();
         let rep = auto_eye_clip(&mut p);
         assert_eq!(rep.clipped.len(), 2, "{rep:?}");
-        assert_eq!(
-            p.find_layer("iris_L").unwrap().mask.as_ref().unwrap().layer,
-            "eye_L"
-        );
-        assert_eq!(
-            p.find_layer("iris_R").unwrap().mask.as_ref().unwrap().layer,
-            "eye_R"
-        );
-        assert!(
-            rep.skipped.iter().any(|s| s.starts_with("pupil")),
-            "side-less pupil with two eyes is ambiguous"
-        );
+        assert_eq!(p.find_layer("iris_L").unwrap().mask.as_ref().unwrap().layer, "eye_L");
+        assert_eq!(p.find_layer("iris_R").unwrap().mask.as_ref().unwrap().layer, "eye_R");
+        assert!(rep.skipped.iter().any(|s| s.starts_with("pupil")), "side-less pupil with two eyes is ambiguous");
         Engine::new(p).unwrap();
     }
 
@@ -123,12 +89,7 @@ mod tests {
     #[test]
     fn single_eye_without_side_is_unambiguous() {
         let mut p = Project::new("e", 100.0, 100.0, 24.0, 2);
-        let sh = |n: &str| {
-            Layer::vector(
-                n,
-                vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_fill("#fff")],
-            )
-        };
+        let sh = |n: &str| Layer::vector(n, vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_fill("#fff")]);
         p.layers = vec![sh("eye"), sh("iris")];
         assert_eq!(auto_eye_clip(&mut p).clipped.len(), 1);
     }

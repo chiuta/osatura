@@ -46,13 +46,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
 mod layout;
-mod rectangles;
 mod resolved;
+mod rectangles;
 mod responsive;
 
 pub use layout::*;
-pub use rectangles::*;
 pub use resolved::*;
+pub use rectangles::*;
 pub use responsive::*;
 
 #[cfg(test)]

@@ -39,14 +39,7 @@ struct M {
 }
 
 impl M {
-    const ID: M = M {
-        a: 1.0,
-        b: 0.0,
-        c: 0.0,
-        d: 1.0,
-        e: 0.0,
-        f: 0.0,
-    };
+    const ID: M = M { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0 };
     /// `self ∘ o`: apply `o` first, then `self` (SVG nesting order).
     fn then(self, o: M) -> M {
         M {
@@ -59,10 +52,7 @@ impl M {
         }
     }
     fn apply(&self, p: Vec2) -> Vec2 {
-        Vec2::new(
-            self.a * p.x + self.c * p.y + self.e,
-            self.b * p.x + self.d * p.y + self.f,
-        )
+        Vec2::new(self.a * p.x + self.c * p.y + self.e, self.b * p.x + self.d * p.y + self.f)
     }
 }
 
@@ -116,11 +106,7 @@ fn scan_number(b: &[u8]) -> Option<(f32, usize)> {
             i = j;
         }
     }
-    std::str::from_utf8(&b[..i])
-        .ok()?
-        .parse::<f32>()
-        .ok()
-        .map(|v| (v, i))
+    std::str::from_utf8(&b[..i]).ok()?.parse::<f32>().ok().map(|v| (v, i))
 }
 
 fn parse_transform(s: &str) -> Result<M, String> {
@@ -133,63 +119,21 @@ fn parse_transform(s: &str) -> Result<M, String> {
         let v = parse_numbers(&rest[open + 1..close]);
         let t = match (name, v.len()) {
             ("translate", 1) => M { e: v[0], ..M::ID },
-            ("translate", 2) => M {
-                e: v[0],
-                f: v[1],
-                ..M::ID
-            },
-            ("scale", 1) => M {
-                a: v[0],
-                d: v[0],
-                ..M::ID
-            },
-            ("scale", 2) => M {
-                a: v[0],
-                d: v[1],
-                ..M::ID
-            },
+            ("translate", 2) => M { e: v[0], f: v[1], ..M::ID },
+            ("scale", 1) => M { a: v[0], d: v[0], ..M::ID },
+            ("scale", 2) => M { a: v[0], d: v[1], ..M::ID },
             ("rotate", 1) | ("rotate", 3) => {
                 let (s_, c_) = v[0].to_radians().sin_cos();
-                let r = M {
-                    a: c_,
-                    b: s_,
-                    c: -s_,
-                    d: c_,
-                    e: 0.0,
-                    f: 0.0,
-                };
+                let r = M { a: c_, b: s_, c: -s_, d: c_, e: 0.0, f: 0.0 };
                 if v.len() == 3 {
-                    M {
-                        e: v[1],
-                        f: v[2],
-                        ..M::ID
-                    }
-                    .then(r)
-                    .then(M {
-                        e: -v[1],
-                        f: -v[2],
-                        ..M::ID
-                    })
+                    M { e: v[1], f: v[2], ..M::ID }.then(r).then(M { e: -v[1], f: -v[2], ..M::ID })
                 } else {
                     r
                 }
             }
-            ("skewX", 1) => M {
-                c: v[0].to_radians().tan(),
-                ..M::ID
-            },
-            ("skewY", 1) => M {
-                b: v[0].to_radians().tan(),
-                ..M::ID
-            },
-            ("matrix", 6) => M {
-                a: v[0],
-                b: v[1],
-                c: v[2],
-                d: v[3],
-                e: v[4],
-                f: v[5],
-            },
+            ("skewX", 1) => M { c: v[0].to_radians().tan(), ..M::ID },
+            ("skewY", 1) => M { b: v[0].to_radians().tan(), ..M::ID },
+            ("matrix", 6) => M { a: v[0], b: v[1], c: v[2], d: v[3], e: v[4], f: v[5] },
             _ => return Err(format!("unsupported transform '{name}'")),
         };
         m = m.then(t);
@@ -224,10 +168,7 @@ fn parse_paint(v: &str) -> Option<Result<String, String>> {
     }
     if let Some(h) = v.strip_prefix('#') {
         return Some(match h.len() {
-            3 => Ok(format!(
-                "#{}",
-                h.chars().flat_map(|c| [c, c]).collect::<String>()
-            )),
+            3 => Ok(format!("#{}", h.chars().flat_map(|c| [c, c]).collect::<String>())),
             6 if h.chars().all(|c| c.is_ascii_hexdigit()) => Ok(format!("#{h}")),
             _ => Err(format!("unsupported colour '{v}'")),
         });
@@ -303,11 +244,7 @@ fn parse_attrs(tag: &str) -> HashMap<String, String> {
     out
 }
 
-fn style_from(
-    attrs: &HashMap<String, String>,
-    parent: &Style,
-    warnings: &mut Vec<String>,
-) -> Style {
+fn style_from(attrs: &HashMap<String, String>, parent: &Style, warnings: &mut Vec<String>) -> Style {
     let mut s = parent.clone();
     let mut paint = |key: &str, slot: &mut Option<String>| {
         if let Some(v) = attrs.get(key) {
@@ -323,10 +260,7 @@ fn style_from(
     };
     paint("fill", &mut s.fill);
     paint("stroke", &mut s.stroke);
-    if let Some(w) = attrs
-        .get("stroke-width")
-        .and_then(|w| parse_numbers(w).first().copied())
-    {
+    if let Some(w) = attrs.get("stroke-width").and_then(|w| parse_numbers(w).first().copied()) {
         s.stroke_width = w;
     }
     s
@@ -341,12 +275,7 @@ struct PathBuilder {
 
 impl PathBuilder {
     fn new() -> Self {
-        PathBuilder {
-            subpaths: vec![],
-            cur: vec![],
-            pos: Vec2::ZERO,
-            start: Vec2::ZERO,
-        }
+        PathBuilder { subpaths: vec![], cur: vec![], pos: Vec2::ZERO, start: Vec2::ZERO }
     }
     fn move_to(&mut self, p: Vec2) {
         self.flush(false);
@@ -425,12 +354,7 @@ fn arc_to(pb: &mut PathBuilder, rx: f32, ry: f32, rot_deg: f32, large: bool, swe
     let cy = sin * cxp + cos * cyp + (p0.y + p.y) * 0.5;
     let ang = |ux: f32, uy: f32, vx: f32, vy: f32| (ux * vy - uy * vx).atan2(ux * vx + uy * vy);
     let th1 = ang(1.0, 0.0, (x1 - cxp) / rx, (y1 - cyp) / ry);
-    let mut dth = ang(
-        (x1 - cxp) / rx,
-        (y1 - cyp) / ry,
-        (-x1 - cxp) / rx,
-        (-y1 - cyp) / ry,
-    );
+    let mut dth = ang((x1 - cxp) / rx, (y1 - cyp) / ry, (-x1 - cxp) / rx, (-y1 - cyp) / ry);
     if !sweep && dth > 0.0 {
         dth -= std::f32::consts::TAU;
     } else if sweep && dth < 0.0 {
@@ -439,29 +363,15 @@ fn arc_to(pb: &mut PathBuilder, rx: f32, ry: f32, rot_deg: f32, large: bool, swe
     let segs = (dth.abs() / (std::f32::consts::FRAC_PI_2)).ceil().max(1.0) as usize;
     let step = dth / segs as f32;
     let t = 4.0 / 3.0 * (step / 4.0).tan();
-    let pt = |a: f32| {
-        Vec2::new(
-            cx + rx * a.cos() * cos - ry * a.sin() * sin,
-            cy + rx * a.cos() * sin + ry * a.sin() * cos,
-        )
-    };
-    let dpt = |a: f32| {
-        Vec2::new(
-            -rx * a.sin() * cos - ry * a.cos() * sin,
-            -rx * a.sin() * sin + ry * a.cos() * cos,
-        )
-    };
+    let pt = |a: f32| Vec2::new(cx + rx * a.cos() * cos - ry * a.sin() * sin, cy + rx * a.cos() * sin + ry * a.sin() * cos);
+    let dpt = |a: f32| Vec2::new(-rx * a.sin() * cos - ry * a.cos() * sin, -rx * a.sin() * sin + ry * a.cos() * cos);
     for i in 0..segs {
         let a0 = th1 + step * i as f32;
         let a1 = a0 + step;
         let (s0, e0) = (pt(a0), pt(a1));
         let (d0, d1) = (dpt(a0), dpt(a1));
         let end = if i + 1 == segs { p } else { e0 };
-        pb.cubic_to(
-            Vec2::new(s0.x + t * d0.x, s0.y + t * d0.y),
-            Vec2::new(e0.x - t * d1.x, e0.y - t * d1.y),
-            end,
-        );
+        pb.cubic_to(Vec2::new(s0.x + t * d0.x, s0.y + t * d0.y), Vec2::new(e0.x - t * d1.x, e0.y - t * d1.y), end);
     }
 }
 
@@ -504,8 +414,7 @@ pub fn parse_path_data(d: &str) -> Result<Vec<(Vec<Anchor>, bool)>, String> {
         let base = if rel { pb.pos } else { Vec2::ZERO };
         let num = |i: &mut usize| -> Result<f32, String> {
             skip_ws(i);
-            let (v, n) =
-                scan_number(&b[*i..]).ok_or_else(|| format!("expected a number at byte {}", *i))?;
+            let (v, n) = scan_number(&b[*i..]).ok_or_else(|| format!("expected a number at byte {}", *i))?;
             *i += n;
             Ok(v)
         };
@@ -583,10 +492,7 @@ pub fn parse_path_data(d: &str) -> Result<Vec<(Vec<Anchor>, bool)>, String> {
                     }
                 };
                 let p = Vec2::new(base.x + num(&mut i)?, base.y + num(&mut i)?);
-                let h1 = Vec2::new(
-                    p0.x + 2.0 / 3.0 * (q.x - p0.x),
-                    p0.y + 2.0 / 3.0 * (q.y - p0.y),
-                );
+                let h1 = Vec2::new(p0.x + 2.0 / 3.0 * (q.x - p0.x), p0.y + 2.0 / 3.0 * (q.y - p0.y));
                 let h2 = Vec2::new(p.x + 2.0 / 3.0 * (q.x - p.x), p.y + 2.0 / 3.0 * (q.y - p.y));
                 pb.cubic_to(h1, h2, p);
                 last_ctrl = Some(q);
@@ -617,10 +523,7 @@ fn transform_anchors(a: &mut [Anchor], m: &M) {
 }
 
 fn length_attr(attrs: &HashMap<String, String>, k: &str, default: f32) -> f32 {
-    attrs
-        .get(k)
-        .and_then(|v| parse_numbers(v).first().copied())
-        .unwrap_or(default)
+    attrs.get(k).and_then(|v| parse_numbers(v).first().copied()).unwrap_or(default)
 }
 
 /// Import an SVG document (subset): paths, rect, circle, ellipse, line, polyline, polygon,
@@ -631,44 +534,25 @@ pub fn import_svg(text: &str) -> Result<SvgImport, String> {
         return Err("SVG is larger than 8 MB".into());
     }
     let mut out = SvgImport::default();
-    let mut stack: Vec<(M, Style, bool)> = vec![(
-        M::ID,
-        Style {
-            fill: Some("#000000".into()),
-            stroke: None,
-            stroke_width: 1.0,
-        },
-        false,
-    )];
+    let mut stack: Vec<(M, Style, bool)> = vec![(M::ID, Style { fill: Some("#000000".into()), stroke: None, stroke_width: 1.0 }, false)];
     let mut skip_depth: Vec<String> = Vec::new();
     let mut anchors_total = 0usize;
     let bytes = text.as_bytes();
     let mut i = 0;
     let mut count = 0usize;
     while i < bytes.len() {
-        let Some(off) = text[i..].find('<') else {
-            break;
-        };
+        let Some(off) = text[i..].find('<') else { break };
         let start = i + off;
         if text[start..].starts_with("<!--") {
-            i = text[start..]
-                .find("-->")
-                .map(|e| start + e + 3)
-                .ok_or("unterminated comment")?;
+            i = text[start..].find("-->").map(|e| start + e + 3).ok_or("unterminated comment")?;
             continue;
         }
         if text[start..].starts_with("<![CDATA[") {
-            i = text[start..]
-                .find("]]>")
-                .map(|e| start + e + 3)
-                .ok_or("unterminated CDATA")?;
+            i = text[start..].find("]]>").map(|e| start + e + 3).ok_or("unterminated CDATA")?;
             continue;
         }
         if text[start..].starts_with("<?") || text[start..].starts_with("<!") {
-            i = text[start..]
-                .find('>')
-                .map(|e| start + e + 1)
-                .ok_or("unterminated declaration")?;
+            i = text[start..].find('>').map(|e| start + e + 1).ok_or("unterminated declaration")?;
             continue;
         }
         // find the end of the tag, honouring quotes
@@ -706,9 +590,7 @@ pub fn import_svg(text: &str) -> Result<SvgImport, String> {
             continue;
         }
         let self_closing = inner.ends_with('/');
-        let name_end = inner
-            .find(|c: char| c.is_whitespace() || c == '/')
-            .unwrap_or(inner.len());
+        let name_end = inner.find(|c: char| c.is_whitespace() || c == '/').unwrap_or(inner.len());
         let name = &inner[..name_end];
         if !skip_depth.is_empty() {
             if !self_closing && skip_depth.last().map(|s| s == name).unwrap_or(false) {
@@ -719,20 +601,9 @@ pub fn import_svg(text: &str) -> Result<SvgImport, String> {
         let attrs = parse_attrs(inner);
         let (pm, pstyle, _) = stack.last().cloned().unwrap();
         match name {
-            "defs" | "clipPath" | "mask" | "filter" | "style" | "script" | "text" | "symbol"
-            | "linearGradient" | "radialGradient" | "pattern" | "metadata" | "title" | "desc" => {
-                if matches!(
-                    name,
-                    "clipPath"
-                        | "mask"
-                        | "filter"
-                        | "text"
-                        | "pattern"
-                        | "linearGradient"
-                        | "radialGradient"
-                ) {
-                    out.warnings
-                        .push(format!("<{name}> is not supported and was skipped"));
+            "defs" | "clipPath" | "mask" | "filter" | "style" | "script" | "text" | "symbol" | "linearGradient" | "radialGradient" | "pattern" | "metadata" | "title" | "desc" => {
+                if matches!(name, "clipPath" | "mask" | "filter" | "text" | "pattern" | "linearGradient" | "radialGradient") {
+                    out.warnings.push(format!("<{name}> is not supported and was skipped"));
                 }
                 if !self_closing {
                     skip_depth.push(name.to_string());
@@ -777,10 +648,7 @@ pub fn import_svg(text: &str) -> Result<SvgImport, String> {
         };
         let m = pm.then(t);
         let st = style_from(&attrs, &pstyle, &mut out.warnings);
-        let id = attrs
-            .get("id")
-            .cloned()
-            .unwrap_or_else(|| format!("{name}{}", out.paths.len()));
+        let id = attrs.get("id").cloned().unwrap_or_else(|| format!("{name}{}", out.paths.len()));
         let mut shapes: Vec<(Vec<Anchor>, bool)> = Vec::new();
         match name {
             "path" => match attrs.get("d").map(|d| parse_path_data(d)) {
@@ -789,39 +657,22 @@ pub fn import_svg(text: &str) -> Result<SvgImport, String> {
                 None => {}
             },
             "rect" => {
-                let (x, y, w, h) = (
-                    length_attr(&attrs, "x", 0.0),
-                    length_attr(&attrs, "y", 0.0),
-                    length_attr(&attrs, "width", 0.0),
-                    length_attr(&attrs, "height", 0.0),
-                );
+                let (x, y, w, h) = (length_attr(&attrs, "x", 0.0), length_attr(&attrs, "y", 0.0), length_attr(&attrs, "width", 0.0), length_attr(&attrs, "height", 0.0));
                 if attrs.contains_key("rx") || attrs.contains_key("ry") {
-                    out.warnings
-                        .push(format!("rect '{id}': rounded corners ignored"));
+                    out.warnings.push(format!("rect '{id}': rounded corners ignored"));
                 }
                 if w > 0.0 && h > 0.0 {
-                    let pts = [
-                        Vec2::new(x, y),
-                        Vec2::new(x + w, y),
-                        Vec2::new(x + w, y + h),
-                        Vec2::new(x, y + h),
-                    ];
+                    let pts = [Vec2::new(x, y), Vec2::new(x + w, y), Vec2::new(x + w, y + h), Vec2::new(x, y + h)];
                     shapes.push((pts.iter().map(|&p| Anchor::corner(p)).collect(), true));
                 }
             }
             "circle" | "ellipse" => {
-                let (cx, cy) = (
-                    length_attr(&attrs, "cx", 0.0),
-                    length_attr(&attrs, "cy", 0.0),
-                );
+                let (cx, cy) = (length_attr(&attrs, "cx", 0.0), length_attr(&attrs, "cy", 0.0));
                 let (rx, ry) = if name == "circle" {
                     let r = length_attr(&attrs, "r", 0.0);
                     (r, r)
                 } else {
-                    (
-                        length_attr(&attrs, "rx", 0.0),
-                        length_attr(&attrs, "ry", 0.0),
-                    )
+                    (length_attr(&attrs, "rx", 0.0), length_attr(&attrs, "ry", 0.0))
                 };
                 if rx > 0.0 && ry > 0.0 {
                     shapes.push((VPath::ellipse("e", Vec2::new(cx, cy), rx, ry).anchors, true));
@@ -829,33 +680,19 @@ pub fn import_svg(text: &str) -> Result<SvgImport, String> {
             }
             "line" => {
                 let (a, b) = (
-                    Vec2::new(
-                        length_attr(&attrs, "x1", 0.0),
-                        length_attr(&attrs, "y1", 0.0),
-                    ),
-                    Vec2::new(
-                        length_attr(&attrs, "x2", 0.0),
-                        length_attr(&attrs, "y2", 0.0),
-                    ),
+                    Vec2::new(length_attr(&attrs, "x1", 0.0), length_attr(&attrs, "y1", 0.0)),
+                    Vec2::new(length_attr(&attrs, "x2", 0.0), length_attr(&attrs, "y2", 0.0)),
                 );
                 shapes.push((vec![Anchor::corner(a), Anchor::corner(b)], false));
             }
             "polyline" | "polygon" => {
-                let n = attrs
-                    .get("points")
-                    .map(|p| parse_numbers(p))
-                    .unwrap_or_default();
-                let pts: Vec<Anchor> = n
-                    .chunks_exact(2)
-                    .map(|c| Anchor::corner(Vec2::new(c[0], c[1])))
-                    .collect();
+                let n = attrs.get("points").map(|p| parse_numbers(p)).unwrap_or_default();
+                let pts: Vec<Anchor> = n.chunks_exact(2).map(|c| Anchor::corner(Vec2::new(c[0], c[1]))).collect();
                 if pts.len() >= 2 {
                     shapes.push((pts, name == "polygon"));
                 }
             }
-            "use" | "image" | "foreignObject" => out
-                .warnings
-                .push(format!("<{name}> is not supported and was skipped")),
+            "use" | "image" | "foreignObject" => out.warnings.push(format!("<{name}> is not supported and was skipped")),
             _ => {}
         }
         for (k, (mut a, closed)) in shapes.into_iter().enumerate() {
@@ -864,11 +701,7 @@ pub fn import_svg(text: &str) -> Result<SvgImport, String> {
                 return Err("SVG has too many anchors".into());
             }
             transform_anchors(&mut a, &m);
-            let pname = if k == 0 {
-                id.clone()
-            } else {
-                format!("{id}_{k}")
-            };
+            let pname = if k == 0 { id.clone() } else { format!("{id}_{k}") };
             let mut p = VPath::new(&pname, closed, a);
             if closed || st.fill.is_some() {
                 if let Some(f) = &st.fill {
@@ -933,16 +766,10 @@ impl Bvh {
     /// Value of `channel` (e.g. `"Zrotation"`) for `joint` at time `t` seconds (linear interpolation).
     pub fn sample(&self, joint: usize, channel: &str, t: f32) -> Option<f32> {
         let j = self.joints.get(joint)?;
-        let ci = j
-            .channels
-            .iter()
-            .position(|c| c.eq_ignore_ascii_case(channel))?;
+        let ci = j.channels.iter().position(|c| c.eq_ignore_ascii_case(channel))?;
         let idx = j.first + ci;
         let pos = (t / self.frame_time).clamp(0.0, (self.rows.len().saturating_sub(1)) as f32);
-        let (a, b) = (
-            pos.floor() as usize,
-            (pos.ceil() as usize).min(self.rows.len() - 1),
-        );
+        let (a, b) = (pos.floor() as usize, (pos.ceil() as usize).min(self.rows.len() - 1));
         let f = pos - pos.floor();
         Some(self.rows[a][idx] * (1.0 - f) + self.rows[b][idx] * f)
     }
@@ -966,21 +793,11 @@ pub fn parse_bvh(text: &str) -> Result<Bvh, String> {
         match t {
             "ROOT" | "JOINT" => {
                 let name = toks.next().ok_or("joint without a name")?.to_string();
-                let parent = if t == "ROOT" {
-                    None
-                } else {
-                    stack.last().copied().flatten()
-                };
+                let parent = if t == "ROOT" { None } else { stack.last().copied().flatten() };
                 if joints.len() >= 1000 {
                     return Err("BVH has more than 1000 joints".into());
                 }
-                joints.push(BvhJoint {
-                    name,
-                    parent,
-                    offset: [0.0; 3],
-                    channels: vec![],
-                    first: 0,
-                });
+                joints.push(BvhJoint { name, parent, offset: [0.0; 3], channels: vec![], first: 0 });
                 pending = Some(Some(joints.len() - 1));
             }
             "End" => {
@@ -996,24 +813,17 @@ pub fn parse_bvh(text: &str) -> Result<Bvh, String> {
                 }
             }
             "OFFSET" => {
-                let v: Vec<f32> = (0..3)
-                    .map(|_| toks.next().and_then(|x| x.parse().ok()).ok_or("bad OFFSET"))
-                    .collect::<Result<_, _>>()?;
+                let v: Vec<f32> = (0..3).map(|_| toks.next().and_then(|x| x.parse().ok()).ok_or("bad OFFSET")).collect::<Result<_, _>>()?;
                 if let Some(Some(j)) = stack.last() {
                     joints[*j].offset = [v[0], v[1], v[2]];
                 }
             }
             "CHANNELS" => {
-                let n: usize = toks
-                    .next()
-                    .and_then(|x| x.parse().ok())
-                    .ok_or("bad CHANNELS count")?;
+                let n: usize = toks.next().and_then(|x| x.parse().ok()).ok_or("bad CHANNELS count")?;
                 if n > 6 {
                     return Err("a joint cannot have more than 6 channels".into());
                 }
-                let names: Vec<String> = (0..n)
-                    .map(|_| toks.next().map(String::from).ok_or("missing channel name"))
-                    .collect::<Result<_, _>>()?;
+                let names: Vec<String> = (0..n).map(|_| toks.next().map(String::from).ok_or("missing channel name")).collect::<Result<_, _>>()?;
                 if let Some(Some(j)) = stack.last() {
                     joints[*j].first = next_val;
                     joints[*j].channels = names;
@@ -1031,63 +841,33 @@ pub fn parse_bvh(text: &str) -> Result<Bvh, String> {
     if toks.next() != Some("Frames:") {
         return Err("expected 'Frames:'".into());
     }
-    let nframes: usize = toks
-        .next()
-        .and_then(|x| x.parse().ok())
-        .ok_or("bad frame count")?;
+    let nframes: usize = toks.next().and_then(|x| x.parse().ok()).ok_or("bad frame count")?;
     if toks.next() != Some("Frame") || toks.next() != Some("Time:") {
         return Err("expected 'Frame Time:'".into());
     }
-    let frame_time: f32 = toks
-        .next()
-        .and_then(|x| x.parse().ok())
-        .ok_or("bad frame time")?;
-    if (frame_time.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        || nframes == 0
-        || nframes > 200_000
-    {
+    let frame_time: f32 = toks.next().and_then(|x| x.parse().ok()).ok_or("bad frame time")?;
+    if (frame_time.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || nframes == 0 || nframes > 200_000 {
         return Err("frame count or frame time out of range".into());
     }
     let mut rows = Vec::with_capacity(nframes);
     for r in 0..nframes {
         let row: Vec<f32> = (0..next_val)
-            .map(|_| {
-                toks.next()
-                    .and_then(|x| x.parse().ok())
-                    .ok_or_else(|| format!("motion data ends early (row {r})"))
-            })
+            .map(|_| toks.next().and_then(|x| x.parse().ok()).ok_or_else(|| format!("motion data ends early (row {r})")))
             .collect::<Result<_, _>>()?;
         rows.push(row);
     }
-    Ok(Bvh {
-        joints,
-        frame_time,
-        rows,
-    })
+    Ok(Bvh { joints, frame_time, rows })
 }
 
 /// Turn one rotation axis of BVH joints into bone-angle channels (2-D projection).
 /// `pairs` = (joint name, bone name); `axis` e.g. `"Zrotation"`. Angles are relative to the
 /// first motion frame, so the rig keeps its own rest pose.
-pub fn bvh_to_channels(
-    bvh: &Bvh,
-    pairs: &[(String, String)],
-    axis: &str,
-    fps: f32,
-    frames: u32,
-    tol: f32,
-) -> Result<Vec<Channel>, String> {
+pub fn bvh_to_channels(bvh: &Bvh, pairs: &[(String, String)], axis: &str, fps: f32, frames: u32, tol: f32) -> Result<Vec<Channel>, String> {
     let mut out = Vec::new();
     for (joint, bone) in pairs {
-        let ji = bvh
-            .joint(joint)
-            .ok_or_else(|| format!("BVH has no joint '{joint}'"))?;
-        let first = bvh
-            .sample(ji, axis, 0.0)
-            .ok_or_else(|| format!("joint '{joint}' has no channel '{axis}'"))?;
-        let samples: Vec<f32> = (0..frames)
-            .map(|f| bvh.sample(ji, axis, f as f32 / fps).unwrap_or(first) - first)
-            .collect();
+        let ji = bvh.joint(joint).ok_or_else(|| format!("BVH has no joint '{joint}'"))?;
+        let first = bvh.sample(ji, axis, 0.0).ok_or_else(|| format!("joint '{joint}' has no channel '{axis}'"))?;
+        let samples: Vec<f32> = (0..frames).map(|f| bvh.sample(ji, axis, f as f32 / fps).unwrap_or(first) - first).collect();
         out.push(record(bone, Prop::BoneAngle, &samples, tol));
     }
     Ok(out)
@@ -1114,18 +894,11 @@ pub fn parse_mouth_cues(text: &str, fps: f32) -> Result<Vec<MouthCue>, String> {
         }
         let mut it = line.split_whitespace();
         let (a, b) = (it.next(), it.next());
-        let (Some(a), Some(b)) = (a, b) else {
-            return Err(format!("line {}: expected two columns", n + 1));
-        };
-        let v: f32 = a
-            .parse()
-            .map_err(|_| format!("line {}: bad time/frame '{a}'", n + 1))?;
+        let (Some(a), Some(b)) = (a, b) else { return Err(format!("line {}: expected two columns", n + 1)) };
+        let v: f32 = a.parse().map_err(|_| format!("line {}: bad time/frame '{a}'", n + 1))?;
         // Rhubarb prints seconds with a decimal point; Moho switch files use whole frames.
         let frame = if a.contains('.') { v * fps } else { v };
-        out.push(MouthCue {
-            frame,
-            shape: b.to_string(),
-        });
+        out.push(MouthCue { frame, shape: b.to_string() });
     }
     if out.is_empty() {
         return Err("no mouth cues found".into());
@@ -1148,19 +921,10 @@ pub fn mouth_class(shape: &str) -> usize {
 }
 
 /// Switch-layer exposure channel from cues. `mapping[class]` = child index of the switch layer.
-pub fn mouth_channel(
-    target: &str,
-    cues: &[MouthCue],
-    mapping: &[usize; 5],
-    rhubarb: bool,
-) -> Channel {
+pub fn mouth_channel(target: &str, cues: &[MouthCue], mapping: &[usize; 5], rhubarb: bool) -> Channel {
     let mut ex: Vec<(f32, usize)> = Vec::new();
     for c in cues {
-        let class = if rhubarb && c.shape == "E" {
-            3
-        } else {
-            mouth_class(&c.shape)
-        };
+        let class = if rhubarb && c.shape == "E" { 3 } else { mouth_class(&c.shape) };
         let idx = mapping[class];
         if ex.last().map(|l| l.1) != Some(idx) {
             ex.push((c.frame.round(), idx));
@@ -1189,10 +953,7 @@ mod tests {
         let (a, closed) = &sp[0];
         assert!(closed);
         let pts: Vec<(f32, f32)> = a.iter().map(|x| (x.pos.x, x.pos.y)).collect();
-        assert_eq!(
-            pts,
-            vec![(10.0, 10.0), (20.0, 10.0), (20.0, 20.0), (10.0, 20.0)]
-        );
+        assert_eq!(pts, vec![(10.0, 10.0), (20.0, 10.0), (20.0, 20.0), (10.0, 20.0)]);
         // implicit lineto after M, multiple subpaths
         let sp = parse_path_data("M0 0 5 5 M20 20 L30 30").unwrap();
         assert_eq!(sp.len(), 2);
@@ -1201,8 +962,7 @@ mod tests {
 
     #[test]
     fn curves_set_handles_and_arcs_end_exactly() {
-        let sp =
-            parse_path_data("M0 0 C 0 10 10 10 10 0 S 20 -10 20 0 Q 25 10 30 0 T 40 0").unwrap();
+        let sp = parse_path_data("M0 0 C 0 10 10 10 10 0 S 20 -10 20 0 Q 25 10 30 0 T 40 0").unwrap();
         let a = &sp[0].0;
         assert_eq!(a[0].handle_out, Some(Vec2::new(0.0, 10.0)));
         assert_eq!(a[1].handle_in, Some(Vec2::new(10.0, 10.0)));
@@ -1211,10 +971,7 @@ mod tests {
         let arc = parse_path_data("M0 0 A 10 10 0 0 1 20 0").unwrap();
         let last = arc[0].0.last().unwrap();
         assert!((last.pos.x - 20.0).abs() < 1e-4 && last.pos.y.abs() < 1e-4);
-        assert!(
-            arc[0].0.len() >= 3,
-            "a half circle needs two cubic segments"
-        );
+        assert!(arc[0].0.len() >= 3, "a half circle needs two cubic segments");
     }
 
     #[test]
@@ -1244,44 +1001,22 @@ mod tests {
         let names: Vec<_> = r.paths.iter().map(|p| p.name.as_str()).collect();
         assert_eq!(names, vec!["box", "circle1", "p", "polyline3"]);
         let boxp = &r.paths[0];
-        assert_eq!(
-            boxp.anchors[0].pos,
-            Vec2::new(10.0, 5.0),
-            "group translate applied"
-        );
+        assert_eq!(boxp.anchors[0].pos, Vec2::new(10.0, 5.0), "group translate applied");
         assert_eq!(boxp.anchors[2].pos, Vec2::new(30.0, 15.0));
         let circ = &r.paths[1];
         let (mn, mx) = circ.bounds().unwrap();
-        assert!(
-            (mx.x - mn.x - 8.0).abs() < 0.2,
-            "radius 2 scaled by 2 ⇒ diameter 8, got {}",
-            mx.x - mn.x
-        );
+        assert!((mx.x - mn.x - 8.0).abs() < 0.2, "radius 2 scaled by 2 ⇒ diameter 8, got {}", mx.x - mn.x);
         assert!((mn.x - (10.0 + 6.0)).abs() < 0.2);
         assert!(circ.stroke.is_some() && circ.fill.is_some());
         assert!(r.paths[3].fill.is_none() && r.paths[3].stroke.is_some());
-        assert!(
-            r.warnings.iter().any(|w| w.contains("url(#g)")),
-            "{:?}",
-            r.warnings
-        );
-        assert!(
-            r.warnings.iter().any(|w| w.contains("<text>")),
-            "{:?}",
-            r.warnings
-        );
+        assert!(r.warnings.iter().any(|w| w.contains("url(#g)")), "{:?}", r.warnings);
+        assert!(r.warnings.iter().any(|w| w.contains("<text>")), "{:?}", r.warnings);
     }
 
     #[test]
     fn svg_import_rejects_garbage_and_huge_input() {
-        assert!(
-            import_svg("<svg><rect/></svg>").is_err(),
-            "nothing drawable"
-        );
-        assert!(
-            import_svg("<svg><path d='M0 0 L1 1'").is_err(),
-            "unterminated tag"
-        );
+        assert!(import_svg("<svg><rect/></svg>").is_err(), "nothing drawable");
+        assert!(import_svg("<svg><path d='M0 0 L1 1'").is_err(), "unterminated tag");
         assert!(import_svg(&"x".repeat(MAX_SVG_BYTES + 1)).is_err());
     }
 
@@ -1336,15 +1071,7 @@ Frame Time: 0.5
     #[test]
     fn bvh_channels_are_relative_to_first_frame() {
         let b = parse_bvh(BVH).unwrap();
-        let ch = bvh_to_channels(
-            &b,
-            &[("Arm".into(), "arm_up".into())],
-            "Zrotation",
-            4.0,
-            5,
-            0.01,
-        )
-        .unwrap();
+        let ch = bvh_to_channels(&b, &[("Arm".into(), "arm_up".into())], "Zrotation", 4.0, 5, 0.01).unwrap();
         assert_eq!(ch.len(), 1);
         if let crate::project::Source::Keys { track } = &ch[0].source {
             assert_eq!(track.eval(0.0), Some(0.0));
@@ -1352,24 +1079,13 @@ Frame Time: 0.5
         } else {
             panic!("keys expected");
         }
-        assert!(bvh_to_channels(
-            &b,
-            &[("Nope".into(), "x".into())],
-            "Zrotation",
-            24.0,
-            3,
-            0.1
-        )
-        .is_err());
+        assert!(bvh_to_channels(&b, &[("Nope".into(), "x".into())], "Zrotation", 24.0, 3, 0.1).is_err());
     }
 
     #[test]
     fn bvh_errors() {
         assert!(parse_bvh("nonsense").is_err());
-        assert!(
-            parse_bvh(&BVH.replace("Frames: 3", "Frames: 9")).is_err(),
-            "data ends early"
-        );
+        assert!(parse_bvh(&BVH.replace("Frames: 3", "Frames: 9")).is_err(), "data ends early");
         assert!(parse_bvh(&BVH.replace("Frame Time: 0.5", "Frame Time: 0")).is_err());
         assert!(parse_bvh(&BVH.replace("CHANNELS 1", "CHANNELS 9")).is_err());
     }
@@ -1389,11 +1105,7 @@ Frame Time: 0.5
         assert_eq!(cues[1].frame, 12.0);
         let ch = mouth_channel("mouth", &cues, &[0, 1, 2, 3, 4], true);
         if let crate::project::Source::Keys { track } = &ch.source {
-            assert_eq!(
-                track.eval(25.0),
-                Some(3.0),
-                "Rhubarb E is the rounded shape"
-            );
+            assert_eq!(track.eval(25.0), Some(3.0), "Rhubarb E is the rounded shape");
         }
         assert!(parse_mouth_cues("", 24.0).is_err());
         assert!(parse_mouth_cues("5\n", 24.0).is_err());

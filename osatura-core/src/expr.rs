@@ -54,9 +54,7 @@ fn lex(src: &str) -> Result<Vec<Tok>, String> {
                 }
             }
             let t: String = b[s..i].iter().collect();
-            out.push(Tok::Num(
-                t.parse().map_err(|_| format!("bad number '{t}'"))?,
-            ));
+            out.push(Tok::Num(t.parse().map_err(|_| format!("bad number '{t}'"))?));
             continue;
         }
         if c.is_alphabetic() || c == '_' {
@@ -254,9 +252,7 @@ impl Parser {
     fn enter(&mut self) -> Result<(), String> {
         self.depth += 1;
         if self.depth > MAX_DEPTH {
-            return Err(format!(
-                "expression is nested more than {MAX_DEPTH} levels deep"
-            ));
+            return Err(format!("expression is nested more than {MAX_DEPTH} levels deep"));
         }
         Ok(())
     }
@@ -431,10 +427,7 @@ impl Parser {
             }
         }
         if args.len() < lo || args.len() > hi {
-            return Err(format!(
-                "{name}() takes {lo}..{hi} arguments, got {}",
-                args.len()
-            ));
+            return Err(format!("{name}() takes {lo}..{hi} arguments, got {}", args.len()));
         }
         Ok(Expr::Call(FuncRef(f), args))
     }
@@ -442,20 +435,13 @@ impl Parser {
 
 pub fn parse(src: &str) -> Result<Expr, String> {
     if src.len() > MAX_SOURCE_BYTES {
-        return Err(format!(
-            "expression is {} bytes long, the limit is {MAX_SOURCE_BYTES}",
-            src.len()
-        ));
+        return Err(format!("expression is {} bytes long, the limit is {MAX_SOURCE_BYTES}", src.len()));
     }
     let toks = lex(src)?;
     if toks.is_empty() {
         return Err("empty expression".into());
     }
-    let mut p = Parser {
-        toks,
-        pos: 0,
-        depth: 0,
-    };
+    let mut p = Parser { toks, pos: 0, depth: 0 };
     let e = p.ternary()?;
     if p.pos != p.toks.len() {
         return Err(format!("unexpected trailing token {:?}", p.toks[p.pos]));
@@ -549,11 +535,7 @@ impl Expr {
                     Func::Lerp => a[0] + (a[1] - a[0]) * a[2],
                     Func::Smoothstep => {
                         let d = a[1] - a[0];
-                        let t = if d == 0.0 {
-                            1.0
-                        } else {
-                            ((a[2] - a[0]) / d).clamp(0.0, 1.0)
-                        };
+                        let t = if d == 0.0 { 1.0 } else { ((a[2] - a[0]) / d).clamp(0.0, 1.0) };
                         t * t * (3.0 - 2.0 * t)
                     }
                     Func::Floor => a[0].floor(),
@@ -579,16 +561,9 @@ impl Expr {
                     Func::Exp => a[0].exp(),
                     Func::Ln => a[0].max(1e-30).ln(),
                     Func::Noise => noise1(a[0], a.get(1).copied().unwrap_or(0.0) as u32),
-                    Func::Fbm => fbm1(
-                        a[0],
-                        a.get(2).copied().unwrap_or(0.0) as u32,
-                        a[1].max(1.0) as u32,
-                    ),
+                    Func::Fbm => fbm1(a[0], a.get(2).copied().unwrap_or(0.0) as u32, a[1].max(1.0) as u32),
                     Func::Wiggle => {
-                        noise1(
-                            c.frame / c.fps * a[0],
-                            a.get(2).copied().unwrap_or(0.0) as u32,
-                        ) * a[1]
+                        noise1(c.frame / c.fps * a[0], a.get(2).copied().unwrap_or(0.0) as u32) * a[1]
                     }
                     Func::Saw => a[0] - a[0].floor(),
                     Func::Tri => 1.0 - ((a[0] - a[0].floor()) * 2.0 - 1.0).abs() * 2.0 + 0.0,
@@ -666,12 +641,7 @@ mod tests {
     fn ev(src: &str) -> f32 {
         let e = parse(src).unwrap_or_else(|m| panic!("{src}: {m}"));
         let get = |t: &str, p: &str| if t == "x" && p == "prop" { 7.0 } else { 0.0 };
-        e.eval(&Ctx {
-            frame: 12.0,
-            fps: 24.0,
-            frames: 48.0,
-            get: &get,
-        })
+        e.eval(&Ctx { frame: 12.0, fps: 24.0, frames: 48.0, get: &get })
     }
 
     #[test]
@@ -703,9 +673,7 @@ mod tests {
     fn get_reads_other_values() {
         assert_eq!(ev("get(\"x\", \"prop\") * 2"), 14.0);
         let mut v = Vec::new();
-        parse("get('a','b') + get(\"c\",\"d\")")
-            .unwrap()
-            .gets(&mut v);
+        parse("get('a','b') + get(\"c\",\"d\")").unwrap().gets(&mut v);
         assert_eq!(v.len(), 2);
     }
 

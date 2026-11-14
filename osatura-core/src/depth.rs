@@ -6,12 +6,7 @@
 use crate::project::Project;
 
 /// `names` ordered far → near. Values interpolate linearly from `far` to `near`.
-pub fn spread_parallax(
-    p: &mut Project,
-    names: &[String],
-    far: f32,
-    near: f32,
-) -> Result<(), String> {
+pub fn spread_parallax(p: &mut Project, names: &[String], far: f32, near: f32) -> Result<(), String> {
     if names.len() < 2 {
         return Err("give at least two layers (far to near)".into());
     }
@@ -20,9 +15,7 @@ pub fn spread_parallax(
     }
     for n in names {
         if !p.layers.iter().any(|l| &l.name == n) {
-            return Err(format!(
-                "'{n}' is not a top-level layer (parallax only applies to those)"
-            ));
+            return Err(format!("'{n}' is not a top-level layer (parallax only applies to those)"));
         }
     }
     let k = (names.len() - 1) as f32;
@@ -43,25 +36,14 @@ mod tests {
 
     fn proj() -> Project {
         let mut p = Project::new("d", 100.0, 100.0, 24.0, 2);
-        p.layers = ["sky", "hills", "trees", "fence"]
-            .iter()
-            .map(|n| {
-                Layer::vector(
-                    n,
-                    vec![VPath::rect("r", 0.0, 0.0, 5.0, 5.0).with_fill("#fff")],
-                )
-            })
-            .collect();
+        p.layers = ["sky", "hills", "trees", "fence"].iter().map(|n| Layer::vector(n, vec![VPath::rect("r", 0.0, 0.0, 5.0, 5.0).with_fill("#fff")])).collect();
         p
     }
 
     #[test]
     fn spreads_evenly_far_to_near() {
         let mut p = proj();
-        let names: Vec<String> = ["sky", "hills", "trees", "fence"]
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
+        let names: Vec<String> = ["sky", "hills", "trees", "fence"].iter().map(|s| s.to_string()).collect();
         spread_parallax(&mut p, &names, 0.2, 1.4).unwrap();
         let v: Vec<f32> = p.layers.iter().map(|l| l.parallax).collect();
         for (a, b) in v.iter().zip([0.2, 0.6, 1.0, 1.4]) {

@@ -7,24 +7,12 @@ const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx
 pub fn encode(data: &[u8]) -> String {
     let mut out = String::with_capacity(data.len().div_ceil(3) * 4);
     for chunk in data.chunks(3) {
-        let b = [
-            chunk[0],
-            *chunk.get(1).unwrap_or(&0),
-            *chunk.get(2).unwrap_or(&0),
-        ];
+        let b = [chunk[0], *chunk.get(1).unwrap_or(&0), *chunk.get(2).unwrap_or(&0)];
         let n = (b[0] as u32) << 16 | (b[1] as u32) << 8 | b[2] as u32;
         out.push(ALPHABET[(n >> 18) as usize & 63] as char);
         out.push(ALPHABET[(n >> 12) as usize & 63] as char);
-        out.push(if chunk.len() > 1 {
-            ALPHABET[(n >> 6) as usize & 63] as char
-        } else {
-            '='
-        });
-        out.push(if chunk.len() > 2 {
-            ALPHABET[n as usize & 63] as char
-        } else {
-            '='
-        });
+        out.push(if chunk.len() > 1 { ALPHABET[(n >> 6) as usize & 63] as char } else { '=' });
+        out.push(if chunk.len() > 2 { ALPHABET[n as usize & 63] as char } else { '=' });
     }
     out
 }
@@ -69,15 +57,7 @@ mod tests {
 
     #[test]
     fn rfc4648_vectors() {
-        for (plain, enc) in [
-            ("", ""),
-            ("f", "Zg=="),
-            ("fo", "Zm8="),
-            ("foo", "Zm9v"),
-            ("foob", "Zm9vYg=="),
-            ("fooba", "Zm9vYmE="),
-            ("foobar", "Zm9vYmFy"),
-        ] {
+        for (plain, enc) in [("", ""), ("f", "Zg=="), ("fo", "Zm8="), ("foo", "Zm9v"), ("foob", "Zm9vYg=="), ("fooba", "Zm9vYmE="), ("foobar", "Zm9vYmFy")] {
             assert_eq!(encode(plain.as_bytes()), enc);
             assert_eq!(decode(enc).unwrap(), plain.as_bytes());
         }
@@ -87,11 +67,7 @@ mod tests {
     fn binary_round_trip_and_errors() {
         let data: Vec<u8> = (0..=255).collect();
         assert_eq!(decode(&encode(&data)).unwrap(), data);
-        assert_eq!(
-            decode("Zm9v\nYmFy").unwrap(),
-            b"foobar",
-            "whitespace is ignored"
-        );
+        assert_eq!(decode("Zm9v\nYmFy").unwrap(), b"foobar", "whitespace is ignored");
         assert!(decode("Zm9v!").is_err());
         assert!(decode("Zg==Zg").is_err());
         assert!(decode("Z").is_err());

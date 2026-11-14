@@ -137,15 +137,7 @@ impl CiReport {
 
     pub(super) fn summarize(checks: &[CheckResult]) -> Summary {
         let n = |s: Status| checks.iter().filter(|c| c.status == s).count();
-        Summary {
-            total: checks.len(),
-            passed: n(Status::Pass),
-            failed: n(Status::Fail),
-            errors: n(Status::Error),
-            info: n(Status::Info),
-            updated: n(Status::Updated),
-            blessed: n(Status::Blessed),
-        }
+        Summary { total: checks.len(), passed: n(Status::Pass), failed: n(Status::Fail), errors: n(Status::Error), info: n(Status::Info), updated: n(Status::Updated), blessed: n(Status::Blessed) }
     }
 
     pub fn to_json(&self) -> String {
@@ -187,15 +179,8 @@ pub(super) fn fkey(frame: u32) -> String {
 }
 
 pub(super) fn golden_name_ok(hash: &str) -> Result<(), String> {
-    if hash.len() < 24
-        || hash.len() > 64
-        || !hash
-            .bytes()
-            .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
-    {
-        return Err(format!(
-            "invalid golden hash {hash:?} (need 24-64 lowercase hex digits)"
-        ));
+    if hash.len() < 24 || hash.len() > 64 || !hash.bytes().all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c)) {
+        return Err(format!("invalid golden hash {hash:?} (need 24-64 lowercase hex digits)"));
     }
     Ok(())
 }
@@ -204,57 +189,32 @@ impl GoldenStore {
     pub fn open(dir: &Path) -> Result<GoldenStore, String> {
         let p = dir.join("index.json");
         let index = if p.exists() {
-            let t = std::fs::read_to_string(&p)
-                .map_err(|e| format!("cannot read {}: {e}", p.display()))?;
-            let i: GoldenIndex = serde_json::from_str(&t)
-                .map_err(|e| format!("invalid golden index {}: {e}", p.display()))?;
+            let t = std::fs::read_to_string(&p).map_err(|e| format!("cannot read {}: {e}", p.display()))?;
+            let i: GoldenIndex = serde_json::from_str(&t).map_err(|e| format!("invalid golden index {}: {e}", p.display()))?;
             if i.schema != INDEX_SCHEMA {
-                return Err(format!(
-                    "golden index {} has schema '{}', expected '{INDEX_SCHEMA}'",
-                    p.display(),
-                    i.schema
-                ));
+                return Err(format!("golden index {} has schema '{}', expected '{INDEX_SCHEMA}'", p.display(), i.schema));
             }
             for (check, frames) in &i.entries {
                 for (frame, r) in frames {
-                    golden_name_ok(&r.hash).map_err(|e| {
-                        format!(
-                            "golden index {}: check '{check}' frame {frame}: {e}",
-                            p.display()
-                        )
-                    })?;
+                    golden_name_ok(&r.hash).map_err(|e| format!("golden index {}: check '{check}' frame {frame}: {e}", p.display()))?;
                 }
             }
             i
         } else {
-            GoldenIndex {
-                schema: INDEX_SCHEMA.into(),
-                entries: BTreeMap::new(),
-            }
+            GoldenIndex { schema: INDEX_SCHEMA.into(), entries: BTreeMap::new() }
         };
-        Ok(GoldenStore {
-            dir: dir.to_path_buf(),
-            index,
-            dirty: false,
-        })
+        Ok(GoldenStore { dir: dir.to_path_buf(), index, dirty: false })
     }
 
     pub fn get(&self, check: &str, frame: u32) -> Option<&GoldenRef> {
-        self.index
-            .entries
-            .get(check)
-            .and_then(|m| m.get(&fkey(frame)))
+        self.index.entries.get(check).and_then(|m| m.get(&fkey(frame)))
     }
 
     /// The file of a golden. The hash comes from a file in the repository (the index), so it is checked:
     /// 24 to 64 lowercase hex digits, nothing that could name another path (`../x`, `/etc/passwd`).
     pub(super) fn file(&self, r: &GoldenRef) -> Result<PathBuf, String> {
         golden_name_ok(&r.hash)?;
-        Ok(self.dir.join(format!(
-            "{}.{}",
-            r.hash,
-            if r.renderer == "svg" { "svg" } else { "png" }
-        )))
+        Ok(self.dir.join(format!("{}.{}", r.hash, if r.renderer == "svg" { "svg" } else { "png" })))
     }
 
     /// Load a golden image, checking that the file still has the pixels its name promises.
@@ -263,88 +223,40 @@ impl GoldenStore {
         let bytes = crate::assets::read_path(&p, crate::assets::MAX_IMAGE_BYTES, "golden")?;
         let img = Img::from_png(&bytes).map_err(|e| format!("golden {}: {e}", p.display()))?;
         if !img.content_hash().starts_with(&r.hash) {
-            return Err(format!(
-                "golden {} was modified: its pixels do not match its name",
-                p.display()
-            ));
+            return Err(format!("golden {} was modified: its pixels do not match its name", p.display()));
         }
         Ok(img)
     }
 
     pub fn load_text(&self, r: &GoldenRef) -> Result<String, String> {
         let p = self.file(r)?;
-        let t = String::from_utf8(crate::assets::read_path(
-            &p,
-            crate::assets::MAX_DATA_BYTES,
-            "golden",
-        )?)
-        .map_err(|_| format!("golden {} is not UTF-8 text", p.display()))?;
+        let t = String::from_utf8(crate::assets::read_path(&p, crate::assets::MAX_DATA_BYTES, "golden")?).map_err(|_| format!("golden {} is not UTF-8 text", p.display()))?;
         if !crate::vcs::sha256_hex(t.as_bytes()).starts_with(&r.hash) {
-            return Err(format!(
-                "golden {} was modified: its text does not match its name",
-                p.display()
-            ));
+            return Err(format!("golden {} was modified: its text does not match its name", p.display()));
         }
         Ok(t)
     }
 
-    pub(super) fn put(
-        &mut self,
-        check: &str,
-        frame: u32,
-        r: GoldenRef,
-        bytes: &[u8],
-    ) -> Result<(), String> {
-        std::fs::create_dir_all(&self.dir)
-            .map_err(|e| format!("cannot create {}: {e}", self.dir.display()))?;
+    pub(super) fn put(&mut self, check: &str, frame: u32, r: GoldenRef, bytes: &[u8]) -> Result<(), String> {
+        std::fs::create_dir_all(&self.dir).map_err(|e| format!("cannot create {}: {e}", self.dir.display()))?;
         let p = self.file(&r)?;
         if !p.exists() {
             crate::fsutil::write_atomic(&p, bytes)?;
         }
-        self.index
-            .entries
-            .entry(check.to_string())
-            .or_default()
-            .insert(fkey(frame), r);
+        self.index.entries.entry(check.to_string()).or_default().insert(fkey(frame), r);
         self.dirty = true;
         Ok(())
     }
 
-    pub fn put_img(
-        &mut self,
-        check: &str,
-        frame: u32,
-        renderer: &str,
-        img: &Img,
-    ) -> Result<String, String> {
+    pub fn put_img(&mut self, check: &str, frame: u32, renderer: &str, img: &Img) -> Result<String, String> {
         let hash = img.content_hash()[..24].to_string();
-        self.put(
-            check,
-            frame,
-            GoldenRef {
-                hash: hash.clone(),
-                renderer: renderer.into(),
-                w: img.w,
-                h: img.h,
-            },
-            &img.to_png()?,
-        )?;
+        self.put(check, frame, GoldenRef { hash: hash.clone(), renderer: renderer.into(), w: img.w, h: img.h }, &img.to_png()?)?;
         Ok(hash)
     }
 
     pub fn put_text(&mut self, check: &str, frame: u32, text: &str) -> Result<String, String> {
         let hash = crate::vcs::sha256_hex(text.as_bytes())[..24].to_string();
-        self.put(
-            check,
-            frame,
-            GoldenRef {
-                hash: hash.clone(),
-                renderer: "svg".into(),
-                w: 0,
-                h: 0,
-            },
-            text.as_bytes(),
-        )?;
+        self.put(check, frame, GoldenRef { hash: hash.clone(), renderer: "svg".into(), w: 0, h: 0 }, text.as_bytes())?;
         Ok(hash)
     }
 
@@ -364,12 +276,7 @@ impl GoldenStore {
         if self.dirty {
             std::fs::create_dir_all(&self.dir).map_err(|e| e.to_string())?;
             let p = self.dir.join("index.json");
-            crate::fsutil::write_atomic(
-                &p,
-                serde_json::to_string_pretty(&self.index)
-                    .unwrap()
-                    .as_bytes(),
-            )?;
+            crate::fsutil::write_atomic(&p, serde_json::to_string_pretty(&self.index).unwrap().as_bytes())?;
             self.dirty = false;
         }
         Ok(())
@@ -377,13 +284,7 @@ impl GoldenStore {
 
     /// Delete golden files that no index entry refers to. Returns the removed file names.
     pub fn prune(&self) -> Result<Vec<String>, String> {
-        let used: std::collections::HashSet<PathBuf> = self
-            .index
-            .entries
-            .values()
-            .flat_map(|m| m.values())
-            .filter_map(|r| self.file(r).ok())
-            .collect();
+        let used: std::collections::HashSet<PathBuf> = self.index.entries.values().flat_map(|m| m.values()).filter_map(|r| self.file(r).ok()).collect();
         let mut gone = Vec::new();
         let rd = match std::fs::read_dir(&self.dir) {
             Ok(r) => r,
@@ -392,13 +293,9 @@ impl GoldenStore {
         for e in rd.flatten() {
             let p = e.path();
             let name = e.file_name().to_string_lossy().to_string();
-            let hashed = name.len() > 25
-                && name.as_bytes()[24] == b'.'
-                && name[..24].chars().all(|c| c.is_ascii_hexdigit())
-                && (name.ends_with(".png") || name.ends_with(".svg"));
+            let hashed = name.len() > 25 && name.as_bytes()[24] == b'.' && name[..24].chars().all(|c| c.is_ascii_hexdigit()) && (name.ends_with(".png") || name.ends_with(".svg"));
             if hashed && !used.contains(&p) {
-                std::fs::remove_file(&p)
-                    .map_err(|e| format!("cannot remove {}: {e}", p.display()))?;
+                std::fs::remove_file(&p).map_err(|e| format!("cannot remove {}: {e}", p.display()))?;
                 gone.push(name);
             }
         }
@@ -423,11 +320,7 @@ pub struct RunOptions {
     pub artifacts: Option<PathBuf>,
 }
 
-pub(super) fn load_engine(
-    base: &Path,
-    project: &str,
-    size: Option<&str>,
-) -> Result<(Engine, u64), String> {
+pub(super) fn load_engine(base: &Path, project: &str, size: Option<&str>) -> Result<(Engine, u64), String> {
     let path = crate::assets::resolve(base, project)?;
     load_engine_at(&path, size)
 }
@@ -435,44 +328,22 @@ pub(super) fn load_engine(
 /// Load the project at `path` (already resolved, or named by the user on the command line).
 pub(super) fn load_engine_at(path: &Path, size: Option<&str>) -> Result<(Engine, u64), String> {
     let path = path.to_path_buf();
-    let text = String::from_utf8(crate::assets::read_path(
-        &path,
-        crate::assets::MAX_DATA_BYTES,
-        "project",
-    )?)
-    .map_err(|_| format!("project {} is not UTF-8", path.display()))?;
-    let mut p = Project::from_json(&text)
-        .map_err(|e| format!("invalid project JSON in {}: {e}", path.display()))?;
+    let text = String::from_utf8(crate::assets::read_path(&path, crate::assets::MAX_DATA_BYTES, "project")?).map_err(|_| format!("project {} is not UTF-8", path.display()))?;
+    let mut p = Project::from_json(&text).map_err(|e| format!("invalid project JSON in {}: {e}", path.display()))?;
     if let Some(s) = size {
         let (w, h) = crate::containers::parse_size(s)?;
         p = crate::containers::responsive(&p, w, h)?;
     }
-    let dir = path
-        .parent()
-        .map(|d| d.to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("."));
-    let e = Engine::with_asset_dir(p, &dir).map_err(|errs| {
-        format!(
-            "{} is not a valid project: {}",
-            path.display(),
-            errs.join("; ")
-        )
-    })?;
+    let dir = path.parent().map(|d| d.to_path_buf()).unwrap_or_else(|| PathBuf::from("."));
+    let e = Engine::with_asset_dir(p, &dir).map_err(|errs| format!("{} is not a valid project: {}", path.display(), errs.join("; ")))?;
     Ok((e, text.len() as u64))
 }
 
-pub(super) fn pick_frames(
-    frames: &Option<Vec<u32>>,
-    step: &Option<u32>,
-    total: u32,
-) -> Result<Vec<u32>, String> {
+pub(super) fn pick_frames(frames: &Option<Vec<u32>>, step: &Option<u32>, total: u32) -> Result<Vec<u32>, String> {
     let total = total.max(1);
     let mut v: Vec<u32> = if let Some(f) = frames {
         if let Some(bad) = f.iter().find(|&&x| x >= total) {
-            return Err(format!(
-                "frame {bad} is outside the project's 0..{} frames",
-                total - 1
-            ));
+            return Err(format!("frame {bad} is outside the project's 0..{} frames", total - 1));
         }
         f.clone()
     } else if let Some(s) = step {
@@ -483,25 +354,13 @@ pub(super) fn pick_frames(
     v.sort_unstable();
     v.dedup();
     if v.len() > MAX_FRAMES_PER_CHECK {
-        return Err(format!(
-            "{} frames selected, at most {MAX_FRAMES_PER_CHECK} per check",
-            v.len()
-        ));
+        return Err(format!("{} frames selected, at most {MAX_FRAMES_PER_CHECK} per check", v.len()));
     }
     Ok(v)
 }
 
-pub(super) fn render_img(
-    e: &Engine,
-    renderer: &str,
-    frame: u32,
-    scale: f32,
-) -> Result<Img, String> {
-    let o = RasterOptions {
-        scale,
-        show_bones: false,
-        transparent: false,
-    };
+pub(super) fn render_img(e: &Engine, renderer: &str, frame: u32, scale: f32) -> Result<Img, String> {
+    let o = RasterOptions { scale, show_bones: false, transparent: false };
     match renderer {
         "raster" => {
             let (w, h, px) = render_rgba(e, frame as f32, &o);
@@ -519,24 +378,8 @@ pub(super) fn render_svg(e: &Engine, frame: u32) -> String {
     crate::svg::render_frame(e, frame as f32, &crate::svg::RenderOptions::default())
 }
 
-pub(super) fn finish(
-    name: &str,
-    kind: &str,
-    status: Status,
-    message: String,
-    t0: Stamp,
-    frames: Vec<FrameResult>,
-    details: Value,
-) -> CheckResult {
-    CheckResult {
-        name: name.into(),
-        kind: kind.into(),
-        status,
-        message,
-        duration_ms: t0.elapsed().as_secs_f64() * 1000.0,
-        frames,
-        details,
-    }
+pub(super) fn finish(name: &str, kind: &str, status: Status, message: String, t0: Stamp, frames: Vec<FrameResult>, details: Value) -> CheckResult {
+    CheckResult { name: name.into(), kind: kind.into(), status, message, duration_ms: t0.elapsed().as_secs_f64() * 1000.0, frames, details }
 }
 
 pub(super) fn errored(name: &str, kind: &str, t0: Stamp, msg: String) -> CheckResult {
@@ -544,14 +387,7 @@ pub(super) fn errored(name: &str, kind: &str, t0: Stamp, msg: String) -> CheckRe
 }
 
 pub(super) fn compare_opts(t: &Resolved, ignore_px: Vec<[i64; 4]>) -> CompareOptions {
-    CompareOptions {
-        metric: t.metric,
-        pixel_de: t.pixel_de,
-        aa_isolated: t.aa_isolated,
-        aa_edge_de: t.aa_edge_de,
-        ignore: ignore_px,
-        ..CompareOptions::default()
-    }
+    CompareOptions { metric: t.metric, pixel_de: t.pixel_de, aa_isolated: t.aa_isolated, aa_edge_de: t.aa_edge_de, ignore: ignore_px, ..CompareOptions::default() }
 }
 
 pub(super) fn metrics_of(d: &percep::Diff) -> Metrics {
@@ -571,23 +407,8 @@ pub(super) fn metrics_of(d: &percep::Diff) -> Metrics {
     }
 }
 
-pub(super) fn frame_ok(
-    frame: u32,
-    status: Status,
-    message: &str,
-    golden: Option<String>,
-) -> FrameResult {
-    FrameResult {
-        frame,
-        status,
-        message: message.into(),
-        exact: false,
-        golden,
-        metrics: None,
-        regions: vec![],
-        regions_total: 0,
-        images: FrameImages::default(),
-    }
+pub(super) fn frame_ok(frame: u32, status: Status, message: &str, golden: Option<String>) -> FrameResult {
+    FrameResult { frame, status, message: message.into(), exact: false, golden, metrics: None, regions: vec![], regions_total: 0, images: FrameImages::default() }
 }
 
 /// The reasons (empty = within all thresholds) why a comparison fails the thresholds.
@@ -597,26 +418,13 @@ pub fn judge(d: &percep::Diff, t: &Resolved) -> Vec<String> {
         why.push(format!("SSIM {:.4} < {:.4}", d.ssim, t.min_ssim));
     }
     if d.ssim_rgb < t.min_ssim {
-        why.push(format!(
-            "channel SSIM (min of R, G, B) {:.4} < {:.4}",
-            d.ssim_rgb, t.min_ssim
-        ));
+        why.push(format!("channel SSIM (min of R, G, B) {:.4} < {:.4}", d.ssim_rgb, t.min_ssim));
     }
     if d.max_de > t.max_de {
-        why.push(format!(
-            "max {} {:.2} > {:.2}",
-            t.metric.name(),
-            d.max_de,
-            t.max_de
-        ));
+        why.push(format!("max {} {:.2} > {:.2}", t.metric.name(), d.max_de, t.max_de));
     }
     if d.diff_fraction > t.max_diff_fraction {
-        why.push(format!(
-            "{:.4}% of pixels differ ({} px) > {:.4}%",
-            d.diff_fraction * 100.0,
-            d.diff_pixels,
-            t.max_diff_fraction * 100.0
-        ));
+        why.push(format!("{:.4}% of pixels differ ({} px) > {:.4}%", d.diff_fraction * 100.0, d.diff_pixels, t.max_diff_fraction * 100.0));
     }
     if let Some(m) = t.max_phash_distance {
         if d.phash_distance > m {
@@ -635,14 +443,7 @@ pub(super) fn safe_write(dir: &Path, name: &str, bytes: &[u8]) {
     }
 }
 
-pub(super) fn run_render(
-    c: &RenderCheck,
-    base: &Path,
-    project: &str,
-    defaults: &Tol,
-    store: &mut GoldenStore,
-    o: &RunOptions,
-) -> CheckResult {
+pub(super) fn run_render(c: &RenderCheck, base: &Path, project: &str, defaults: &Tol, store: &mut GoldenStore, o: &RunOptions) -> CheckResult {
     let t0 = Stamp::now();
     let (e, _) = match load_engine(base, project, c.size.as_deref()) {
         Ok(x) => x,
@@ -659,66 +460,32 @@ pub(super) fn run_render(
     }
     let mut out = Vec::new();
     for &f in &frames {
-        let fr = if c.renderer == "svg" {
-            svg_frame(&e, &c.name, f, store, o)
-        } else {
-            pixel_frame(&e, c, f, &th, store, o)
-        };
+        let fr = if c.renderer == "svg" { svg_frame(&e, &c.name, f, store, o) } else { pixel_frame(&e, c, f, &th, store, o) };
         out.push(match fr {
             Ok(r) => r,
             Err(m) => frame_ok(f, Status::Error, &m, None),
         });
-        if let (Some(dir), true) = (
-            &o.artifacts,
-            out.last()
-                .map(|r| matches!(r.status, Status::Fail | Status::Blessed))
-                .unwrap_or(false),
-        ) {
+        if let (Some(dir), true) = (&o.artifacts, out.last().map(|r| matches!(r.status, Status::Fail | Status::Blessed)).unwrap_or(false)) {
             let r = out.last().unwrap();
             let d = dir.join(&c.name);
-            for (suffix, b) in [
-                ("golden", &r.images.golden),
-                ("actual", &r.images.actual),
-                ("diff", &r.images.heat),
-            ] {
+            for (suffix, b) in [("golden", &r.images.golden), ("actual", &r.images.actual), ("diff", &r.images.heat)] {
                 if let Some(b) = b {
                     safe_write(&d, &format!("f{:05}-{suffix}.png", f), b);
                 }
             }
         }
     }
-    let worst = out
-        .iter()
-        .map(|r| r.status)
-        .max_by_key(|s| s.rank())
-        .unwrap_or(Status::Pass);
+    let worst = out.iter().map(|r| r.status).max_by_key(|s| s.rank()).unwrap_or(Status::Pass);
     let bad = out.iter().filter(|r| r.status == Status::Fail).count();
     let msg = match worst {
-        Status::Error => format!(
-            "{} frame(s) could not be evaluated",
-            out.iter().filter(|r| r.status == Status::Error).count()
-        ),
+        Status::Error => format!("{} frame(s) could not be evaluated", out.iter().filter(|r| r.status == Status::Error).count()),
         Status::Fail => format!("{bad} of {} frame(s) differ from the golden", out.len()),
-        Status::Blessed => format!(
-            "{} golden(s) accepted",
-            out.iter().filter(|r| r.status == Status::Blessed).count()
-        ),
-        Status::Updated => format!(
-            "{} golden(s) written",
-            out.iter().filter(|r| r.status == Status::Updated).count()
-        ),
+        Status::Blessed => format!("{} golden(s) accepted", out.iter().filter(|r| r.status == Status::Blessed).count()),
+        Status::Updated => format!("{} golden(s) written", out.iter().filter(|r| r.status == Status::Updated).count()),
         _ => format!("{} frame(s) match", out.len()),
     };
     let _ = writing;
-    finish(
-        &c.name,
-        "render",
-        worst,
-        msg,
-        t0,
-        out,
-        json!({"renderer": c.renderer, "scale": c.scale, "metric": th.metric.name(), "thresholds": {
+    finish(&c.name, "render", worst, msg, t0, out, json!({"renderer": c.renderer, "scale": c.scale, "metric": th.metric.name(), "thresholds": {
         "pixel_de": th.pixel_de, "max_de": th.max_de, "min_ssim": th.min_ssim, "max_diff_fraction": th.max_diff_fraction,
-        "aa_isolated": th.aa_isolated, "aa_edge_de": th.aa_edge_de, "max_phash_distance": th.max_phash_distance}}),
-    )
+        "aa_isolated": th.aa_isolated, "aa_edge_de": th.aa_edge_de, "max_phash_distance": th.max_phash_distance}}))
 }

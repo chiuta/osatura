@@ -58,11 +58,7 @@ fn reduce(rgba: &[u8], w: usize, h: usize, max_w: usize) -> (usize, usize, Vec<[
             let i = (y * w + x) * 4;
             let a = rgba[i + 3] as f32 / 255.0;
             // composite over white so transparent areas do not read as black flashes
-            let c = [
-                lin(rgba[i]) * a + (1.0 - a),
-                lin(rgba[i + 1]) * a + (1.0 - a),
-                lin(rgba[i + 2]) * a + (1.0 - a),
-            ];
+            let c = [lin(rgba[i]) * a + (1.0 - a), lin(rgba[i + 1]) * a + (1.0 - a), lin(rgba[i + 2]) * a + (1.0 - a)];
             let o = (y / k) * nw + x / k;
             for ch in 0..3 {
                 out[o][ch] += c[ch];
@@ -106,26 +102,16 @@ impl Integral {
     }
     fn sum(&self, x0: usize, y0: usize, x1: usize, y1: usize) -> u32 {
         let s = self.w + 1;
-        self.data[y1 * s + x1] + self.data[y0 * s + x0]
-            - self.data[y0 * s + x1]
-            - self.data[y1 * s + x0]
+        self.data[y1 * s + x1] + self.data[y0 * s + x0] - self.data[y0 * s + x1] - self.data[y1 * s + x0]
     }
 }
 
 /// Analyse straight-RGBA frames (all `w × h`) played at `fps`.
 pub fn analyze_frames(frames: &[Vec<u8>], w: usize, h: usize, fps: f32) -> SafetyReport {
     let reduced: Vec<_> = frames.iter().map(|f| reduce(f, w, h, 96)).collect();
-    let empty = FlashFinding {
-        worst_transitions: 0,
-        worst_frame: 0,
-        fails: false,
-        warns: false,
-    };
+    let empty = FlashFinding { worst_transitions: 0, worst_frame: 0, fails: false, warns: false };
     if reduced.len() < 2 {
-        return SafetyReport {
-            general: empty.clone(),
-            red: empty,
-        };
+        return SafetyReport { general: empty.clone(), red: empty };
     }
     let (rw, rh) = (reduced[0].0, reduced[0].1);
     // sliding windows of 1/3 × 1/3 of the frame (≈ one 10° field at the reference geometry)
@@ -157,12 +143,8 @@ pub fn analyze_frames(frames: &[Vec<u8>], w: usize, h: usize, fps: f32) -> Safet
             let (l0, l1) = (luminance(a[y * rw + x]), luminance(b[y * rw + x]));
             l0 - l1 >= 0.1 * l0.max(l1).max(1e-6) && l1 < 0.8
         });
-        let rin = Integral::new(rw, rh, |x, y| {
-            !saturated_red(a[y * rw + x]) && saturated_red(b[y * rw + x])
-        });
-        let rout = Integral::new(rw, rh, |x, y| {
-            saturated_red(a[y * rw + x]) && !saturated_red(b[y * rw + x])
-        });
+        let rin = Integral::new(rw, rh, |x, y| !saturated_red(a[y * rw + x]) && saturated_red(b[y * rw + x]));
+        let rout = Integral::new(rw, rh, |x, y| saturated_red(a[y * rw + x]) && !saturated_red(b[y * rw + x]));
         for (k, &(x, y)) in origins.iter().enumerate() {
             let q = |i: &Integral| i.sum(x, y, x + ww, y + wh) as f32 / area;
             let (pi, pd) = (q(&inc), q(&dec));
@@ -193,26 +175,14 @@ pub fn analyze_frames(frames: &[Vec<u8>], w: usize, h: usize, fps: f32) -> Safet
                 }
             }
         }
-        FlashFinding {
-            worst_transitions: worst,
-            worst_frame: at,
-            fails: worst >= 7,
-            warns: (5..7).contains(&worst),
-        }
+        FlashFinding { worst_transitions: worst, worst_frame: at, fails: worst >= 7, warns: (5..7).contains(&worst) }
     };
-    SafetyReport {
-        general: judge(&gen_ev),
-        red: judge(&red_ev),
-    }
+    SafetyReport { general: judge(&gen_ev), red: judge(&red_ev) }
 }
 
 /// Render the whole timeline and analyse it.
 pub fn analyze_engine(engine: &Engine, scale: f32) -> SafetyReport {
-    let opts = RasterOptions {
-        scale,
-        show_bones: false,
-        transparent: false,
-    };
+    let opts = RasterOptions { scale, show_bones: false, transparent: false };
     let mut frames = Vec::new();
     let (mut w, mut h) = (0, 0);
     for f in 0..engine.project.frames {
@@ -263,12 +233,7 @@ pub fn motion_report(engine: &Engine) -> MotionReport {
     if zoom > 2.0 {
         warnings.push(format!("camera zooms ×{zoom:.1} per second"));
     }
-    MotionReport {
-        max_pan_per_sec: pan,
-        max_rotation_deg_per_sec: rot,
-        max_zoom_ratio_per_sec: zoom,
-        warnings,
-    }
+    MotionReport { max_pan_per_sec: pan, max_rotation_deg_per_sec: rot, max_zoom_ratio_per_sec: zoom, warnings }
 }
 
 /// A calmer copy of a project: keyed camera channels are scaled toward their first value by
@@ -277,10 +242,7 @@ pub fn reduced_motion_twin(project: &Project, factor: f32) -> Project {
     let f = factor.clamp(0.0, 1.0);
     let mut p = project.clone();
     for ch in &mut p.channels {
-        let cam = matches!(
-            ch.prop,
-            Prop::CameraX | Prop::CameraY | Prop::CameraRotation | Prop::CameraZoom
-        );
+        let cam = matches!(ch.prop, Prop::CameraX | Prop::CameraY | Prop::CameraRotation | Prop::CameraZoom);
         if cam || ch.prop == Prop::LayerWobble {
             if let Source::Keys { track } = &mut ch.source {
                 let anchor = track.keys.first().map(|k| k.value).unwrap_or(0.0);
@@ -308,27 +270,15 @@ pub fn reduced_motion_twin(project: &Project, factor: f32) -> Project {
 mod tests {
     use super::*;
     use crate::anim::{Ease, Track};
-    use crate::path::VPath;
     use crate::project::{Channel, Layer};
+    use crate::path::VPath;
 
     fn solid(w: usize, h: usize, v: u8) -> Vec<u8> {
         [v, v, v, 255].repeat(w * h)
     }
 
     fn strobe(n: usize, period: usize) -> Vec<Vec<u8>> {
-        (0..n)
-            .map(|t| {
-                solid(
-                    48,
-                    36,
-                    if (t / period).is_multiple_of(2) {
-                        0
-                    } else {
-                        255
-                    },
-                )
-            })
-            .collect()
+        (0..n).map(|t| solid(48, 36, if (t / period).is_multiple_of(2) { 0 } else { 255 })).collect()
     }
 
     #[test]
@@ -369,43 +319,23 @@ mod tests {
 
     #[test]
     fn red_strobe_is_flagged_as_red_flash() {
-        let frames: Vec<Vec<u8>> = (0..48)
-            .map(|t| {
-                if t % 2 == 0 {
-                    [255, 0, 0, 255].repeat(48 * 36)
-                } else {
-                    [0, 120, 120, 255].repeat(48 * 36)
-                }
-            })
-            .collect();
+        let frames: Vec<Vec<u8>> = (0..48).map(|t| if t % 2 == 0 { [255, 0, 0, 255].repeat(48 * 36) } else { [0, 120, 120, 255].repeat(48 * 36) }).collect();
         let r = analyze_frames(&frames, 48, 36, 24.0);
         assert!(r.red.fails, "{r:?}");
     }
 
     #[test]
     fn low_contrast_flicker_below_ten_percent_passes() {
-        let frames: Vec<Vec<u8>> = (0..48)
-            .map(|t| solid(48, 36, if t % 2 == 0 { 100 } else { 104 }))
-            .collect();
+        let frames: Vec<Vec<u8>> = (0..48).map(|t| solid(48, 36, if t % 2 == 0 { 100 } else { 104 })).collect();
         assert!(analyze_frames(&frames, 48, 36, 24.0).passes());
     }
 
     fn cam_project(shake: f32) -> Project {
         let mut p = Project::new("c", 200.0, 100.0, 24.0, 25);
-        p.layers = vec![Layer::vector(
-            "box",
-            vec![VPath::rect("r", 50.0, 20.0, 40.0, 40.0).with_fill("#336699")],
-        )];
-        p.channels = vec![Channel::keys(
-            "",
-            Prop::CameraX,
-            Track::with_keys(&[
-                (0.0, 100.0, Ease::Linear),
-                (1.0, 100.0 + shake, Ease::Linear),
-                (2.0, 100.0, Ease::Linear),
-            ])
-            .looped(crate::anim::Extrapolate::Loop),
-        )];
+        p.layers = vec![Layer::vector("box", vec![VPath::rect("r", 50.0, 20.0, 40.0, 40.0).with_fill("#336699")])];
+        p.channels = vec![
+            Channel::keys("", Prop::CameraX, Track::with_keys(&[(0.0, 100.0, Ease::Linear), (1.0, 100.0 + shake, Ease::Linear), (2.0, 100.0, Ease::Linear)]).looped(crate::anim::Extrapolate::Loop)),
+        ];
         p
     }
 
@@ -416,12 +346,7 @@ mod tests {
         assert!(m.max_pan_per_sec > 0.6 && !m.warnings.is_empty(), "{m:?}");
         let calm = Engine::new(reduced_motion_twin(&cam_project(60.0), 0.05)).unwrap();
         let mc = motion_report(&calm);
-        assert!(
-            mc.max_pan_per_sec < m.max_pan_per_sec * 0.2,
-            "{} vs {}",
-            mc.max_pan_per_sec,
-            m.max_pan_per_sec
-        );
+        assert!(mc.max_pan_per_sec < m.max_pan_per_sec * 0.2, "{} vs {}", mc.max_pan_per_sec, m.max_pan_per_sec);
         assert!(mc.warnings.is_empty(), "{mc:?}");
         let locked = Engine::new(reduced_motion_twin(&cam_project(60.0), 0.0)).unwrap();
         assert!(motion_report(&locked).max_pan_per_sec < 1e-4);
@@ -430,25 +355,9 @@ mod tests {
     #[test]
     fn engine_level_check_runs() {
         let mut p = Project::new("f", 60.0, 40.0, 24.0, 24);
-        p.background = Some(crate::style::Rgba {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 1.0,
-        });
-        p.layers = vec![Layer::vector(
-            "v",
-            vec![VPath::rect("r", 0.0, 0.0, 60.0, 40.0).with_fill("#ffffff")],
-        )];
-        p.channels = vec![Channel::keys(
-            "v",
-            Prop::LayerOpacity,
-            Track::with_keys(
-                &(0..24)
-                    .map(|i| (i as f32, (i % 2) as f32, Ease::Step))
-                    .collect::<Vec<_>>(),
-            ),
-        )];
+        p.background = Some(crate::style::Rgba { r: 0.0, g: 0.0, b: 0.0, a: 1.0 });
+        p.layers = vec![Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 60.0, 40.0).with_fill("#ffffff")])];
+        p.channels = vec![Channel::keys("v", Prop::LayerOpacity, Track::with_keys(&(0..24).map(|i| (i as f32, (i % 2) as f32, Ease::Step)).collect::<Vec<_>>()))];
         let r = analyze_engine(&Engine::new(p).unwrap(), 1.0);
         assert!(!r.passes(), "{r:?}");
     }

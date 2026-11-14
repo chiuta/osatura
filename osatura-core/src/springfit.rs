@@ -49,11 +49,7 @@ pub fn fit_spring(start: f32, samples: &[f32], fps: f32) -> Result<SpringFit, St
     }
     let norm: Vec<f32> = samples.iter().map(|v| (v - start) / step).collect();
     let n = norm.len();
-    let mut best = SpringFit {
-        frequency: 1.0,
-        damping: 1.0,
-        rms: f32::MAX,
-    };
+    let mut best = SpringFit { frequency: 1.0, damping: 1.0, rms: f32::MAX };
     let (mut f_lo, mut f_hi, mut d_lo, mut d_hi) = (0.3f32, (fps * 0.4).min(30.0), 0.02f32, 2.0f32);
     for _ in 0..4 {
         let (fs, ds) = (14, 14);
@@ -63,11 +59,7 @@ pub fn fit_spring(start: f32, samples: &[f32], fps: f32) -> Result<SpringFit, St
                 let d = d_lo + (d_hi - d_lo) * j as f32 / ds as f32;
                 let e = rms(&response(f, d, fps, n), &norm);
                 if e < best.rms {
-                    best = SpringFit {
-                        frequency: f,
-                        damping: d,
-                        rms: e,
-                    };
+                    best = SpringFit { frequency: f, damping: d, rms: e };
                 }
             }
         }
@@ -88,16 +80,10 @@ mod tests {
     #[test]
     fn recovers_known_parameters() {
         for (f, d) in [(3.0f32, 0.3f32), (5.0, 0.6), (1.5, 0.15)] {
-            let r: Vec<f32> = response(f, d, 24.0, 48)
-                .iter()
-                .map(|x| 10.0 + 40.0 * x)
-                .collect();
+            let r: Vec<f32> = response(f, d, 24.0, 48).iter().map(|x| 10.0 + 40.0 * x).collect();
             let fit = fit_spring(10.0, &r, 24.0).unwrap();
             assert!(fit.rms < 0.05, "({f},{d}) → {fit:?}");
-            assert!(
-                (fit.frequency - f).abs() / f < 0.15,
-                "({f},{d}) frequency {fit:?}"
-            );
+            assert!((fit.frequency - f).abs() / f < 0.15, "({f},{d}) frequency {fit:?}");
             assert!((fit.damping - d).abs() < 0.12, "({f},{d}) damping {fit:?}");
         }
     }
@@ -105,9 +91,7 @@ mod tests {
     #[test]
     fn handles_negative_steps_and_hand_drawn_curves() {
         // a hand-drawn overshoot: goes past the target by ~20 % then settles
-        let drawn = [
-            0.0, 0.55, 1.05, 1.2, 1.15, 1.05, 0.98, 0.97, 1.0, 1.01, 1.0, 1.0,
-        ];
+        let drawn = [0.0, 0.55, 1.05, 1.2, 1.15, 1.05, 0.98, 0.97, 1.0, 1.01, 1.0, 1.0];
         let down: Vec<f32> = drawn.iter().map(|v| 5.0 - v * 5.0).collect();
         let fit = fit_spring(5.0, &down, 24.0).unwrap();
         assert!(fit.damping < 0.8 && fit.damping > 0.05, "{fit:?}");

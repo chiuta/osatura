@@ -31,15 +31,7 @@ fn rs_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
 #[test]
 fn panicking_std_calls_are_only_used_through_the_clock_module() {
     let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-    let forbidden = [
-        "Instant::now",
-        "SystemTime::now",
-        "process::id()",
-        "thread::spawn(",
-        "std::time::Instant",
-        "std::time::SystemTime",
-        "UNIX_EPOCH",
-    ];
+    let forbidden = ["Instant::now", "SystemTime::now", "process::id()", "thread::spawn(", "std::time::Instant", "std::time::SystemTime", "UNIX_EPOCH"];
     let mut hits = Vec::new();
     let mut files = Vec::new();
     rs_files(&src, &mut files);
@@ -57,37 +49,20 @@ fn panicking_std_calls_are_only_used_through_the_clock_module() {
             }
             for f in forbidden {
                 if line.contains(f) {
-                    hits.push(format!(
-                        "{}:{}: {}",
-                        p.strip_prefix(&src).unwrap_or(&p).display(),
-                        n + 1,
-                        line.trim()
-                    ));
+                    hits.push(format!("{}:{}: {}", p.strip_prefix(&src).unwrap_or(&p).display(), n + 1, line.trim()));
                 }
             }
         }
     }
-    assert!(
-        hits.is_empty(),
-        "use crate::clock instead (these panic on wasm32-unknown-unknown):\n{}",
-        hits.join("\n")
-    );
+    assert!(hits.is_empty(), "use crate::clock instead (these panic on wasm32-unknown-unknown):\n{}", hits.join("\n"));
 }
 
 /// The wasm module exports the clock set-up and the JavaScript wrapper feeds it (a host that never does gets durations of 0).
 #[test]
 fn the_wasm_module_and_wrapper_provide_the_host_clock() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("osatura-wasm");
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("osatura-wasm");
     let lib = fs::read_to_string(root.join("src/lib.rs")).unwrap();
-    assert!(
-        lib.contains("pub extern \"C\" fn arm_set_clock") && lib.contains("set_host_clock"),
-        "arm_set_clock export missing"
-    );
+    assert!(lib.contains("pub extern \"C\" fn arm_set_clock") && lib.contains("set_host_clock"), "arm_set_clock export missing");
     let js = fs::read_to_string(root.join("js/osatura.js")).unwrap();
-    assert!(
-        js.contains("arm_set_clock") && js.contains("performance.now") && js.contains("Date.now"),
-        "the wrapper does not feed the clock"
-    );
+    assert!(js.contains("arm_set_clock") && js.contains("performance.now") && js.contains("Date.now"), "the wrapper does not feed the clock");
 }

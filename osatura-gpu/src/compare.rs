@@ -25,32 +25,15 @@ impl std::fmt::Display for Parity {
         write!(
             f,
             "{}x{} max_abs={} mean_abs={:.4} frac(>{})={:.5} psnr={:.2}dB ssim={:.5}",
-            self.width,
-            self.height,
-            self.max_abs,
-            self.mean_abs,
-            self.threshold,
-            self.frac_over,
-            self.psnr,
-            self.ssim
+            self.width, self.height, self.max_abs, self.mean_abs, self.threshold, self.frac_over, self.psnr, self.ssim
         )
     }
 }
 
-pub fn compare(
-    a: &[u8],
-    b: &[u8],
-    width: u32,
-    height: u32,
-    threshold: u8,
-) -> Result<Parity, String> {
+pub fn compare(a: &[u8], b: &[u8], width: u32, height: u32, threshold: u8) -> Result<Parity, String> {
     let n = width as usize * height as usize * 4;
     if a.len() != n || b.len() != n {
-        return Err(format!(
-            "size mismatch: expected {n} bytes, got {} and {}",
-            a.len(),
-            b.len()
-        ));
+        return Err(format!("size mismatch: expected {n} bytes, got {} and {}", a.len(), b.len()));
     }
     if n == 0 {
         return Err("empty image".into());
@@ -68,11 +51,7 @@ pub fn compare(
         over += bad as usize;
     }
     let mse = sq as f64 / n as f64;
-    let psnr = if mse == 0.0 {
-        f64::INFINITY
-    } else {
-        10.0 * (255.0f64 * 255.0 / mse).log10()
-    };
+    let psnr = if mse == 0.0 { f64::INFINITY } else { 10.0 * (255.0f64 * 255.0 / mse).log10() };
     Ok(Parity {
         width,
         height,
@@ -120,8 +99,7 @@ fn ssim(a: &[u8], b: &[u8], w: usize, h: usize) -> f64 {
             va /= n;
             vb /= n;
             cov /= n;
-            total += ((2.0 * ma * mb + c1) * (2.0 * cov + c2))
-                / ((ma * ma + mb * mb + c1) * (va + vb + c2));
+            total += ((2.0 * ma * mb + c1) * (2.0 * cov + c2)) / ((ma * ma + mb * mb + c1) * (va + vb + c2));
             count += 1;
             bx += BLOCK;
         }
@@ -159,12 +137,8 @@ mod tests {
 
     #[test]
     fn ssim_drops_for_unrelated_images() {
-        let a: Vec<u8> = (0..32 * 32 * 4)
-            .map(|i| ((i / 4) % 2 * 255) as u8)
-            .collect();
-        let b: Vec<u8> = (0..32 * 32 * 4)
-            .map(|i| ((i / 4 / 32) % 2 * 255) as u8)
-            .collect();
+        let a: Vec<u8> = (0..32 * 32 * 4).map(|i| ((i / 4) % 2 * 255) as u8).collect();
+        let b: Vec<u8> = (0..32 * 32 * 4).map(|i| ((i / 4 / 32) % 2 * 255) as u8).collect();
         assert!(compare(&a, &b, 32, 32, 8).unwrap().ssim < 0.5);
     }
 

@@ -36,18 +36,18 @@ use crate::project::{Layer, Project};
 use crate::style::{Cap, Join, Paint, Rgba, StrokeStyle};
 use std::collections::{BTreeMap, HashSet};
 
-mod chain_fitting;
-mod geometry;
-mod label_map;
-mod line_mode;
 mod options;
+mod label_map;
+mod geometry;
+mod chain_fitting;
+mod line_mode;
 mod project;
 
-pub use chain_fitting::*;
-pub use geometry::*;
-pub use label_map::*;
-pub use line_mode::*;
 pub use options::*;
+pub use label_map::*;
+pub use geometry::*;
+pub use chain_fitting::*;
+pub use line_mode::*;
 pub use project::*;
 
 #[cfg(test)]

@@ -57,13 +57,7 @@ pub(super) fn lsq_alpha(pts: &[P], u: &[f64], p0: P, p3: P, t1: P, t2: P) -> Opt
         return None;
     }
     let (s, e) = ((x1 * c22 - x2 * c12) / det, (c11 * x2 - c12 * x1) / det);
-    if s.is_finite()
-        && e.is_finite()
-        && s > 1e-6 * chord
-        && e > 1e-6 * chord
-        && s < 8.0 * chord.max(1e-9) * 4.0
-        && e < 8.0 * chord.max(1e-9) * 4.0
-    {
+    if s.is_finite() && e.is_finite() && s > 1e-6 * chord && e > 1e-6 * chord && s < 8.0 * chord.max(1e-9) * 4.0 && e < 8.0 * chord.max(1e-9) * 4.0 {
         Some((s, e))
     } else {
         None
@@ -85,12 +79,7 @@ pub(super) fn chord_params(pts: &[P]) -> Vec<f64> {
 }
 
 pub(super) fn mk_cubic(p0: P, p3: P, t1: P, t2: P, a1: f64, a2: f64) -> Cubic {
-    [
-        p0,
-        [r32(p0[0] + t1[0] * a1), r32(p0[1] + t1[1] * a1)],
-        [r32(p3[0] + t2[0] * a2), r32(p3[1] + t2[1] * a2)],
-        p3,
-    ]
+    [p0, [r32(p0[0] + t1[0] * a1), r32(p0[1] + t1[1] * a1)], [r32(p3[0] + t2[0] * a2), r32(p3[1] + t2[1] * a2)], p3]
 }
 
 /// Candidate replacement cubics for a span (always includes the straight line).
@@ -104,16 +93,8 @@ pub(super) fn candidates(segs: &[&OrigSeg]) -> Vec<Cubic> {
     if chord < 1e-12 {
         return out;
     }
-    let t1 = unit_or(&[
-        sub(first[1], first[0]),
-        sub(first[2], first[0]),
-        sub(first[3], first[0]),
-    ]);
-    let t2 = unit_or(&[
-        sub(last[2], last[3]),
-        sub(last[1], last[3]),
-        sub(last[0], last[3]),
-    ]);
+    let t1 = unit_or(&[sub(first[1], first[0]), sub(first[2], first[0]), sub(first[3], first[0])]);
+    let t2 = unit_or(&[sub(last[2], last[3]), sub(last[1], last[3]), sub(last[0], last[3])]);
     if norm(t1) == 0.0 || norm(t2) == 0.0 {
         return out;
     }
@@ -169,20 +150,11 @@ pub struct SimplifiedPath {
 /// Certified cost (upper bound of the Hausdorff distance) of replacing the span of original
 /// segments by the best candidate; `None` if no candidate stays within `limit` (or the Frechet
 /// guard fails). Returns the cost and the cubic.
-pub(super) fn certify_span(
-    segs: &[&OrigSeg],
-    limit: f64,
-    flat: f64,
-    gap: f64,
-) -> Option<(f64, Cubic)> {
+pub(super) fn certify_span(segs: &[&OrigSeg], limit: f64, flat: f64, gap: f64) -> Option<(f64, Cubic)> {
     let pts = span_samples(segs);
     let mut cands = candidates(segs);
     // rank by cheap sampled error (stable), certify the best two
-    let mut ranked: Vec<(f64, usize)> = cands
-        .iter()
-        .enumerate()
-        .map(|(i, c)| (sampled_error(c, &pts), i))
-        .collect();
+    let mut ranked: Vec<(f64, usize)> = cands.iter().enumerate().map(|(i, c)| (sampled_error(c, &pts), i)).collect();
     ranked.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
     let mut orig_poly: Vec<P> = Vec::new();
     let mut h_o = 0.0f64;
@@ -225,16 +197,9 @@ pub(super) fn path_len(p: &[P]) -> f64 {
 /// anchors of a closed path are kept. Weights, morphs and strokes are the caller's business.
 pub fn simplify_path_certified(anchors: &[Anchor], closed: bool, eps: f64) -> SimplifiedPath {
     let n = anchors.len();
-    let unchanged = || SimplifiedPath {
-        anchors: anchors.to_vec(),
-        bound: 0.0,
-        removed: 0,
-    };
+    let unchanged = || SimplifiedPath { anchors: anchors.to_vec(), bound: 0.0, removed: 0 };
     let min_keep = if closed { 3 } else { 2 };
-    if (eps.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        || !eps.is_finite()
-        || n <= min_keep
-    {
+    if (eps.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !eps.is_finite() || n <= min_keep {
         return unchanged();
     }
     let flat = (eps * 0.04).max(1e-9);
@@ -299,30 +264,16 @@ pub fn simplify_path_certified(anchors: &[Anchor], closed: bool, eps: f64) -> Si
         .iter()
         .map(|&i| {
             let a = &anchors[i];
-            let h = |p: P| {
-                if p == pos[i] {
-                    None
-                } else {
-                    Some(Vec2::new(p[0] as f32, p[1] as f32))
-                }
-            };
+            let h = |p: P| if p == pos[i] { None } else { Some(Vec2::new(p[0] as f32, p[1] as f32)) };
             Anchor {
                 pos: a.pos,
                 handle_in: if mod_in[i] { h(cur_in[i]) } else { a.handle_in },
-                handle_out: if mod_out[i] {
-                    h(cur_out[i])
-                } else {
-                    a.handle_out
-                },
+                handle_out: if mod_out[i] { h(cur_out[i]) } else { a.handle_out },
                 weights: Vec::new(),
             }
         })
         .collect();
-    SimplifiedPath {
-        anchors: out,
-        bound,
-        removed,
-    }
+    SimplifiedPath { anchors: out, bound, removed }
 }
 
 /// Hausdorff-distance bound by dense evaluation (used by tests and `verify`): maximum over both
@@ -337,12 +288,7 @@ pub fn outline_polyline(anchors: &[Anchor], closed: bool, tol: f64) -> Vec<[f64;
     let mut h = 0.0;
     for i in 0..ns {
         let j = (i + 1) % n;
-        let c: Cubic = [
-            p_of(anchors[i].pos),
-            p_of(anchors[i].hout()),
-            p_of(anchors[j].hin()),
-            p_of(anchors[j].pos),
-        ];
+        let c: Cubic = [p_of(anchors[i].pos), p_of(anchors[i].hout()), p_of(anchors[j].hin()), p_of(anchors[j].pos)];
         flatten_cubic(&c, tol, &mut v, &mut h, 0);
     }
     v

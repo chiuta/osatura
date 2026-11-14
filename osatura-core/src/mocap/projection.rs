@@ -25,10 +25,7 @@ impl View {
             "side" => Ok(View::Side),
             "top" => Ok(View::Top),
             _ => {
-                let d = s
-                    .strip_prefix("yaw=")
-                    .or_else(|| s.strip_prefix("yaw:"))
-                    .ok_or_else(|| format!("unknown view '{s}' (front, side, top or yaw=DEG)"))?;
+                let d = s.strip_prefix("yaw=").or_else(|| s.strip_prefix("yaw:")).ok_or_else(|| format!("unknown view '{s}' (front, side, top or yaw=DEG)"))?;
                 let v: f64 = d.parse().map_err(|_| format!("bad yaw angle '{d}'"))?;
                 if !v.is_finite() {
                     return Err(format!("bad yaw angle '{d}'"));
@@ -78,26 +75,13 @@ pub struct Projected {
 
 pub fn project_motion(b: &Bvh, view: View) -> Projected {
     let reach = b.reach();
-    let tips: Vec<Tip> = (0..b.joints.len())
-        .map(|j| b.default_tip_with(j, &reach))
-        .collect();
+    let tips: Vec<Tip> = (0..b.joints.len()).map(|j| b.default_tip_with(j, &reach)).collect();
     let mut points = Vec::with_capacity(b.frames);
     let mut angles = Vec::with_capacity(b.frames);
     for f in 0..b.frames {
         let pose = b.pose(Some(f));
         points.push(pose.pos.iter().map(|&p| view.project(p)).collect());
-        angles.push(
-            (0..b.joints.len())
-                .map(|j| {
-                    b.tip_point(&pose, tips[j])
-                        .and_then(|t| angle_2d(pose.pos[j], t, view, false))
-                })
-                .collect(),
-        );
+        angles.push((0..b.joints.len()).map(|j| b.tip_point(&pose, tips[j]).and_then(|t| angle_2d(pose.pos[j], t, view, false))).collect());
     }
-    Projected {
-        frame_time: b.frame_time,
-        points,
-        angles,
-    }
+    Projected { frame_time: b.frame_time, points, angles }
 }

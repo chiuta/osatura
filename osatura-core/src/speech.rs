@@ -72,15 +72,7 @@ pub struct VadOptions {
 
 impl Default for VadOptions {
     fn default() -> Self {
-        VadOptions {
-            hop: 0.01,
-            window: 0.02,
-            on: 0.12,
-            off: 0.06,
-            zcr_on: 0.2,
-            min_speech: 0.04,
-            min_gap: 0.04,
-        }
+        VadOptions { hop: 0.01, window: 0.02, on: 0.12, off: 0.06, zcr_on: 0.2, min_speech: 0.04, min_gap: 0.04 }
     }
 }
 
@@ -97,19 +89,12 @@ pub struct Vad {
 fn check_vad(o: &VadOptions) -> Result<(), String> {
     let ok = |x: f32| x.is_finite() && x > 0.0;
     if !ok(o.hop) || !ok(o.window) || o.hop > 0.1 || o.window > 0.2 {
-        return Err(
-            "VAD hop/window must be positive and small (hop <= 0.1 s, window <= 0.2 s)".into(),
-        );
+        return Err("VAD hop/window must be positive and small (hop <= 0.1 s, window <= 0.2 s)".into());
     }
     if !(o.on > 0.0 && o.on <= 1.0 && o.off > 0.0 && o.off < o.on) {
         return Err("VAD thresholds need 0 < off < on <= 1".into());
     }
-    if !(o.min_speech >= 0.0
-        && o.min_gap >= 0.0
-        && o.min_speech.is_finite()
-        && o.min_gap.is_finite()
-        && o.zcr_on.is_finite())
-    {
+    if !(o.min_speech >= 0.0 && o.min_gap >= 0.0 && o.min_speech.is_finite() && o.min_gap.is_finite() && o.zcr_on.is_finite()) {
         return Err("VAD min_speech/min_gap must be non-negative numbers".into());
     }
     Ok(())
@@ -161,10 +146,7 @@ pub fn detect_speech(a: &Audio, o: &VadOptions) -> Result<Vad, String> {
     if span < 1e-4 {
         return Err("no speech detected: audio level is flat".into());
     }
-    let level: Vec<f32> = rms
-        .iter()
-        .map(|r| ((r - floor) / span).clamp(0.0, 1.0))
-        .collect();
+    let level: Vec<f32> = rms.iter().map(|r| ((r - floor) / span).clamp(0.0, 1.0)).collect();
     // hysteresis over hop indices
     let mut runs: Vec<(usize, usize)> = Vec::new();
     let mut start: Option<usize> = None;
@@ -204,11 +186,7 @@ pub fn detect_speech(a: &Audio, o: &VadOptions) -> Result<Vad, String> {
         let c0 = (i0 as f32 + 0.5) * o.hop;
         let c1 = (i1 as f32 + 0.5) * o.hop;
         let mut s = if i0 == 0 { 0.0 } else { c0 + w2 - o.hop * 0.5 };
-        let mut e = if i1 == hops - 1 {
-            n as f32 / sr
-        } else {
-            c1 - w2 + o.hop * 0.5
-        };
+        let mut e = if i1 == hops - 1 { n as f32 / sr } else { c1 - w2 + o.hop * 0.5 };
         if e <= s {
             s = c0 - o.hop * 0.5;
             e = c1 + o.hop * 0.5;
@@ -226,12 +204,7 @@ pub fn detect_speech(a: &Audio, o: &VadOptions) -> Result<Vad, String> {
             regions.iter().any(|&(s, e)| c >= s && c < e)
         })
         .collect();
-    Ok(Vad {
-        hop: o.hop,
-        level,
-        voiced,
-        regions,
-    })
+    Ok(Vad { hop: o.hop, level, voiced, regions })
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -250,33 +223,7 @@ pub struct Word {
 fn is_vowel_char(c: char) -> bool {
     matches!(
         c,
-        'a' | 'e'
-            | 'i'
-            | 'o'
-            | 'u'
-            | 'y'
-            | 'ă'
-            | 'â'
-            | 'î'
-            | 'à'
-            | 'á'
-            | 'ä'
-            | 'å'
-            | 'è'
-            | 'é'
-            | 'ê'
-            | 'ë'
-            | 'ì'
-            | 'í'
-            | 'ï'
-            | 'ò'
-            | 'ó'
-            | 'ô'
-            | 'ö'
-            | 'ù'
-            | 'ú'
-            | 'û'
-            | 'ü'
+        'a' | 'e' | 'i' | 'o' | 'u' | 'y' | 'ă' | 'â' | 'î' | 'à' | 'á' | 'ä' | 'å' | 'è' | 'é' | 'ê' | 'ë' | 'ì' | 'í' | 'ï' | 'ò' | 'ó' | 'ô' | 'ö' | 'ù' | 'ú' | 'û' | 'ü'
     )
 }
 
@@ -335,10 +282,7 @@ pub fn syllabify(word: &str, lang: Lang) -> Vec<String> {
                 // hiatus: identical vowels, and a few Romanian pairs
                 if i > s {
                     let (p, c) = (lw[i - 1], lw[i]);
-                    if p == c
-                        || (lang == Lang::Ro
-                            && matches!((p, c), ('a', 'e') | ('a', 'o') | ('e', 'o') | ('o', 'e')))
-                    {
+                    if p == c || (lang == Lang::Ro && matches!((p, c), ('a', 'e') | ('a', 'o') | ('e', 'o') | ('o', 'e'))) {
                         break;
                     }
                 }
@@ -392,11 +336,7 @@ pub fn parse_transcript(text: &str, lang: Lang) -> Result<Vec<Word>, String> {
     for tok in text.split_whitespace() {
         let letters: String = tok.chars().filter(|c| c.is_alphanumeric()).collect();
         let mut best: Option<char> = None;
-        let trailing: Vec<char> = tok
-            .chars()
-            .rev()
-            .take_while(|c| !c.is_alphanumeric())
-            .collect();
+        let trailing: Vec<char> = tok.chars().rev().take_while(|c| !c.is_alphanumeric()).collect();
         for c in trailing {
             if let Some(p) = punct_of(c) {
                 if best.is_none_or(|b| punct_rank(p) > punct_rank(b)) {
@@ -414,11 +354,7 @@ pub fn parse_transcript(text: &str, lang: Lang) -> Result<Vec<Word>, String> {
             continue;
         }
         let syllables = syllabify(&letters, lang);
-        words.push(Word {
-            text: letters,
-            syllables,
-            punct: best,
-        });
+        words.push(Word { text: letters, syllables, punct: best });
     }
     if words.is_empty() {
         return Err("transcript has no words".into());
@@ -474,12 +410,7 @@ pub struct AlignOptions {
 
 impl Default for AlignOptions {
     fn default() -> Self {
-        AlignOptions {
-            vad: VadOptions::default(),
-            mismatch: 1.0,
-            plain_pause: 0.25,
-            boundary: 2.0,
-        }
+        AlignOptions { vad: VadOptions::default(), mismatch: 1.0, plain_pause: 0.25, boundary: 2.0 }
     }
 }
 
@@ -495,12 +426,7 @@ struct Unit {
 const MAX_CELLS: usize = 40_000_000;
 
 /// Align a transcript to the audio. See the module docs for the (limited) model.
-pub fn align_transcript(
-    a: &Audio,
-    transcript: &str,
-    lang: Lang,
-    o: &AlignOptions,
-) -> Result<Alignment, String> {
+pub fn align_transcript(a: &Audio, transcript: &str, lang: Lang, o: &AlignOptions) -> Result<Alignment, String> {
     let words = parse_transcript(transcript, lang)?;
     let nsyl: usize = words.iter().map(|w| w.syllables.len()).sum();
     // VAD, coarsening the grid if the DP table would be too large
@@ -514,9 +440,7 @@ pub fn align_transcript(
         vo.hop *= 2.0;
         vo.window = vo.window.max(vo.hop * 1.5);
         if vo.hop > 0.04 {
-            return Err(
-                "audio/transcript too long to align in one piece; split both into chunks".into(),
-            );
+            return Err("audio/transcript too long to align in one piece; split both into chunks".into());
         }
     };
     let hop = vad.hop;
@@ -529,10 +453,7 @@ pub fn align_transcript(
         return Err(format!("transcript has {nsyl} syllables but only {voiced_s:.2} s of speech was found (under 40 ms per syllable)"));
     }
     // weights (final lengthening before . ! ?)
-    let mut weights: Vec<Vec<f32>> = words
-        .iter()
-        .map(|w| w.syllables.iter().map(|s| syllable_weight(s)).collect())
-        .collect();
+    let mut weights: Vec<Vec<f32>> = words.iter().map(|w| w.syllables.iter().map(|s| syllable_weight(s)).collect()).collect();
     for (wi, w) in words.iter().enumerate() {
         if matches!(w.punct, Some('.') | Some('!') | Some('?')) {
             if let Some(l) = weights[wi].last_mut() {
@@ -543,32 +464,16 @@ pub fn align_transcript(
     let wsum: f32 = weights.iter().flatten().sum();
     let tempo = (voiced_s / wsum).clamp(0.06, 0.8);
     // chain of units
-    let mut units: Vec<Unit> = vec![Unit {
-        syl: None,
-        d: 0.0,
-        gap_cost: 0.0,
-    }];
+    let mut units: Vec<Unit> = vec![Unit { syl: None, d: 0.0, gap_cost: 0.0 }];
     for (wi, w) in words.iter().enumerate() {
         // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
         #[allow(clippy::needless_range_loop)]
         for si in 0..w.syllables.len() {
-            units.push(Unit {
-                syl: Some((wi, si)),
-                d: (weights[wi][si] * tempo / hop).max(3.0),
-                gap_cost: 0.0,
-            });
+            units.push(Unit { syl: Some((wi, si)), d: (weights[wi][si] * tempo / hop).max(3.0), gap_cost: 0.0 });
         }
         let last = wi + 1 == words.len();
-        let gc = if last || w.punct.is_some() {
-            0.0
-        } else {
-            o.plain_pause
-        };
-        units.push(Unit {
-            syl: None,
-            d: 0.0,
-            gap_cost: gc,
-        });
+        let gc = if last || w.punct.is_some() { 0.0 } else { o.plain_pause };
+        units.push(Unit { syl: None, d: 0.0, gap_cost: gc });
     }
     // prefix counts of voiced frames
     let mut pv = vec![0u32; t_n + 1];
@@ -635,9 +540,7 @@ pub fn align_transcript(
         prev = cur;
     }
     if !prev[t_n].is_finite() {
-        return Err(
-            "transcript does not fit the audio (too many syllables for the speech found)".into(),
-        );
+        return Err("transcript does not fit the audio (too many syllables for the speech found)".into());
     }
     // backtrack
     let mut ends = vec![0usize; units.len()];
@@ -652,34 +555,19 @@ pub fn align_transcript(
     // collect
     let mut out_words: Vec<WordTiming> = Vec::new();
     for (wi, w) in words.iter().enumerate() {
-        out_words.push(WordTiming {
-            text: w.text.clone(),
-            start: 0.0,
-            end: 0.0,
-            punct: w.punct,
-            syllables: Vec::new(),
-        });
+        out_words.push(WordTiming { text: w.text.clone(), start: 0.0, end: 0.0, punct: w.punct, syllables: Vec::new() });
         let _ = wi;
     }
     for (k, u) in units.iter().enumerate() {
         if let Some((wi, si)) = u.syl {
-            out_words[wi].syllables.push(SyllableTiming {
-                text: words[wi].syllables[si].clone(),
-                start: (starts[k] as f64 * hop as f64 * 1e4).round() as f32 / 1e4,
-                end: (ends[k] as f64 * hop as f64 * 1e4).round() as f32 / 1e4,
-            });
+            out_words[wi].syllables.push(SyllableTiming { text: words[wi].syllables[si].clone(), start: (starts[k] as f64 * hop as f64 * 1e4).round() as f32 / 1e4, end: (ends[k] as f64 * hop as f64 * 1e4).round() as f32 / 1e4 });
         }
     }
     for w in &mut out_words {
         w.start = w.syllables.first().map_or(0.0, |s| s.start);
         w.end = w.syllables.last().map_or(0.0, |s| s.end);
     }
-    Ok(Alignment {
-        words: out_words,
-        regions: vad.regions,
-        duration: a.duration(),
-        tempo,
-    })
+    Ok(Alignment { words: out_words, regions: vad.regions, duration: a.duration(), tempo })
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -692,13 +580,7 @@ pub fn words_json(al: &Alignment) -> Result<String, String> {
 
 fn srt_time(t: f32) -> String {
     let ms = (t.max(0.0) * 1000.0).round() as u64;
-    format!(
-        "{:02}:{:02}:{:02},{:03}",
-        ms / 3_600_000,
-        (ms / 60_000) % 60,
-        (ms / 1000) % 60,
-        ms % 1000
-    )
+    format!("{:02}:{:02}:{:02},{:03}", ms / 3_600_000, (ms / 60_000) % 60, (ms / 1000) % 60, ms % 1000)
 }
 
 /// SubRip subtitles: a cue ends at sentence punctuation, after 7 words / 42 characters, or at
@@ -713,33 +595,16 @@ pub fn words_srt(al: &Alignment) -> String {
         while j + 1 < al.words.len() {
             let w = &al.words[j];
             let nx = &al.words[j + 1];
-            let stop = matches!(w.punct, Some('.') | Some('!') | Some('?'))
-                || j + 1 - i >= 7
-                || len + 1 + nx.text.chars().count() > 42
-                || nx.start - w.end > 0.6;
+            let stop = matches!(w.punct, Some('.') | Some('!') | Some('?')) || j + 1 - i >= 7 || len + 1 + nx.text.chars().count() > 42 || nx.start - w.end > 0.6;
             if stop {
                 break;
             }
             len += 1 + nx.text.chars().count();
             j += 1;
         }
-        let text: Vec<String> = (i..=j)
-            .map(|k| {
-                format!(
-                    "{}{}",
-                    al.words[k].text,
-                    al.words[k].punct.map(|p| p.to_string()).unwrap_or_default()
-                )
-            })
-            .collect();
+        let text: Vec<String> = (i..=j).map(|k| format!("{}{}", al.words[k].text, al.words[k].punct.map(|p| p.to_string()).unwrap_or_default())).collect();
         n += 1;
-        out.push_str(&format!(
-            "{}\n{} --> {}\n{}\n\n",
-            n,
-            srt_time(al.words[i].start),
-            srt_time(al.words[j].end),
-            text.join(" ")
-        ));
+        out.push_str(&format!("{}\n{} --> {}\n{}\n\n", n, srt_time(al.words[i].start), srt_time(al.words[j].end), text.join(" ")));
         i = j + 1;
     }
     out
@@ -772,11 +637,7 @@ fn consonant_viseme(c: char) -> Viseme {
 /// Letter groups -> `(viseme, relative duration weight)`. Vowels weigh 3 (long vowel digraphs
 /// 4.5), consonants about 1. Bilabial closures map to [`Viseme::Rest`].
 pub fn graphemes_to_visemes(word: &str, lang: Lang) -> Vec<(Viseme, f32)> {
-    let c: Vec<char> = word
-        .chars()
-        .map(lower)
-        .filter(|c| c.is_alphanumeric())
-        .collect();
+    let c: Vec<char> = word.chars().map(lower).filter(|c| c.is_alphanumeric()).collect();
     let n = c.len();
     let mut out: Vec<(Viseme, f32)> = Vec::new();
     let at = |i: usize| c.get(i).copied().unwrap_or('\0');
@@ -799,11 +660,7 @@ pub fn graphemes_to_visemes(word: &str, lang: Lang) -> Vec<(Viseme, f32)> {
             }
             ('c', 'h') => {
                 // Ro: che/chi = k; En: ch = tʃ
-                let v = if lang == Lang::Ro && matches!(z, 'e' | 'i') {
-                    Viseme::Small
-                } else {
-                    Viseme::Round
-                };
+                let v = if lang == Lang::Ro && matches!(z, 'e' | 'i') { Viseme::Small } else { Viseme::Round };
                 out.push((v, 1.2));
                 i += 2;
                 continue;
@@ -814,11 +671,7 @@ pub fn graphemes_to_visemes(word: &str, lang: Lang) -> Vec<(Viseme, f32)> {
                 continue;
             }
             ('t', 'h') | ('w', 'h') | ('p', 'h') if lang == Lang::En => {
-                let v = if x == 'w' {
-                    Viseme::Round
-                } else {
-                    Viseme::Small
-                };
+                let v = if x == 'w' { Viseme::Round } else { Viseme::Small };
                 out.push((v, 1.0));
                 i += 2;
                 continue;
@@ -846,9 +699,7 @@ pub fn graphemes_to_visemes(word: &str, lang: Lang) -> Vec<(Viseme, f32)> {
             let v = match pair {
                 ('o', 'o') | ('o', 'u') | ('o', 'w') | ('u', 'e') => Some(Viseme::Round),
                 ('e', 'e') | ('e', 'a') | ('i', 'e') | ('e', 'i') => Some(Viseme::Wide),
-                ('a', 'i') | ('a', 'y') | ('a', 'r') | ('a', 'h') | ('a', 'w') => {
-                    Some(Viseme::Open)
-                }
+                ('a', 'i') | ('a', 'y') | ('a', 'r') | ('a', 'h') | ('a', 'w') => Some(Viseme::Open),
                 _ => None,
             };
             if let Some(v) = v {
@@ -865,32 +716,17 @@ pub fn graphemes_to_visemes(word: &str, lang: Lang) -> Vec<(Viseme, f32)> {
                 continue;
             }
             // English silent final e after a consonant, in a word with an earlier vowel
-            if lang == Lang::En
-                && x == 'e'
-                && i + 1 == n
-                && i >= 2
-                && !is_vowel_char(c[i - 1])
-                && c[..i - 1].iter().any(|&q| is_vowel_char(q))
-                && !(c[i - 1] == 'l' && !is_vowel_char(c[i - 2]))
-            {
+            if lang == Lang::En && x == 'e' && i + 1 == n && i >= 2 && !is_vowel_char(c[i - 1]) && c[..i - 1].iter().any(|&q| is_vowel_char(q)) && !(c[i - 1] == 'l' && !is_vowel_char(c[i - 2])) {
                 i += 1;
                 continue;
             }
             // Romanian word-final unstressed i/u after a consonant is weak
-            let weak = lang == Lang::Ro
-                && i + 1 == n
-                && i > 0
-                && matches!(x, 'i' | 'u')
-                && !is_vowel_char(c[i - 1]);
+            let weak = lang == Lang::Ro && i + 1 == n && i > 0 && matches!(x, 'i' | 'u') && !is_vowel_char(c[i - 1]);
             out.push((v, if weak { 1.2 } else { 3.0 }));
             i += 1;
             continue;
         }
-        let w = if matches!(x, 'm' | 'b' | 'p') {
-            1.1
-        } else {
-            0.9
-        };
+        let w = if matches!(x, 'm' | 'b' | 'p') { 1.1 } else { 0.9 };
         let _ = front_next;
         if y == x && !is_vowel_char(x) {
             out.push((consonant_viseme(x), w * 1.5)); // geminate
@@ -945,13 +781,7 @@ pub fn viseme_segments(al: &Alignment, lang: Lang, bridge: f32) -> Vec<(f32, f32
 }
 
 /// One mouth shape per project frame, with minimum hold and coarticulation clean-up.
-pub fn viseme_frames(
-    al: &Alignment,
-    lang: Lang,
-    fps: f32,
-    frames: u32,
-    o: &LipOptions,
-) -> Result<Vec<Viseme>, String> {
+pub fn viseme_frames(al: &Alignment, lang: Lang, fps: f32, frames: u32, o: &LipOptions) -> Result<Vec<Viseme>, String> {
     if !(fps.is_finite() && fps > 0.0) || frames == 0 {
         return Err("project needs fps > 0 and at least one frame".into());
     }
@@ -964,11 +794,7 @@ pub fn viseme_frames(
         while si < segs.len() && segs[si].1 <= t {
             si += 1;
         }
-        v.push(if si < segs.len() && segs[si].0 <= t {
-            segs[si].2
-        } else {
-            Viseme::Rest
-        });
+        v.push(if si < segs.len() && segs[si].0 <= t { segs[si].2 } else { Viseme::Rest });
     }
     // runs of non-closed shapes shorter than `hold` are absorbed by the longer neighbour
     for _ in 0..8 {
@@ -985,16 +811,8 @@ pub fn viseme_frames(
             if shape == Viseme::Rest || l >= hold {
                 continue;
             }
-            let left = if k > 0 && runs[k - 1].2 != Viseme::Rest {
-                Some(runs[k - 1])
-            } else {
-                None
-            };
-            let right = if k + 1 < runs.len() && runs[k + 1].2 != Viseme::Rest {
-                Some(runs[k + 1])
-            } else {
-                None
-            };
+            let left = if k > 0 && runs[k - 1].2 != Viseme::Rest { Some(runs[k - 1]) } else { None };
+            let right = if k + 1 < runs.len() && runs[k + 1].2 != Viseme::Rest { Some(runs[k + 1]) } else { None };
             let to = match (left, right) {
                 (Some(a), Some(b)) => Some(if a.1 > b.1 { a.2 } else { b.2 }),
                 (Some(a), None) => Some(a.2),
@@ -1018,37 +836,21 @@ pub fn viseme_frames(
 
 fn lock_free_replace(p: &mut Project, ch: Channel) -> Result<(), String> {
     crate::chanmeta::assert_unlocked(p, &ch.target, ch.prop)?;
-    p.channels.retain(|c| {
-        !(c.target == ch.target
-            && c.prop == ch.prop
-            && c.mode == ch.mode
-            && matches!(c.source, Source::Keys { .. }))
-    });
+    p.channels.retain(|c| !(c.target == ch.target && c.prop == ch.prop && c.mode == ch.mode && matches!(c.source, Source::Keys { .. })));
     p.channels.push(ch);
     Ok(())
 }
 
 /// Bake the transcript-aligned mouth shapes into a switch layer's exposure channel.
 /// Returns the number of exposure changes.
-pub fn apply_lipsync(
-    p: &mut Project,
-    layer: &str,
-    al: &Alignment,
-    lang: Lang,
-    mapping: &[usize; 5],
-    o: &LipOptions,
-) -> Result<usize, String> {
-    let l = p
-        .find_layer(layer)
-        .ok_or_else(|| format!("no layer '{layer}'"))?;
+pub fn apply_lipsync(p: &mut Project, layer: &str, al: &Alignment, lang: Lang, mapping: &[usize; 5], o: &LipOptions) -> Result<usize, String> {
+    let l = p.find_layer(layer).ok_or_else(|| format!("no layer '{layer}'"))?;
     let n = match &l.kind {
         LayerKind::Selector { layers, .. } => layers.len(),
         _ => return Err(format!("layer '{layer}' is not a switch layer")),
     };
     if let Some(bad) = mapping.iter().find(|&&m| m >= n) {
-        return Err(format!(
-            "--map index {bad} is out of range: '{layer}' has {n} children"
-        ));
+        return Err(format!("--map index {bad} is out of range: '{layer}' has {n} children"));
     }
     crate::chanmeta::assert_unlocked(p, layer, Prop::LayerSwitch)?;
     let vis = viseme_frames(al, lang, p.fps, p.frames, o)?;
@@ -1081,15 +883,7 @@ pub struct MotionOptions {
 
 impl Default for MotionOptions {
     fn default() -> Self {
-        MotionOptions {
-            head: None,
-            brow: None,
-            nod_deg: 3.0,
-            fall_deg: 2.5,
-            tilt_deg: 3.0,
-            brow_px: 4.0,
-            seed: 1,
-        }
+        MotionOptions { head: None, brow: None, nod_deg: 3.0, fall_deg: 2.5, tilt_deg: 3.0, brow_px: 4.0, seed: 1 }
     }
 }
 
@@ -1134,10 +928,7 @@ fn track_from(v: &[f32]) -> Track {
     let n = v.len();
     let mut keys: Vec<(f32, f32, Ease)> = Vec::new();
     for f in 0..n {
-        let edge = f == 0
-            || f + 1 == n
-            || (v[f] - v[f - 1]).abs() > 1e-6
-            || (v[f + 1] - v[f]).abs() > 1e-6;
+        let edge = f == 0 || f + 1 == n || (v[f] - v[f - 1]).abs() > 1e-6 || (v[f + 1] - v[f]).abs() > 1e-6;
         if edge {
             keys.push((f as f32, v[f], Ease::Linear));
         }
@@ -1145,12 +936,7 @@ fn track_from(v: &[f32]) -> Track {
     Track::with_keys(&keys)
 }
 
-fn motion_target(
-    p: &Project,
-    name: &str,
-    bone_prop: Prop,
-    layer_prop: Prop,
-) -> Result<Prop, String> {
+fn motion_target(p: &Project, name: &str, bone_prop: Prop, layer_prop: Prop) -> Result<Prop, String> {
     if p.bones.iter().any(|b| b.name == name) {
         Ok(bone_prop)
     } else if p.find_layer(name).is_some() {
@@ -1164,24 +950,13 @@ fn motion_target(
 /// nods on stressed words (long syllables) and sentence starts, a fall at sentence ends,
 /// brow raise and head tilt on questions, a lighter raise on `!`. Amplitudes are jittered
 /// +-15 percent with a seeded generator, so the same inputs always give the same keys.
-pub fn speech_motion(
-    p: &Project,
-    al: &Alignment,
-    o: &MotionOptions,
-) -> Result<Vec<Channel>, String> {
+pub fn speech_motion(p: &Project, al: &Alignment, o: &MotionOptions) -> Result<Vec<Channel>, String> {
     if o.head.is_none() && o.brow.is_none() {
         return Err("give a head target and/or a brow target".into());
     }
-    for (n, x, lim) in [
-        ("nod", o.nod_deg, 45.0),
-        ("fall", o.fall_deg, 45.0),
-        ("tilt", o.tilt_deg, 45.0),
-        ("brow", o.brow_px, 200.0),
-    ] {
+    for (n, x, lim) in [("nod", o.nod_deg, 45.0), ("fall", o.fall_deg, 45.0), ("tilt", o.tilt_deg, 45.0), ("brow", o.brow_px, 200.0)] {
         if !x.is_finite() || x.abs() > lim {
-            return Err(format!(
-                "{n} amplitude must be a finite number within +-{lim}"
-            ));
+            return Err(format!("{n} amplitude must be a finite number within +-{lim}"));
         }
     }
     if !(p.fps.is_finite() && p.fps > 0.0) || p.frames == 0 {
@@ -1190,16 +965,8 @@ pub fn speech_motion(
     if al.words.is_empty() {
         return Err("alignment has no words".into());
     }
-    let head_prop = o
-        .head
-        .as_deref()
-        .map(|h| motion_target(p, h, Prop::BoneAngle, Prop::LayerRotation))
-        .transpose()?;
-    let brow_prop = o
-        .brow
-        .as_deref()
-        .map(|b| motion_target(p, b, Prop::BoneOffsetY, Prop::LayerY))
-        .transpose()?;
+    let head_prop = o.head.as_deref().map(|h| motion_target(p, h, Prop::BoneAngle, Prop::LayerRotation)).transpose()?;
+    let brow_prop = o.brow.as_deref().map(|b| motion_target(p, b, Prop::BoneOffsetY, Prop::LayerY)).transpose()?;
     if let (Some(h), Some(pr)) = (&o.head, head_prop) {
         crate::chanmeta::assert_unlocked(p, h, pr)?;
     }
@@ -1212,11 +979,7 @@ pub fn speech_motion(
     let mut brow = vec![0f32; n];
     let mut rng = Rng::new(o.seed);
     // median syllable duration = the "unstressed" yardstick
-    let mut durs: Vec<f32> = al
-        .words
-        .iter()
-        .flat_map(|w| w.syllables.iter().map(|s| s.end - s.start))
-        .collect();
+    let mut durs: Vec<f32> = al.words.iter().flat_map(|w| w.syllables.iter().map(|s| s.end - s.start)).collect();
     durs.sort_by(|a, b| a.total_cmp(b));
     let median = durs.get(durs.len() / 2).copied().unwrap_or(0.2).max(0.02);
     let mut last_nod = f32::NEG_INFINITY;
@@ -1224,65 +987,26 @@ pub fn speech_motion(
     for (i, w) in al.words.iter().enumerate() {
         let jit = 0.85 + 0.3 * rng.next();
         let tj = (rng.next() - 0.5) * 0.04;
-        let (peak_syl, peak_dur) = w.syllables.iter().fold((w.start, 0.0f32), |acc, s| {
-            if s.end - s.start > acc.1 {
-                (s.start, s.end - s.start)
-            } else {
-                acc
-            }
-        });
+        let (peak_syl, peak_dur) = w.syllables.iter().fold((w.start, 0.0f32), |acc, s| if s.end - s.start > acc.1 { (s.start, s.end - s.start) } else { acc });
         let stress = peak_dur / median;
-        let ends_sentence =
-            matches!(w.punct, Some('.') | Some('!') | Some('?')) || i + 1 == al.words.len();
+        let ends_sentence = matches!(w.punct, Some('.') | Some('!') | Some('?')) || i + 1 == al.words.len();
         if (stress >= 1.2 || sentence_start) && peak_syl - last_nod >= 0.35 {
-            let a = if sentence_start {
-                (0.4 + (stress - 1.0).max(0.0)).clamp(0.5, 1.0)
-            } else {
-                (0.4 + (stress - 1.0)).clamp(0.4, 1.0)
-            };
-            add_pulse(
-                &mut head,
-                fps,
-                peak_syl + tj,
-                o.nod_deg * a * jit,
-                0.07,
-                0.0,
-                0.25,
-            );
+            let a = if sentence_start { (0.4 + (stress - 1.0).max(0.0)).clamp(0.5, 1.0) } else { (0.4 + (stress - 1.0)).clamp(0.4, 1.0) };
+            add_pulse(&mut head, fps, peak_syl + tj, o.nod_deg * a * jit, 0.07, 0.0, 0.25);
             last_nod = peak_syl;
         }
         if stress >= 1.3 {
-            add_pulse(
-                &mut brow,
-                fps,
-                peak_syl + tj,
-                -0.35 * o.brow_px * jit,
-                0.06,
-                0.04,
-                0.25,
-            );
+            add_pulse(&mut brow, fps, peak_syl + tj, -0.35 * o.brow_px * jit, 0.06, 0.04, 0.25);
         }
         match w.punct {
             Some('?') => {
-                let from = if i > 0 {
-                    al.words[i - 1].start.max(w.start - 0.4)
-                } else {
-                    w.start
-                };
+                let from = if i > 0 { al.words[i - 1].start.max(w.start - 0.4) } else { w.start };
                 let hold = (w.end - from).max(0.0);
                 add_pulse(&mut brow, fps, from, -o.brow_px * jit, 0.15, hold, 0.35);
                 add_pulse(&mut head, fps, from, -o.tilt_deg * jit, 0.2, hold, 0.4);
             }
             Some('!') => {
-                add_pulse(
-                    &mut brow,
-                    fps,
-                    w.start,
-                    -0.6 * o.brow_px * jit,
-                    0.1,
-                    (w.end - w.start).max(0.0),
-                    0.3,
-                );
+                add_pulse(&mut brow, fps, w.start, -0.6 * o.brow_px * jit, 0.1, (w.end - w.start).max(0.0), 0.3);
             }
             _ => {}
         }
@@ -1337,10 +1061,7 @@ mod tests {
         }
     }
     fn quiet(a: &mut Vec<f32>, secs: f32) {
-        a.extend(std::iter::repeat_n(
-            0.0,
-            (secs * SR as f32).round() as usize,
-        ));
+        a.extend(std::iter::repeat_n(0.0, (secs * SR as f32).round() as usize));
     }
     /// bursts as (start, end) seconds; returns audio of `total` seconds
     fn bursts(spans: &[(f32, f32)], total: f32) -> Audio {
@@ -1352,10 +1073,7 @@ mod tests {
             t = b;
         }
         quiet(&mut s, total - t);
-        Audio {
-            samples: s,
-            sample_rate: SR,
-        }
+        Audio { samples: s, sample_rate: SR }
     }
     /// A burst whose amplitude dips to 15 percent at each of the given times.
     fn dipped(start: f32, end: f32, dips: &[f32], total: f32) -> Audio {
@@ -1379,10 +1097,7 @@ mod tests {
         let v = detect_speech(&a, &VadOptions::default()).unwrap();
         assert_eq!(v.regions.len(), 3, "{:?}", v.regions);
         for (r, s) in v.regions.iter().zip(spans) {
-            assert!(
-                near(r.0, s.0, 0.012) && near(r.1, s.1, 0.012),
-                "{r:?} vs {s:?}"
-            );
+            assert!(near(r.0, s.0, 0.012) && near(r.1, s.1, 0.012), "{r:?} vs {s:?}");
         }
     }
 
@@ -1402,17 +1117,8 @@ mod tests {
         quiet(&mut s, 0.4);
         tone(&mut s, 5000.0, 0.07, 0.3);
         quiet(&mut s, 0.3);
-        let a = Audio {
-            samples: s,
-            sample_rate: SR,
-        };
-        assert_eq!(
-            detect_speech(&a, &VadOptions::default())
-                .unwrap()
-                .regions
-                .len(),
-            2
-        );
+        let a = Audio { samples: s, sample_rate: SR };
+        assert_eq!(detect_speech(&a, &VadOptions::default()).unwrap().regions.len(), 2);
         // the same weak level at low pitch is below the threshold
         let mut s = Vec::new();
         quiet(&mut s, 0.2);
@@ -1420,51 +1126,21 @@ mod tests {
         quiet(&mut s, 0.4);
         tone(&mut s, 220.0, 0.07, 0.3);
         quiet(&mut s, 0.3);
-        let a = Audio {
-            samples: s,
-            sample_rate: SR,
-        };
-        assert_eq!(
-            detect_speech(&a, &VadOptions::default())
-                .unwrap()
-                .regions
-                .len(),
-            1
-        );
+        let a = Audio { samples: s, sample_rate: SR };
+        assert_eq!(detect_speech(&a, &VadOptions::default()).unwrap().regions.len(), 1);
     }
 
     #[test]
     fn vad_errors() {
-        let silent = Audio {
-            samples: vec![0.0; 16000],
-            sample_rate: SR,
-        };
-        assert!(detect_speech(&silent, &VadOptions::default())
-            .unwrap_err()
-            .contains("silent"));
-        let empty = Audio {
-            samples: vec![],
-            sample_rate: SR,
-        };
+        let silent = Audio { samples: vec![0.0; 16000], sample_rate: SR };
+        assert!(detect_speech(&silent, &VadOptions::default()).unwrap_err().contains("silent"));
+        let empty = Audio { samples: vec![], sample_rate: SR };
         assert!(detect_speech(&empty, &VadOptions::default()).is_err());
-        let flat = Audio {
-            samples: vec![0.3; 16000],
-            sample_rate: SR,
-        };
-        assert!(
-            detect_speech(&flat, &VadOptions::default()).is_err(),
-            "constant DC has no speech"
-        );
-        let bad = VadOptions {
-            off: 0.5,
-            on: 0.2,
-            ..VadOptions::default()
-        };
+        let flat = Audio { samples: vec![0.3; 16000], sample_rate: SR };
+        assert!(detect_speech(&flat, &VadOptions::default()).is_err(), "constant DC has no speech");
+        let bad = VadOptions { off: 0.5, on: 0.2, ..VadOptions::default() };
         assert!(detect_speech(&bursts(&[(0.1, 0.5)], 1.0), &bad).is_err());
-        let nan = Audio {
-            samples: vec![f32::NAN; 100],
-            sample_rate: SR,
-        };
+        let nan = Audio { samples: vec![f32::NAN; 100], sample_rate: SR };
         assert!(detect_speech(&nan, &VadOptions::default()).is_err());
     }
 
@@ -1474,11 +1150,7 @@ mod tests {
         assert_eq!(s("mere", Lang::Ro), vec!["me", "re"]);
         assert_eq!(s("foarte", Lang::Ro), vec!["foar", "te"]);
         assert_eq!(s("bună", Lang::Ro).len(), 2);
-        assert_eq!(
-            s("România", Lang::Ro).len(),
-            3,
-            "known limit: final -ia is read as one diphthong (real: 4)"
-        );
+        assert_eq!(s("România", Lang::Ro).len(), 3, "known limit: final -ia is read as one diphthong (real: 4)");
         assert_eq!(s("aer", Lang::Ro), vec!["a", "er"]);
         assert_eq!(s("make", Lang::En), vec!["make"]);
         assert_eq!(s("table", Lang::En).len(), 2);
@@ -1487,10 +1159,7 @@ mod tests {
         assert_eq!(s("123", Lang::En).len(), 3);
         assert_eq!(s("a", Lang::En), vec!["a"]);
         let joined: String = s("transcriere", Lang::Ro).concat();
-        assert_eq!(
-            joined, "transcriere",
-            "syllables concatenate back to the word"
-        );
+        assert_eq!(joined, "transcriere", "syllables concatenate back to the word");
     }
 
     #[test]
@@ -1503,10 +1172,7 @@ mod tests {
         assert_eq!(w[5].punct, Some('?'));
         assert_eq!(w[6].punct, Some('!'));
         assert!(parse_transcript("   ", Lang::Ro).is_err());
-        assert!(
-            parse_transcript("... — ?!", Lang::En).is_err(),
-            "punctuation alone is not a word"
-        );
+        assert!(parse_transcript("... — ?!", Lang::En).is_err(), "punctuation alone is not a word");
         assert!(Lang::parse("xx").is_err());
     }
 
@@ -1519,26 +1185,10 @@ mod tests {
         // "Ana are" | "mere." | "Foarte bune!"   (4 + 2 + 4 syllables)
         let spans = [(0.3073, 1.1041), (1.4118, 1.9087), (2.6036, 3.4059)];
         let a = bursts(&spans, 4.0);
-        let al = align_transcript(
-            &a,
-            "Ana are mere. Foarte bune!",
-            Lang::Ro,
-            &AlignOptions::default(),
-        )
-        .unwrap();
-        assert_eq!(
-            al.words.iter().map(|w| w.text.as_str()).collect::<Vec<_>>(),
-            vec!["Ana", "are", "mere", "Foarte", "bune"]
-        );
-        assert_eq!(
-            al.words.iter().map(|w| w.syllables.len()).sum::<usize>(),
-            10
-        );
-        let burst_of = |t: f32| {
-            spans
-                .iter()
-                .position(|s| t >= s.0 - 0.02 && t <= s.1 + 0.02)
-        };
+        let al = align_transcript(&a, "Ana are mere. Foarte bune!", Lang::Ro, &AlignOptions::default()).unwrap();
+        assert_eq!(al.words.iter().map(|w| w.text.as_str()).collect::<Vec<_>>(), vec!["Ana", "are", "mere", "Foarte", "bune"]);
+        assert_eq!(al.words.iter().map(|w| w.syllables.len()).sum::<usize>(), 10);
+        let burst_of = |t: f32| spans.iter().position(|s| t >= s.0 - 0.02 && t <= s.1 + 0.02);
         let mut prev_end = 0.0;
         let mut worst = 0.0f32;
         for w in &al.words {
@@ -1549,24 +1199,16 @@ mod tests {
                 assert!(s.start >= sp - 1e-4 && s.end > s.start, "{s:?}");
                 sp = s.end;
                 let (b0, b1) = (burst_of(s.start + 0.001), burst_of(s.end - 0.001));
-                assert!(
-                    b0.is_some() && b0 == b1,
-                    "syllable {s:?} not inside one burst"
-                );
+                assert!(b0.is_some() && b0 == b1, "syllable {s:?} not inside one burst");
             }
         }
         // edges: first word start and last word end of each burst
         let firsts = [al.words[0].start, al.words[2].start, al.words[3].start];
         let lasts = [al.words[1].end, al.words[2].end, al.words[4].end];
         for (i, s) in spans.iter().enumerate() {
-            worst = worst
-                .max((firsts[i] - s.0).abs())
-                .max((lasts[i] - s.1).abs());
+            worst = worst.max((firsts[i] - s.0).abs()).max((lasts[i] - s.1).abs());
         }
-        println!(
-            "measured max burst-edge error (clean tone bursts): {:.1} ms",
-            worst * 1000.0
-        );
+        println!("measured max burst-edge error (clean tone bursts): {:.1} ms", worst * 1000.0);
         assert!(worst <= 0.021, "edge error {worst}");
         assert_eq!(al.regions.len(), 3);
     }
@@ -1581,18 +1223,10 @@ mod tests {
             *s += ((x >> 8) as f32 / 8388608.0 - 1.0) * 0.03; // about -30 dB hiss
         }
         let al = align_transcript(&a, "Ana are mere", Lang::Ro, &AlignOptions::default()).unwrap();
-        let worst = [
-            (al.words[0].start, spans[0].0),
-            (al.words[1].end, spans[0].1),
-            (al.words[2].start, spans[1].0),
-            (al.words[2].end, spans[1].1),
-        ]
-        .iter()
-        .fold(0.0f32, |m, (a, b)| m.max((a - b).abs()));
-        println!(
-            "measured max burst-edge error with -30 dB noise: {:.1} ms",
-            worst * 1000.0
-        );
+        let worst = [(al.words[0].start, spans[0].0), (al.words[1].end, spans[0].1), (al.words[2].start, spans[1].0), (al.words[2].end, spans[1].1)]
+            .iter()
+            .fold(0.0f32, |m, (a, b)| m.max((a - b).abs()));
+        println!("measured max burst-edge error with -30 dB noise: {:.1} ms", worst * 1000.0);
         assert!(worst <= 0.03, "{worst}");
     }
 
@@ -1603,19 +1237,12 @@ mod tests {
         let dips = [0.443, 0.837, 1.068];
         let a = dipped(0.2, 1.4, &dips, 2.0);
         let al = align_transcript(&a, "mama tata", Lang::Ro, &AlignOptions::default()).unwrap();
-        let cuts = [
-            al.words[0].syllables[0].end,
-            al.words[0].syllables[1].end,
-            al.words[1].syllables[0].end,
-        ];
+        let cuts = [al.words[0].syllables[0].end, al.words[0].syllables[1].end, al.words[1].syllables[0].end];
         let mut worst = 0.0f32;
         for (c, d) in cuts.iter().zip(dips) {
             worst = worst.max((c - d).abs());
         }
-        println!(
-            "measured max boundary error vs energy dips: {:.1} ms",
-            worst * 1000.0
-        );
+        println!("measured max boundary error vs energy dips: {:.1} ms", worst * 1000.0);
         assert!(worst <= 0.04, "cuts {cuts:?} vs dips {dips:?}");
     }
 
@@ -1623,53 +1250,22 @@ mod tests {
     fn punctuation_prefers_the_real_pause() {
         // two bursts, pause between; commas elsewhere must not move the split
         let a = bursts(&[(0.2, 0.8), (1.3, 1.9)], 2.5);
-        let al = align_transcript(
-            &a,
-            "bine bine, tare tare",
-            Lang::Ro,
-            &AlignOptions::default(),
-        )
-        .unwrap();
-        assert!(
-            al.words[1].end <= 0.85 && al.words[2].start >= 1.25,
-            "{:?}",
-            spans_of(&al)
-        );
+        let al = align_transcript(&a, "bine bine, tare tare", Lang::Ro, &AlignOptions::default()).unwrap();
+        assert!(al.words[1].end <= 0.85 && al.words[2].start >= 1.25, "{:?}", spans_of(&al));
         // no punctuation at all: the pause is still found, at the same place
-        let al = align_transcript(
-            &a,
-            "bine bine tare tare",
-            Lang::Ro,
-            &AlignOptions::default(),
-        )
-        .unwrap();
-        assert!(
-            al.words[1].end <= 0.85 && al.words[2].start >= 1.25,
-            "{:?}",
-            spans_of(&al)
-        );
+        let al = align_transcript(&a, "bine bine tare tare", Lang::Ro, &AlignOptions::default()).unwrap();
+        assert!(al.words[1].end <= 0.85 && al.words[2].start >= 1.25, "{:?}", spans_of(&al));
     }
 
     #[test]
     fn alignment_errors_and_determinism() {
         let a = bursts(&[(0.2, 0.8)], 1.0);
         let o = AlignOptions::default();
-        assert!(align_transcript(&a, "", Lang::Ro, &o)
-            .unwrap_err()
-            .contains("no words"));
-        let silent = Audio {
-            samples: vec![0.0; 16000],
-            sample_rate: SR,
-        };
-        assert!(align_transcript(&silent, "ana", Lang::Ro, &o)
-            .unwrap_err()
-            .contains("silent"));
-        let long =
-            "ana are mere si pere si multe alte fructe delicioase de toamna pentru toata lumea";
-        assert!(
-            align_transcript(&a, long, Lang::Ro, &o).is_err(),
-            "far too many syllables for 0.6 s of speech"
-        );
+        assert!(align_transcript(&a, "", Lang::Ro, &o).unwrap_err().contains("no words"));
+        let silent = Audio { samples: vec![0.0; 16000], sample_rate: SR };
+        assert!(align_transcript(&silent, "ana", Lang::Ro, &o).unwrap_err().contains("silent"));
+        let long = "ana are mere si pere si multe alte fructe delicioase de toamna pentru toata lumea";
+        assert!(align_transcript(&a, long, Lang::Ro, &o).is_err(), "far too many syllables for 0.6 s of speech");
         let x = align_transcript(&a, "ana are", Lang::Ro, &o).unwrap();
         let y = align_transcript(&a, "ana are", Lang::Ro, &o).unwrap();
         assert_eq!(x, y);
@@ -1685,18 +1281,12 @@ mod tests {
         assert!(j["words"][0]["syllables"].is_array());
         let srt = words_srt(&al);
         assert!(srt.starts_with("1\n00:00:00,"), "{srt}");
-        assert!(
-            srt.contains(" --> ") && srt.contains("Ana are mere."),
-            "{srt}"
-        );
+        assert!(srt.contains(" --> ") && srt.contains("Ana are mere."), "{srt}");
         assert_eq!(srt_time(3725.25), "01:02:05,250");
     }
 
     fn vis(w: &str, l: Lang) -> Vec<Viseme> {
-        graphemes_to_visemes(w, l)
-            .into_iter()
-            .map(|x| x.0)
-            .collect()
+        graphemes_to_visemes(w, l).into_iter().map(|x| x.0).collect()
     }
 
     #[test]
@@ -1707,11 +1297,7 @@ mod tests {
         assert_eq!(vis("casă", Lang::Ro), vec![Small, Open, Wide, Small]);
         assert_eq!(vis("țară", Lang::Ro), vec![Wide, Open, Small, Small]);
         assert_eq!(vis("șase", Lang::Ro), vec![Round, Open, Wide, Wide]);
-        assert_eq!(
-            vis("ŞI", Lang::Ro)[0],
-            Round,
-            "cedilla form folds to comma-below"
-        );
+        assert_eq!(vis("ŞI", Lang::Ro)[0], Round, "cedilla form folds to comma-below");
         assert_eq!(vis("vâna", Lang::Ro)[1], Small);
         assert_eq!(vis("în", Lang::Ro)[0], Small);
         assert_eq!(vis("ceai", Lang::Ro)[0], Round, "c before e is tʃ");
@@ -1725,28 +1311,18 @@ mod tests {
     fn viseme_rules_english() {
         use Viseme::*;
         assert_eq!(vis("moon", Lang::En), vec![Rest, Round, Small]);
-        assert_eq!(
-            vis("make", Lang::En),
-            vec![Rest, Open, Small],
-            "silent final e"
-        );
+        assert_eq!(vis("make", Lang::En), vec![Rest, Open, Small], "silent final e");
         assert_eq!(vis("she", Lang::En), vec![Round, Wide]);
         assert_eq!(vis("the", Lang::En), vec![Small, Wide]);
         assert_eq!(vis("bee", Lang::En), vec![Rest, Wide]);
         assert_eq!(vis("five", Lang::En)[0], Small);
         assert_eq!(vis("queen", Lang::En)[0], Round);
-        assert_eq!(
-            vis("table", Lang::En).last(),
-            Some(&Wide),
-            "-le keeps its e"
-        );
+        assert_eq!(vis("table", Lang::En).last(), Some(&Wide), "-le keeps its e");
     }
 
     fn mouth_project(frames: u32) -> Project {
         let mut p = Project::new("t", 100.0, 100.0, 24.0, frames);
-        let kids: Vec<Layer> = (0..5)
-            .map(|i| Layer::group(&format!("m{i}"), vec![]))
-            .collect();
+        let kids: Vec<Layer> = (0..5).map(|i| Layer::group(&format!("m{i}"), vec![])).collect();
         p.layers.push(Layer::switch("mouth", kids));
         p
     }
@@ -1759,10 +1335,7 @@ mod tests {
         assert_eq!(v[2], Viseme::Rest, "before speech");
         assert_eq!(v[55], Viseme::Rest, "after speech");
         let mid = &v[12..32];
-        assert!(
-            mid.contains(&Viseme::Open) && mid.contains(&Viseme::Rest),
-            "{mid:?}"
-        );
+        assert!(mid.contains(&Viseme::Open) && mid.contains(&Viseme::Rest), "{mid:?}");
         // minimum hold: every non-rest run lasts >= 2 frames
         let mut run = 0;
         for i in 0..v.len() {
@@ -1774,27 +1347,11 @@ mod tests {
             }
         }
         let mut p = mouth_project(60);
-        let n = apply_lipsync(
-            &mut p,
-            "mouth",
-            &al,
-            Lang::Ro,
-            &[0, 1, 2, 3, 4],
-            &LipOptions::default(),
-        )
-        .unwrap();
+        let n = apply_lipsync(&mut p, "mouth", &al, Lang::Ro, &[0, 1, 2, 3, 4], &LipOptions::default()).unwrap();
         assert!(n >= 4);
         assert_eq!(p.channels.len(), 1);
         // repeat run replaces, not stacks
-        apply_lipsync(
-            &mut p,
-            "mouth",
-            &al,
-            Lang::Ro,
-            &[0, 1, 2, 3, 4],
-            &LipOptions::default(),
-        )
-        .unwrap();
+        apply_lipsync(&mut p, "mouth", &al, Lang::Ro, &[0, 1, 2, 3, 4], &LipOptions::default()).unwrap();
         assert_eq!(p.channels.len(), 1);
     }
 
@@ -1804,74 +1361,33 @@ mod tests {
         let al = align_transcript(&a, "mama", Lang::Ro, &AlignOptions::default()).unwrap();
         let o = LipOptions::default();
         let mut p = mouth_project(60);
-        assert!(
-            apply_lipsync(&mut p, "nope", &al, Lang::Ro, &[0, 1, 2, 3, 4], &o)
-                .unwrap_err()
-                .contains("no layer")
-        );
+        assert!(apply_lipsync(&mut p, "nope", &al, Lang::Ro, &[0, 1, 2, 3, 4], &o).unwrap_err().contains("no layer"));
         p.layers.push(Layer::group("grp", vec![]));
-        assert!(
-            apply_lipsync(&mut p, "grp", &al, Lang::Ro, &[0, 1, 2, 3, 4], &o)
-                .unwrap_err()
-                .contains("not a switch")
-        );
-        assert!(
-            apply_lipsync(&mut p, "mouth", &al, Lang::Ro, &[0, 1, 2, 3, 9], &o)
-                .unwrap_err()
-                .contains("out of range")
-        );
+        assert!(apply_lipsync(&mut p, "grp", &al, Lang::Ro, &[0, 1, 2, 3, 4], &o).unwrap_err().contains("not a switch"));
+        assert!(apply_lipsync(&mut p, "mouth", &al, Lang::Ro, &[0, 1, 2, 3, 9], &o).unwrap_err().contains("out of range"));
         apply_lipsync(&mut p, "mouth", &al, Lang::Ro, &[0, 1, 2, 3, 4], &o).unwrap();
-        crate::chanmeta::set_meta(
-            &mut p,
-            "mouth",
-            Some(Prop::LayerSwitch),
-            &crate::chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
-        assert!(
-            apply_lipsync(&mut p, "mouth", &al, Lang::Ro, &[0, 1, 2, 3, 4], &o)
-                .unwrap_err()
-                .contains("locked")
-        );
+        crate::chanmeta::set_meta(&mut p, "mouth", Some(Prop::LayerSwitch), &crate::chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
+        assert!(apply_lipsync(&mut p, "mouth", &al, Lang::Ro, &[0, 1, 2, 3, 4], &o).unwrap_err().contains("locked"));
         assert!(viseme_frames(&al, Lang::Ro, 0.0, 10, &o).is_err());
     }
 
     fn motion_project(frames: u32) -> Project {
         let mut p = Project::new("t", 100.0, 100.0, 24.0, frames);
-        p.bones.push(crate::project::Bone::new(
-            "head",
-            None,
-            10.0,
-            crate::math::Vec2::new(0.0, 0.0),
-            0.0,
-        ));
+        p.bones.push(crate::project::Bone::new("head", None, 10.0, crate::math::Vec2::new(0.0, 0.0), 0.0));
         p.layers.push(Layer::group("brows", vec![]));
         p
     }
 
     fn q_alignment() -> Alignment {
         let a = bursts(&[(0.3, 1.5), (2.0, 3.0)], 3.6);
-        align_transcript(
-            &a,
-            "Ana are mere. Tu vrei mere?",
-            Lang::Ro,
-            &AlignOptions::default(),
-        )
-        .unwrap()
+        align_transcript(&a, "Ana are mere. Tu vrei mere?", Lang::Ro, &AlignOptions::default()).unwrap()
     }
 
     #[test]
     fn question_raises_brows_and_stress_nods_head() {
         let al = q_alignment();
         let p = motion_project(100);
-        let o = MotionOptions {
-            head: Some("head".into()),
-            brow: Some("brows".into()),
-            ..MotionOptions::default()
-        };
+        let o = MotionOptions { head: Some("head".into()), brow: Some("brows".into()), ..MotionOptions::default() };
         let ch = speech_motion(&p, &al, &o).unwrap();
         assert_eq!(ch.len(), 2);
         assert!(ch.iter().all(|c| c.mode == Mode::Add));
@@ -1884,24 +1400,13 @@ mod tests {
         // brow: still before the question, raised (negative y) at its end, within amplitude
         let q_end = al.words.last().unwrap().end * 24.0;
         assert!(val(&ch[1], 1.0).abs() < 1e-4);
-        assert!(
-            val(&ch[1], q_end - 1.0) < -3.0,
-            "{}",
-            val(&ch[1], q_end - 1.0)
-        );
-        let lo = (0..100)
-            .map(|f| val(&ch[1], f as f32))
-            .fold(0.0f32, f32::min);
-        assert!(
-            lo >= -1.2 * 4.0 - 1e-3,
-            "brow stays within amplitude, got {lo}"
-        );
+        assert!(val(&ch[1], q_end - 1.0) < -3.0, "{}", val(&ch[1], q_end - 1.0));
+        let lo = (0..100).map(|f| val(&ch[1], f as f32)).fold(0.0f32, f32::min);
+        assert!(lo >= -1.2 * 4.0 - 1e-3, "brow stays within amplitude, got {lo}");
         // head: moves, and stays small
         let hv: Vec<f32> = (0..100).map(|f| val(&ch[0], f as f32)).collect();
         assert!(hv.iter().any(|x| x.abs() > 1.0));
-        assert!(hv
-            .iter()
-            .all(|x| x.abs() <= 3.0 * 1.15 + 2.5 * 1.15 + 3.0 * 1.15));
+        assert!(hv.iter().all(|x| x.abs() <= 3.0 * 1.15 + 2.5 * 1.15 + 3.0 * 1.15));
         // tail of the clip is back at rest
         assert!(hv[99].abs() < 1e-3);
     }
@@ -1910,35 +1415,13 @@ mod tests {
     fn motion_is_deterministic_and_seed_changes_it() {
         let al = q_alignment();
         let p = motion_project(100);
-        let o = MotionOptions {
-            head: Some("head".into()),
-            brow: Some("brows".into()),
-            ..MotionOptions::default()
-        };
+        let o = MotionOptions { head: Some("head".into()), brow: Some("brows".into()), ..MotionOptions::default() };
         let a = speech_motion(&p, &al, &o).unwrap();
         let b = speech_motion(&p, &al, &o).unwrap();
         assert_eq!(a, b);
-        let c = speech_motion(
-            &p,
-            &al,
-            &MotionOptions {
-                seed: 99,
-                ..o.clone()
-            },
-        )
-        .unwrap();
+        let c = speech_motion(&p, &al, &MotionOptions { seed: 99, ..o.clone() }).unwrap();
         assert_ne!(a, c);
-        let zero = speech_motion(
-            &p,
-            &al,
-            &MotionOptions {
-                nod_deg: 0.0,
-                fall_deg: 0.0,
-                tilt_deg: 0.0,
-                ..o.clone()
-            },
-        )
-        .unwrap();
+        let zero = speech_motion(&p, &al, &MotionOptions { nod_deg: 0.0, fall_deg: 0.0, tilt_deg: 0.0, ..o.clone() }).unwrap();
         match &zero[0].source {
             Source::Keys { track } => assert!(track.keys.iter().all(|k| k.value == 0.0)),
             _ => panic!(),
@@ -1949,67 +1432,18 @@ mod tests {
     fn motion_validation_and_idempotent_apply() {
         let al = q_alignment();
         let mut p = motion_project(100);
-        let base = MotionOptions {
-            head: Some("head".into()),
-            brow: Some("brows".into()),
-            ..MotionOptions::default()
-        };
+        let base = MotionOptions { head: Some("head".into()), brow: Some("brows".into()), ..MotionOptions::default() };
         assert!(speech_motion(&p, &al, &MotionOptions::default()).is_err());
-        assert!(speech_motion(
-            &p,
-            &al,
-            &MotionOptions {
-                head: Some("ghost".into()),
-                ..MotionOptions::default()
-            }
-        )
-        .unwrap_err()
-        .contains("ghost"));
-        assert!(speech_motion(
-            &p,
-            &al,
-            &MotionOptions {
-                nod_deg: f32::NAN,
-                ..base.clone()
-            }
-        )
-        .is_err());
-        assert!(speech_motion(
-            &p,
-            &al,
-            &MotionOptions {
-                nod_deg: 500.0,
-                ..base.clone()
-            }
-        )
-        .is_err());
-        let empty = Alignment {
-            words: vec![],
-            regions: vec![],
-            duration: 1.0,
-            tempo: 0.2,
-        };
+        assert!(speech_motion(&p, &al, &MotionOptions { head: Some("ghost".into()), ..MotionOptions::default() }).unwrap_err().contains("ghost"));
+        assert!(speech_motion(&p, &al, &MotionOptions { nod_deg: f32::NAN, ..base.clone() }).is_err());
+        assert!(speech_motion(&p, &al, &MotionOptions { nod_deg: 500.0, ..base.clone() }).is_err());
+        let empty = Alignment { words: vec![], regions: vec![], duration: 1.0, tempo: 0.2 };
         assert!(speech_motion(&p, &empty, &base).is_err());
         let ch = speech_motion(&p, &al, &base).unwrap();
         apply_speech_motion(&mut p, ch.clone()).unwrap();
         apply_speech_motion(&mut p, ch).unwrap();
-        assert_eq!(
-            p.channels.len(),
-            2,
-            "re-running replaces instead of doubling"
-        );
-        crate::chanmeta::set_meta(
-            &mut p,
-            "head",
-            Some(Prop::BoneAngle),
-            &crate::chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
-        assert!(speech_motion(&p, &al, &base)
-            .unwrap_err()
-            .contains("locked"));
+        assert_eq!(p.channels.len(), 2, "re-running replaces instead of doubling");
+        crate::chanmeta::set_meta(&mut p, "head", Some(Prop::BoneAngle), &crate::chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
+        assert!(speech_motion(&p, &al, &base).unwrap_err().contains("locked"));
     }
 }

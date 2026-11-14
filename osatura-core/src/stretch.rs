@@ -19,18 +19,13 @@ pub struct StretchOptions {
 
 impl Default for StretchOptions {
     fn default() -> Self {
-        StretchOptions {
-            min_factor: 1.0,
-            max_factor: 3.0,
-        }
+        StretchOptions { min_factor: 1.0, max_factor: 3.0 }
     }
 }
 
 fn is_descendant(p: &Project, mut i: usize, ancestor: usize) -> bool {
     while let Some(par) = p.bones[i].parent.clone() {
-        let Some(pi) = p.bones.iter().position(|b| b.name == par) else {
-            return false;
-        };
+        let Some(pi) = p.bones.iter().position(|b| b.name == par) else { return false };
         if pi == ancestor {
             return true;
         }
@@ -40,33 +35,14 @@ fn is_descendant(p: &Project, mut i: usize, ancestor: usize) -> bool {
 }
 
 /// Returns how many frames needed a correction (angle or scale differing from the original).
-pub fn bake_stretch(
-    p: &mut Project,
-    follower: &str,
-    leader: &str,
-    o: &StretchOptions,
-) -> Result<usize, String> {
-    if (o.min_factor.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        || !matches!(
-            o.max_factor.partial_cmp(&o.min_factor),
-            Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
-        )
-        || !o.max_factor.is_finite()
-    {
+pub fn bake_stretch(p: &mut Project, follower: &str, leader: &str, o: &StretchOptions) -> Result<usize, String> {
+    if (o.min_factor.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !matches!(o.max_factor.partial_cmp(&o.min_factor), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) || !o.max_factor.is_finite() {
         return Err("factors must satisfy 0 < min <= max".into());
     }
     crate::chanmeta::assert_unlocked(p, follower, Prop::BoneAngle)?;
     crate::chanmeta::assert_unlocked(p, follower, Prop::BoneScale)?;
-    let fi = p
-        .bones
-        .iter()
-        .position(|b| b.name == follower)
-        .ok_or_else(|| format!("no bone '{follower}'"))?;
-    let li = p
-        .bones
-        .iter()
-        .position(|b| b.name == leader)
-        .ok_or_else(|| format!("no bone '{leader}'"))?;
+    let fi = p.bones.iter().position(|b| b.name == follower).ok_or_else(|| format!("no bone '{follower}'"))?;
+    let li = p.bones.iter().position(|b| b.name == leader).ok_or_else(|| format!("no bone '{leader}'"))?;
     if fi == li {
         return Err("follower and leader must differ".into());
     }
@@ -113,11 +89,8 @@ pub fn bake_stretch(
     if changed == 0 {
         return Ok(0);
     }
-    p.channels
-        .push(Channel::keys(follower, Prop::BoneAngle, Track::with_keys(&ka)).with_mode(Mode::Add));
-    p.channels.push(
-        Channel::keys(follower, Prop::BoneScale, Track::with_keys(&ks)).with_mode(Mode::Multiply),
-    );
+    p.channels.push(Channel::keys(follower, Prop::BoneAngle, Track::with_keys(&ka)).with_mode(Mode::Add));
+    p.channels.push(Channel::keys(follower, Prop::BoneScale, Track::with_keys(&ks)).with_mode(Mode::Multiply));
     Ok(changed)
 }
 
@@ -129,21 +102,10 @@ mod tests {
 
     fn rig() -> Project {
         let mut p = Project::new("s", 200.0, 200.0, 24.0, 10);
-        p.bones = vec![
-            Bone::new("arm", None, 10.0, Vec2::new(0.0, 0.0), 0.0),
-            Bone::new("hand", None, 5.0, Vec2::new(30.0, 40.0), 0.0),
-        ];
+        p.bones = vec![Bone::new("arm", None, 10.0, Vec2::new(0.0, 0.0), 0.0), Bone::new("hand", None, 5.0, Vec2::new(30.0, 40.0), 0.0)];
         // the leader slides along x
         let xs = [(0.0, 30.0, Ease::Linear), (9.0, 60.0, Ease::Linear)];
-        p.channels = vec![Channel::keys(
-            "hand",
-            Prop::BoneOffsetX,
-            Track::with_keys(
-                &xs.iter()
-                    .map(|k| (k.0, k.1 - 30.0, k.2))
-                    .collect::<Vec<_>>(),
-            ),
-        )];
+        p.channels = vec![Channel::keys("hand", Prop::BoneOffsetX, Track::with_keys(&xs.iter().map(|k| (k.0, k.1 - 30.0, k.2)).collect::<Vec<_>>()))];
         p
     }
 
@@ -151,25 +113,13 @@ mod tests {
         let e = Engine::new(p.clone()).unwrap();
         let fr = e.evaluate(f);
         let w = fr.world[0];
-        (
-            w.apply(Vec2::new(10.0, 0.0)),
-            Vec2::new(fr.world[1].tx, fr.world[1].ty),
-        )
+        (w.apply(Vec2::new(10.0, 0.0)), Vec2::new(fr.world[1].tx, fr.world[1].ty))
     }
 
     #[test]
     fn tip_reaches_the_leader_every_frame() {
         let mut p = rig();
-        let n = bake_stretch(
-            &mut p,
-            "arm",
-            "hand",
-            &StretchOptions {
-                max_factor: 10.0,
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        let n = bake_stretch(&mut p, "arm", "hand", &StretchOptions { max_factor: 10.0, ..Default::default() }).unwrap();
         assert_eq!(n, 10);
         for f in [0.0, 4.0, 9.0] {
             let (t, g) = tip(&p, f);
@@ -180,38 +130,16 @@ mod tests {
     #[test]
     fn limits_and_errors() {
         let mut p = rig();
-        bake_stretch(
-            &mut p,
-            "arm",
-            "hand",
-            &StretchOptions {
-                max_factor: 2.0,
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        bake_stretch(&mut p, "arm", "hand", &StretchOptions { max_factor: 2.0, ..Default::default() }).unwrap();
         let (t, g) = tip(&p, 0.0);
         assert!((t.distance(Vec2::ZERO) - 20.0).abs() < 0.1, "capped at 2x");
         assert!(t.distance(g) > 20.0);
         let mut q = rig();
         assert!(bake_stretch(&mut q, "arm", "arm", &StretchOptions::default()).is_err());
         assert!(bake_stretch(&mut q, "arm", "nope", &StretchOptions::default()).is_err());
-        assert!(bake_stretch(
-            &mut q,
-            "arm",
-            "hand",
-            &StretchOptions {
-                min_factor: 2.0,
-                max_factor: 1.0
-            }
-        )
-        .is_err());
+        assert!(bake_stretch(&mut q, "arm", "hand", &StretchOptions { min_factor: 2.0, max_factor: 1.0 }).is_err());
         q.bones[1].parent = Some("arm".into());
-        assert!(
-            bake_stretch(&mut q, "arm", "hand", &StretchOptions::default())
-                .unwrap_err()
-                .contains("descendants")
-        );
+        assert!(bake_stretch(&mut q, "arm", "hand", &StretchOptions::default()).unwrap_err().contains("descendants"));
         let before = q.channels.len();
         assert_eq!(q.channels.len(), before, "failed bake adds nothing");
     }

@@ -8,7 +8,7 @@
 
 use crate::math::Vec2;
 use crate::procgen::{blink_channel, breath_channel, BlinkOptions};
-use crate::project::{Bone, IkChain, Project, Prop};
+use crate::project::{Bone, IkChain, Prop, Project};
 use crate::rigedit::rest_world;
 use crate::vocab::tag_rig;
 
@@ -19,10 +19,7 @@ pub struct AutoRigReport {
 }
 
 fn bone_with_role<'a>(tags: &'a [crate::vocab::Tag], role: &str) -> Option<&'a str> {
-    tags.iter()
-        .filter(|t| t.kind == "bone" && t.role == role)
-        .max_by(|a, b| a.confidence.total_cmp(&b.confidence))
-        .map(|t| t.name.as_str())
+    tags.iter().filter(|t| t.kind == "bone" && t.role == role).max_by(|a, b| a.confidence.total_cmp(&b.confidence)).map(|t| t.name.as_str())
 }
 
 /// Add IK (mix 0), breathing and blinking where the named parts exist.
@@ -31,37 +28,20 @@ pub fn auto_rig(p: &mut Project, seed: u64) -> Result<AutoRigReport, String> {
     let tags = tag_rig(p);
     let world = rest_world(p)?;
 
-    for (limb, upper_r, lower_r, bend) in [
-        ("arm", "arm.upper", "arm.lower", 1.0f32),
-        ("leg", "leg.upper", "leg.lower", -1.0),
-    ] {
+    for (limb, upper_r, lower_r, bend) in [("arm", "arm.upper", "arm.lower", 1.0f32), ("leg", "leg.upper", "leg.lower", -1.0)] {
         for side in ["l", "r"] {
             let label = format!("{limb}_{side}");
-            let (Some(up), Some(lo)) = (
-                bone_with_role(&tags, &format!("{upper_r}.{side}")),
-                bone_with_role(&tags, &format!("{lower_r}.{side}")),
-            ) else {
-                rep.skipped
-                    .push(format!("{label}: upper/lower bone not found"));
+            let (Some(up), Some(lo)) = (bone_with_role(&tags, &format!("{upper_r}.{side}")), bone_with_role(&tags, &format!("{lower_r}.{side}"))) else {
+                rep.skipped.push(format!("{label}: upper/lower bone not found"));
                 continue;
             };
-            if p.ik.iter().any(|c| {
-                c.bones.first().map(String::as_str) == Some(up)
-                    && c.bones.last().map(String::as_str) == Some(lo)
-            }) {
-                rep.skipped
-                    .push(format!("{label}: already has an IK chain"));
+            if p.ik.iter().any(|c| c.bones.first().map(String::as_str) == Some(up) && c.bones.last().map(String::as_str) == Some(lo)) {
+                rep.skipped.push(format!("{label}: already has an IK chain"));
                 continue;
             }
-            let (Some(ui), Some(li)) = (
-                p.bones.iter().position(|b| b.name == up),
-                p.bones.iter().position(|b| b.name == lo),
-            ) else {
-                continue;
-            };
+            let (Some(ui), Some(li)) = (p.bones.iter().position(|b| b.name == up), p.bones.iter().position(|b| b.name == lo)) else { continue };
             if p.bones[li].parent.as_deref() != Some(up) {
-                rep.skipped
-                    .push(format!("{label}: '{lo}' is not a child of '{up}'"));
+                rep.skipped.push(format!("{label}: '{lo}' is not a child of '{up}'"));
                 continue;
             }
             let ctrl = format!("{limb}_{side}_ctrl");
@@ -77,8 +57,7 @@ pub fn auto_rig(p: &mut Project, seed: u64) -> Result<AutoRigReport, String> {
             let mut chain = IkChain::two_bone(&label, up, lo, &ctrl, bend);
             chain.mix = 0.0;
             p.ik.push(chain);
-            rep.created
-                .push(format!("IK {label} -> {ctrl} (mix 0, bend {bend:+})"));
+            rep.created.push(format!("IK {label} -> {ctrl} (mix 0, bend {bend:+})"));
         }
     }
 
@@ -90,19 +69,13 @@ pub fn auto_rig(p: &mut Project, seed: u64) -> Result<AutoRigReport, String> {
         rep.skipped.push("breathing: no torso bone".into());
     }
 
-    let eyes: Vec<&crate::vocab::Tag> = tags
-        .iter()
-        .filter(|t| t.kind == "layer" && (t.role == "face.eye.l" || t.role == "face.eye.r"))
-        .collect();
+    let eyes: Vec<&crate::vocab::Tag> = tags.iter().filter(|t| t.kind == "layer" && (t.role == "face.eye.l" || t.role == "face.eye.r")).collect();
     if eyes.is_empty() {
         rep.skipped.push("blink: no eye layers".into());
     }
     for e in eyes {
         // same seed on both eyes so they blink together
-        let o = BlinkOptions {
-            seed,
-            ..BlinkOptions::default()
-        };
+        let o = BlinkOptions { seed, ..BlinkOptions::default() };
         match blink_channel(&e.name, Prop::LayerScaleY, p.frames, p.fps, &o) {
             Ok(ch) => {
                 p.channels.push(ch);
@@ -112,10 +85,8 @@ pub fn auto_rig(p: &mut Project, seed: u64) -> Result<AutoRigReport, String> {
         }
     }
     let clip = crate::eyeclip::auto_eye_clip(p);
-    rep.created
-        .extend(clip.clipped.iter().map(|c| format!("eye clip {c}")));
-    rep.skipped
-        .extend(clip.skipped.iter().map(|c| format!("eye clip {c}")));
+    rep.created.extend(clip.clipped.iter().map(|c| format!("eye clip {c}")));
+    rep.skipped.extend(clip.skipped.iter().map(|c| format!("eye clip {c}")));
     Ok(rep)
 }
 
@@ -130,32 +101,14 @@ mod tests {
         let mut p = Project::new("h", 400.0, 400.0, 24.0, 120);
         p.bones = vec![
             Bone::new("torso", None, 60.0, Vec2::new(200.0, 200.0), -90.0),
-            Bone::new(
-                "arm_upper_L",
-                Some("torso"),
-                40.0,
-                Vec2::new(60.0, -10.0),
-                90.0,
-            ),
-            Bone::new(
-                "arm_lower_L",
-                Some("arm_upper_L"),
-                35.0,
-                Vec2::new(40.0, 0.0),
-                0.0,
-            ),
+            Bone::new("arm_upper_L", Some("torso"), 40.0, Vec2::new(60.0, -10.0), 90.0),
+            Bone::new("arm_lower_L", Some("arm_upper_L"), 35.0, Vec2::new(40.0, 0.0), 0.0),
             Bone::new("thigh_R", None, 50.0, Vec2::new(210.0, 260.0), 90.0),
             Bone::new("shin_R", Some("thigh_R"), 50.0, Vec2::new(50.0, 0.0), 0.0),
         ];
         p.layers = vec![
-            Layer::vector(
-                "eye_L",
-                vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_fill("#000000")],
-            ),
-            Layer::vector(
-                "eye_R",
-                vec![VPath::rect("r", 20.0, 0.0, 10.0, 10.0).with_fill("#000000")],
-            ),
+            Layer::vector("eye_L", vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_fill("#000000")]),
+            Layer::vector("eye_R", vec![VPath::rect("r", 20.0, 0.0, 10.0, 10.0).with_fill("#000000")]),
         ];
         p
     }
@@ -187,17 +140,9 @@ mod tests {
         let rep = auto_rig(&mut p, 3).unwrap();
         assert_eq!(p.ik.len(), n);
         assert!(rep.skipped.iter().any(|s| s.contains("already has an IK")));
-        let blinks: Vec<_> = p
-            .channels
-            .iter()
-            .filter(|c| c.prop == Prop::LayerScaleY)
-            .collect();
+        let blinks: Vec<_> = p.channels.iter().filter(|c| c.prop == Prop::LayerScaleY).collect();
         assert!(blinks.len() >= 2);
-        assert_eq!(
-            format!("{:?}", blinks[0].source),
-            format!("{:?}", blinks[1].source),
-            "eyes share the seed"
-        );
+        assert_eq!(format!("{:?}", blinks[0].source), format!("{:?}", blinks[1].source), "eyes share the seed");
     }
 
     #[test]

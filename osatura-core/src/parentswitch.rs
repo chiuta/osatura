@@ -29,25 +29,14 @@ pub fn bake_parent_switch(p: &mut Project, bone: &str, steps: &[Switch]) -> Resu
     if steps.is_empty() {
         return Err("need at least one switch".into());
     }
-    let bi = p
-        .bones
-        .iter()
-        .position(|b| b.name == bone)
-        .ok_or_else(|| format!("no bone '{bone}'"))?;
+    let bi = p.bones.iter().position(|b| b.name == bone).ok_or_else(|| format!("no bone '{bone}'"))?;
     let mut st: Vec<&Switch> = steps.iter().collect();
     st.sort_by_key(|s| s.frame);
     if st.windows(2).any(|w| w[0].frame == w[1].frame) || st.iter().any(|s| s.frame >= p.frames) {
         return Err("switch frames must be distinct and inside the timeline".into());
     }
-    if p.ik
-        .iter()
-        .any(|c| c.bones.iter().any(|b| b == bone) || c.target == bone)
-        || p.constraints.iter().any(|c| c.bone == bone)
-        || p.springs.iter().any(|s| s.bone == bone)
-    {
-        return Err(format!(
-            "'{bone}' takes part in IK, a constraint or a spring; bake would not be faithful"
-        ));
+    if p.ik.iter().any(|c| c.bones.iter().any(|b| b == bone) || c.target == bone) || p.constraints.iter().any(|c| c.bone == bone) || p.springs.iter().any(|s| s.bone == bone) {
+        return Err(format!("'{bone}' takes part in IK, a constraint or a spring; bake would not be faithful"));
     }
     for pr in [Prop::BoneOffsetX, Prop::BoneOffsetY, Prop::BoneAngle] {
         crate::chanmeta::assert_unlocked(p, bone, pr)?;
@@ -58,20 +47,13 @@ pub fn bake_parent_switch(p: &mut Project, bone: &str, steps: &[Switch]) -> Resu
         match &s.parent {
             None => parents.push(None),
             Some(n) => {
-                let pi = p
-                    .bones
-                    .iter()
-                    .position(|b| &b.name == n)
-                    .ok_or_else(|| format!("no bone '{n}'"))?;
+                let pi = p.bones.iter().position(|b| &b.name == n).ok_or_else(|| format!("no bone '{n}'"))?;
                 let mut cur = Some(pi);
                 while let Some(c) = cur {
                     if c == bi {
                         return Err(format!("'{n}' is '{bone}' or one of its descendants"));
                     }
-                    cur = p.bones[c]
-                        .parent
-                        .as_ref()
-                        .and_then(|x| p.bones.iter().position(|b| &b.name == x));
+                    cur = p.bones[c].parent.as_ref().and_then(|x| p.bones.iter().position(|b| &b.name == x));
                 }
                 parents.push(Some(pi));
             }
@@ -102,10 +84,7 @@ pub fn bake_parent_switch(p: &mut Project, bone: &str, steps: &[Switch]) -> Resu
         if next < st.len() && st[next].frame as usize == f {
             let current = follow(seg, rel, f);
             rel = match parents[next] {
-                Some(pi) => worlds[f][pi]
-                    .inverse()
-                    .ok_or("parent has a degenerate transform")?
-                    .mul(current),
+                Some(pi) => worlds[f][pi].inverse().ok_or("parent has a degenerate transform")?.mul(current),
                 None => current,
             };
             seg = Some(next);
@@ -115,11 +94,7 @@ pub fn bake_parent_switch(p: &mut Project, bone: &str, steps: &[Switch]) -> Resu
 
     // 3. make it a root (rest pose preserved), then write the baked keys
     set_parent(p, bone, None)?;
-    let bi = p
-        .bones
-        .iter()
-        .position(|b| b.name == bone)
-        .ok_or("bone vanished")?;
+    let bi = p.bones.iter().position(|b| b.name == bone).ok_or("bone vanished")?;
     let (rest_pos, rest_ang) = (p.bones[bi].rest_offset, p.bones[bi].rest_angle);
     let (mut kx, mut ky, mut ka) = (Vec::new(), Vec::new(), Vec::new());
     let mut last = f32::NAN;
@@ -138,18 +113,9 @@ pub fn bake_parent_switch(p: &mut Project, bone: &str, steps: &[Switch]) -> Resu
         ky.push((f as f32, m.ty - rest_pos.y, Ease::Linear));
         ka.push((f as f32, a, Ease::Linear));
     }
-    p.channels.push(Channel::keys(
-        bone,
-        Prop::BoneOffsetX,
-        Track::with_keys(&kx),
-    ));
-    p.channels.push(Channel::keys(
-        bone,
-        Prop::BoneOffsetY,
-        Track::with_keys(&ky),
-    ));
-    p.channels
-        .push(Channel::keys(bone, Prop::BoneAngle, Track::with_keys(&ka)));
+    p.channels.push(Channel::keys(bone, Prop::BoneOffsetX, Track::with_keys(&kx)));
+    p.channels.push(Channel::keys(bone, Prop::BoneOffsetY, Track::with_keys(&ky)));
+    p.channels.push(Channel::keys(bone, Prop::BoneAngle, Track::with_keys(&ka)));
     Ok(())
 }
 
@@ -169,16 +135,8 @@ mod tests {
             Bone::new("prop", None, 10.0, Vec2::new(150.0, 150.0), 0.0),
         ];
         p.channels = vec![
-            Channel::keys(
-                "arm",
-                Prop::BoneAngle,
-                Track::with_keys(&[(0.0, 0.0, Ease::Linear), (29.0, 60.0, Ease::Linear)]),
-            ),
-            Channel::keys(
-                "prop",
-                Prop::BoneOffsetX,
-                Track::with_keys(&[(0.0, 0.0, Ease::Linear), (29.0, 200.0, Ease::Linear)]),
-            ),
+            Channel::keys("arm", Prop::BoneAngle, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (29.0, 60.0, Ease::Linear)])),
+            Channel::keys("prop", Prop::BoneOffsetX, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (29.0, 200.0, Ease::Linear)])),
         ];
         p
     }
@@ -197,70 +155,27 @@ mod tests {
     fn hand_switches_to_prop_without_a_jump() {
         let orig = rig();
         let mut p = rig();
-        bake_parent_switch(
-            &mut p,
-            "hand",
-            &[Switch {
-                frame: 10,
-                parent: Some("prop".into()),
-            }],
-        )
-        .unwrap();
+        bake_parent_switch(&mut p, "hand", &[Switch { frame: 10, parent: Some("prop".into()) }]).unwrap();
         for f in [0.0, 5.0, 9.0, 10.0] {
-            assert!(
-                hand(&p, f).distance(hand(&orig, f)) < 0.05,
-                "frame {f}: unchanged up to and at the switch"
-            );
+            assert!(hand(&p, f).distance(hand(&orig, f)) < 0.05, "frame {f}: unchanged up to and at the switch");
         }
         let gap10 = hand(&p, 10.0) - prop(&p, 10.0);
         for f in [15.0, 29.0] {
             let gap = hand(&p, f) - prop(&p, f);
-            assert!(
-                (gap - gap10).length() < 0.05,
-                "frame {f}: keeps its offset from the prop"
-            );
+            assert!((gap - gap10).length() < 0.05, "frame {f}: keeps its offset from the prop");
         }
-        assert!(
-            hand(&p, 29.0).distance(hand(&orig, 29.0)) > 50.0,
-            "no longer follows the arm"
-        );
-        assert!(p
-            .bones
-            .iter()
-            .find(|b| b.name == "hand")
-            .unwrap()
-            .parent
-            .is_none());
+        assert!(hand(&p, 29.0).distance(hand(&orig, 29.0)) > 50.0, "no longer follows the arm");
+        assert!(p.bones.iter().find(|b| b.name == "hand").unwrap().parent.is_none());
     }
 
     #[test]
     fn release_freezes_in_world_and_can_regrab() {
         let orig = rig();
         let mut p = rig();
-        bake_parent_switch(
-            &mut p,
-            "hand",
-            &[
-                Switch {
-                    frame: 8,
-                    parent: None,
-                },
-                Switch {
-                    frame: 20,
-                    parent: Some("arm".into()),
-                },
-            ],
-        )
-        .unwrap();
+        bake_parent_switch(&mut p, "hand", &[Switch { frame: 8, parent: None }, Switch { frame: 20, parent: Some("arm".into()) }]).unwrap();
         let held = hand(&p, 8.0);
-        assert!(
-            hand(&p, 14.0).distance(held) < 0.05 && hand(&p, 19.0).distance(held) < 0.05,
-            "frozen between 8 and 20"
-        );
-        assert!(
-            hand(&p, 25.0).distance(hand(&orig, 25.0)) > 1.0,
-            "re-grabbed arm at the pose it had when frozen, so it differs from the original path"
-        );
+        assert!(hand(&p, 14.0).distance(held) < 0.05 && hand(&p, 19.0).distance(held) < 0.05, "frozen between 8 and 20");
+        assert!(hand(&p, 25.0).distance(hand(&orig, 25.0)) > 1.0, "re-grabbed arm at the pose it had when frozen, so it differs from the original path");
         let g20 = hand(&p, 20.0) - held;
         assert!(g20.length() < 0.05, "no jump at the regrab");
     }
@@ -269,55 +184,11 @@ mod tests {
     fn refuses_unsafe_requests() {
         let mut p = rig();
         assert!(bake_parent_switch(&mut p, "hand", &[]).is_err());
-        assert!(
-            bake_parent_switch(
-                &mut p,
-                "arm",
-                &[Switch {
-                    frame: 3,
-                    parent: Some("hand".into())
-                }]
-            )
-            .is_err(),
-            "descendant"
-        );
-        assert!(bake_parent_switch(
-            &mut p,
-            "hand",
-            &[Switch {
-                frame: 99,
-                parent: None
-            }]
-        )
-        .is_err());
-        assert!(bake_parent_switch(
-            &mut p,
-            "hand",
-            &[Switch {
-                frame: 3,
-                parent: Some("ghost".into())
-            }]
-        )
-        .is_err());
-        p.ik.push(crate::project::IkChain::two_bone(
-            "i", "arm", "hand", "prop", 1.0,
-        ));
-        assert!(
-            bake_parent_switch(
-                &mut p,
-                "hand",
-                &[Switch {
-                    frame: 3,
-                    parent: None
-                }]
-            )
-            .is_err(),
-            "IK member"
-        );
-        assert_eq!(
-            p.bones[1].parent.as_deref(),
-            Some("arm"),
-            "failed calls change nothing"
-        );
+        assert!(bake_parent_switch(&mut p, "arm", &[Switch { frame: 3, parent: Some("hand".into()) }]).is_err(), "descendant");
+        assert!(bake_parent_switch(&mut p, "hand", &[Switch { frame: 99, parent: None }]).is_err());
+        assert!(bake_parent_switch(&mut p, "hand", &[Switch { frame: 3, parent: Some("ghost".into()) }]).is_err());
+        p.ik.push(crate::project::IkChain::two_bone("i", "arm", "hand", "prop", 1.0));
+        assert!(bake_parent_switch(&mut p, "hand", &[Switch { frame: 3, parent: None }]).is_err(), "IK member");
+        assert_eq!(p.bones[1].parent.as_deref(), Some("arm"), "failed calls change nothing");
     }
 }

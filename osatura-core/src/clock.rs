@@ -67,17 +67,11 @@ impl Stamp {
     pub fn now() -> Stamp {
         #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
         {
-            Stamp {
-                t: std::time::Instant::now(),
-                host_ms: None,
-            }
+            Stamp { t: std::time::Instant::now(), host_ms: None }
         }
         #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
         {
-            Stamp {
-                ms: host_mono_ms(),
-                host_ms: None,
-            }
+            Stamp { ms: host_mono_ms(), host_ms: None }
         }
     }
 
@@ -85,17 +79,11 @@ impl Stamp {
     pub fn from_host() -> Stamp {
         #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
         {
-            Stamp {
-                t: std::time::Instant::now(),
-                host_ms: Some(host_mono_ms()),
-            }
+            Stamp { t: std::time::Instant::now(), host_ms: Some(host_mono_ms()) }
         }
         #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
         {
-            Stamp {
-                ms: host_mono_ms(),
-                host_ms: Some(host_mono_ms()),
-            }
+            Stamp { ms: host_mono_ms(), host_ms: Some(host_mono_ms()) }
         }
     }
 
@@ -124,10 +112,7 @@ pub fn unix_seconds() -> u64 {
 pub fn unix_nanos() -> u128 {
     #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     {
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)
     }
     #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
     {
@@ -155,11 +140,7 @@ mod tests {
     fn spans_are_clamped_and_converted() {
         assert_eq!(span_ms(10.0, 1510.0), Duration::from_millis(1500));
         assert_eq!(span_ms(10.0, 10.0), Duration::ZERO);
-        assert_eq!(
-            span_ms(10.0, 5.0),
-            Duration::ZERO,
-            "a clock that went back gives 0, not a panic"
-        );
+        assert_eq!(span_ms(10.0, 5.0), Duration::ZERO, "a clock that went back gives 0, not a panic");
         assert_eq!(span_ms(f64::NAN, 5.0), Duration::ZERO);
         assert_eq!(span_ms(0.0, f64::INFINITY), Duration::ZERO);
     }
@@ -176,10 +157,7 @@ mod tests {
         set_host_clock(f64::NAN, -1.0);
         assert_eq!(s.elapsed(), Duration::from_millis(2500));
         // the system clock is used on this target and is after 2020
-        assert!(
-            unix_seconds() > 1_577_836_800
-                || cfg!(all(target_arch = "wasm32", target_os = "unknown"))
-        );
+        assert!(unix_seconds() > 1_577_836_800 || cfg!(all(target_arch = "wasm32", target_os = "unknown")));
         let a = Stamp::now();
         assert!(a.elapsed() < Duration::from_secs(5));
     }

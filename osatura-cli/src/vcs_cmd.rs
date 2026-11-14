@@ -15,10 +15,7 @@ fn short(h: &str) -> &str {
 
 fn print_changes(changes: &[Change], json: bool) -> Result<(), String> {
     if json {
-        println!(
-            "{}",
-            serde_json::to_string_pretty(changes).map_err(|e| e.to_string())?
-        );
+        println!("{}", serde_json::to_string_pretty(changes).map_err(|e| e.to_string())?);
     } else if changes.is_empty() {
         println!("no semantic changes");
     } else {
@@ -36,25 +33,13 @@ fn print_conflicts(cs: &[Conflict]) {
 }
 
 fn print_commit(h: &str, c: &Commit) {
-    println!(
-        "commit {h}\nAuthor: {}\nTime:   {}\n\n    {}\n",
-        c.author,
-        c.time,
-        c.message.replace('\n', "\n    ")
-    );
+    println!("commit {h}\nAuthor: {}\nTime:   {}\n\n    {}\n", c.author, c.time, c.message.replace('\n', "\n    "));
 }
 
 /// Warn (stderr) if the project file as it stands is not a valid OSATURA project.
 fn warn_invalid(r: &Repo) {
     if let Ok(p) = r.project_path() {
-        let ok = std::fs::read_to_string(&p)
-            .map_err(|e| e.to_string())
-            .and_then(|t| osatura_core::Project::from_json(&t).map_err(|e| e.to_string()))
-            .and_then(|pr| {
-                osatura_core::Engine::new(pr)
-                    .map(|_| ())
-                    .map_err(|e| e.join("; "))
-            });
+        let ok = std::fs::read_to_string(&p).map_err(|e| e.to_string()).and_then(|t| osatura_core::Project::from_json(&t).map_err(|e| e.to_string())).and_then(|pr| osatura_core::Engine::new(pr).map(|_| ()).map_err(|e| e.join("; ")));
         if let Err(e) = ok {
             eprintln!("warning: the project file does not validate as an OSATURA project: {e}");
         }
@@ -70,10 +55,7 @@ fn report_merge(r: &Repo, out: MergeOutcome, what: &str) -> Result<(), String> {
             warn_invalid(r);
         }
         MergeOutcome::Conflicted(cs) => {
-            println!(
-                "{what} stopped with {} conflict(s); the project file holds our side for each:",
-                cs.len()
-            );
+            println!("{what} stopped with {} conflict(s); the project file holds our side for each:", cs.len());
             print_conflicts(&cs);
             println!("resolve each with: osatura vcs resolve <path> --ours|--theirs|--value <json>, then: osatura vcs commit   (or: osatura vcs merge --abort)");
             return Err(format!("{what} has unresolved conflicts"));
@@ -86,10 +68,7 @@ pub fn run(pos: &[&str], opts: &HashMap<String, String>, flags: &[String]) -> Re
     let has = |f: &str| flags.iter().any(|x| x == f);
     let json = has("--json");
     let author = opts.get("--author").map(String::as_str);
-    let msg = opts
-        .get("-m")
-        .or_else(|| opts.get("--message"))
-        .map(String::as_str);
+    let msg = opts.get("-m").or_else(|| opts.get("--message")).map(String::as_str);
     let sub = *pos.first().ok_or(HELP)?;
     if sub == "init" {
         let f = pos.get(1).ok_or("vcs init needs the project file")?;
@@ -97,59 +76,31 @@ pub fn run(pos: &[&str], opts: &HashMap<String, String>, flags: &[String]) -> Re
         println!("initialised {}/.osatura-vcs for {f} (no commits yet; run: osatura vcs commit -m \"...\")", r.root.display());
         return Ok(());
     }
-    let r = Repo::open(Path::new(
-        opts.get("--repo").map(String::as_str).unwrap_or("."),
-    ))?;
+    let r = Repo::open(Path::new(opts.get("--repo").map(String::as_str).unwrap_or(".")))?;
     let arg = |i: usize| pos.get(i).copied();
     match sub {
         "commit" => {
             let h = r.commit(msg, author)?;
-            println!(
-                "[{}] {}",
-                short(&h),
-                r.read_commit(&h)?.message.lines().next().unwrap_or("")
-            );
+            println!("[{}] {}", short(&h), r.read_commit(&h)?.message.lines().next().unwrap_or(""));
             warn_invalid(&r);
         }
         "log" => {
-            let limit = opts
-                .get("--limit")
-                .map(|l| {
-                    l.parse::<usize>()
-                        .map_err(|_| format!("--limit needs a number, got '{l}'"))
-                })
-                .transpose()?
-                .unwrap_or(50);
+            let limit = opts.get("--limit").map(|l| l.parse::<usize>().map_err(|_| format!("--limit needs a number, got '{l}'"))).transpose()?.unwrap_or(50);
             let log = r.log(arg(1).unwrap_or("HEAD"), limit)?;
             if json {
-                let v: Vec<_> = log
-                    .iter()
-                    .map(|(h, c)| serde_json::json!({"hash": h, "commit": c}))
-                    .collect();
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&v).map_err(|e| e.to_string())?
-                );
+                let v: Vec<_> = log.iter().map(|(h, c)| serde_json::json!({"hash": h, "commit": c})).collect();
+                println!("{}", serde_json::to_string_pretty(&v).map_err(|e| e.to_string())?);
             } else {
                 for (h, c) in &log {
                     let merge = if c.parents.len() > 1 { " (merge)" } else { "" };
-                    println!(
-                        "{}  {}  {}{}",
-                        short(h),
-                        c.author,
-                        c.message.lines().next().unwrap_or(""),
-                        merge
-                    );
+                    println!("{}  {}  {}{}", short(h), c.author, c.message.lines().next().unwrap_or(""), merge);
                 }
             }
         }
         "status" => {
             let s = r.status()?;
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&s).map_err(|e| e.to_string())?
-                );
+                println!("{}", serde_json::to_string_pretty(&s).map_err(|e| e.to_string())?);
             } else {
                 match &s.branch {
                     Some(b) => println!("on branch {b}"),
@@ -160,10 +111,7 @@ pub fn run(pos: &[&str], opts: &HashMap<String, String>, flags: &[String]) -> Re
                     None => println!("no commits yet"),
                 }
                 if let Some(k) = &s.merge {
-                    println!(
-                        "{k} in progress, {} unresolved conflict(s)",
-                        s.conflicts.len()
-                    );
+                    println!("{k} in progress, {} unresolved conflict(s)", s.conflicts.len());
                     print_conflicts(&s.conflicts);
                 }
                 if s.changes.is_empty() {
@@ -178,13 +126,7 @@ pub fn run(pos: &[&str], opts: &HashMap<String, String>, flags: &[String]) -> Re
         "show" => {
             let (h, c, ch) = r.show(arg(1).unwrap_or("HEAD"))?;
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(
-                        &serde_json::json!({"hash": h, "commit": c, "changes": ch})
-                    )
-                    .map_err(|e| e.to_string())?
-                );
+                println!("{}", serde_json::to_string_pretty(&serde_json::json!({"hash": h, "commit": c, "changes": ch})).map_err(|e| e.to_string())?);
             } else {
                 print_commit(&h, &c);
                 print_changes(&ch, false)?;
@@ -231,26 +173,13 @@ pub fn run(pos: &[&str], opts: &HashMap<String, String>, flags: &[String]) -> Re
                 report_merge(&r, out, "merge")?;
             }
         }
-        "cherry-pick" => report_merge(
-            &r,
-            r.cherry_pick(arg(1).ok_or("vcs cherry-pick needs a commit")?, author)?,
-            "cherry-pick",
-        )?,
-        "revert" => report_merge(
-            &r,
-            r.revert(arg(1).ok_or("vcs revert needs a commit")?, author)?,
-            "revert",
-        )?,
+        "cherry-pick" => report_merge(&r, r.cherry_pick(arg(1).ok_or("vcs cherry-pick needs a commit")?, author)?, "cherry-pick")?,
+        "revert" => report_merge(&r, r.revert(arg(1).ok_or("vcs revert needs a commit")?, author)?, "revert")?,
         "resolve" => {
             let path = arg(1).ok_or("vcs resolve needs the conflict path (see vcs status)")?;
-            let n = [has("--ours"), has("--theirs"), opts.contains_key("--value")]
-                .iter()
-                .filter(|x| **x)
-                .count();
+            let n = [has("--ours"), has("--theirs"), opts.contains_key("--value")].iter().filter(|x| **x).count();
             if n != 1 {
-                return Err(
-                    "vcs resolve needs exactly one of --ours, --theirs, --value <json>".into(),
-                );
+                return Err("vcs resolve needs exactly one of --ours, --theirs, --value <json>".into());
             }
             let choice = if has("--ours") {
                 Choice::Ours
@@ -258,28 +187,15 @@ pub fn run(pos: &[&str], opts: &HashMap<String, String>, flags: &[String]) -> Re
                 Choice::Theirs
             } else {
                 let t = &opts["--value"];
-                Choice::Value(
-                    serde_json::from_str(t)
-                        .map_err(|e| format!("--value is not valid JSON ({e}): {t}"))?,
-                )
+                Choice::Value(serde_json::from_str(t).map_err(|e| format!("--value is not valid JSON ({e}): {t}"))?)
             };
             let left = r.resolve(path, &choice)?;
-            println!(
-                "resolved {path}; {left} conflict(s) left{}",
-                if left == 0 {
-                    " - run: osatura vcs commit"
-                } else {
-                    ""
-                }
-            );
+            println!("resolved {path}; {left} conflict(s) left{}", if left == 0 { " - run: osatura vcs commit" } else { "" });
         }
         "fsck" => {
             let bad = r.fsck();
             if bad.is_empty() {
-                println!(
-                    "ok: {} objects, history and refs are consistent",
-                    r.object_count()?
-                );
+                println!("ok: {} objects, history and refs are consistent", r.object_count()?);
             } else {
                 for b in &bad {
                     println!("  PROBLEM {b}");
@@ -289,10 +205,7 @@ pub fn run(pos: &[&str], opts: &HashMap<String, String>, flags: &[String]) -> Re
         }
         "gc" => {
             let g = r.gc()?;
-            println!(
-                "gc: kept {} objects, removed {} unreachable",
-                g.kept, g.removed
-            );
+            println!("gc: kept {} objects, removed {} unreachable", g.kept, g.removed);
         }
         _ => return Err(HELP.to_string()),
     }
@@ -304,16 +217,9 @@ mod tests {
     use super::*;
 
     fn go(repo: &str, args: &[&str], opts: &[(&str, &str)], flags: &[&str]) -> Result<(), String> {
-        let mut o: HashMap<String, String> = opts
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect();
+        let mut o: HashMap<String, String> = opts.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
         o.insert("--repo".into(), repo.to_string());
-        run(
-            args,
-            &o,
-            &flags.iter().map(|f| f.to_string()).collect::<Vec<_>>(),
-        )
+        run(args, &o, &flags.iter().map(|f| f.to_string()).collect::<Vec<_>>())
     }
 
     #[test]
@@ -321,11 +227,7 @@ mod tests {
         let scratch = osatura_core::fsutil::ScratchDir::new("armvcs_cli");
         let d = scratch.to_path_buf();
         let f = d.join("p.json");
-        std::fs::write(
-            &f,
-            serde_json::to_string(&osatura_core::demo::project()).unwrap(),
-        )
-        .unwrap();
+        std::fs::write(&f, serde_json::to_string(&osatura_core::demo::project()).unwrap()).unwrap();
         let (fs, rs) = (f.to_str().unwrap(), d.to_str().unwrap());
         run(&["init", fs], &HashMap::new(), &[]).unwrap();
         assert!(run(&["init", fs], &HashMap::new(), &[]).is_err());
@@ -333,8 +235,7 @@ mod tests {
         go(rs, &["commit"], &[("-m", "first")], &[]).unwrap();
         go(rs, &["branch", "t"], &[], &[]).unwrap();
         let edit = |opacity: f64| {
-            let mut v: serde_json::Value =
-                serde_json::from_str(&std::fs::read_to_string(&f).unwrap()).unwrap();
+            let mut v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&f).unwrap()).unwrap();
             v["layers"][0]["opacity"] = serde_json::json!(opacity);
             std::fs::write(&f, v.to_string()).unwrap();
         };
@@ -345,24 +246,10 @@ mod tests {
         go(rs, &["diff"], &[], &["--json"]).unwrap();
         go(rs, &["commit"], &[("-m", "t")], &[]).unwrap();
         go(rs, &["checkout", "main"], &[], &[]).unwrap();
-        assert!(go(rs, &["merge", "t"], &[], &[])
-            .unwrap_err()
-            .contains("conflicts"));
+        assert!(go(rs, &["merge", "t"], &[], &[]).unwrap_err().contains("conflicts"));
         assert!(go(rs, &["resolve", "/layers/sky/opacity"], &[], &[]).is_err()); // no choice
-        assert!(go(
-            rs,
-            &["resolve", "/layers/sky/opacity"],
-            &[("--value", "{oops")],
-            &[]
-        )
-        .is_err());
-        assert!(go(
-            rs,
-            &["resolve", "/layers/sky/opacity", "--ours"],
-            &[],
-            &["--ours", "--theirs"]
-        )
-        .is_err());
+        assert!(go(rs, &["resolve", "/layers/sky/opacity"], &[("--value", "{oops")], &[]).is_err());
+        assert!(go(rs, &["resolve", "/layers/sky/opacity", "--ours"], &[], &["--ours", "--theirs"]).is_err());
         go(rs, &["resolve", "/layers/sky/opacity"], &[], &["--theirs"]).unwrap();
         go(rs, &["commit"], &[], &[]).unwrap();
         go(rs, &["log"], &[("--limit", "2")], &[]).unwrap();

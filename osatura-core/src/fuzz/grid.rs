@@ -22,41 +22,18 @@ pub struct GridResult {
 /// Sweep two parameters over their full ranges (others at rest). Ids as in [`Param::id`].
 // public entry point with a stable signature.
 #[allow(clippy::too_many_arguments)]
-pub fn grid(
-    project: &Project,
-    asset_dir: Option<&Path>,
-    popts: &ParamOptions,
-    th: Thresholds,
-    frame: f32,
-    xid: &str,
-    yid: &str,
-    res: usize,
-) -> Result<GridResult, String> {
+pub fn grid(project: &Project, asset_dir: Option<&Path>, popts: &ParamOptions, th: Thresholds, frame: f32, xid: &str, yid: &str, res: usize) -> Result<GridResult, String> {
     if !(2..=512).contains(&res) {
         return Err("--res must be between 2 and 512".into());
     }
     let all = enumerate_params(project, popts);
-    let find = |id: &str| {
-        all.iter().find(|p| p.id == id).cloned().ok_or_else(|| {
-            format!(
-                "unknown parameter '{id}' (examples: {})",
-                all.iter()
-                    .take(4)
-                    .map(|p| p.id.clone())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-        })
-    };
+    let find = |id: &str| all.iter().find(|p| p.id == id).cloned().ok_or_else(|| format!("unknown parameter '{id}' (examples: {})", all.iter().take(4).map(|p| p.id.clone()).collect::<Vec<_>>().join(", ")));
     let (px, py) = (find(xid)?, find(yid)?);
     if px.id == py.id {
         return Err("--x and --y must be different parameters".into());
     }
     let mut f = Fuzzer::with_params(project, asset_dir, all.clone(), th, frame)?;
-    let (ix, iy) = (
-        all.iter().position(|p| p.id == px.id).unwrap(),
-        all.iter().position(|p| p.id == py.id).unwrap(),
-    );
+    let (ix, iy) = (all.iter().position(|p| p.id == px.id).unwrap(), all.iter().position(|p| p.id == py.id).unwrap());
     let mut sev = Vec::with_capacity(res * res);
     let mut kind = Vec::with_capacity(res * res);
     let mut bad = 0;
@@ -68,21 +45,10 @@ pub fn grid(
             let r = f.eval(0, &v);
             bad += r.failed as usize;
             sev.push(r.severity);
-            kind.push(if r.failed {
-                r.kinds.first().cloned().unwrap_or_default()
-            } else {
-                String::new()
-            });
+            kind.push(if r.failed { r.kinds.first().cloned().unwrap_or_default() } else { String::new() });
         }
     }
-    Ok(GridResult {
-        x: px,
-        y: py,
-        res,
-        severity: sev,
-        kind,
-        failure_rate: bad as f32 / (res * res) as f32,
-    })
+    Ok(GridResult { x: px, y: py, res, severity: sev, kind, failure_rate: bad as f32 / (res * res) as f32 })
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -90,10 +56,7 @@ pub fn grid(
 // ---------------------------------------------------------------------------------------------
 
 pub(super) fn esc(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
 }
 
 /// Blue-to-orange ramp (own table): `t` in 0..1; the middle (near white) corresponds to the failure threshold
@@ -107,11 +70,7 @@ pub fn ramp(t: f32) -> [u8; 3] {
         (0.85, [224.0, 100.0, 28.0]),
         (1.0, [125.0, 26.0, 12.0]),
     ];
-    let t = if t.is_finite() {
-        t.clamp(0.0, 1.0)
-    } else {
-        0.0
-    };
+    let t = if t.is_finite() { t.clamp(0.0, 1.0) } else { 0.0 };
     for w in STOPS.windows(2) {
         if t <= w[1].0 {
             let u = (t - w[0].0) / (w[1].0 - w[0].0);
@@ -152,25 +111,12 @@ pub(super) fn legend(out: &mut String, x: f32, y: f32, w: f32, label: &str) {
     let n = 24;
     for i in 0..n {
         let sv = 4.0 * i as f32 / (n - 1) as f32;
-        out.push_str(&format!(
-            "<rect x=\"{:.1}\" y=\"{:.1}\" width=\"{:.1}\" height=\"10\" fill=\"{}\"/>\n",
-            x + w * i as f32 / n as f32,
-            y,
-            w / n as f32 + 0.5,
-            stress_color(sv)
-        ));
+        out.push_str(&format!("<rect x=\"{:.1}\" y=\"{:.1}\" width=\"{:.1}\" height=\"10\" fill=\"{}\"/>\n", x + w * i as f32 / n as f32, y, w / n as f32 + 0.5, stress_color(sv)));
     }
-    out.push_str(&format!(
-        "<text x=\"{x:.1}\" y=\"{:.1}\" font-size=\"10\" fill=\"#333\">0</text>\n",
-        y + 22.0
-    ));
+    out.push_str(&format!("<text x=\"{x:.1}\" y=\"{:.1}\" font-size=\"10\" fill=\"#333\">0</text>\n", y + 22.0));
     out.push_str(&format!("<text x=\"{:.1}\" y=\"{:.1}\" font-size=\"10\" fill=\"#333\" text-anchor=\"middle\">1 = threshold</text>\n", x + w / 4.0, y + 22.0));
     out.push_str(&format!("<text x=\"{:.1}\" y=\"{:.1}\" font-size=\"10\" fill=\"#333\" text-anchor=\"end\">4+</text>\n", x + w, y + 22.0));
-    out.push_str(&format!(
-        "<text x=\"{x:.1}\" y=\"{:.1}\" font-size=\"10\" fill=\"#333\">{}</text>\n",
-        y - 4.0,
-        esc(label)
-    ));
+    out.push_str(&format!("<text x=\"{x:.1}\" y=\"{:.1}\" font-size=\"10\" fill=\"#333\">{}</text>\n", y - 4.0, esc(label)));
 }
 
 /// SVG with the stress overlay on the rest pose (worst case over all samples), the legend and per-bone failure bars.
@@ -181,10 +127,7 @@ pub fn heatmap_svg(rep: &FuzzReport) -> String {
     let total_h = h + 60.0 + 18.0 * nb as f32 + 30.0;
     let mut s = String::new();
     s.push_str(&format!("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {w} {total_h}\" width=\"{w}\" height=\"{total_h}\" font-family=\"sans-serif\">\n"));
-    s.push_str(&format!(
-        "<title>Stress heat-map: {}</title>\n",
-        esc(&rep.project)
-    ));
+    s.push_str(&format!("<title>Stress heat-map: {}</title>\n", esc(&rep.project)));
     s.push_str(&format!(
         "<desc>{} samples ({}, seed {}), {} failures ({:.1}%). Colour = worst normalised stress per vertex over all samples; 1 = failure threshold.</desc>\n",
         rep.summary.samples, rep.strategy, rep.seed, rep.summary.failures, 100.0 * rep.summary.failure_rate
@@ -198,14 +141,7 @@ pub fn heatmap_svg(rep: &FuzzReport) -> String {
             }
             let m = (col(t[0]) + col(t[1]) + col(t[2])) / 3.0;
             let p = |i: usize| format!("{:.2},{:.2}", g.pts[t[i]][0], g.pts[t[i]][1]);
-            s.push_str(&format!(
-                "<polygon points=\"{} {} {}\" fill=\"{}\" stroke=\"{}\" stroke-width=\"0.3\"/>\n",
-                p(0),
-                p(1),
-                p(2),
-                stress_color(m),
-                stress_color(m)
-            ));
+            s.push_str(&format!("<polygon points=\"{} {} {}\" fill=\"{}\" stroke=\"{}\" stroke-width=\"0.3\"/>\n", p(0), p(1), p(2), stress_color(m), stress_color(m)));
         }
         for e in &g.edges {
             if e.iter().any(|&i| i >= g.pts.len()) {
@@ -226,36 +162,15 @@ pub fn heatmap_svg(rep: &FuzzReport) -> String {
     for (name, a, b) in &rep.heat.bones {
         s.push_str(&format!("<line x1=\"{:.1}\" y1=\"{:.1}\" x2=\"{:.1}\" y2=\"{:.1}\" stroke=\"#222\" stroke-width=\"1\" stroke-dasharray=\"4 2\"><title>{}</title></line>\n", a[0], a[1], b[0], b[1], esc(name)));
     }
-    legend(
-        &mut s,
-        10.0,
-        h + 22.0,
-        (w - 20.0).min(320.0),
-        "worst-case stress over all samples",
-    );
+    legend(&mut s, 10.0, h + 22.0, (w - 20.0).min(320.0), "worst-case stress over all samples");
     s.push_str(&format!("<text x=\"10\" y=\"{:.1}\" font-size=\"12\" font-weight=\"bold\" fill=\"#222\">Extra failure rate at the extremes of each bone's range (outer 40% minus inner 60%)</text>\n", h + 62.0));
     let bw = (w - 170.0).max(40.0);
     for (i, b) in bars.iter().take(nb).enumerate() {
         let y = h + 72.0 + 18.0 * i as f32;
-        s.push_str(&format!(
-            "<text x=\"10\" y=\"{:.1}\" font-size=\"11\" fill=\"#222\">{}</text>\n",
-            y + 11.0,
-            esc(&b.name)
-        ));
-        s.push_str(&format!(
-            "<rect x=\"150\" y=\"{y:.1}\" width=\"{bw:.1}\" height=\"12\" fill=\"#eeeeee\"/>\n"
-        ));
-        s.push_str(&format!(
-            "<rect x=\"150\" y=\"{y:.1}\" width=\"{:.1}\" height=\"12\" fill=\"{}\"/>\n",
-            bw * b.rate.clamp(0.0, 1.0),
-            hex(ramp(0.62 + 0.38 * b.rate.clamp(0.0, 1.0)))
-        ));
-        s.push_str(&format!(
-            "<text x=\"{:.1}\" y=\"{:.1}\" font-size=\"10\" fill=\"#222\">{:.0}%</text>\n",
-            154.0 + bw * b.rate.clamp(0.0, 1.0),
-            y + 10.0,
-            100.0 * b.rate
-        ));
+        s.push_str(&format!("<text x=\"10\" y=\"{:.1}\" font-size=\"11\" fill=\"#222\">{}</text>\n", y + 11.0, esc(&b.name)));
+        s.push_str(&format!("<rect x=\"150\" y=\"{y:.1}\" width=\"{bw:.1}\" height=\"12\" fill=\"#eeeeee\"/>\n"));
+        s.push_str(&format!("<rect x=\"150\" y=\"{y:.1}\" width=\"{:.1}\" height=\"12\" fill=\"{}\"/>\n", bw * b.rate.clamp(0.0, 1.0), hex(ramp(0.62 + 0.38 * b.rate.clamp(0.0, 1.0)))));
+        s.push_str(&format!("<text x=\"{:.1}\" y=\"{:.1}\" font-size=\"10\" fill=\"#222\">{:.0}%</text>\n", 154.0 + bw * b.rate.clamp(0.0, 1.0), y + 10.0, 100.0 * b.rate));
     }
     s.push_str("</svg>\n");
     s
@@ -269,20 +184,9 @@ pub fn grid_svg(g: &GridResult) -> String {
     let (w, h) = (ox + side + 30.0, oy + side + 90.0);
     let mut s = String::new();
     s.push_str(&format!("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {w:.0} {h:.0}\" width=\"{w:.0}\" height=\"{h:.0}\" font-family=\"sans-serif\">\n"));
-    s.push_str(&format!(
-        "<title>Severity grid {} x {}</title>\n",
-        esc(&g.x.id),
-        esc(&g.y.id)
-    ));
-    s.push_str(&format!(
-        "<desc>{}x{} cells, {:.1}% failing. Colour = severity, 1 = failure threshold.</desc>\n",
-        g.res,
-        g.res,
-        100.0 * g.failure_rate
-    ));
-    s.push_str(&format!(
-        "<rect width=\"{w:.0}\" height=\"{h:.0}\" fill=\"#ffffff\"/>\n"
-    ));
+    s.push_str(&format!("<title>Severity grid {} x {}</title>\n", esc(&g.x.id), esc(&g.y.id)));
+    s.push_str(&format!("<desc>{}x{} cells, {:.1}% failing. Colour = severity, 1 = failure threshold.</desc>\n", g.res, g.res, 100.0 * g.failure_rate));
+    s.push_str(&format!("<rect width=\"{w:.0}\" height=\"{h:.0}\" fill=\"#ffffff\"/>\n"));
     s.push_str(&format!("<text x=\"{ox}\" y=\"20\" font-size=\"12\" font-weight=\"bold\" fill=\"#222\">{} (x) vs {} (y), {:.1}% of cells fail</text>\n", esc(&g.x.id), esc(&g.y.id), 100.0 * g.failure_rate));
     for j in 0..g.res {
         for i in 0..g.res {

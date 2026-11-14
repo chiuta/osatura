@@ -20,11 +20,7 @@ pub struct RasterOptions {
 
 impl Default for RasterOptions {
     fn default() -> Self {
-        RasterOptions {
-            scale: 1.0,
-            show_bones: false,
-            transparent: false,
-        }
+        RasterOptions { scale: 1.0, show_bones: false, transparent: false }
     }
 }
 
@@ -33,13 +29,8 @@ pub(crate) fn ts(m: &Affine2) -> sk::Transform {
 }
 
 fn color(c: Rgba) -> sk::Color {
-    sk::Color::from_rgba(
-        c.r.clamp(0.0, 1.0),
-        c.g.clamp(0.0, 1.0),
-        c.b.clamp(0.0, 1.0),
-        c.a.clamp(0.0, 1.0),
-    )
-    .unwrap_or(sk::Color::BLACK)
+    sk::Color::from_rgba(c.r.clamp(0.0, 1.0), c.g.clamp(0.0, 1.0), c.b.clamp(0.0, 1.0), c.a.clamp(0.0, 1.0))
+        .unwrap_or(sk::Color::BLACK)
 }
 
 fn blend_mode(b: Blend) -> sk::BlendMode {
@@ -63,10 +54,7 @@ fn blend_mode(b: Blend) -> sk::BlendMode {
 fn stops(s: &[crate::style::Stop]) -> Vec<sk::GradientStop> {
     let mut sorted: Vec<_> = s.to_vec();
     sorted.sort_by(|a, b| a.offset.total_cmp(&b.offset));
-    sorted
-        .iter()
-        .map(|st| sk::GradientStop::new(st.offset.clamp(0.0, 1.0), color(st.color)))
-        .collect()
+    sorted.iter().map(|st| sk::GradientStop::new(st.offset.clamp(0.0, 1.0), color(st.color))).collect()
 }
 
 fn shader(p: &Paint) -> sk::Shader<'static> {
@@ -83,22 +71,10 @@ fn shader(p: &Paint) -> sk::Shader<'static> {
             sk::Transform::identity(),
         )
         .unwrap_or_else(|| sk::Shader::SolidColor(color(p.base_color()))),
-        Paint::Radial {
-            center,
-            radius,
-            stops: s,
-        } => {
+        Paint::Radial { center, radius, stops: s } => {
             let c = sk::Point::from_xy(center.x, center.y);
-            sk::RadialGradient::new(
-                c,
-                0.0,
-                c,
-                radius.max(0.001),
-                stops(s),
-                sk::SpreadMode::Pad,
-                sk::Transform::identity(),
-            )
-            .unwrap_or_else(|| sk::Shader::SolidColor(color(p.base_color())))
+            sk::RadialGradient::new(c, 0.0, c, radius.max(0.001), stops(s), sk::SpreadMode::Pad, sk::Transform::identity())
+                .unwrap_or_else(|| sk::Shader::SolidColor(color(p.base_color())))
         }
     }
 }
@@ -150,11 +126,7 @@ impl Raster<'_> {
         let Some(geom) = sk_path(path) else { return };
         let t = ts(world).post_concat(self.base);
         if let Some(fill) = &path.fill {
-            let paint = sk::Paint {
-                shader: shader(fill),
-                anti_alias: true,
-                ..sk::Paint::default()
-            };
+            let paint = sk::Paint { shader: shader(fill), anti_alias: true, ..sk::Paint::default() };
             canvas.fill_path(&geom, &paint, sk::FillRule::Winding, t, None);
         }
         if let Some(st) = &path.stroke {
@@ -162,10 +134,7 @@ impl Raster<'_> {
             paint.shader = shader(&st.paint);
             paint.anti_alias = true;
             if st.width_profile.is_empty() {
-                let mut stroke = sk::Stroke {
-                    width: st.width.max(0.0),
-                    ..Default::default()
-                };
+                let mut stroke = sk::Stroke { width: st.width.max(0.0), ..Default::default() };
                 stroke.line_cap = match st.cap {
                     Cap::Butt => sk::LineCap::Butt,
                     Cap::Round => sk::LineCap::Round,
@@ -176,8 +145,7 @@ impl Raster<'_> {
                     Join::Round => sk::LineJoin::Round,
                     Join::Bevel => sk::LineJoin::Bevel,
                 };
-                if st.dash.len() >= 2 && st.dash.len() % 2 == 0 && st.dash.iter().all(|d| *d > 0.0)
-                {
+                if st.dash.len() >= 2 && st.dash.len() % 2 == 0 && st.dash.iter().all(|d| *d > 0.0) {
                     stroke.dash = sk::StrokeDash::new(st.dash.clone(), st.dash_offset);
                 }
                 canvas.stroke_path(&geom, &paint, &stroke, t, None);
@@ -185,11 +153,7 @@ impl Raster<'_> {
                 let tol = 0.25 / (world.x_scale() * self.base.sx).max(0.01);
                 if let Some(out) = width_outline(&path.polyline(tol), st) {
                     if let Some(p) = polys_path(&out.polys) {
-                        let rule = if out.even_odd {
-                            sk::FillRule::EvenOdd
-                        } else {
-                            sk::FillRule::Winding
-                        };
+                        let rule = if out.even_odd { sk::FillRule::EvenOdd } else { sk::FillRule::Winding };
                         canvas.fill_path(&p, &paint, rule, t, None);
                     }
                 }
@@ -204,43 +168,20 @@ impl Raster<'_> {
             return;
         }
         let effects = !simple && !node.effects.is_empty();
-        let blur = if simple {
-            None
-        } else {
-            self.blur
-                .and_then(|m| m.get(&id))
-                .copied()
-                .filter(|r| *r >= 0.5)
-        };
-        let need_layer = node.opacity < 0.999
-            || effects
-            || blur.is_some()
-            || (!simple && (node.blend != Blend::Normal || node.mask.is_some()));
+        let blur = if simple { None } else { self.blur.and_then(|m| m.get(&id)).copied().filter(|r| *r >= 0.5) };
+        let need_layer = node.opacity < 0.999 || effects || blur.is_some() || (!simple && (node.blend != Blend::Normal || node.mask.is_some()));
         if !need_layer {
             self.draw_content(canvas, id, force_visible, simple);
             return;
         }
-        let Some(mut tmp) = sk::Pixmap::new(canvas.width(), canvas.height()) else {
-            return;
-        };
-        let pad = if effects {
-            crate::layerfx::effect_pad(&node.effects, self.base.sx)
-        } else {
-            0
-        };
+        let Some(mut tmp) = sk::Pixmap::new(canvas.width(), canvas.height()) else { return };
+        let pad = if effects { crate::layerfx::effect_pad(&node.effects, self.base.sx) } else { 0 };
         if pad > 0 {
             // draw on a canvas enlarged by the blur reach, filter, crop: content just outside the canvas
             // still contributes (Chromium and resvg do the same), so the canvas edge does not fade
-            let (pw, ph) = (
-                canvas.width() + 2 * pad as u32,
-                canvas.height() + 2 * pad as u32,
-            );
+            let (pw, ph) = (canvas.width() + 2 * pad as u32, canvas.height() + 2 * pad as u32);
             if let Some(mut big) = sk::Pixmap::new(pw, ph) {
-                let inner = Raster {
-                    frame: self.frame,
-                    base: self.base.post_translate(pad as f32, pad as f32),
-                    blur: None,
-                };
+                let inner = Raster { frame: self.frame, base: self.base.post_translate(pad as f32, pad as f32), blur: None };
                 inner.draw_content(&mut big, id, force_visible, simple);
                 crate::layerfx::apply_pixmap(&mut big, &node.effects, self.base.sx);
                 let (cw, row) = (canvas.width() as usize, pw as usize);
@@ -269,14 +210,7 @@ impl Raster<'_> {
         }
         if let Some(r) = blur {
             let mut buf = to_straight_rgba(&tmp);
-            if crate::postfx::apply(
-                &[crate::postfx::Fx::Blur { radius: r }],
-                tmp.width() as usize,
-                tmp.height() as usize,
-                &mut buf,
-            )
-            .is_ok()
-            {
+            if crate::postfx::apply(&[crate::postfx::Fx::Blur { radius: r }], tmp.width() as usize, tmp.height() as usize, &mut buf).is_ok() {
                 for (dst, c) in tmp.pixels_mut().iter_mut().zip(buf.chunks_exact(4)) {
                     *dst = sk::ColorU8::from_rgba(c[0], c[1], c[2], c[3]).premultiply();
                 }
@@ -284,11 +218,7 @@ impl Raster<'_> {
         }
         let pp = sk::PixmapPaint {
             opacity: node.opacity.clamp(0.0, 1.0),
-            blend_mode: if simple {
-                sk::BlendMode::SourceOver
-            } else {
-                blend_mode(node.blend)
-            },
+            blend_mode: if simple { sk::BlendMode::SourceOver } else { blend_mode(node.blend) },
             quality: sk::FilterQuality::Nearest,
         };
         canvas.draw_pixmap(0, 0, tmp.as_ref(), &pp, sk::Transform::identity(), None);
@@ -322,22 +252,9 @@ impl Raster<'_> {
         match &img.mesh {
             None => {
                 // image pixel space → layer space
-                let m = sk::Transform::from_row(
-                    img.size.x / pw,
-                    0.0,
-                    0.0,
-                    img.size.y / ph,
-                    img.origin.x,
-                    img.origin.y,
-                );
-                let paint = sk::Paint {
-                    shader: pattern(m),
-                    anti_alias: true,
-                    ..sk::Paint::default()
-                };
-                if let Some(rect) =
-                    sk::Rect::from_xywh(img.origin.x, img.origin.y, img.size.x, img.size.y)
-                {
+                let m = sk::Transform::from_row(img.size.x / pw, 0.0, 0.0, img.size.y / ph, img.origin.x, img.origin.y);
+                let paint = sk::Paint { shader: pattern(m), anti_alias: true, ..sk::Paint::default() };
+                if let Some(rect) = sk::Rect::from_xywh(img.origin.x, img.origin.y, img.size.x, img.size.y) {
                     canvas.fill_rect(rect, &paint, t, None);
                 }
             }
@@ -345,24 +262,14 @@ impl Raster<'_> {
                 for tri in &mesh.tris {
                     let ix = [tri[0] as usize, tri[1] as usize, tri[2] as usize];
                     let uv = [mesh.uvs[ix[0]], mesh.uvs[ix[1]], mesh.uvs[ix[2]]];
-                    let po = [
-                        mesh.positions[ix[0]],
-                        mesh.positions[ix[1]],
-                        mesh.positions[ix[2]],
-                    ];
-                    let Some(m) = crate::math::tri_affine(uv, po) else {
-                        continue;
-                    };
+                    let po = [mesh.positions[ix[0]], mesh.positions[ix[1]], mesh.positions[ix[2]]];
+                    let Some(m) = crate::math::tri_affine(uv, po) else { continue };
                     // grow the triangle slightly so neighbours overlap (no AA seams)
                     let c = (po[0] + po[1] + po[2]) * (1.0 / 3.0);
                     let grow = |p: Vec2| {
                         let d = p - c;
                         let l = d.length();
-                        if l < 1e-6 {
-                            p
-                        } else {
-                            p + d * (0.6 / l)
-                        }
+                        if l < 1e-6 { p } else { p + d * (0.6 / l) }
                     };
                     let g = [grow(po[0]), grow(po[1]), grow(po[2])];
                     let mut pb = sk::PathBuilder::new();
@@ -371,11 +278,7 @@ impl Raster<'_> {
                     pb.line_to(g[2].x, g[2].y);
                     pb.close();
                     let Some(path) = pb.finish() else { continue };
-                    let paint = sk::Paint {
-                        shader: pattern(ts(&m)),
-                        anti_alias: true,
-                        ..sk::Paint::default()
-                    };
+                    let paint = sk::Paint { shader: pattern(ts(&m)), anti_alias: true, ..sk::Paint::default() };
                     canvas.fill_path(&path, &paint, sk::FillRule::Winding, t, None);
                 }
             }
@@ -427,14 +330,8 @@ pub fn fit_scale(w: f32, h: f32, scale: f32) -> f32 {
     if check_size(w, h, scale).is_ok() {
         return scale;
     }
-    let fit = (MAX_OUT_SIDE as f32 / w.max(h).max(1.0))
-        .min((MAX_OUT_PIXELS as f32 / (w * h).max(1.0)).sqrt())
-        * 0.999;
-    if scale.is_finite() {
-        scale.min(fit).max(1e-4)
-    } else {
-        fit
-    }
+    let fit = (MAX_OUT_SIDE as f32 / w.max(h).max(1.0)).min((MAX_OUT_PIXELS as f32 / (w * h).max(1.0)).sqrt()) * 0.999;
+    if scale.is_finite() { scale.min(fit).max(1e-4) } else { fit }
 }
 
 /// Render one frame to a premultiplied RGBA pixmap. A size beyond the output limits ([`check_size`]) is drawn
@@ -446,46 +343,26 @@ pub fn render_pixmap(engine: &Engine, frame: f32, opts: &RasterOptions) -> sk::P
 }
 
 /// Draw an already evaluated (and possibly simplified, see `scrub`) frame. `frame` only feeds bone visibility.
-pub fn pixmap_from_frame(
-    engine: &Engine,
-    f: &Frame,
-    frame: f32,
-    opts: &RasterOptions,
-) -> sk::Pixmap {
+pub fn pixmap_from_frame(engine: &Engine, f: &Frame, frame: f32, opts: &RasterOptions) -> sk::Pixmap {
     pixmap_from_frame_blur(engine, f, frame, opts, None)
 }
 
 /// [`pixmap_from_frame`] with an optional blur radius per top-level node id (depth of field).
-pub(crate) fn pixmap_from_frame_blur(
-    engine: &Engine,
-    f: &Frame,
-    frame: f32,
-    opts: &RasterOptions,
-    blur: Option<&std::collections::HashMap<usize, f32>>,
-) -> sk::Pixmap {
+pub(crate) fn pixmap_from_frame_blur(engine: &Engine, f: &Frame, frame: f32, opts: &RasterOptions, blur: Option<&std::collections::HashMap<usize, f32>>) -> sk::Pixmap {
     let p = &engine.project;
     let mut opts = opts.clone();
     opts.scale = fit_scale(p.width, p.height, opts.scale);
     let opts = &opts;
     let w = ((p.width * opts.scale).round() as u32).max(1);
     let h = ((p.height * opts.scale).round() as u32).max(1);
-    let mut pm =
-        sk::Pixmap::new(w, h).unwrap_or_else(|| sk::Pixmap::new(1, 1).expect("1x1 pixmap"));
-    let r = Raster {
-        frame: f,
-        base: sk::Transform::from_scale(opts.scale, opts.scale),
-        blur,
-    };
+    let mut pm = sk::Pixmap::new(w, h).unwrap_or_else(|| sk::Pixmap::new(1, 1).expect("1x1 pixmap"));
+    let r = Raster { frame: f, base: sk::Transform::from_scale(opts.scale, opts.scale), blur };
     if p.color_space == crate::project::ColorSpace::Linear && blur.is_none() {
         // Linear-light compositing: the float compositor does the blending (tiny-skia only has 8-bit buffers, which
         // would band the dark half of a linear ramp); only the final conversion to 8-bit sRGB happens here.
         let img = crate::fraster::render_float_frame(engine, f, opts);
         if let Some(mut lin) = sk::Pixmap::new(img.width, img.height) {
-            for (d, s) in lin
-                .data_mut()
-                .chunks_exact_mut(4)
-                .zip(img.rgba.chunks_exact(4))
-            {
+            for (d, s) in lin.data_mut().chunks_exact_mut(4).zip(img.rgba.chunks_exact(4)) {
                 let a = (s[3].clamp(0.0, 1.0) * 255.0).round() as u8;
                 for k in 0..3 {
                     d[k] = ((s[k].clamp(0.0, 1.0) * 255.0).round() as u8).min(a);
@@ -506,10 +383,7 @@ pub(crate) fn pixmap_from_frame_blur(
         let mut paint = sk::Paint::default();
         paint.set_color_rgba8(0xd6, 0x33, 0x6c, 230);
         paint.anti_alias = true;
-        let stroke = sk::Stroke {
-            width: 2.0,
-            ..Default::default()
-        };
+        let stroke = sk::Stroke { width: 2.0, ..Default::default() };
         for (b, wmat) in p.bones.iter().zip(&f.world) {
             if !crate::bonevis::visible(p, &b.name, frame) {
                 continue;
@@ -532,9 +406,7 @@ pub(crate) fn pixmap_from_frame_blur(
 
 pub fn render_png(engine: &Engine, frame: f32, opts: &RasterOptions) -> Result<Vec<u8>, String> {
     check_project_size(&engine.project, opts.scale)?;
-    render_pixmap(engine, frame, opts)
-        .encode_png()
-        .map_err(|e| e.to_string())
+    render_pixmap(engine, frame, opts).encode_png().map_err(|e| e.to_string())
 }
 
 /// Straight-alpha RGBA bytes (what GIF/video encoders expect).
@@ -586,78 +458,39 @@ mod tests {
     fn unsorted_stops_and_degenerate_gradients_agree_everywhere() {
         use crate::math::Vec2;
         // zero-length linear and radius-0 radial: the LAST stop everywhere
-        let lin = Paint::linear(
-            Vec2::new(20.0, 20.0),
-            Vec2::new(20.0, 20.0),
-            &[(0.0, "#ff0000"), (1.0, "#0000ff")],
-        );
-        let rad = Paint::radial(
-            Vec2::new(20.0, 20.0),
-            0.0,
-            &[(0.0, "#ff0000"), (1.0, "#0000ff")],
-        );
+        let lin = Paint::linear(Vec2::new(20.0, 20.0), Vec2::new(20.0, 20.0), &[(0.0, "#ff0000"), (1.0, "#0000ff")]);
+        let rad = Paint::radial(Vec2::new(20.0, 20.0), 0.0, &[(0.0, "#ff0000"), (1.0, "#0000ff")]);
         for g in [lin, rad] {
             let e = project_with(vec![grad_layer(g)]);
             let pm = render(&e);
             for (x, y) in [(1, 1), (20, 20), (38, 30)] {
                 assert_eq!(px(&pm, x, y), [0, 0, 255, 255], "8-bit raster at {x},{y}");
             }
-            let f =
-                crate::fraster::render_float(&e, 0.0, &RasterOptions::default()).to_straight_u8();
-            assert_eq!(
-                &f[(20 * 40 + 20) * 4..(20 * 40 + 20) * 4 + 4],
-                [0, 0, 255, 255],
-                "float renderer"
-            );
-            let svg =
-                crate::svg::render_frame(&e, 0.0, &crate::svg::RenderOptions { show_bones: false });
-            assert!(
-                svg.contains("#0000ff") && !svg.contains("Gradient"),
-                "svg paints the flat last stop: {svg}"
-            );
+            let f = crate::fraster::render_float(&e, 0.0, &RasterOptions::default()).to_straight_u8();
+            assert_eq!(&f[(20 * 40 + 20) * 4..(20 * 40 + 20) * 4 + 4], [0, 0, 255, 255], "float renderer");
+            let svg = crate::svg::render_frame(&e, 0.0, &crate::svg::RenderOptions { show_bones: false });
+            assert!(svg.contains("#0000ff") && !svg.contains("Gradient"), "svg paints the flat last stop: {svg}");
             let lot = crate::export::lottie_json(&e).to_string();
-            assert!(
-                lot.contains("\"fl\"") && !lot.contains("\"gf\""),
-                "lottie writes a flat fill"
-            );
+            assert!(lot.contains("\"fl\"") && !lot.contains("\"gf\""), "lottie writes a flat fill");
         }
         // stops given out of order are sorted: the picture equals the sorted one in raster and float
-        let unsorted = Paint::linear(
-            Vec2::new(0.0, 0.0),
-            Vec2::new(40.0, 0.0),
-            &[(1.0, "#0000ff"), (0.0, "#ff0000")],
-        );
-        let sorted = Paint::linear(
-            Vec2::new(0.0, 0.0),
-            Vec2::new(40.0, 0.0),
-            &[(0.0, "#ff0000"), (1.0, "#0000ff")],
-        );
-        let (a, b) = (
-            project_with(vec![grad_layer(unsorted.clone())]),
-            project_with(vec![grad_layer(sorted)]),
-        );
+        let unsorted = Paint::linear(Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0), &[(1.0, "#0000ff"), (0.0, "#ff0000")]);
+        let sorted = Paint::linear(Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0), &[(0.0, "#ff0000"), (1.0, "#0000ff")]);
+        let (a, b) = (project_with(vec![grad_layer(unsorted.clone())]), project_with(vec![grad_layer(sorted)]));
         assert_eq!(render(&a).data(), render(&b).data());
-        let (fa, fb) = (
-            crate::fraster::render_float(&a, 0.0, &RasterOptions::default()),
-            crate::fraster::render_float(&b, 0.0, &RasterOptions::default()),
-        );
+        let (fa, fb) = (crate::fraster::render_float(&a, 0.0, &RasterOptions::default()), crate::fraster::render_float(&b, 0.0, &RasterOptions::default()));
         assert_eq!(fa.rgba, fb.rgba);
         // check warns
         let mut proj = Project::new("t", 40.0, 40.0, 24.0, 1);
         proj.layers = vec![grad_layer(unsorted)];
         let w = crate::lint::gradient_warnings(&proj);
         assert!(w.len() == 1 && w[0].1.contains("ascending"), "{w:?}");
-        assert!(crate::lint::lint(&proj, None)
-            .iter()
-            .any(|f| f.code == "L011"));
+        assert!(crate::lint::lint(&proj, None).iter().any(|f| f.code == "L011"));
     }
 
     #[test]
     fn solid_fill_and_transparent_background() {
-        let e = project_with(vec![Layer::vector(
-            "v",
-            vec![VPath::rect("r", 10.0, 10.0, 20.0, 20.0).with_fill("#ff0000")],
-        )]);
+        let e = project_with(vec![Layer::vector("v", vec![VPath::rect("r", 10.0, 10.0, 20.0, 20.0).with_fill("#ff0000")])]);
         let pm = render(&e);
         assert_eq!(px(&pm, 20, 20), [255, 0, 0, 255]);
         assert_eq!(px(&pm, 2, 2)[3], 0, "no background → transparent");
@@ -665,10 +498,7 @@ mod tests {
 
     #[test]
     fn layer_transform_moves_pixels() {
-        let mut l = Layer::vector(
-            "v",
-            vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_fill("#00ff00")],
-        );
+        let mut l = Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_fill("#00ff00")]);
         l.transform.position = Vec2::new(20.0, 20.0);
         let pm = render(&project_with(vec![l]));
         assert_eq!(px(&pm, 25, 25), [0, 255, 0, 255]);
@@ -677,69 +507,33 @@ mod tests {
 
     #[test]
     fn gradient_goes_from_first_to_last_stop() {
-        let g = Paint::linear(
-            Vec2::new(0.0, 0.0),
-            Vec2::new(40.0, 0.0),
-            &[(0.0, "#000000"), (1.0, "#ffffff")],
-        );
-        let e = project_with(vec![Layer::vector(
-            "v",
-            vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_paint(g)],
-        )]);
+        let g = Paint::linear(Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0), &[(0.0, "#000000"), (1.0, "#ffffff")]);
+        let e = project_with(vec![Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_paint(g)])]);
         let pm = render(&e);
         let (l, m, r) = (px(&pm, 1, 20)[0], px(&pm, 20, 20)[0], px(&pm, 38, 20)[0]);
-        assert!(
-            l < 20 && r > 235 && (m as i32 - 128).abs() < 20,
-            "{l} {m} {r}"
-        );
+        assert!(l < 20 && r > 235 && (m as i32 - 128).abs() < 20, "{l} {m} {r}");
     }
 
     #[test]
     fn gradient_follows_the_layer_transform() {
-        let g = Paint::linear(
-            Vec2::new(0.0, 0.0),
-            Vec2::new(10.0, 0.0),
-            &[(0.0, "#000000"), (1.0, "#ffffff")],
-        );
-        let mut l = Layer::vector(
-            "v",
-            vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_paint(g)],
-        );
+        let g = Paint::linear(Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0), &[(0.0, "#000000"), (1.0, "#ffffff")]);
+        let mut l = Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 10.0, 10.0).with_paint(g)]);
         l.transform.position = Vec2::new(20.0, 0.0);
         let pm = render(&project_with(vec![l]));
-        assert!(
-            px(&pm, 21, 5)[0] < 60 && px(&pm, 28, 5)[0] > 190,
-            "{:?} {:?}",
-            px(&pm, 21, 5),
-            px(&pm, 28, 5)
-        );
+        assert!(px(&pm, 21, 5)[0] < 60 && px(&pm, 28, 5)[0] > 190, "{:?} {:?}", px(&pm, 21, 5), px(&pm, 28, 5));
     }
 
     #[test]
     fn radial_gradient_centre_is_first_stop() {
-        let g = Paint::radial(
-            Vec2::new(20.0, 20.0),
-            20.0,
-            &[(0.0, "#ffffff"), (1.0, "#000000")],
-        );
-        let pm = render(&project_with(vec![Layer::vector(
-            "v",
-            vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_paint(g)],
-        )]));
+        let g = Paint::radial(Vec2::new(20.0, 20.0), 20.0, &[(0.0, "#ffffff"), (1.0, "#000000")]);
+        let pm = render(&project_with(vec![Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_paint(g)])]));
         assert!(px(&pm, 20, 20)[0] > 235);
         assert!(px(&pm, 2, 20)[0] < 40);
     }
 
     #[test]
     fn stroke_dash_leaves_gaps() {
-        let mut path = VPath::new(
-            "l",
-            false,
-            vec![
-                crate::path::Anchor::corner(Vec2::new(0.0, 20.0)),
-                crate::path::Anchor::corner(Vec2::new(40.0, 20.0)),
-            ],
-        );
+        let mut path = VPath::new("l", false, vec![crate::path::Anchor::corner(Vec2::new(0.0, 20.0)), crate::path::Anchor::corner(Vec2::new(40.0, 20.0))]);
         let mut st = StrokeStyle::solid("#000000", 4.0);
         st.cap = Cap::Butt;
         st.dash = vec![10.0, 10.0];
@@ -752,14 +546,7 @@ mod tests {
 
     #[test]
     fn variable_width_stroke_tapers() {
-        let mut path = VPath::new(
-            "l",
-            false,
-            vec![
-                crate::path::Anchor::corner(Vec2::new(2.0, 20.0)),
-                crate::path::Anchor::corner(Vec2::new(38.0, 20.0)),
-            ],
-        );
+        let mut path = VPath::new("l", false, vec![crate::path::Anchor::corner(Vec2::new(2.0, 20.0)), crate::path::Anchor::corner(Vec2::new(38.0, 20.0))]);
         let mut st = StrokeStyle::solid("#000000", 12.0);
         st.cap = Cap::Butt;
         st.width_profile = vec![[0.0, 1.0], [1.0, 0.0]];
@@ -772,66 +559,36 @@ mod tests {
     #[test]
     fn group_opacity_composites_the_flattened_group() {
         // Two overlapping opaque shapes at 50 % group opacity: the overlap must not be darker.
-        let a = Layer::vector(
-            "a",
-            vec![VPath::rect("r", 0.0, 0.0, 30.0, 40.0).with_fill("#000000")],
-        );
-        let b = Layer::vector(
-            "b",
-            vec![VPath::rect("r", 10.0, 0.0, 30.0, 40.0).with_fill("#000000")],
-        );
+        let a = Layer::vector("a", vec![VPath::rect("r", 0.0, 0.0, 30.0, 40.0).with_fill("#000000")]);
+        let b = Layer::vector("b", vec![VPath::rect("r", 10.0, 0.0, 30.0, 40.0).with_fill("#000000")]);
         let mut g = Layer::group("g", vec![a, b]);
         g.opacity = 0.5;
         let pm = render(&project_with(vec![g]));
         let (only_a, overlap) = (px(&pm, 5, 20)[3], px(&pm, 20, 20)[3]);
-        assert!(
-            (only_a as i32 - 128).abs() <= 2 && (overlap as i32 - 128).abs() <= 2,
-            "{only_a} {overlap}"
-        );
+        assert!((only_a as i32 - 128).abs() <= 2 && (overlap as i32 - 128).abs() <= 2, "{only_a} {overlap}");
     }
 
     #[test]
     fn multiply_blend_darkens_the_backdrop() {
-        let base = Layer::vector(
-            "base",
-            vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ff8000")],
-        );
-        let mut top = Layer::vector(
-            "top",
-            vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#808080")],
-        );
+        let base = Layer::vector("base", vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ff8000")]);
+        let mut top = Layer::vector("top", vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#808080")]);
         top.blend = Blend::Multiply;
         let pm = render(&project_with(vec![base, top]));
         let c = px(&pm, 20, 20);
-        assert!(
-            (c[0] as i32 - 128).abs() <= 3 && (c[1] as i32 - 64).abs() <= 3 && c[2] <= 3,
-            "{c:?}"
-        );
+        assert!((c[0] as i32 - 128).abs() <= 3 && (c[1] as i32 - 64).abs() <= 3 && c[2] <= 3, "{c:?}");
     }
 
     #[test]
     fn masks_cut_and_invert() {
-        let mut hole = Layer::vector(
-            "hole",
-            vec![VPath::rect("r", 10.0, 10.0, 20.0, 20.0).with_fill("#ffffff")],
-        );
+        let mut hole = Layer::vector("hole", vec![VPath::rect("r", 10.0, 10.0, 20.0, 20.0).with_fill("#ffffff")]);
         hole.visible = false;
-        let mut cut = Layer::vector(
-            "cut",
-            vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ff0000")],
-        );
-        cut.mask = Some(MaskRef {
-            layer: "hole".into(),
-            invert: false,
-        });
+        let mut cut = Layer::vector("cut", vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ff0000")]);
+        cut.mask = Some(MaskRef { layer: "hole".into(), invert: false });
         let pm = render(&project_with(vec![hole.clone(), cut.clone()]));
         assert_eq!(px(&pm, 20, 20), [255, 0, 0, 255], "inside the mask");
         assert_eq!(px(&pm, 3, 3)[3], 0, "outside the mask");
 
-        cut.mask = Some(MaskRef {
-            layer: "hole".into(),
-            invert: true,
-        });
+        cut.mask = Some(MaskRef { layer: "hole".into(), invert: true });
         let pm = render(&project_with(vec![hole, cut]));
         assert_eq!(px(&pm, 20, 20)[3], 0, "inverted: hole punched out");
         assert_eq!(px(&pm, 3, 3), [255, 0, 0, 255]);
@@ -840,15 +597,7 @@ mod tests {
     #[test]
     fn scale_option_scales_output_size() {
         let e = project_with(vec![]);
-        let pm = render_pixmap(
-            &e,
-            0.0,
-            &RasterOptions {
-                scale: 2.0,
-                show_bones: false,
-                transparent: false,
-            },
-        );
+        let pm = render_pixmap(&e, 0.0, &RasterOptions { scale: 2.0, show_bones: false, transparent: false });
         assert_eq!((pm.width(), pm.height()), (80, 80));
     }
 

@@ -99,9 +99,7 @@ pub fn clean_events(events: &[InputEvent]) -> Result<Vec<InputEvent>, String> {
     let mut v = Vec::with_capacity(events.len());
     for (i, e) in events.iter().enumerate() {
         if !e.time.is_finite() || e.time < 0.0 || e.time > MAX_TIME {
-            return Err(format!(
-                "event {i}: time must be a finite number of seconds within 0..{MAX_TIME}"
-            ));
+            return Err(format!("event {i}: time must be a finite number of seconds within 0..{MAX_TIME}"));
         }
         if !e.value.is_finite() {
             return Err(format!("event {i}: value must be finite"));
@@ -109,10 +107,7 @@ pub fn clean_events(events: &[InputEvent]) -> Result<Vec<InputEvent>, String> {
         if e.id.is_empty() || e.id.len() > 64 {
             return Err(format!("event {i}: id must be 1..64 characters"));
         }
-        v.push(InputEvent {
-            value: e.value.clamp(0.0, 1.0),
-            ..e.clone()
-        });
+        v.push(InputEvent { value: e.value.clamp(0.0, 1.0), ..e.clone() });
     }
     v.sort_by(|a, b| a.time.total_cmp(&b.time));
     Ok(v)
@@ -167,21 +162,7 @@ pub struct ParamMap {
 
 impl ParamMap {
     pub fn new(source: InputSource, id: &str, target: &str, prop: Prop) -> Self {
-        ParamMap {
-            source,
-            id: id.into(),
-            target: target.into(),
-            prop,
-            in_min: 0.0,
-            in_max: 1.0,
-            out_min: 0.0,
-            out_max: 1.0,
-            deadzone: 0.0,
-            invert: false,
-            curve: Curve::Linear,
-            smooth: 0.0,
-            additive: false,
-        }
+        ParamMap { source, id: id.into(), target: target.into(), prop, in_min: 0.0, in_max: 1.0, out_min: 0.0, out_max: 1.0, deadzone: 0.0, invert: false, curve: Curve::Linear, smooth: 0.0, additive: false }
     }
 
     pub fn validate(&self) -> Result<(), String> {
@@ -189,26 +170,14 @@ impl ParamMap {
         if self.id.is_empty() || self.target.is_empty() {
             return Err("a parameter map needs an id and a target".into());
         }
-        if ![
-            self.in_min,
-            self.in_max,
-            self.out_min,
-            self.out_max,
-            self.deadzone,
-            self.smooth,
-        ]
-        .iter()
-        .all(|v| v.is_finite())
-        {
+        if ![self.in_min, self.in_max, self.out_min, self.out_max, self.deadzone, self.smooth].iter().all(|v| v.is_finite()) {
             return Err(format!("{at}: numbers must be finite"));
         }
         if self.in_min == self.in_max {
             return Err(format!("{at}: in_min and in_max must differ"));
         }
         if !(0.0..1.0).contains(&self.deadzone) || !(0.0..1.0).contains(&self.smooth) {
-            return Err(format!(
-                "{at}: deadzone and smooth must be within 0..1 (1 excluded)"
-            ));
+            return Err(format!("{at}: deadzone and smooth must be within 0..1 (1 excluded)"));
         }
         if let Curve::Pow { exp } = self.curve {
             if !exp.is_finite() || exp <= 0.0 || exp > 16.0 {
@@ -220,19 +189,7 @@ impl ParamMap {
 
     /// Range, dead zone, invert and curve, without smoothing.
     pub fn shape(&self, x: f32) -> f32 {
-        let m = InputMap {
-            input: String::new(),
-            target: String::new(),
-            prop: self.prop,
-            in_min: self.in_min,
-            in_max: self.in_max,
-            out_min: self.out_min,
-            out_max: self.out_max,
-            deadzone: self.deadzone,
-            invert: self.invert,
-            curve: self.curve,
-            smooth: 0.0,
-        };
+        let m = InputMap { input: String::new(), target: String::new(), prop: self.prop, in_min: self.in_min, in_max: self.in_max, out_min: self.out_min, out_max: self.out_max, deadzone: self.deadzone, invert: self.invert, curve: self.curve, smooth: 0.0 };
         m.apply(&[x])[0]
     }
 
@@ -330,36 +287,21 @@ impl Mapping {
             }
             match &t.action {
                 Action::JumpToFrame { frame } => {
-                    if !frame.is_finite()
-                        || *frame < 0.0
-                        || *frame > p.frames.saturating_sub(1) as f32
-                    {
-                        return Err(format!(
-                            "{at}: jump frame must be within 0..{}",
-                            p.frames.saturating_sub(1)
-                        ));
+                    if !frame.is_finite() || *frame < 0.0 || *frame > p.frames.saturating_sub(1) as f32 {
+                        return Err(format!("{at}: jump frame must be within 0..{}", p.frames.saturating_sub(1)));
                     }
                 }
                 Action::PlayTake { take, speed } => {
-                    if ((*speed).partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-                        || !speed.is_finite()
-                    {
+                    if ((*speed).partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !speed.is_finite() {
                         return Err(format!("{at}: take speed must be positive"));
                     }
                     let l = lib.ok_or_else(|| format!("{at}: play_take needs a take library"))?;
-                    let tk = l
-                        .find(take)
-                        .ok_or_else(|| format!("{at}: no take named '{take}'"))?;
+                    let tk = l.find(take).ok_or_else(|| format!("{at}: no take named '{take}'"))?;
                     for tr in &tk.tracks {
                         crate::chanmeta::assert_unlocked(p, &tr.target, tr.prop)?;
                     }
                 }
-                Action::SetKey {
-                    target,
-                    prop,
-                    value,
-                    ..
-                } => {
+                Action::SetKey { target, prop, value, .. } => {
                     if !value.is_finite() || target.is_empty() {
                         return Err(format!("{at}: set_key needs a target and a finite value"));
                     }
@@ -402,11 +344,7 @@ impl Edges {
                 Edge::Both => now != was,
             };
             if fire {
-                out.push(Fired {
-                    time: e.time,
-                    trigger: i,
-                    action: t.action.clone(),
-                });
+                out.push(Fired { time: e.time, trigger: i, action: t.action.clone() });
             }
         }
     }
@@ -446,18 +384,8 @@ fn frame_of(t: f32, fps: f32) -> f32 {
 /// fewest keys within `tol`); triggers become keys / takes / events. All-or-nothing: on any
 /// error the project is left untouched. The result is compiled, so bad targets or properties are
 /// reported here.
-pub fn bake(
-    p: &mut Project,
-    events: &[InputEvent],
-    m: &Mapping,
-    lib: Option<&Library>,
-    tol: f32,
-) -> Result<BakeReport, String> {
-    if !matches!(
-        tol.partial_cmp(&0.0),
-        Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
-    ) || !tol.is_finite()
-    {
+pub fn bake(p: &mut Project, events: &[InputEvent], m: &Mapping, lib: Option<&Library>, tol: f32) -> Result<BakeReport, String> {
+    if !matches!(tol.partial_cmp(&0.0), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) || !tol.is_finite() {
         return Err("tolerance must be a non-negative number".into());
     }
     m.validate(p, lib)?;
@@ -467,15 +395,9 @@ pub fn bake(
     let nf = q.frames.max(1) as usize;
 
     for (mi, pm) in m.params.iter().enumerate() {
-        let mine: Vec<&InputEvent> = ev
-            .iter()
-            .filter(|e| e.source == pm.source && id_matches(&pm.id, &e.id))
-            .collect();
+        let mine: Vec<&InputEvent> = ev.iter().filter(|e| e.source == pm.source && id_matches(&pm.id, &e.id)).collect();
         if mine.is_empty() {
-            rep.notes.push(format!(
-                "map {mi} ({}.{:?}): no matching events, nothing keyed",
-                pm.target, pm.prop
-            ));
+            rep.notes.push(format!("map {mi} ({}.{:?}): no matching events, nothing keyed", pm.target, pm.prop));
             continue;
         }
         // sample and hold at every frame; before the first event the first value is held
@@ -496,11 +418,7 @@ pub fn bake(
         if beyond > 0.0 {
             rep.cut_frames = rep.cut_frames.max(beyond as usize);
         }
-        let mut ch = Channel::keys(
-            &pm.target,
-            pm.prop,
-            crate::perf::simplify_samples(&samples, tol),
-        );
+        let mut ch = Channel::keys(&pm.target, pm.prop, crate::perf::simplify_samples(&samples, tol));
         rep.param_keys += match &ch.source {
             Source::Keys { track } => track.keys.len(),
             _ => 0,
@@ -521,55 +439,34 @@ pub fn bake(
         }
         match fr.action {
             Action::JumpToFrame { frame: to } => {
-                q.events.push(Event {
-                    name: "jump".into(),
-                    frame,
-                    data: serde_json::json!({ "to": to }),
-                });
+                q.events.push(Event { name: "jump".into(), frame, data: serde_json::json!({ "to": to }) });
                 rep.events += 1;
             }
             Action::FireEvent { name, data } => {
                 q.events.push(Event { name, frame, data });
                 rep.events += 1;
             }
-            Action::SetKey {
-                target,
-                prop,
-                value,
-                ease,
-            } => {
-                match q.channels.iter_mut().find(|c| {
-                    c.target == target
-                        && c.prop == prop
-                        && c.mode == Mode::Replace
-                        && matches!(c.source, Source::Keys { .. })
-                }) {
+            Action::SetKey { target, prop, value, ease } => {
+                match q.channels.iter_mut().find(|c| c.target == target && c.prop == prop && c.mode == Mode::Replace && matches!(c.source, Source::Keys { .. })) {
                     Some(c) => {
                         if let Source::Keys { track } = &mut c.source {
                             track.set_key(frame, value, ease);
                         }
                     }
-                    None => q.channels.push(Channel::keys(
-                        &target,
-                        prop,
-                        Track::with_keys(&[(frame, value, ease)]),
-                    )),
+                    None => q.channels.push(Channel::keys(&target, prop, Track::with_keys(&[(frame, value, ease)]))),
                 }
                 rep.keys_set += 1;
             }
             Action::PlayTake { take, speed } => {
                 let l = lib.ok_or("play_take needs a take library")?;
-                let tk = l
-                    .find(&take)
-                    .ok_or_else(|| format!("no take named '{take}'"))?;
+                let tk = l.find(&take).ok_or_else(|| format!("no take named '{take}'"))?;
                 crate::motionlib::apply(&mut q, tk, frame, &[], speed)?;
                 rep.takes += 1;
             }
         }
     }
     q.events.sort_by(|a, b| a.frame.total_cmp(&b.frame));
-    crate::engine::Engine::new(q.clone())
-        .map_err(|e| format!("the mapped project is not valid: {}", e.join("; ")))?;
+    crate::engine::Engine::new(q.clone()).map_err(|e| format!("the mapped project is not valid: {}", e.join("; ")))?;
     *p = q;
     Ok(rep)
 }
@@ -577,14 +474,7 @@ pub fn bake(
 /// Parsed recordings for the CLI: a JSON array of events, or a [`Recording`] object.
 pub fn parse_recording_json(text: &str) -> Result<(Vec<InputEvent>, Vec<String>), String> {
     let v: serde_json::Value = serde_json::from_str(text).map_err(|e| format!("bad JSON: {e}"))?;
-    let rec = if v.is_array() {
-        Recording {
-            events: serde_json::from_value(v).map_err(|e| format!("bad events: {e}"))?,
-            midi: vec![],
-        }
-    } else {
-        serde_json::from_value(v).map_err(|e| format!("bad recording: {e}"))?
-    };
+    let rec = if v.is_array() { Recording { events: serde_json::from_value(v).map_err(|e| format!("bad events: {e}"))?, midi: vec![] } } else { serde_json::from_value(v).map_err(|e| format!("bad recording: {e}"))? };
     rec.into_events()
 }
 
@@ -609,12 +499,7 @@ impl LiveSession {
     }
 
     /// Install a validated mapping (the previous one stays when validation fails).
-    pub fn set_mapping(
-        &mut self,
-        p: &Project,
-        m: Mapping,
-        lib: Option<Library>,
-    ) -> Result<(), String> {
+    pub fn set_mapping(&mut self, p: &Project, m: Mapping, lib: Option<Library>) -> Result<(), String> {
         m.validate(p, lib.as_ref())?;
         self.smoothed = vec![None; m.params.len()];
         self.edges = Edges::default();
@@ -663,8 +548,7 @@ impl LiveSession {
         let mut fired = Vec::new();
         for e in &events {
             self.seq += 1;
-            self.latest
-                .insert((e.source, e.id.clone()), (self.seq, e.value));
+            self.latest.insert((e.source, e.id.clone()), (self.seq, e.value));
             self.edges.feed(&self.mapping, e, &mut fired);
         }
         Ok(fired)
@@ -675,12 +559,7 @@ impl LiveSession {
     pub fn preview(&mut self) -> Vec<(String, Prop, f32)> {
         let mut out = Vec::new();
         for (i, pm) in self.mapping.params.iter().enumerate() {
-            let newest = self
-                .latest
-                .iter()
-                .filter(|((s, id), _)| *s == pm.source && id_matches(&pm.id, id))
-                .map(|(_, v)| *v)
-                .max_by_key(|v| v.0);
+            let newest = self.latest.iter().filter(|((s, id), _)| *s == pm.source && id_matches(&pm.id, id)).map(|(_, v)| *v).max_by_key(|v| v.0);
             if let Some((_, x)) = newest {
                 let y = pm.smoothed(self.smoothed[i], pm.shape(x));
                 self.smoothed[i] = Some(y);
@@ -695,8 +574,8 @@ impl LiveSession {
 mod tests {
     use super::*;
     use crate::anim::Ease;
-    use crate::math::Vec2;
     use crate::project::Bone;
+    use crate::math::Vec2;
 
     fn proj() -> Project {
         let mut p = Project::new("l", 200.0, 200.0, 10.0, 21);
@@ -705,18 +584,11 @@ mod tests {
     }
 
     fn ev(source: InputSource, id: &str, value: f32, time: f32) -> InputEvent {
-        InputEvent {
-            source,
-            id: id.into(),
-            value,
-            time,
-        }
+        InputEvent { source, id: id.into(), value, time }
     }
 
     fn keyed(p: &Project, i: usize) -> &Track {
-        let Source::Keys { track } = &p.channels[i].source else {
-            panic!("not keyed")
-        };
+        let Source::Keys { track } = &p.channels[i].source else { panic!("not keyed") };
         track
     }
 
@@ -725,33 +597,20 @@ mod tests {
         let mut m = ParamMap::new(InputSource::MidiCc, "1", "arm", Prop::BoneAngle);
         m.out_min = -90.0;
         m.out_max = 90.0;
-        assert!(
-            (m.shape(0.0) + 90.0).abs() < 1e-4
-                && (m.shape(0.5)).abs() < 1e-4
-                && (m.shape(1.0) - 90.0).abs() < 1e-4
-        );
+        assert!((m.shape(0.0) + 90.0).abs() < 1e-4 && (m.shape(0.5)).abs() < 1e-4 && (m.shape(1.0) - 90.0).abs() < 1e-4);
         m.invert = true;
         assert!((m.shape(0.0) - 90.0).abs() < 1e-4);
         m.invert = false;
         m.deadzone = 0.2;
-        assert!(
-            (m.shape(0.1) + 90.0).abs() < 1e-4,
-            "inside the dead zone = out_min"
-        );
-        assert!(
-            (m.shape(0.6) - (-90.0 + 180.0 * 0.5)).abs() < 1e-3,
-            "rest rescaled"
-        );
+        assert!((m.shape(0.1) + 90.0).abs() < 1e-4, "inside the dead zone = out_min");
+        assert!((m.shape(0.6) - (-90.0 + 180.0 * 0.5)).abs() < 1e-3, "rest rescaled");
         m.deadzone = 0.0;
         m.curve = Curve::Pow { exp: 2.0 };
         assert!((m.shape(0.5) - (-90.0 + 180.0 * 0.25)).abs() < 1e-3);
         m.curve = Curve::Linear;
         m.in_min = 0.25;
         m.in_max = 0.75;
-        assert!(
-            (m.shape(0.0) + 90.0).abs() < 1e-4 && (m.shape(1.0) - 90.0).abs() < 1e-4,
-            "input clamped to the range"
-        );
+        assert!((m.shape(0.0) + 90.0).abs() < 1e-4 && (m.shape(1.0) - 90.0).abs() < 1e-4, "input clamped to the range");
         assert!((m.smoothed(Some(10.0), 20.0) - 20.0).abs() < 1e-6);
         m.smooth = 0.5;
         assert!((m.smoothed(Some(10.0), 20.0) - 15.0).abs() < 1e-6);
@@ -775,51 +634,13 @@ mod tests {
             assert!(m.validate().is_err());
         }
         let p = proj();
-        let bad_trig = |a: Action, th: f32| {
-            Mapping {
-                params: vec![],
-                triggers: vec![TriggerMap {
-                    source: InputSource::Key,
-                    id: "Space".into(),
-                    edge: Edge::Press,
-                    threshold: th,
-                    action: a,
-                }],
-            }
-            .validate(&p, None)
-        };
+        let bad_trig = |a: Action, th: f32| Mapping { params: vec![], triggers: vec![TriggerMap { source: InputSource::Key, id: "Space".into(), edge: Edge::Press, threshold: th, action: a }] }.validate(&p, None);
         assert!(bad_trig(Action::JumpToFrame { frame: 999.0 }, 0.5).is_err());
         assert!(bad_trig(Action::JumpToFrame { frame: f32::NAN }, 0.5).is_err());
         assert!(bad_trig(Action::JumpToFrame { frame: 3.0 }, 2.0).is_err());
-        assert!(
-            bad_trig(
-                Action::PlayTake {
-                    take: "x".into(),
-                    speed: 1.0
-                },
-                0.5
-            )
-            .is_err(),
-            "no library"
-        );
-        assert!(bad_trig(
-            Action::FireEvent {
-                name: " ".into(),
-                data: serde_json::Value::Null
-            },
-            0.5
-        )
-        .is_err());
-        assert!(bad_trig(
-            Action::SetKey {
-                target: "arm".into(),
-                prop: Prop::BoneAngle,
-                value: f32::INFINITY,
-                ease: Ease::Linear
-            },
-            0.5
-        )
-        .is_err());
+        assert!(bad_trig(Action::PlayTake { take: "x".into(), speed: 1.0 }, 0.5).is_err(), "no library");
+        assert!(bad_trig(Action::FireEvent { name: " ".into(), data: serde_json::Value::Null }, 0.5).is_err());
+        assert!(bad_trig(Action::SetKey { target: "arm".into(), prop: Prop::BoneAngle, value: f32::INFINITY, ease: Ease::Linear }, 0.5).is_err());
         assert!(bad_trig(Action::JumpToFrame { frame: 3.0 }, 0.5).is_ok());
     }
 
@@ -831,11 +652,7 @@ mod tests {
 
     #[test]
     fn events_are_cleaned_and_sorted() {
-        let v = clean_events(&[
-            ev(InputSource::MouseX, "x", 2.0, 1.0),
-            ev(InputSource::MouseX, "x", -1.0, 0.5),
-        ])
-        .unwrap();
+        let v = clean_events(&[ev(InputSource::MouseX, "x", 2.0, 1.0), ev(InputSource::MouseX, "x", -1.0, 0.5)]).unwrap();
         assert_eq!((v[0].time, v[0].value, v[1].value), (0.5, 0.0, 1.0));
         assert!(clean_events(&[ev(InputSource::MouseX, "x", f32::NAN, 0.0)]).is_err());
         assert!(clean_events(&[ev(InputSource::MouseX, "x", 0.0, -1.0)]).is_err());
@@ -847,42 +664,20 @@ mod tests {
     fn recorded_events_become_keys() {
         let mut p = proj();
         // fps 10: a fader moves 0 -> 1 between t=0.5 s and t=1.5 s
-        let events: Vec<InputEvent> = (0..=10)
-            .map(|i| {
-                ev(
-                    InputSource::MidiCc,
-                    "1:1",
-                    i as f32 / 10.0,
-                    0.5 + i as f32 * 0.1,
-                )
-            })
-            .collect();
+        let events: Vec<InputEvent> = (0..=10).map(|i| ev(InputSource::MidiCc, "1:1", i as f32 / 10.0, 0.5 + i as f32 * 0.1)).collect();
         let mut pm = ParamMap::new(InputSource::MidiCc, "1", "arm", Prop::BoneAngle);
         pm.out_min = 0.0;
         pm.out_max = 100.0;
-        let m = Mapping {
-            params: vec![pm],
-            triggers: vec![],
-        };
+        let m = Mapping { params: vec![pm], triggers: vec![] };
         let r = bake(&mut p, &events, &m, None, 0.01).unwrap();
         assert_eq!(r.channels, 1);
         let t = keyed(&p, 0);
         assert!(t.keys.len() <= 6, "reduced: {}", t.keys.len());
-        assert!(
-            (t.eval(0.0).unwrap()).abs() < 1e-3,
-            "first value held before the first event"
-        );
+        assert!((t.eval(0.0).unwrap()).abs() < 1e-3, "first value held before the first event");
         assert!((t.eval(5.0).unwrap()).abs() < 1e-3);
-        assert!(
-            (t.eval(10.0).unwrap() - 50.0).abs() < 0.5,
-            "{}",
-            t.eval(10.0).unwrap()
-        );
+        assert!((t.eval(10.0).unwrap() - 50.0).abs() < 0.5, "{}", t.eval(10.0).unwrap());
         assert!((t.eval(15.0).unwrap() - 100.0).abs() < 1e-3);
-        assert!(
-            (t.eval(20.0).unwrap() - 100.0).abs() < 1e-3,
-            "held to the end"
-        );
+        assert!((t.eval(20.0).unwrap() - 100.0).abs() < 1e-3, "held to the end");
         // deterministic
         let mut p2 = proj();
         bake(&mut p2, &events, &m, None, 0.01).unwrap();
@@ -892,24 +687,11 @@ mod tests {
     #[test]
     fn smoothing_lags_and_additive_mode_is_kept() {
         let mut p = proj();
-        let events = vec![
-            ev(InputSource::MouseX, "x", 0.0, 0.0),
-            ev(InputSource::MouseX, "x", 1.0, 0.5),
-        ];
+        let events = vec![ev(InputSource::MouseX, "x", 0.0, 0.0), ev(InputSource::MouseX, "x", 1.0, 0.5)];
         let mut pm = ParamMap::new(InputSource::MouseX, "x", "arm", Prop::BoneAngle);
         pm.smooth = 0.8;
         pm.additive = true;
-        bake(
-            &mut p,
-            &events,
-            &Mapping {
-                params: vec![pm],
-                triggers: vec![],
-            },
-            None,
-            0.0,
-        )
-        .unwrap();
+        bake(&mut p, &events, &Mapping { params: vec![pm], triggers: vec![] }, None, 0.0).unwrap();
         assert_eq!(p.channels[0].mode, Mode::Add);
         let t = keyed(&p, 0);
         let (a, b) = (t.eval(5.0).unwrap(), t.eval(20.0).unwrap());
@@ -922,49 +704,16 @@ mod tests {
         let mut lib = Library::default();
         // a take recorded from a tiny animation
         let mut src = proj();
-        src.channels.push(Channel::keys(
-            "arm",
-            Prop::BoneAngle,
-            Track::with_keys(&[(0.0, 0.0, Ease::Linear), (4.0, 40.0, Ease::Linear)]),
-        ));
+        src.channels.push(Channel::keys("arm", Prop::BoneAngle, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (4.0, 40.0, Ease::Linear)])));
         crate::motionlib::record(&mut lib, &src, "wave", 0.0, 4.0, &[]).unwrap();
-        let trig = |id: &str, edge, a| TriggerMap {
-            source: InputSource::Key,
-            id: id.into(),
-            edge,
-            threshold: 0.5,
-            action: a,
-        };
+        let trig = |id: &str, edge, a| TriggerMap { source: InputSource::Key, id: id.into(), edge, threshold: 0.5, action: a };
         let m = Mapping {
             params: vec![],
             triggers: vec![
-                trig(
-                    "KeyA",
-                    Edge::Press,
-                    Action::SetKey {
-                        target: "arm".into(),
-                        prop: Prop::BoneAngle,
-                        value: 33.0,
-                        ease: Ease::Step,
-                    },
-                ),
-                trig(
-                    "KeyB",
-                    Edge::Both,
-                    Action::FireEvent {
-                        name: "flash".into(),
-                        data: serde_json::json!({"n": 1}),
-                    },
-                ),
+                trig("KeyA", Edge::Press, Action::SetKey { target: "arm".into(), prop: Prop::BoneAngle, value: 33.0, ease: Ease::Step }),
+                trig("KeyB", Edge::Both, Action::FireEvent { name: "flash".into(), data: serde_json::json!({"n": 1}) }),
                 trig("KeyC", Edge::Release, Action::JumpToFrame { frame: 2.0 }),
-                trig(
-                    "KeyD",
-                    Edge::Press,
-                    Action::PlayTake {
-                        take: "wave".into(),
-                        speed: 1.0,
-                    },
-                ),
+                trig("KeyD", Edge::Press, Action::PlayTake { take: "wave".into(), speed: 1.0 }),
             ],
         };
         let events = vec![
@@ -983,24 +732,14 @@ mod tests {
         assert_eq!(fired.len(), 5, "{fired:?}");
         let r = bake(&mut p, &events, &m, Some(&lib), 0.01).unwrap();
         assert_eq!((r.keys_set, r.events, r.takes, r.skipped), (1, 3, 1, 0));
-        let flash: Vec<f32> = p
-            .events
-            .iter()
-            .filter(|e| e.name == "flash")
-            .map(|e| e.frame)
-            .collect();
+        let flash: Vec<f32> = p.events.iter().filter(|e| e.name == "flash").map(|e| e.frame).collect();
         assert_eq!(flash, vec![6.0, 8.0]);
         let jump = p.events.iter().find(|e| e.name == "jump").unwrap();
         assert_eq!((jump.frame, jump.data["to"].as_f64()), (10.0, Some(2.0)));
         // the SetKey made a channel with a key at frame 3, and the take pasted onto it at frame 12
         let t = keyed(&p, 0);
         assert!(t.keys.iter().any(|k| k.frame == 3.0 && k.value == 33.0));
-        assert!(
-            t.keys.iter().any(|k| k.frame == 12.0)
-                && t.keys
-                    .iter()
-                    .any(|k| k.frame == 16.0 && (k.value - 40.0).abs() < 1e-4)
-        );
+        assert!(t.keys.iter().any(|k| k.frame == 12.0) && t.keys.iter().any(|k| k.frame == 16.0 && (k.value - 40.0).abs() < 1e-4));
     }
 
     #[test]
@@ -1008,66 +747,18 @@ mod tests {
         let mut p = proj();
         let before = p.to_json_pretty();
         let events = vec![ev(InputSource::MidiCc, "1:1", 0.5, 0.0)];
-        let bad_target = Mapping {
-            params: vec![ParamMap::new(
-                InputSource::MidiCc,
-                "1",
-                "ghost",
-                Prop::BoneAngle,
-            )],
-            triggers: vec![],
-        };
+        let bad_target = Mapping { params: vec![ParamMap::new(InputSource::MidiCc, "1", "ghost", Prop::BoneAngle)], triggers: vec![] };
         assert!(bake(&mut p, &events, &bad_target, None, 0.01).is_err());
         let mut nan = ParamMap::new(InputSource::MidiCc, "1", "arm", Prop::BoneAngle);
         nan.out_max = f32::NAN;
-        assert!(bake(
-            &mut p,
-            &events,
-            &Mapping {
-                params: vec![nan],
-                triggers: vec![]
-            },
-            None,
-            0.01
-        )
-        .is_err());
-        assert!(bake(
-            &mut p,
-            &[ev(InputSource::MidiCc, "1:1", f32::NAN, 0.0)],
-            &Mapping::default(),
-            None,
-            0.01
-        )
-        .is_err());
+        assert!(bake(&mut p, &events, &Mapping { params: vec![nan], triggers: vec![] }, None, 0.01).is_err());
+        assert!(bake(&mut p, &[ev(InputSource::MidiCc, "1:1", f32::NAN, 0.0)], &Mapping::default(), None, 0.01).is_err());
         assert!(bake(&mut p, &events, &Mapping::default(), None, -1.0).is_err());
-        let late = Mapping {
-            params: vec![],
-            triggers: vec![TriggerMap {
-                source: InputSource::Key,
-                id: "A".into(),
-                edge: Edge::Press,
-                threshold: 0.5,
-                action: Action::PlayTake {
-                    take: "none".into(),
-                    speed: 1.0,
-                },
-            }],
-        };
-        assert!(
-            bake(&mut p, &events, &late, Some(&Library::default()), 0.01).is_err(),
-            "unknown take"
-        );
+        let late = Mapping { params: vec![], triggers: vec![TriggerMap { source: InputSource::Key, id: "A".into(), edge: Edge::Press, threshold: 0.5, action: Action::PlayTake { take: "none".into(), speed: 1.0 } }] };
+        assert!(bake(&mut p, &events, &late, Some(&Library::default()), 0.01).is_err(), "unknown take");
         assert_eq!(p.to_json_pretty(), before);
         // no matching events: ok, noted, nothing added
-        let m = Mapping {
-            params: vec![ParamMap::new(
-                InputSource::MidiCc,
-                "9",
-                "arm",
-                Prop::BoneAngle,
-            )],
-            triggers: vec![],
-        };
+        let m = Mapping { params: vec![ParamMap::new(InputSource::MidiCc, "9", "arm", Prop::BoneAngle)], triggers: vec![] };
         let r = bake(&mut p, &events, &m, None, 0.01).unwrap();
         assert_eq!((r.channels, r.notes.len()), (0, 1));
     }
@@ -1075,49 +766,14 @@ mod tests {
     #[test]
     fn locked_channels_are_refused() {
         let mut p = proj();
-        p.channels.push(Channel::keys(
-            "arm",
-            Prop::BoneAngle,
-            Track::with_keys(&[(0.0, 0.0, Ease::Linear)]),
-        ));
-        crate::chanmeta::set_meta(
-            &mut p,
-            "arm",
-            Some(Prop::BoneAngle),
-            &crate::chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        p.channels.push(Channel::keys("arm", Prop::BoneAngle, Track::with_keys(&[(0.0, 0.0, Ease::Linear)])));
+        crate::chanmeta::set_meta(&mut p, "arm", Some(Prop::BoneAngle), &crate::chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
         let before = p.to_json_pretty();
         let events = vec![ev(InputSource::MidiCc, "1:1", 0.5, 0.0)];
-        let m = Mapping {
-            params: vec![ParamMap::new(
-                InputSource::MidiCc,
-                "1",
-                "arm",
-                Prop::BoneAngle,
-            )],
-            triggers: vec![],
-        };
+        let m = Mapping { params: vec![ParamMap::new(InputSource::MidiCc, "1", "arm", Prop::BoneAngle)], triggers: vec![] };
         let e = bake(&mut p, &events, &m, None, 0.01).unwrap_err();
         assert!(e.to_lowercase().contains("lock"), "{e}");
-        let m = Mapping {
-            params: vec![],
-            triggers: vec![TriggerMap {
-                source: InputSource::Key,
-                id: "A".into(),
-                edge: Edge::Press,
-                threshold: 0.5,
-                action: Action::SetKey {
-                    target: "arm".into(),
-                    prop: Prop::BoneAngle,
-                    value: 1.0,
-                    ease: Ease::Linear,
-                },
-            }],
-        };
+        let m = Mapping { params: vec![], triggers: vec![TriggerMap { source: InputSource::Key, id: "A".into(), edge: Edge::Press, threshold: 0.5, action: Action::SetKey { target: "arm".into(), prop: Prop::BoneAngle, value: 1.0, ease: Ease::Linear } }] };
         assert!(bake(&mut p, &events, &m, None, 0.01).is_err());
         assert_eq!(p.to_json_pretty(), before);
     }
@@ -1140,35 +796,21 @@ mod tests {
         let mut p = proj();
         let mut pm = ParamMap::new(InputSource::MidiCc, "1", "arm", Prop::BoneAngle);
         pm.out_max = 60.0;
-        bake(
-            &mut p,
-            &ev,
-            &Mapping {
-                params: vec![pm],
-                triggers: vec![],
-            },
-            None,
-            0.01,
-        )
-        .unwrap();
+        bake(&mut p, &ev, &Mapping { params: vec![pm], triggers: vec![] }, None, 0.01).unwrap();
         let t = keyed(&p, 0);
         assert!(t.eval(0.0).unwrap().abs() < 1e-3 && (t.eval(5.0).unwrap() - 60.0).abs() < 1e-3);
     }
 
     #[test]
     fn recording_json_forms() {
-        let (e, w) =
-            parse_recording_json(r#"[{"source":"mouse_x","id":"x","value":0.5,"time":1.0}]"#)
-                .unwrap();
+        let (e, w) = parse_recording_json(r#"[{"source":"mouse_x","id":"x","value":0.5,"time":1.0}]"#).unwrap();
         assert_eq!((e.len(), w.len()), (1, 0));
         let (e, w) = parse_recording_json(r#"{"midi":[{"time":0.5,"bytes":[176,1,64]},{"time":0.6,"bytes":[176,1]}],"events":[{"source":"key","id":"A","value":1,"time":0.1}]}"#).unwrap();
         assert_eq!(e.len(), 2);
         assert_eq!(w.len(), 1);
         assert_eq!(e[0].source, InputSource::Key, "sorted by time");
         assert!(parse_recording_json("{").is_err());
-        assert!(
-            parse_recording_json(r#"[{"source":"nope","id":"x","value":0,"time":0}]"#).is_err()
-        );
+        assert!(parse_recording_json(r#"[{"source":"nope","id":"x","value":0,"time":0}]"#).is_err());
     }
 
     #[test]
@@ -1180,23 +822,12 @@ mod tests {
         pm.smooth = 0.5;
         let m = Mapping {
             params: vec![pm],
-            triggers: vec![TriggerMap {
-                source: InputSource::MouseButton,
-                id: "0".into(),
-                edge: Edge::Press,
-                threshold: 0.5,
-                action: Action::JumpToFrame { frame: 4.0 },
-            }],
+            triggers: vec![TriggerMap { source: InputSource::MouseButton, id: "0".into(), edge: Edge::Press, threshold: 0.5, action: Action::JumpToFrame { frame: 4.0 } }],
         };
         s.set_mapping(&p, m.clone(), None).unwrap();
         assert!(s.preview().is_empty(), "no input yet");
         s.start_recording();
-        let fired = s
-            .push(&[
-                ev(InputSource::MouseX, "x", 1.0, 0.0),
-                ev(InputSource::MouseButton, "0", 1.0, 0.1),
-            ])
-            .unwrap();
+        let fired = s.push(&[ev(InputSource::MouseX, "x", 1.0, 0.0), ev(InputSource::MouseButton, "0", 1.0, 0.1)]).unwrap();
         assert_eq!(fired.len(), 1);
         assert_eq!(fired[0].action, Action::JumpToFrame { frame: 4.0 });
         let a = s.preview();
@@ -1217,8 +848,6 @@ mod tests {
         bad.params[0].in_max = 0.0;
         assert!(s.set_mapping(&p, bad, None).is_err());
         assert_eq!(s.mapping().params.len(), 1);
-        assert!(s
-            .push(&[ev(InputSource::MouseX, "x", f32::NAN, 0.0)])
-            .is_err());
+        assert!(s.push(&[ev(InputSource::MouseX, "x", f32::NAN, 0.0)]).is_err());
     }
 }

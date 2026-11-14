@@ -18,19 +18,11 @@ use std::collections::HashMap;
 /// Reduce `(frame, value)` samples to the fewest linear keys whose interpolation stays within
 /// `tol` of every sample (Ramer–Douglas–Peucker on the value axis, iterative).
 pub fn simplify_samples(samples: &[(f32, f32)], tol: f32) -> Track {
-    let mut s: Vec<(f32, f32)> = samples
-        .iter()
-        .copied()
-        .filter(|(f, v)| f.is_finite() && v.is_finite())
-        .collect();
+    let mut s: Vec<(f32, f32)> = samples.iter().copied().filter(|(f, v)| f.is_finite() && v.is_finite()).collect();
     s.sort_by(|a, b| a.0.total_cmp(&b.0));
     s.dedup_by(|a, b| a.0 == b.0);
     if s.len() <= 2 {
-        return Track::with_keys(
-            &s.iter()
-                .map(|&(f, v)| (f, v, Ease::Linear))
-                .collect::<Vec<_>>(),
-        );
+        return Track::with_keys(&s.iter().map(|&(f, v)| (f, v, Ease::Linear)).collect::<Vec<_>>());
     }
     let mut keep = vec![false; s.len()];
     keep[0] = true;
@@ -45,11 +37,7 @@ pub fn simplify_samples(samples: &[(f32, f32)], tol: f32) -> Track {
         // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
         #[allow(clippy::needless_range_loop)]
         for i in a + 1..b {
-            let t = if fb > fa {
-                (s[i].0 - fa) / (fb - fa)
-            } else {
-                0.0
-            };
+            let t = if fb > fa { (s[i].0 - fa) / (fb - fa) } else { 0.0 };
             let e = (s[i].1 - (va + (vb - va) * t)).abs();
             if e > worst {
                 worst = e;
@@ -62,31 +50,18 @@ pub fn simplify_samples(samples: &[(f32, f32)], tol: f32) -> Track {
             stack.push((wi, b));
         }
     }
-    Track::with_keys(
-        &s.iter()
-            .zip(&keep)
-            .filter(|(_, k)| **k)
-            .map(|(&(f, v), _)| (f, v, Ease::Linear))
-            .collect::<Vec<_>>(),
-    )
+    Track::with_keys(&s.iter().zip(&keep).filter(|(_, k)| **k).map(|(&(f, v), _)| (f, v, Ease::Linear)).collect::<Vec<_>>())
 }
 
 /// A key-reduced channel from per-frame samples (frame = index).
 pub fn record(target: &str, prop: Prop, per_frame: &[f32], tol: f32) -> Channel {
-    let samples: Vec<(f32, f32)> = per_frame
-        .iter()
-        .enumerate()
-        .map(|(i, &v)| (i as f32, v))
-        .collect();
+    let samples: Vec<(f32, f32)> = per_frame.iter().enumerate().map(|(i, &v)| (i as f32, v)).collect();
     Channel::keys(target, prop, simplify_samples(&samples, tol))
 }
 
 /// Largest absolute error of a track against its source samples (for reporting).
 pub fn max_error(t: &Track, samples: &[(f32, f32)]) -> f32 {
-    samples
-        .iter()
-        .map(|&(f, v)| (t.eval(f).unwrap_or(v) - v).abs())
-        .fold(0.0, f32::max)
+    samples.iter().map(|&(f, v)| (t.eval(f).unwrap_or(v) - v).abs()).fold(0.0, f32::max)
 }
 
 // ---- input mapping ------------------------------------------------------------------------
@@ -97,9 +72,7 @@ pub fn max_error(t: &Track, samples: &[(f32, f32)]) -> f32 {
 pub enum Curve {
     Linear,
     /// `u^exp` (exp > 1 = gentle start).
-    Pow {
-        exp: f32,
-    },
+    Pow { exp: f32 },
     /// Smoothstep.
     Smooth,
 }
@@ -149,28 +122,12 @@ fn lin() -> Curve {
 
 impl InputMap {
     pub fn new(input: &str, target: &str, prop: Prop) -> Self {
-        InputMap {
-            input: input.into(),
-            target: target.into(),
-            prop,
-            in_min: 0.0,
-            in_max: 1.0,
-            out_min: 0.0,
-            out_max: 1.0,
-            deadzone: 0.0,
-            invert: false,
-            curve: Curve::Linear,
-            smooth: 0.0,
-        }
+        InputMap { input: input.into(), target: target.into(), prop, in_min: 0.0, in_max: 1.0, out_min: 0.0, out_max: 1.0, deadzone: 0.0, invert: false, curve: Curve::Linear, smooth: 0.0 }
     }
 
     /// Map a whole signal (one value per frame).
     pub fn apply(&self, signal: &[f32]) -> Vec<f32> {
-        let span = if (self.in_max - self.in_min).abs() < 1e-9 {
-            1.0
-        } else {
-            self.in_max - self.in_min
-        };
+        let span = if (self.in_max - self.in_min).abs() < 1e-9 { 1.0 } else { self.in_max - self.in_min };
         let dz = self.deadzone.clamp(0.0, 0.99);
         let a = self.smooth.clamp(0.0, 0.999);
         let mut prev: Option<f32> = None;
@@ -198,12 +155,7 @@ impl InputMap {
 /// Parse a CSV with a header row; every column is a signal, row index = frame.
 pub fn parse_signals_csv(text: &str) -> Result<HashMap<String, Vec<f32>>, String> {
     let mut lines = text.lines().filter(|l| !l.trim().is_empty());
-    let header: Vec<String> = lines
-        .next()
-        .ok_or("empty CSV")?
-        .split(',')
-        .map(|s| s.trim().to_string())
-        .collect();
+    let header: Vec<String> = lines.next().ok_or("empty CSV")?.split(',').map(|s| s.trim().to_string()).collect();
     if header.iter().any(|h| h.is_empty()) {
         return Err("CSV header has an empty column name".into());
     }
@@ -211,35 +163,20 @@ pub fn parse_signals_csv(text: &str) -> Result<HashMap<String, Vec<f32>>, String
     for (n, line) in lines.enumerate() {
         let cells: Vec<&str> = line.split(',').collect();
         if cells.len() != header.len() {
-            return Err(format!(
-                "row {} has {} cells, expected {}",
-                n + 2,
-                cells.len(),
-                header.len()
-            ));
+            return Err(format!("row {} has {} cells, expected {}", n + 2, cells.len(), header.len()));
         }
         for (c, cell) in cells.iter().enumerate() {
-            cols[c].push(
-                cell.trim()
-                    .parse::<f32>()
-                    .map_err(|_| format!("row {}: '{}' is not a number", n + 2, cell.trim()))?,
-            );
+            cols[c].push(cell.trim().parse::<f32>().map_err(|_| format!("row {}: '{}' is not a number", n + 2, cell.trim()))?);
         }
     }
     Ok(header.into_iter().zip(cols).collect())
 }
 
 /// Turn signals into key-reduced channels using the given mappings.
-pub fn drive(
-    maps: &[InputMap],
-    signals: &HashMap<String, Vec<f32>>,
-    tol: f32,
-) -> Result<Vec<Channel>, String> {
+pub fn drive(maps: &[InputMap], signals: &HashMap<String, Vec<f32>>, tol: f32) -> Result<Vec<Channel>, String> {
     maps.iter()
         .map(|m| {
-            let s = signals
-                .get(&m.input)
-                .ok_or_else(|| format!("no input signal named '{}'", m.input))?;
+            let s = signals.get(&m.input).ok_or_else(|| format!("no input signal named '{}'", m.input))?;
             Ok(record(&m.target, m.prop, &m.apply(s), tol))
         })
         .collect()
@@ -247,13 +184,7 @@ pub fn drive(
 
 /// Scale-free feature from tracker landmarks: `|a−b| / |ref_a−ref_b|` (e.g. mouth opening
 /// relative to face height). Returns `None` if any point is missing or the reference is 0.
-pub fn landmark_ratio(
-    pts: &HashMap<String, Vec2>,
-    a: &str,
-    b: &str,
-    ref_a: &str,
-    ref_b: &str,
-) -> Option<f32> {
+pub fn landmark_ratio(pts: &HashMap<String, Vec2>, a: &str, b: &str, ref_a: &str, ref_b: &str) -> Option<f32> {
     let d = |x: &str, y: &str| Some(pts.get(x)?.distance(*pts.get(y)?));
     let r = d(ref_a, ref_b)?;
     if r < 1e-6 {
@@ -268,38 +199,19 @@ pub fn landmark_ratio(
 /// Total bone length of an IK chain.
 pub fn chain_reach(p: &Project, chain: &str) -> Option<f32> {
     let c = p.ik.iter().find(|c| c.name == chain)?;
-    c.bones
-        .iter()
-        .map(|b| p.bones.iter().find(|x| &x.name == b).map(|x| x.length))
-        .sum()
+    c.bones.iter().map(|b| p.bones.iter().find(|x| &x.name == b).map(|x| x.length)).sum()
 }
 
 /// Retarget by *intent*: instead of copying joint angles, scale where each effector (IK target
 /// bone) moves by the ratio of limb reaches, and point the channels at the destination rig's
 /// target bone. `pairs` = (source chain, destination chain). Non-key channels on an effector
 /// cannot be scaled and are reported in the returned notes (and passed through renamed).
-pub fn retarget_effectors(
-    channels: &[Channel],
-    src: &Project,
-    dst: &Project,
-    pairs: &[(String, String)],
-) -> Result<(Vec<Channel>, Vec<String>), String> {
+pub fn retarget_effectors(channels: &[Channel], src: &Project, dst: &Project, pairs: &[(String, String)]) -> Result<(Vec<Channel>, Vec<String>), String> {
     let mut map: HashMap<String, (String, f32)> = HashMap::new();
     for (sc, dc) in pairs {
-        let s = src
-            .ik
-            .iter()
-            .find(|c| &c.name == sc)
-            .ok_or_else(|| format!("source rig has no IK chain '{sc}'"))?;
-        let d = dst
-            .ik
-            .iter()
-            .find(|c| &c.name == dc)
-            .ok_or_else(|| format!("destination rig has no IK chain '{dc}'"))?;
-        let (rs, rd) = (
-            chain_reach(src, sc).ok_or("bad source chain")?,
-            chain_reach(dst, dc).ok_or("bad destination chain")?,
-        );
+        let s = src.ik.iter().find(|c| &c.name == sc).ok_or_else(|| format!("source rig has no IK chain '{sc}'"))?;
+        let d = dst.ik.iter().find(|c| &c.name == dc).ok_or_else(|| format!("destination rig has no IK chain '{dc}'"))?;
+        let (rs, rd) = (chain_reach(src, sc).ok_or("bad source chain")?, chain_reach(dst, dc).ok_or("bad destination chain")?);
         if rs < 1e-6 {
             return Err(format!("source chain '{sc}' has zero reach"));
         }
@@ -318,10 +230,7 @@ pub fn retarget_effectors(
                                 key.value *= k;
                             }
                         }
-                        _ => notes.push(format!(
-                            "channel on '{}' ({:?}) is not keyed; renamed but not scaled",
-                            c.target, c.prop
-                        )),
+                        _ => notes.push(format!("channel on '{}' ({:?}) is not keyed; renamed but not scaled", c.target, c.prop)),
                     }
                 }
                 c.target = new_target.clone();
@@ -339,9 +248,7 @@ mod tests {
 
     #[test]
     fn simplify_respects_tolerance_and_shrinks() {
-        let samples: Vec<(f32, f32)> = (0..120)
-            .map(|i| (i as f32, (i as f32 * 0.1).sin() * 20.0))
-            .collect();
+        let samples: Vec<(f32, f32)> = (0..120).map(|i| (i as f32, (i as f32 * 0.1).sin() * 20.0)).collect();
         let t = simplify_samples(&samples, 0.5);
         assert!(t.keys.len() < 40, "kept {}", t.keys.len());
         assert!(max_error(&t, &samples) <= 0.5 + 1e-4);
@@ -367,16 +274,9 @@ mod tests {
         let mut m = InputMap::new("s", "b", Prop::BoneAngle);
         m.out_min = -30.0;
         m.out_max = 30.0;
-        assert_eq!(
-            m.apply(&[0.0, 0.5, 1.0, 2.0, -1.0]),
-            vec![-30.0, 0.0, 30.0, 30.0, -30.0]
-        );
+        assert_eq!(m.apply(&[0.0, 0.5, 1.0, 2.0, -1.0]), vec![-30.0, 0.0, 30.0, 30.0, -30.0]);
         m.deadzone = 0.5;
-        assert_eq!(
-            m.apply(&[0.4])[0],
-            -30.0,
-            "inside the deadzone = bottom of range"
-        );
+        assert_eq!(m.apply(&[0.4])[0], -30.0, "inside the deadzone = bottom of range");
         m.deadzone = 0.0;
         m.invert = true;
         assert_eq!(m.apply(&[0.0])[0], 30.0);
@@ -387,10 +287,7 @@ mod tests {
         m.smooth = 0.5;
         let y = m.apply(&[0.0, 1.0, 1.0]);
         assert_eq!(y[0], -30.0);
-        assert!(
-            y[1] < 30.0 && y[1] > y[0] && y[2] > y[1],
-            "smoothing lags: {y:?}"
-        );
+        assert!(y[1] < 30.0 && y[1] > y[0] && y[2] > y[1], "smoothing lags: {y:?}");
     }
 
     #[test]
@@ -399,25 +296,17 @@ mod tests {
         assert_eq!(s["mouth"], vec![0.0, 1.0]);
         assert_eq!(s["brow"], vec![0.5, 0.25]);
         assert!(parse_signals_csv("a,b\n1\n").unwrap_err().contains("row 2"));
-        assert!(parse_signals_csv("a\nx\n")
-            .unwrap_err()
-            .contains("not a number"));
+        assert!(parse_signals_csv("a\nx\n").unwrap_err().contains("not a number"));
         assert!(parse_signals_csv("").is_err());
     }
 
     #[test]
     fn drive_produces_reduced_channels_and_reports_missing_inputs() {
-        let sig: HashMap<String, Vec<f32>> = [(
-            "mouth".to_string(),
-            (0..60).map(|i| i as f32 / 59.0).collect(),
-        )]
-        .into();
+        let sig: HashMap<String, Vec<f32>> = [("mouth".to_string(), (0..60).map(|i| i as f32 / 59.0).collect())].into();
         let mut m = InputMap::new("mouth", "jaw", Prop::BoneAngle);
         m.out_max = 20.0;
         let ch = drive(&[m.clone()], &sig, 0.05).unwrap();
-        let Source::Keys { track } = &ch[0].source else {
-            panic!()
-        };
+        let Source::Keys { track } = &ch[0].source else { panic!() };
         assert_eq!(track.keys.len(), 2, "a ramp needs two keys");
         let mut bad = m;
         bad.input = "nope".into();
@@ -427,15 +316,10 @@ mod tests {
     #[test]
     fn landmark_ratio_is_scale_free() {
         let mk = |s: f32| -> HashMap<String, Vec2> {
-            [
-                ("up", Vec2::new(0.0, 0.0)),
-                ("lo", Vec2::new(0.0, 4.0 * s)),
-                ("top", Vec2::new(0.0, -20.0 * s)),
-                ("chin", Vec2::new(0.0, 60.0 * s)),
-            ]
-            .into_iter()
-            .map(|(k, v)| (k.to_string(), v))
-            .collect()
+            [("up", Vec2::new(0.0, 0.0)), ("lo", Vec2::new(0.0, 4.0 * s)), ("top", Vec2::new(0.0, -20.0 * s)), ("chin", Vec2::new(0.0, 60.0 * s))]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect()
         };
         let a = landmark_ratio(&mk(1.0), "up", "lo", "top", "chin").unwrap();
         let b = landmark_ratio(&mk(3.0), "up", "lo", "top", "chin").unwrap();
@@ -450,9 +334,7 @@ mod tests {
             Bone::new("l", Some("u"), len2, Vec2::new(len1, 0.0), 0.0),
             Bone::new("goal", None, 1.0, Vec2::new(len1 + len2, 0.0), 0.0),
         ];
-        p.ik = vec![crate::project::IkChain::two_bone(
-            "arm", "u", "l", "goal", 1.0,
-        )];
+        p.ik = vec![crate::project::IkChain::two_bone("arm", "u", "l", "goal", 1.0)];
         p
     }
 
@@ -460,30 +342,14 @@ mod tests {
     fn retarget_scales_effector_motion_by_reach_ratio() {
         let (src, dst) = (arm(30.0, 30.0), arm(60.0, 60.0));
         let ch = vec![
-            Channel::keys(
-                "goal",
-                Prop::BoneOffsetX,
-                Track::with_keys(&[(0.0, 0.0, Ease::Linear), (10.0, -20.0, Ease::Linear)]),
-            ),
-            Channel::keys(
-                "u",
-                Prop::BoneAngle,
-                Track::with_keys(&[(0.0, 5.0, Ease::Linear)]),
-            ),
+            Channel::keys("goal", Prop::BoneOffsetX, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (10.0, -20.0, Ease::Linear)])),
+            Channel::keys("u", Prop::BoneAngle, Track::with_keys(&[(0.0, 5.0, Ease::Linear)])),
         ];
-        let (out, notes) =
-            retarget_effectors(&ch, &src, &dst, &[("arm".into(), "arm".into())]).unwrap();
+        let (out, notes) = retarget_effectors(&ch, &src, &dst, &[("arm".into(), "arm".into())]).unwrap();
         assert!(notes.is_empty());
-        let Source::Keys { track } = &out[0].source else {
-            panic!()
-        };
-        assert_eq!(
-            track.keys[1].value, -40.0,
-            "reach ratio 2 doubles the motion"
-        );
-        let Source::Keys { track } = &out[1].source else {
-            panic!()
-        };
+        let Source::Keys { track } = &out[0].source else { panic!() };
+        assert_eq!(track.keys[1].value, -40.0, "reach ratio 2 doubles the motion");
+        let Source::Keys { track } = &out[1].source else { panic!() };
         assert_eq!(track.keys[0].value, 5.0, "non-effector channels untouched");
         assert!(retarget_effectors(&ch, &src, &dst, &[("nope".into(), "arm".into())]).is_err());
         assert_eq!(chain_reach(&dst, "arm"), Some(120.0));

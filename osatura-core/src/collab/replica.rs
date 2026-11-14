@@ -51,17 +51,7 @@ impl Replica {
         if id == 0 {
             return Err("replica id 0 is reserved for the base document".into());
         }
-        Ok(Replica {
-            id,
-            lamport: 0,
-            applied: VClock::new(),
-            doc: Doc::from_json(base),
-            pending: vec![],
-            log: vec![],
-            undo: vec![],
-            redo: vec![],
-            dropped: 0,
-        })
+        Ok(Replica { id, lamport: 0, applied: VClock::new(), doc: Doc::from_json(base), pending: vec![], log: vec![], undo: vec![], redo: vec![], dropped: 0 })
     }
 
     /// Join an existing session from a snapshot (a fresh replica id, or a known one to continue it).
@@ -69,25 +59,11 @@ impl Replica {
         if id == 0 {
             return Err("replica id 0 is reserved for the base document".into());
         }
-        Ok(Replica {
-            id,
-            lamport: snap.lamport,
-            applied: snap.clock,
-            doc: snap.doc,
-            pending: vec![],
-            log: vec![],
-            undo: vec![],
-            redo: vec![],
-            dropped: 0,
-        })
+        Ok(Replica { id, lamport: snap.lamport, applied: snap.clock, doc: snap.doc, pending: vec![], log: vec![], undo: vec![], redo: vec![], dropped: 0 })
     }
 
     pub fn snapshot(&self) -> Snapshot {
-        Snapshot {
-            doc: self.doc.clone(),
-            clock: self.applied.clone(),
-            lamport: self.lamport,
-        }
+        Snapshot { doc: self.doc.clone(), clock: self.applied.clone(), lamport: self.lamport }
     }
 
     /// Same replica state seen from another identity (a server-side proxy for one user).
@@ -123,17 +99,7 @@ impl Replica {
         !self.redo.is_empty()
     }
     pub fn tombstones(&self) -> usize {
-        self.doc
-            .nodes
-            .values()
-            .map(|c| {
-                if let Cont::Arr(v) = c {
-                    v.iter().filter(|e| e.tomb.is_some()).count()
-                } else {
-                    0
-                }
-            })
-            .sum()
+        self.doc.nodes.values().map(|c| if let Cont::Arr(v) = c { v.iter().filter(|e| e.tomb.is_some()).count() } else { 0 }).sum()
     }
     pub fn node_count(&self) -> usize {
         self.doc.nodes.len()
@@ -146,21 +112,7 @@ impl Replica {
         let backup = self.doc.clone();
         let seq = self.applied.get(&self.id).copied().unwrap_or(0) + 1;
         let lamport = self.lamport + 1;
-        let mut tx = Tx {
-            meta: Meta {
-                replica: self.id,
-                seq,
-                lamport,
-            },
-            idx: 0,
-            gen: IdGen {
-                r: self.id,
-                s: seq,
-                next: 0,
-            },
-            prims: vec![],
-            undos: vec![],
-        };
+        let mut tx = Tx { meta: Meta { replica: self.id, seq, lamport }, idx: 0, gen: IdGen { r: self.id, s: seq, next: 0 }, prims: vec![], undos: vec![] };
         if let Err(e) = f(&mut self.doc, &mut tx) {
             self.doc = backup;
             return Err(e);
@@ -171,13 +123,7 @@ impl Replica {
         let deps = self.applied.clone();
         self.lamport = lamport;
         self.applied.insert(self.id, seq);
-        let env = Envelope {
-            replica: self.id,
-            seq,
-            lamport,
-            deps,
-            ops: tx.prims,
-        };
+        let env = Envelope { replica: self.id, seq, lamport, deps, ops: tx.prims };
         self.log.push(env.clone());
         Ok(Some((env, coalesce(tx.undos))))
     }
@@ -223,11 +169,7 @@ impl Replica {
 
     pub(super) fn step_back(&mut self, undoing: bool) -> Result<Option<Envelope>, String> {
         loop {
-            let recs = if undoing {
-                self.undo.pop()
-            } else {
-                self.redo.pop()
-            };
+            let recs = if undoing { self.undo.pop() } else { self.redo.pop() };
             let Some(recs) = recs else { return Ok(None) };
             let r = self.local_tx(|doc, tx| {
                 for u in recs.iter().rev() {
@@ -239,11 +181,7 @@ impl Replica {
             if let Some((env, inv)) = r {
                 let inv = coalesce(inv);
                 if !inv.is_empty() {
-                    let stack = if undoing {
-                        &mut self.redo
-                    } else {
-                        &mut self.undo
-                    };
+                    let stack = if undoing { &mut self.redo } else { &mut self.undo };
                     stack.push(inv);
                 }
                 return Ok(Some(env));
@@ -253,11 +191,7 @@ impl Replica {
 
     pub(super) fn deliverable(&self, e: &Envelope) -> bool {
         let have = self.applied.get(&e.replica).copied().unwrap_or(0);
-        e.seq == have + 1
-            && e.deps.iter().all(|(r, s)| {
-                self.applied.get(r).copied().unwrap_or(0) >= *s
-                    || (*r == e.replica && *s < e.seq && *s <= have)
-            })
+        e.seq == have + 1 && e.deps.iter().all(|(r, s)| self.applied.get(r).copied().unwrap_or(0) >= *s || (*r == e.replica && *s < e.seq && *s <= have))
     }
 
     /// Applied envelopes still in the log, oldest first (after compaction a suffix of the full history).
@@ -267,24 +201,12 @@ impl Replica {
 
     /// Apply one deliverable envelope only if `validate` accepts the merged document; otherwise leave the
     /// replica exactly as it was. Used by a server that must never hold an invalid project.
-    pub fn receive_checked(
-        &mut self,
-        e: Envelope,
-        validate: &mut dyn FnMut(&Value) -> Result<(), Vec<String>>,
-    ) -> Result<(), Vec<String>> {
+    pub fn receive_checked(&mut self, e: Envelope, validate: &mut dyn FnMut(&Value) -> Result<(), Vec<String>>) -> Result<(), Vec<String>> {
         self.validate(&e).map_err(|x| vec![x])?;
         if !self.deliverable(&e) {
-            return Err(vec![format!(
-                "envelope {}:{} is not deliverable now (duplicate, or a predecessor is missing)",
-                e.replica, e.seq
-            )]);
+            return Err(vec![format!("envelope {}:{} is not deliverable now (duplicate, or a predecessor is missing)", e.replica, e.seq)]);
         }
-        let backup = (
-            self.doc.clone(),
-            self.applied.clone(),
-            self.lamport,
-            self.dropped,
-        );
+        let backup = (self.doc.clone(), self.applied.clone(), self.lamport, self.dropped);
         let log_len = self.log.len();
         self.apply_env(e);
         if let Err(errs) = validate(&self.doc.to_json()) {
@@ -320,22 +242,10 @@ impl Replica {
     }
 
     pub(super) fn apply_env(&mut self, e: Envelope) {
-        let meta = Meta {
-            replica: e.replica,
-            seq: e.seq,
-            lamport: e.lamport,
-        };
-        let mut gen = IdGen {
-            r: e.replica,
-            s: e.seq,
-            next: 0,
-        };
+        let meta = Meta { replica: e.replica, seq: e.seq, lamport: e.lamport };
+        let mut gen = IdGen { r: e.replica, s: e.seq, next: 0 };
         for (i, p) in e.ops.iter().enumerate() {
-            if self
-                .doc
-                .apply_prim(&meta, i as u32, &mut gen, p, false)
-                .is_err()
-            {
+            if self.doc.apply_prim(&meta, i as u32, &mut gen, p, false).is_err() {
                 self.dropped += 1;
             }
         }
@@ -350,11 +260,7 @@ impl Replica {
         if e.seq <= self.applied.get(&e.replica).copied().unwrap_or(0) {
             return Ok(Delivery::Duplicate);
         }
-        if self
-            .pending
-            .iter()
-            .any(|p| p.replica == e.replica && p.seq == e.seq)
-        {
+        if self.pending.iter().any(|p| p.replica == e.replica && p.seq == e.seq) {
             return Ok(Delivery::Buffered);
         }
         if self.pending.len() >= MAX_PENDING {
@@ -363,23 +269,13 @@ impl Replica {
         self.pending.push(e);
         let mut applied = Vec::new();
         loop {
-            let next = self
-                .pending
-                .iter()
-                .enumerate()
-                .filter(|(_, p)| self.deliverable(p))
-                .min_by_key(|(_, p)| (p.replica, p.seq))
-                .map(|(i, _)| i);
+            let next = self.pending.iter().enumerate().filter(|(_, p)| self.deliverable(p)).min_by_key(|(_, p)| (p.replica, p.seq)).map(|(i, _)| i);
             let Some(i) = next else { break };
             let env = self.pending.remove(i);
             applied.push(env.clone());
             self.apply_env(env);
         }
-        Ok(if applied.is_empty() {
-            Delivery::Buffered
-        } else {
-            Delivery::Applied(applied)
-        })
+        Ok(if applied.is_empty() { Delivery::Buffered } else { Delivery::Applied(applied) })
     }
 
     /// Envelopes a peer with clock `clock` still lacks, in a causal order. `Err` when the log was
@@ -389,12 +285,7 @@ impl Replica {
         for (r, s) in &self.applied {
             need += (*s - clock.get(r).copied().unwrap_or(0).min(*s)) as usize;
         }
-        let out: Vec<Envelope> = self
-            .log
-            .iter()
-            .filter(|e| e.seq > clock.get(&e.replica).copied().unwrap_or(0))
-            .cloned()
-            .collect();
+        let out: Vec<Envelope> = self.log.iter().filter(|e| e.seq > clock.get(&e.replica).copied().unwrap_or(0)).cloned().collect();
         if out.len() < need {
             return Err("log was compacted past the peer's clock: fetch a snapshot".into());
         }
@@ -411,19 +302,10 @@ impl Replica {
             }
         }
         // only a prefix of the log is dropped, so positions stay meaningful for a relay that numbers them
-        let k = self
-            .log
-            .iter()
-            .take_while(|e| e.seq <= min.get(&e.replica).copied().unwrap_or(0))
-            .count();
+        let k = self.log.iter().take_while(|e| e.seq <= min.get(&e.replica).copied().unwrap_or(0)).count();
         self.log.drain(..k);
         st.log_dropped = k;
-        let nz = |c: &VClock| -> VClock {
-            c.iter()
-                .filter(|(_, v)| **v > 0)
-                .map(|(k, v)| (*k, *v))
-                .collect()
-        };
+        let nz = |c: &VClock| -> VClock { c.iter().filter(|(_, v)| **v > 0).map(|(k, v)| (*k, *v)).collect() };
         let mine = nz(&self.applied);
         if self.pending.is_empty() && peers.iter().all(|p| nz(p) == mine) {
             st.purged = true;

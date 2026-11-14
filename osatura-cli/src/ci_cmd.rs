@@ -12,30 +12,10 @@ use std::sync::atomic::{AtomicU8, Ordering};
 /// Exit code requested by a `ci` command; read by `main` when the command returns `Err`.
 pub static EXIT: AtomicU8 = AtomicU8::new(0);
 
-const VALUE: &[&str] = &[
-    "--junit",
-    "--html",
-    "--json",
-    "--only",
-    "--artifacts",
-    "--out",
-    "--metric",
-    "--tol",
-    "--ignore",
-    "--side",
-    "--overlay",
-    "--flicker",
-    "--pixel-de",
-    "--aa",
-    "--manifest",
-];
+const VALUE: &[&str] = &["--junit", "--html", "--json", "--only", "--artifacts", "--out", "--metric", "--tol", "--ignore", "--side", "--overlay", "--flicker", "--pixel-de", "--aa", "--manifest"];
 const FLAGS: &[&str] = &["--update", "--bless", "--prune", "--no-goldens", "--quiet"];
 /// Global flags every command accepts, also after the subcommand (`ci run --allow-external-assets`).
-const GLOBAL: &[&str] = &[
-    "--allow-external-assets",
-    "--allow-empty",
-    "--follow-symlinks",
-];
+const GLOBAL: &[&str] = &["--allow-external-assets", "--allow-empty", "--follow-symlinks"];
 
 /// Does `ci` take a value after this option?
 pub fn is_value_opt(o: &str) -> bool {
@@ -54,11 +34,7 @@ struct P {
 }
 
 fn parse(raw: &[String]) -> Result<P, String> {
-    let mut p = P {
-        pos: vec![],
-        opts: HashMap::new(),
-        flags: vec![],
-    };
+    let mut p = P { pos: vec![], opts: HashMap::new(), flags: vec![] };
     let mut i = 0;
     while i < raw.len() {
         let a = raw[i].as_str();
@@ -88,12 +64,7 @@ fn write(path: &str, body: &[u8]) -> Result<(), String> {
 }
 
 pub fn run(raw: &[String]) -> Result<(), String> {
-    let after: Vec<String> = raw
-        .iter()
-        .skip_while(|a| a.as_str() != "ci")
-        .skip(1)
-        .cloned()
-        .collect();
+    let after: Vec<String> = raw.iter().skip_while(|a| a.as_str() != "ci").skip(1).cloned().collect();
     let p = match parse(&after) {
         Ok(p) => p,
         Err(e) => return fail(2, e),
@@ -118,20 +89,9 @@ pub fn run(raw: &[String]) -> Result<(), String> {
 
 fn init(p: &P) -> Result<(), String> {
     let project = p.pos.get(1).ok_or("ci init needs a project file")?;
-    let out = p
-        .opts
-        .get("--out")
-        .or(p.opts.get("--manifest"))
-        .cloned()
-        .unwrap_or_else(|| {
-            Path::new(project)
-                .parent()
-                .filter(|d| !d.as_os_str().is_empty())
-                .map(|d| d.join(ci::DEFAULT_MANIFEST))
-                .unwrap_or_else(|| PathBuf::from(ci::DEFAULT_MANIFEST))
-                .to_string_lossy()
-                .to_string()
-        });
+    let out = p.opts.get("--out").or(p.opts.get("--manifest")).cloned().unwrap_or_else(|| {
+        Path::new(project).parent().filter(|d| !d.as_os_str().is_empty()).map(|d| d.join(ci::DEFAULT_MANIFEST)).unwrap_or_else(|| PathBuf::from(ci::DEFAULT_MANIFEST)).to_string_lossy().to_string()
+    });
     if Path::new(&out).exists() {
         return Err(format!("{out} already exists; remove it or pass --out"));
     }
@@ -148,101 +108,38 @@ fn init(p: &P) -> Result<(), String> {
         println!("goldens not written: run `osatura ci run {out} --update`");
         return Ok(());
     }
-    let rep = ci::run(
-        Path::new(&out),
-        &RunOptions {
-            update: true,
-            ..Default::default()
-        },
-    )?;
-    let n: usize = rep
-        .checks
-        .iter()
-        .map(|c| {
-            c.frames
-                .iter()
-                .filter(|f| f.status == Status::Updated)
-                .count()
-        })
-        .sum();
-    println!(
-        "wrote {n} golden frame(s) below {}",
-        Path::new(&out)
-            .parent()
-            .filter(|d| !d.as_os_str().is_empty())
-            .unwrap_or(Path::new("."))
-            .join("goldens")
-            .display()
-    );
+    let rep = ci::run(Path::new(&out), &RunOptions { update: true, ..Default::default() })?;
+    let n: usize = rep.checks.iter().map(|c| c.frames.iter().filter(|f| f.status == Status::Updated).count()).sum();
+    println!("wrote {n} golden frame(s) below {}", Path::new(&out).parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or(Path::new(".")).join("goldens").display());
     if rep.exit_code() != 0 {
-        return fail(
-            rep.exit_code() as u8,
-            "some checks fail on the project as it is; see `osatura ci run`".into(),
-        );
+        return fail(rep.exit_code() as u8, "some checks fail on the project as it is; see `osatura ci run`".into());
     }
     Ok(())
 }
 
 fn run_manifest(p: &P, bless: bool) -> Result<(), String> {
-    let manifest = p
-        .pos
-        .get(1)
-        .cloned()
-        .or(p.opts.get("--manifest").cloned())
-        .unwrap_or_else(|| ci::DEFAULT_MANIFEST.to_string());
+    let manifest = p.pos.get(1).cloned().or(p.opts.get("--manifest").cloned()).unwrap_or_else(|| ci::DEFAULT_MANIFEST.to_string());
     let o = RunOptions {
         update: p.flags.iter().any(|f| f == "--update"),
         bless: bless || p.flags.iter().any(|f| f == "--bless"),
         prune: p.flags.iter().any(|f| f == "--prune"),
-        only: p
-            .opts
-            .get("--only")
-            .map(|s| {
-                s.split(',')
-                    .map(|x| x.trim().to_string())
-                    .filter(|x| !x.is_empty())
-                    .collect()
-            })
-            .unwrap_or_default(),
+        only: p.opts.get("--only").map(|s| s.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect()).unwrap_or_default(),
         artifacts: p.opts.get("--artifacts").map(PathBuf::from),
     };
     let rep = ci::run(Path::new(&manifest), &o)?;
     if !p.flags.iter().any(|f| f == "--quiet") {
         for c in &rep.checks {
-            println!(
-                "[{:<7}] {:<12} {:<18} {}",
-                c.status.name().to_uppercase(),
-                c.kind,
-                c.name,
-                c.message
-            );
-            for f in c
-                .frames
-                .iter()
-                .filter(|f| matches!(f.status, Status::Fail | Status::Error | Status::Blessed))
-            {
+            println!("[{:<7}] {:<12} {:<18} {}", c.status.name().to_uppercase(), c.kind, c.name, c.message);
+            for f in c.frames.iter().filter(|f| matches!(f.status, Status::Fail | Status::Error | Status::Blessed)) {
                 println!("            frame {:>4}: {}", f.frame, f.message);
                 for g in f.regions.iter().take(3) {
-                    println!(
-                        "                      region x={} y={} {}x{} px={} max_dE={:.1}",
-                        g.x, g.y, g.w, g.h, g.pixels, g.max_de
-                    );
+                    println!("                      region x={} y={} {}x{} px={} max_dE={:.1}", g.x, g.y, g.w, g.h, g.pixels, g.max_de);
                 }
             }
         }
     }
     let s = &rep.summary;
-    println!(
-        "{} checks: {} passed, {} failed, {} errors, {} info, {} updated, {} blessed ({:.1} s)",
-        s.total,
-        s.passed,
-        s.failed,
-        s.errors,
-        s.info,
-        s.updated,
-        s.blessed,
-        rep.duration_ms / 1000.0
-    );
+    println!("{} checks: {} passed, {} failed, {} errors, {} info, {} updated, {} blessed ({:.1} s)", s.total, s.passed, s.failed, s.errors, s.info, s.updated, s.blessed, rep.duration_ms / 1000.0);
     if let Some(f) = p.opts.get("--junit") {
         write(f, ci::junit_xml(&rep).as_bytes())?;
     }
@@ -254,17 +151,7 @@ fn run_manifest(p: &P, bless: bool) -> Result<(), String> {
     }
     match rep.exit_code() {
         0 => Ok(()),
-        c => fail(
-            c as u8,
-            format!(
-                "osatura ci: {}",
-                if c == 1 {
-                    "checks failed"
-                } else {
-                    "checks could not be evaluated"
-                }
-            ),
-        ),
+        c => fail(c as u8, format!("osatura ci: {}", if c == 1 { "checks failed" } else { "checks could not be evaluated" })),
     }
 }
 
@@ -278,27 +165,12 @@ fn diff(p: &P) -> Result<(), String> {
         (Some(a), Some(b)) => (a, b),
         _ => return Err("ci diff needs two PNG files".into()),
     };
-    let metric = p
-        .opts
-        .get("--metric")
-        .map(String::as_str)
-        .unwrap_or("de2000");
+    let metric = p.opts.get("--metric").map(String::as_str).unwrap_or("de2000");
     let (ia, ib) = (read_png(a)?, read_png(b)?);
     if (ia.w, ia.h) != (ib.w, ib.h) {
-        return fail(
-            1,
-            format!("sizes differ: {}x{} vs {}x{}", ia.w, ia.h, ib.w, ib.h),
-        );
+        return fail(1, format!("sizes differ: {}x{} vs {}x{}", ia.w, ia.h, ib.w, ib.h));
     }
-    let num = |k: &str| -> Result<Option<f64>, String> {
-        p.opts
-            .get(k)
-            .map(|v| {
-                v.parse::<f64>()
-                    .map_err(|_| format!("{k} needs a number, got '{v}'"))
-            })
-            .transpose()
-    };
+    let num = |k: &str| -> Result<Option<f64>, String> { p.opts.get(k).map(|v| v.parse::<f64>().map_err(|_| format!("{k} needs a number, got '{v}'"))).transpose() };
     let de = match metric {
         "ssim" | "mse" => DeMetric::De2000,
         m => DeMetric::parse(m)?,
@@ -314,46 +186,20 @@ fn diff(p: &P) -> Result<(), String> {
         }
     }
     let aa = match p.opts.get("--aa") {
-        Some(v) => v
-            .parse::<usize>()
-            .map_err(|_| "--aa needs a whole number (largest forgiven pixel group, 0 = off)")?,
+        Some(v) => v.parse::<usize>().map_err(|_| "--aa needs a whole number (largest forgiven pixel group, 0 = off)")?,
         None => 2,
     };
-    let o = CompareOptions {
-        metric: de,
-        pixel_de: num("--pixel-de")?.unwrap_or(1.0),
-        aa_isolated: aa,
-        ignore,
-        ..CompareOptions::default()
-    };
+    let o = CompareOptions { metric: de, pixel_de: num("--pixel-de")?.unwrap_or(1.0), aa_isolated: aa, ignore, ..CompareOptions::default() };
     let d = percep::compare(&ia, &ib, &o)?;
     println!("size        {}x{}", d.w, d.h);
-    println!(
-        "SSIM        {:.5}   (luma)   channels min {:.5}   (R, G, B)",
-        d.ssim, d.ssim_rgb
-    );
+    println!("SSIM        {:.5}   (luma)   channels min {:.5}   (R, G, B)", d.ssim, d.ssim_rgb);
     println!("MSE         {:.4}   PSNR {:.2} dB", d.mse, d.psnr);
-    println!(
-        "{:<11} max {:.3}   mean {:.4}   (largest over all differing pixels: {:.3})",
-        de.name(),
-        d.max_de,
-        d.mean_de,
-        d.max_de_raw
-    );
-    println!(
-        "pixels      {} differ ({:.4}%), {} forgiven as anti-aliasing, {} ignored",
-        d.diff_pixels,
-        d.diff_fraction * 100.0,
-        d.forgiven_pixels,
-        d.ignored_pixels
-    );
+    println!("{:<11} max {:.3}   mean {:.4}   (largest over all differing pixels: {:.3})", de.name(), d.max_de, d.mean_de, d.max_de_raw);
+    println!("pixels      {} differ ({:.4}%), {} forgiven as anti-aliasing, {} ignored", d.diff_pixels, d.diff_fraction * 100.0, d.forgiven_pixels, d.ignored_pixels);
     println!("pHash       distance {}", d.phash_distance);
     println!("regions     {}", d.regions_total);
     for r in d.regions.iter().take(10) {
-        println!(
-            "  x={} y={} {}x{}  {} px  max dE {:.2}",
-            r.x, r.y, r.w, r.h, r.pixels, r.max_de
-        );
+        println!("  x={} y={} {}x{}  {} px  max dE {:.2}", r.x, r.y, r.w, r.h, r.pixels, r.max_de);
     }
     if let Some(f) = p.opts.get("--out") {
         write(f, &percep::heatmap(&ia, &d).to_png()?)?;
@@ -381,10 +227,7 @@ fn diff(p: &P) -> Result<(), String> {
                 why.push(format!("luma SSIM {:.5} < {t}", d.ssim));
             }
             if d.ssim_rgb < t {
-                why.push(format!(
-                    "channel SSIM (min of R, G, B) {:.5} < {t}",
-                    d.ssim_rgb
-                ));
+                why.push(format!("channel SSIM (min of R, G, B) {:.5} < {t}", d.ssim_rgb));
             }
             (!why.is_empty(), why.join("; "))
         }
@@ -394,10 +237,7 @@ fn diff(p: &P) -> Result<(), String> {
         }
         _ => {
             let t = num("--tol")?.unwrap_or(2.0);
-            (
-                d.max_de > t,
-                format!("max {} {:.3} > {t}", de.name(), d.max_de),
-            )
+            (d.max_de > t, format!("max {} {:.3} > {t}", de.name(), d.max_de))
         }
     };
     if differs {
@@ -415,10 +255,7 @@ mod tests {
     static SERIAL: Mutex<()> = Mutex::new(());
 
     fn args(s: &str) -> Vec<String> {
-        std::iter::once("ci")
-            .chain(s.split_whitespace())
-            .map(String::from)
-            .collect()
+        std::iter::once("ci").chain(s.split_whitespace()).map(String::from).collect()
     }
 
     fn tmp(tag: &str) -> osatura_core::fsutil::ScratchDir {
@@ -464,15 +301,7 @@ mod tests {
         let (r, code) = exec(&format!("diff {} {}", s(&pa), s(&pa)));
         assert!(r.is_ok() && code == 0);
         let heat = d.join("heat.png");
-        let (r, code) = exec(&format!(
-            "diff {} {} --out {} --side {} --overlay {} --flicker {}",
-            s(&pa),
-            s(&pb),
-            s(&heat),
-            s(&d.join("s.png")),
-            s(&d.join("o.png")),
-            s(&d.join("f.gif"))
-        ));
+        let (r, code) = exec(&format!("diff {} {} --out {} --side {} --overlay {} --flicker {}", s(&pa), s(&pb), s(&heat), s(&d.join("s.png")), s(&d.join("o.png")), s(&d.join("f.gif"))));
         assert!(r.unwrap_err().contains("images differ"));
         assert_eq!(code, 1);
         for f in ["heat.png", "s.png", "o.png", "f.gif"] {
@@ -535,32 +364,15 @@ mod tests {
         let (r, _) = exec(&format!("init {}", s(&proj)));
         assert!(r.is_ok() || r.unwrap_err().contains("already exists"));
         // restrict to cheap checks so the test is quick in debug builds
-        let (r, code) = exec(&format!(
-            "run {} --only validate,limits,frames --junit {} --html {} --json {}",
-            s(&man),
-            s(&d.join("j.xml")),
-            s(&d.join("r.html")),
-            s(&d.join("r.json"))
-        ));
+        let (r, code) = exec(&format!("run {} --only validate,limits,frames --junit {} --html {} --json {}", s(&man), s(&d.join("j.xml")), s(&d.join("r.html")), s(&d.join("r.json"))));
         assert!(r.is_ok() && code == 0, "{r:?}");
-        let j: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(d.join("r.json")).unwrap()).unwrap();
+        let j: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(d.join("r.json")).unwrap()).unwrap();
         assert_eq!(j["summary"]["failed"], 0);
-        assert!(std::fs::read_to_string(d.join("j.xml"))
-            .unwrap()
-            .contains("<testsuites"));
-        assert!(std::fs::read_to_string(d.join("r.html"))
-            .unwrap()
-            .contains("Osatura CI report"));
+        assert!(std::fs::read_to_string(d.join("j.xml")).unwrap().contains("<testsuites"));
+        assert!(std::fs::read_to_string(d.join("r.html")).unwrap().contains("Osatura CI report"));
         // change the project: exit 1; bless: exit 0; unknown --only: exit 2
         let mut q = p.clone();
-        q.layers
-            .iter_mut()
-            .find(|l| l.name == "sun")
-            .unwrap()
-            .transform
-            .position
-            .x += 50.0;
+        q.layers.iter_mut().find(|l| l.name == "sun").unwrap().transform.position.x += 50.0;
         std::fs::write(&proj, serde_json::to_string(&q).unwrap()).unwrap();
         let (r, code) = exec(&format!("run {} --only frames", s(&man)));
         assert!(r.is_err() && code == 1);

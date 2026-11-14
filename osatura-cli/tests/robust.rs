@@ -23,8 +23,7 @@ struct Out {
 
 impl T {
     fn new(tag: &str) -> T {
-        let guard =
-            osatura_core::fsutil::private_temp_dir(&format!("osatura-robust-{tag}")).unwrap();
+        let guard = osatura_core::fsutil::private_temp_dir(&format!("osatura-robust-{tag}")).unwrap();
         let dir = guard.path().to_path_buf();
         std::mem::forget(guard); // `T` removes the directory when dropped
         T { dir }
@@ -33,18 +32,10 @@ impl T {
         self.dir.join(n).to_string_lossy().into_owned()
     }
     fn run(&self, args: &[&str]) -> Out {
-        let o = Command::new(BIN)
-            .args(args)
-            .current_dir(&self.dir)
-            .output()
-            .expect("cannot start osatura");
+        let o = Command::new(BIN).args(args).current_dir(&self.dir).output().expect("cannot start osatura");
         let mut text = String::from_utf8_lossy(&o.stdout).into_owned();
         text.push_str(&String::from_utf8_lossy(&o.stderr));
-        Out {
-            ok: o.status.success(),
-            code: o.status.code(),
-            text,
-        }
+        Out { ok: o.status.success(), code: o.status.code(), text }
     }
     fn demo(&self, name: &str) -> Value {
         assert!(self.run(&["demo", &self.p(name)]).ok);
@@ -76,28 +67,12 @@ fn r1_huge_finite_numbers_are_refused_with_a_clear_error_and_exit_code() {
         let mut v = base.clone();
         *v.pointer_mut(ptr).unwrap_or_else(|| panic!("{ptr}")) = val;
         t.put("big.json", &v);
-        for cmd in [
-            vec!["check", "big.json"],
-            vec!["render", "big.json", "0", "o.svg"],
-            vec!["export", "big.json", "o.json"],
-        ] {
+        for cmd in [vec!["check", "big.json"], vec!["render", "big.json", "0", "o.svg"], vec!["export", "big.json", "o.json"]] {
             let o = t.run(&cmd);
-            assert!(
-                !o.ok && o.code == Some(1),
-                "{ptr} {cmd:?}: {} {:?}",
-                o.text,
-                o.code
-            );
-            assert!(
-                o.text.contains("outside the supported range"),
-                "{ptr}: {}",
-                o.text
-            );
+            assert!(!o.ok && o.code == Some(1), "{ptr} {cmd:?}: {} {:?}", o.text, o.code);
+            assert!(o.text.contains("outside the supported range"), "{ptr}: {}", o.text);
         }
-        assert!(
-            !Path::new(&t.p("o.svg")).exists() && !Path::new(&t.p("o.json")).exists(),
-            "nothing is written"
-        );
+        assert!(!Path::new(&t.p("o.svg")).exists() && !Path::new(&t.p("o.json")).exists(), "nothing is written");
     }
 }
 
@@ -107,20 +82,13 @@ fn r2_a_generator_never_leaves_an_invalid_project_behind() {
     t.demo("d.json");
     let o = t.run(&["marker", "d.json", "m.json", "big", "1e300"]);
     assert!(!o.ok, "{}", o.text);
-    assert!(
-        !Path::new(&t.p("m.json")).exists(),
-        "the invalid result must not be written"
-    );
+    assert!(!Path::new(&t.p("m.json")).exists(), "the invalid result must not be written");
     // an existing good output survives a failed generator run
     assert!(t.run(&["marker", "d.json", "m.json", "ok", "3"]).ok);
     let before = fs::read(t.p("m.json")).unwrap();
     let o = t.run(&["marker", "d.json", "m.json", "big", "1e300"]);
     assert!(!o.ok);
-    assert_eq!(
-        fs::read(t.p("m.json")).unwrap(),
-        before,
-        "atomic: old file untouched"
-    );
+    assert_eq!(fs::read(t.p("m.json")).unwrap(), before, "atomic: old file untouched");
     // the good one is valid for the other commands
     assert!(t.run(&["check", "m.json"]).ok);
 }
@@ -135,13 +103,7 @@ fn r2_write_json_reports_the_real_cause_of_an_invalid_output() {
     let o = t.run(&["event", "small.json", "e.json", "boom", "1e30"]);
     assert!(!o.ok, "{}", o.text);
     assert!(!Path::new(&t.p("e.json")).exists());
-    assert!(
-        o.text.contains("output would be invalid")
-            || o.text.contains("outside")
-            || o.text.contains("frame"),
-        "{}",
-        o.text
-    );
+    assert!(o.text.contains("output would be invalid") || o.text.contains("outside") || o.text.contains("frame"), "{}", o.text);
 }
 
 #[test]
@@ -158,11 +120,7 @@ fn r2_outputs_never_overwrite_the_input_project() {
     ] {
         let o = t.run(&cmd);
         assert!(!o.ok, "{cmd:?}: {}", o.text);
-        assert_eq!(
-            fs::read(t.p("d.json")).unwrap(),
-            orig,
-            "{cmd:?} destroyed the project"
-        );
+        assert_eq!(fs::read(t.p("d.json")).unwrap(), orig, "{cmd:?} destroyed the project");
     }
     // also through a different spelling of the same file
     let o = t.run(&["render", "d.json", "0", "./d.json"]);
@@ -200,25 +158,12 @@ fn r3_a_closed_pipe_is_not_a_panic() {
     let t = T::new("r3");
     t.demo("d.json");
     // lint prints one line per finding and the usage text is long: close stdout straight away
-    for args in [
-        vec!["help"],
-        vec!["lint", "d.json"],
-        vec!["check", "d.json"],
-    ] {
-        let mut c = Command::new(BIN)
-            .args(&args)
-            .current_dir(&t.dir)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .unwrap();
+    for args in [vec!["help"], vec!["lint", "d.json"], vec!["check", "d.json"]] {
+        let mut c = Command::new(BIN).args(&args).current_dir(&t.dir).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
         drop(c.stdout.take());
         let o = c.wait_with_output().unwrap();
         let err = String::from_utf8_lossy(&o.stderr);
-        assert!(
-            !err.contains("panicked") && !err.contains("failed printing"),
-            "{args:?}: {err}"
-        );
+        assert!(!err.contains("panicked") && !err.contains("failed printing"), "{args:?}: {err}");
         assert_ne!(o.status.code(), Some(101), "{args:?}");
     }
 }
@@ -234,18 +179,9 @@ fn r4_unknown_fields_are_warned_about_and_transition_typos_are_errors() {
     t.put("typo.json", &v);
     let o = t.run(&["check", "typo.json"]);
     assert!(o.ok, "an unknown field is a warning for check: {}", o.text);
-    assert!(
-        o.text.contains("unknown field layers[0].opacty")
-            && o.text.contains("unknown field layers[0].paths[0].fil"),
-        "{}",
-        o.text
-    );
+    assert!(o.text.contains("unknown field layers[0].opacty") && o.text.contains("unknown field layers[0].paths[0].fil"), "{}", o.text);
     let l = t.run(&["lint", "typo.json"]);
-    assert!(
-        l.text.contains("unknown field layers[0].opacty"),
-        "{}",
-        l.text
-    );
+    assert!(l.text.contains("unknown field layers[0].opacty"), "{}", l.text);
 
     // a machine transition with `conditions` instead of `when` used to load as an always-firing transition
     let mut m = t.demo("m.json");
@@ -264,27 +200,15 @@ fn s3_runaway_sizes_are_refused_cleanly() {
     let mut v = t.demo("d.json");
     // fuzz --samples above the cap
     let o = t.run(&["fuzz", "d.json", "--samples", "1000000000"]);
-    assert!(
-        !o.ok && !o.text.contains("panicked") && o.code != Some(101),
-        "{}",
-        o.text
-    );
+    assert!(!o.ok && !o.text.contains("panicked") && o.code != Some(101), "{}", o.text);
     assert!(o.text.to_lowercase().contains("samples"), "{}", o.text);
     // a stage whose render would be gigantic
     v["width"] = json!(30_000.0);
     v["height"] = json!(30_000.0);
     t.put("wide.json", &v);
     let o = t.run(&["render", "wide.json", "0", "o.png"]);
-    assert!(
-        !o.ok && o.code != Some(101) && !o.text.contains("panicked"),
-        "{}",
-        o.text
-    );
-    assert!(
-        o.text.contains("pixel") || o.text.contains("Mpixel") || o.text.contains("size"),
-        "{}",
-        o.text
-    );
+    assert!(!o.ok && o.code != Some(101) && !o.text.contains("panicked"), "{}", o.text);
+    assert!(o.text.contains("pixel") || o.text.contains("Mpixel") || o.text.contains("size"), "{}", o.text);
     assert!(!Path::new(&t.p("o.png")).exists());
 }
 
@@ -300,11 +224,7 @@ fn s4_deep_expressions_do_not_overflow_the_stack_through_the_cli() {
         t.put(&format!("e{i}.json"), &v);
         let o = t.run(&["check", &format!("e{i}.json")]);
         assert!(!o.ok, "{}", &o.text[..o.text.len().min(300)]);
-        assert!(
-            o.code == Some(1) && !o.text.contains("overflow") && !o.text.contains("SIGABRT"),
-            "exit {:?}",
-            o.code
-        );
+        assert!(o.code == Some(1) && !o.text.contains("overflow") && !o.text.contains("SIGABRT"), "exit {:?}", o.code);
     }
 }
 
@@ -318,35 +238,20 @@ fn s2_assets_stay_inside_the_project_directory() {
         assert!(o.ok, "{}", o.text);
         fs::read(t.p("inside.png")).unwrap()
     };
-    let outer =
-        std::env::temp_dir().join(format!("osatura-robust-outside-{}.png", std::process::id()));
+    let outer = std::env::temp_dir().join(format!("osatura-robust-outside-{}.png", std::process::id()));
     fs::write(&outer, &png).unwrap();
-    let image_layer = |src: &str| {
-        json!({"name": "img", "type": "image", "source": {"file": src}, "origin": [0.0, 0.0],
-        "transform": {"position": [0.0, 0.0], "rotation": 0.0, "scale": [1.0, 1.0], "skew": 0.0, "anchor": [0.0, 0.0]}, "opacity": 1.0, "visible": true, "blend": "normal"})
-    };
+    let image_layer = |src: &str| json!({"name": "img", "type": "image", "source": {"file": src}, "origin": [0.0, 0.0],
+        "transform": {"position": [0.0, 0.0], "rotation": 0.0, "scale": [1.0, 1.0], "skew": 0.0, "anchor": [0.0, 0.0]}, "opacity": 1.0, "visible": true, "blend": "normal"});
     let outside = outer.to_string_lossy().into_owned();
     let rel_up = format!("../{}", outer.file_name().unwrap().to_string_lossy());
-    for (src, should_work) in [
-        ("inside.png", true),
-        (outside.as_str(), false),
-        (rel_up.as_str(), false),
-        ("/etc/passwd", false),
-    ] {
+    for (src, should_work) in [("inside.png", true), (outside.as_str(), false), (rel_up.as_str(), false), ("/etc/passwd", false)] {
         v["layers"] = json!([image_layer(src)]);
         v["channels"] = json!([]);
         t.put("img.json", &v);
         let o = t.run(&["check", "img.json"]);
         assert_eq!(o.ok, should_work, "{src}: {}", o.text);
         if !should_work {
-            assert!(
-                o.text.contains("outside")
-                    || o.text.contains("inside the project")
-                    || o.text.contains("not allowed")
-                    || o.text.contains("relative"),
-                "{src}: {}",
-                o.text
-            );
+            assert!(o.text.contains("outside") || o.text.contains("inside the project") || o.text.contains("not allowed") || o.text.contains("relative"), "{src}: {}", o.text);
         }
     }
     // the escape hatch has to be asked for explicitly

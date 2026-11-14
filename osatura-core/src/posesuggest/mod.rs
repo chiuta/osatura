@@ -38,14 +38,14 @@ use crate::project::{Channel, Mode, Project, Prop, Source};
 use crate::tinymlp::{self, Dense, Mlp, Rng, TrainOpts};
 use serde::{Deserialize, Serialize};
 
-mod apply;
 mod database;
 mod kinematics;
+mod apply;
 mod synthetic;
 
-pub use apply::*;
 pub use database::*;
 pub use kinematics::*;
+pub use apply::*;
 pub use synthetic::*;
 
 #[cfg(test)]

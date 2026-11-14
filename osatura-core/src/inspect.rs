@@ -64,11 +64,7 @@ pub fn stats(p: &Project) -> Stats {
 
 fn collect_layers(ls: &[Layer], prefix: &str, out: &mut BTreeMap<String, Value>) {
     for l in ls {
-        let path = if prefix.is_empty() {
-            l.name.clone()
-        } else {
-            format!("{prefix}/{}", l.name)
-        };
+        let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
         let mut v = serde_json::to_value(l).unwrap_or(Value::Null);
         // children are compared as their own entries
         if let Value::Object(m) = &mut v {
@@ -80,24 +76,14 @@ fn collect_layers(ls: &[Layer], prefix: &str, out: &mut BTreeMap<String, Value>)
 }
 
 fn named<T: Serialize>(items: &[T], key: impl Fn(&T) -> String) -> BTreeMap<String, Value> {
-    items
-        .iter()
-        .map(|i| (key(i), serde_json::to_value(i).unwrap_or(Value::Null)))
-        .collect()
+    items.iter().map(|i| (key(i), serde_json::to_value(i).unwrap_or(Value::Null))).collect()
 }
 
-fn diff_maps(
-    kind: &str,
-    a: &BTreeMap<String, Value>,
-    b: &BTreeMap<String, Value>,
-    out: &mut Vec<String>,
-) {
+fn diff_maps(kind: &str, a: &BTreeMap<String, Value>, b: &BTreeMap<String, Value>, out: &mut Vec<String>) {
     for (k, va) in a {
         match b.get(k) {
             None => out.push(format!("- {kind} '{k}' removed")),
-            Some(vb) if vb != va => {
-                out.push(format!("~ {kind} '{k}' changed{}", describe_change(va, vb)))
-            }
+            Some(vb) if vb != va => out.push(format!("~ {kind} '{k}' changed{}", describe_change(va, vb))),
             _ => {}
         }
     }
@@ -107,15 +93,8 @@ fn diff_maps(
 }
 
 fn describe_change(a: &Value, b: &Value) -> String {
-    let (Value::Object(x), Value::Object(y)) = (a, b) else {
-        return String::new();
-    };
-    let mut fields: Vec<&str> = x
-        .keys()
-        .chain(y.keys())
-        .map(String::as_str)
-        .filter(|k| x.get(*k) != y.get(*k))
-        .collect();
+    let (Value::Object(x), Value::Object(y)) = (a, b) else { return String::new() };
+    let mut fields: Vec<&str> = x.keys().chain(y.keys()).map(String::as_str).filter(|k| x.get(*k) != y.get(*k)).collect();
     fields.sort();
     fields.dedup();
     if fields.is_empty() {
@@ -134,64 +113,22 @@ pub fn diff(a: &Project, b: &Project) -> Vec<String> {
         }
     };
     setting("name", a.name.clone(), b.name.clone());
-    setting(
-        "size",
-        format!("{}×{}", a.width, a.height),
-        format!("{}×{}", b.width, b.height),
-    );
+    setting("size", format!("{}×{}", a.width, a.height), format!("{}×{}", b.width, b.height));
     setting("fps", a.fps.to_string(), b.fps.to_string());
     setting("frames", a.frames.to_string(), b.frames.to_string());
-    setting(
-        "camera",
-        serde_json::to_string(&a.camera).unwrap_or_default(),
-        serde_json::to_string(&b.camera).unwrap_or_default(),
-    );
-    setting(
-        "background",
-        format!("{:?}", a.background),
-        format!("{:?}", b.background),
-    );
-    diff_maps(
-        "bone",
-        &named(&a.bones, |x| x.name.clone()),
-        &named(&b.bones, |x| x.name.clone()),
-        &mut out,
-    );
-    diff_maps(
-        "ik",
-        &named(&a.ik, |x| x.name.clone()),
-        &named(&b.ik, |x| x.name.clone()),
-        &mut out,
-    );
-    diff_maps(
-        "constraint",
-        &named(&a.constraints, |x| x.name.clone()),
-        &named(&b.constraints, |x| x.name.clone()),
-        &mut out,
-    );
-    diff_maps(
-        "spring",
-        &named(&a.springs, |x| x.bone.clone()),
-        &named(&b.springs, |x| x.bone.clone()),
-        &mut out,
-    );
+    setting("camera", serde_json::to_string(&a.camera).unwrap_or_default(), serde_json::to_string(&b.camera).unwrap_or_default());
+    setting("background", format!("{:?}", a.background), format!("{:?}", b.background));
+    diff_maps("bone", &named(&a.bones, |x| x.name.clone()), &named(&b.bones, |x| x.name.clone()), &mut out);
+    diff_maps("ik", &named(&a.ik, |x| x.name.clone()), &named(&b.ik, |x| x.name.clone()), &mut out);
+    diff_maps("constraint", &named(&a.constraints, |x| x.name.clone()), &named(&b.constraints, |x| x.name.clone()), &mut out);
+    diff_maps("spring", &named(&a.springs, |x| x.bone.clone()), &named(&b.springs, |x| x.bone.clone()), &mut out);
     let (mut la, mut lb) = (BTreeMap::new(), BTreeMap::new());
     collect_layers(&a.layers, "", &mut la);
     collect_layers(&b.layers, "", &mut lb);
     diff_maps("layer", &la, &lb, &mut out);
     let ck = |c: &crate::project::Channel| format!("{}:{:?}", c.target, c.prop);
-    diff_maps(
-        "channel",
-        &named(&a.channels, ck),
-        &named(&b.channels, ck),
-        &mut out,
-    );
-    diff_maps(
-        "marker",
-        &named(&a.markers, |m| m.name.clone()),
-        &named(&b.markers, |m| m.name.clone()),
-        &mut out,
-    );
+    diff_maps("channel", &named(&a.channels, ck), &named(&b.channels, ck), &mut out);
+    diff_maps("marker", &named(&a.markers, |m| m.name.clone()), &named(&b.markers, |m| m.name.clone()), &mut out);
     out
 }
 
@@ -227,50 +164,32 @@ fn thumbnail(rgba: &[u8], w: usize, h: usize) -> Vec<u8> {
     let mut cnt = vec![0u32; THUMB * THUMB];
     for y in 0..h {
         for x in 0..w {
-            let cell = (y * THUMB / h.max(1)).min(THUMB - 1) * THUMB
-                + (x * THUMB / w.max(1)).min(THUMB - 1);
+            let cell = (y * THUMB / h.max(1)).min(THUMB - 1) * THUMB + (x * THUMB / w.max(1)).min(THUMB - 1);
             cnt[cell] += 1;
             for c in 0..4 {
                 sum[cell * 4 + c] += rgba[(y * w + x) * 4 + c] as u32;
             }
         }
     }
-    (0..THUMB * THUMB * 4)
-        .map(|i| (sum[i] / cnt[i / 4].max(1)) as u8)
-        .collect()
+    (0..THUMB * THUMB * 4).map(|i| (sum[i] / cnt[i / 4].max(1)) as u8).collect()
 }
 
 fn thumb_distance(a: &[u8], b: &[u8]) -> f32 {
     if a.len() != b.len() || a.is_empty() {
         return 1.0;
     }
-    a.iter()
-        .zip(b)
-        .map(|(&x, &y)| (x as f32 - y as f32).abs())
-        .sum::<f32>()
-        / (a.len() as f32 * 255.0)
+    a.iter().zip(b).map(|(&x, &y)| (x as f32 - y as f32).abs()).sum::<f32>() / (a.len() as f32 * 255.0)
 }
 
 pub fn golden_record(engine: &Engine, scale: f32) -> Golden {
-    let opts = RasterOptions {
-        scale,
-        show_bones: false,
-        transparent: false,
-    };
+    let opts = RasterOptions { scale, show_bones: false, transparent: false };
     let frames = (0..engine.project.frames)
         .map(|f| {
             let (w, h, px) = render_rgba(engine, f as f32, &opts);
-            GoldenFrame {
-                hash: format!("{:016x}", fnv1a(&px)),
-                thumb: thumbnail(&px, w as usize, h as usize),
-            }
+            GoldenFrame { hash: format!("{:016x}", fnv1a(&px)), thumb: thumbnail(&px, w as usize, h as usize) }
         })
         .collect();
-    Golden {
-        project: engine.project.name.clone(),
-        scale,
-        frames,
-    }
+    Golden { project: engine.project.name.clone(), scale, frames }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -302,33 +221,13 @@ pub fn golden_check(engine: &Engine, golden: &Golden, tolerance: f32) -> Vec<Gol
                     let d = thumb_distance(&a.thumb, &b.thumb);
                     if tolerance <= 0.0 || d > tolerance {
                         let n = a.thumb.len().min(b.thumb.len());
-                        let cells = (0..n / 4)
-                            .filter(|&c| a.thumb[c * 4..c * 4 + 4] != b.thumb[c * 4..c * 4 + 4])
-                            .count();
-                        let max_diff = a
-                            .thumb
-                            .iter()
-                            .zip(&b.thumb)
-                            .map(|(&x, &y)| x.abs_diff(y))
-                            .max()
-                            .unwrap_or(0);
-                        bad.push(GoldenMismatch {
-                            frame: i,
-                            distance: d,
-                            cells_differing: cells,
-                            max_diff,
-                            missing: false,
-                        });
+                        let cells = (0..n / 4).filter(|&c| a.thumb[c * 4..c * 4 + 4] != b.thumb[c * 4..c * 4 + 4]).count();
+                        let max_diff = a.thumb.iter().zip(&b.thumb).map(|(&x, &y)| x.abs_diff(y)).max().unwrap_or(0);
+                        bad.push(GoldenMismatch { frame: i, distance: d, cells_differing: cells, max_diff, missing: false });
                     }
                 }
             }
-            _ => bad.push(GoldenMismatch {
-                frame: i,
-                distance: 1.0,
-                cells_differing: 0,
-                max_diff: 255,
-                missing: true,
-            }),
+            _ => bad.push(GoldenMismatch { frame: i, distance: 1.0, cells_differing: 0, max_diff: 255, missing: true }),
         }
     }
     bad
@@ -336,44 +235,22 @@ pub fn golden_check(engine: &Engine, golden: &Golden, tolerance: f32) -> Vec<Gol
 
 /// Side-by-side review image for one frame: `before | after | difference`, where the third
 /// panel is a heat map (black = identical, red→yellow = larger change, scaled by `gain`).
-pub fn compare_frame(
-    a: &Engine,
-    b: &Engine,
-    frame: f32,
-    scale: f32,
-    gain: f32,
-) -> Result<(u32, u32, Vec<u8>), String> {
-    let opts = RasterOptions {
-        scale,
-        show_bones: false,
-        transparent: false,
-    };
+pub fn compare_frame(a: &Engine, b: &Engine, frame: f32, scale: f32, gain: f32) -> Result<(u32, u32, Vec<u8>), String> {
+    let opts = RasterOptions { scale, show_bones: false, transparent: false };
     let (wa, ha, pa) = render_rgba(a, frame, &opts);
     let (wb, hb, pb) = render_rgba(b, frame, &opts);
     if (wa, ha) != (wb, hb) {
-        return Err(format!(
-            "frame sizes differ ({wa}×{ha} vs {wb}×{hb}); compare projects of the same size"
-        ));
+        return Err(format!("frame sizes differ ({wa}×{ha} vs {wb}×{hb}); compare projects of the same size"));
     }
     let (w, h) = (wa as usize, ha as usize);
     let mut out = vec![0u8; w * 3 * h * 4];
     for y in 0..h {
         for x in 0..w {
             let i = (y * w + x) * 4;
-            let d = (0..3)
-                .map(|c| (pa[i + c] as f32 - pb[i + c] as f32).abs())
-                .fold((pa[i + 3] as f32 - pb[i + 3] as f32).abs(), f32::max)
-                / 255.0;
+            let d = (0..3).map(|c| (pa[i + c] as f32 - pb[i + c] as f32).abs()).fold((pa[i + 3] as f32 - pb[i + 3] as f32).abs(), f32::max) / 255.0;
             let t = (d * gain).clamp(0.0, 1.0);
             let heat = [(t * 2.0).min(1.0), (t * 2.0 - 1.0).max(0.0), 0.0];
-            for (panel, px) in [
-                (0, [pa[i], pa[i + 1], pa[i + 2], pa[i + 3]]),
-                (1, [pb[i], pb[i + 1], pb[i + 2], pb[i + 3]]),
-                (
-                    2,
-                    [(heat[0] * 255.0) as u8, (heat[1] * 255.0) as u8, 0, 255],
-                ),
-            ] {
+            for (panel, px) in [(0, [pa[i], pa[i + 1], pa[i + 2], pa[i + 3]]), (1, [pb[i], pb[i + 1], pb[i + 2], pb[i + 3]]), (2, [(heat[0] * 255.0) as u8, (heat[1] * 255.0) as u8, 0, 255])] {
                 let o = (y * w * 3 + panel * w + x) * 4;
                 out[o..o + 4].copy_from_slice(&px);
             }
@@ -424,10 +301,7 @@ mod tests {
         let e = Engine::new(p.clone()).unwrap();
         let g = golden_record(&e, 0.25);
         assert_eq!(g.frames.len(), 3);
-        assert!(
-            golden_check(&e, &g, 0.0).is_empty(),
-            "same project matches exactly"
-        );
+        assert!(golden_check(&e, &g, 0.0).is_empty(), "same project matches exactly");
         // serialises
         let g2: Golden = serde_json::from_str(&serde_json::to_string(&g).unwrap()).unwrap();
         assert_eq!(g, g2);
@@ -436,12 +310,7 @@ mod tests {
         for l in &mut q.layers {
             l.visible = false;
         }
-        q.background = Some(crate::style::Rgba {
-            r: 1.0,
-            g: 0.0,
-            b: 0.0,
-            a: 1.0,
-        });
+        q.background = Some(crate::style::Rgba { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
         let bad = golden_check(&Engine::new(q).unwrap(), &g, 0.01);
         assert_eq!(bad.len(), 3, "every frame differs");
         assert!(bad[0].distance > 0.05);
@@ -462,24 +331,11 @@ mod tests {
         }
         let g_open = golden_record(&Engine::new(open.clone()).unwrap(), 0.25);
         let mut q = open.clone();
-        q.background = Some(crate::style::Rgba {
-            r: 0.5,
-            g: 0.5,
-            b: 0.5,
-            a: 1.0,
-        });
+        q.background = Some(crate::style::Rgba { r: 0.5, g: 0.5, b: 0.5, a: 1.0 });
         let bad = golden_check(&Engine::new(q).unwrap(), &g_open, 0.0);
-        assert!(
-            !bad.is_empty(),
-            "a background colour change must fail the exact check"
-        );
+        assert!(!bad.is_empty(), "a background colour change must fail the exact check");
         // a big rotation of one bone
-        let bone = p
-            .bones
-            .iter()
-            .find(|b| b.parent.is_some())
-            .map(|b| b.name.clone())
-            .unwrap();
+        let bone = p.bones.iter().find(|b| b.parent.is_some()).map(|b| b.name.clone()).unwrap();
         let mut q = p.clone();
         for b in &mut q.bones {
             if b.name == bone {
@@ -487,19 +343,13 @@ mod tests {
             }
         }
         let bad = golden_check(&Engine::new(q.clone()).unwrap(), &g, 0.0);
-        assert!(
-            !bad.is_empty(),
-            "a 50 degree change must fail the exact check"
-        );
+        assert!(!bad.is_empty(), "a 50 degree change must fail the exact check");
         // a hash mismatch that the thumbnail cannot see still fails at 0 and passes under a tolerance
         let mut tweaked = g.clone();
         tweaked.frames[0].hash = "0000000000000000".into();
         let bad = golden_check(&Engine::new(p.clone()).unwrap(), &tweaked, 0.0);
         assert_eq!(bad.len(), 1);
-        assert_eq!(
-            (bad[0].frame, bad[0].cells_differing, bad[0].max_diff),
-            (0, 0, 0)
-        );
+        assert_eq!((bad[0].frame, bad[0].cells_differing, bad[0].max_diff), (0, 0, 0));
         assert!(golden_check(&Engine::new(p).unwrap(), &tweaked, 0.01).is_empty());
     }
 
@@ -510,21 +360,8 @@ mod tests {
         let a = Engine::new(p.clone()).unwrap();
         let (w, h, same) = compare_frame(&a, &a, 0.0, 0.2, 4.0).unwrap();
         let panel = (w / 3) as usize;
-        let diff_px = |img: &[u8]| {
-            img.chunks_exact(4 * panel * 3)
-                .flat_map(|row| {
-                    row[panel * 2 * 4..]
-                        .chunks_exact(4)
-                        .map(|c| c[0] as u32 + c[1] as u32)
-                        .collect::<Vec<_>>()
-                })
-                .sum::<u32>()
-        };
-        assert_eq!(
-            diff_px(&same),
-            0,
-            "identical projects ⇒ black difference panel"
-        );
+        let diff_px = |img: &[u8]| img.chunks_exact(4 * panel * 3).flat_map(|row| row[panel * 2 * 4..].chunks_exact(4).map(|c| c[0] as u32 + c[1] as u32).collect::<Vec<_>>()).sum::<u32>();
+        assert_eq!(diff_px(&same), 0, "identical projects ⇒ black difference panel");
         assert!(h > 0);
         let mut q = p.clone();
         for l in &mut q.layers {

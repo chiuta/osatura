@@ -52,11 +52,7 @@ impl PinSolver {
             }
         }
         let inv = invert(&phi, n).ok_or("pins coincide or are too close together")?;
-        Ok(PinSolver {
-            pins: pins.to_vec(),
-            radius,
-            inv,
-        })
+        Ok(PinSolver { pins: pins.to_vec(), radius, inv })
     }
 
     pub fn len(&self) -> usize {
@@ -158,11 +154,7 @@ mod tests {
         let s = PinSolver::new(&pins, 100.0).unwrap();
         for i in 0..3 {
             let d = s.displacement(&offs, pins[i]);
-            assert!(
-                d.distance(offs[i]) < 1e-3,
-                "pin {i}: {d:?} vs {:?}",
-                offs[i]
-            );
+            assert!(d.distance(offs[i]) < 1e-3, "pin {i}: {d:?} vs {:?}", offs[i]);
         }
     }
 
@@ -170,18 +162,11 @@ mod tests {
     fn is_local_and_smooth() {
         let s = PinSolver::new(&[v(0.0, 0.0)], 50.0).unwrap();
         let offs = [v(10.0, 0.0)];
-        assert_eq!(
-            s.displacement(&offs, v(60.0, 0.0)),
-            Vec2::ZERO,
-            "beyond the radius nothing moves"
-        );
+        assert_eq!(s.displacement(&offs, v(60.0, 0.0)), Vec2::ZERO, "beyond the radius nothing moves");
         let a = s.displacement(&offs, v(10.0, 0.0)).x;
         let b = s.displacement(&offs, v(25.0, 0.0)).x;
         let c = s.displacement(&offs, v(49.0, 0.0)).x;
-        assert!(
-            a > b && b > c && (0.0..0.01).contains(&c),
-            "monotone fall-off to zero: {a} {b} {c}"
-        );
+        assert!(a > b && b > c && (0.0..0.01).contains(&c), "monotone fall-off to zero: {a} {b} {c}");
     }
 
     #[test]
@@ -201,10 +186,7 @@ mod tests {
     #[test]
     fn rejects_bad_input() {
         assert!(PinSolver::new(&[], 10.0).is_err());
-        assert!(
-            PinSolver::new(&[v(0.0, 0.0), v(0.0, 0.0)], 10.0).is_err(),
-            "coincident pins"
-        );
+        assert!(PinSolver::new(&[v(0.0, 0.0), v(0.0, 0.0)], 10.0).is_err(), "coincident pins");
         assert!(PinSolver::new(&[v(0.0, 0.0)], 0.0).is_err());
         assert!(PinSolver::new(&vec![v(0.0, 0.0); 65], 10.0).is_err());
     }
@@ -219,12 +201,7 @@ mod tests {
             a[2] * inv[0] + a[3] * inv[2],
             a[2] * inv[1] + a[3] * inv[3],
         ];
-        assert!(
-            (id[0] - 1.0).abs() < 1e-9
-                && id[1].abs() < 1e-9
-                && id[2].abs() < 1e-9
-                && (id[3] - 1.0).abs() < 1e-9
-        );
+        assert!((id[0] - 1.0).abs() < 1e-9 && id[1].abs() < 1e-9 && id[2].abs() < 1e-9 && (id[3] - 1.0).abs() < 1e-9);
         assert!(invert(&[1.0, 2.0, 2.0, 4.0], 2).is_none());
     }
 }

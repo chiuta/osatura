@@ -98,18 +98,10 @@ pub unsafe extern "C" fn arm_open(json: *const u8, len: usize) -> *mut Handle {
         if json.is_null() || len == 0 || len > MAX_ALLOC {
             return Err("arm_open: null pointer or bad length".into());
         }
-        let text = std::str::from_utf8(std::slice::from_raw_parts(json, len))
-            .map_err(|e| format!("project is not UTF-8: {e}"))?;
+        let text = std::str::from_utf8(std::slice::from_raw_parts(json, len)).map_err(|e| format!("project is not UTF-8: {e}"))?;
         let anim = Animation::from_json(text).map_err(|e| e.to_string())?;
         let info = anim.info();
-        Ok(Box::into_raw(Box::new(Handle {
-            anim,
-            info,
-            player: None,
-            out: Vec::new(),
-            out_w: 0,
-            out_h: 0,
-        })))
+        Ok(Box::into_raw(Box::new(Handle { anim, info, player: None, out: Vec::new(), out_w: 0, out_h: 0 })))
     })
 }
 
@@ -151,11 +143,7 @@ getter!(arm_width, f32, 0.0, |i| i.width);
 getter!(arm_height, f32, 0.0, |i| i.height);
 
 fn check_frame(frame: f32) -> Result<(), String> {
-    if frame.is_finite() {
-        Ok(())
-    } else {
-        Err("frame must be finite".into())
-    }
+    if frame.is_finite() { Ok(()) } else { Err("frame must be finite".into()) }
 }
 
 /// Render an SVG document for `frame` into the handle's output buffer.
@@ -167,10 +155,7 @@ pub unsafe extern "C" fn arm_render_svg(h: *mut Handle, frame: f32, show_bones: 
     guarded(-1, || {
         let hd = handle(h)?;
         check_frame(frame)?;
-        let svg = hd
-            .anim
-            .render_svg(frame, show_bones != 0)
-            .map_err(|e| e.to_string())?;
+        let svg = hd.anim.render_svg(frame, show_bones != 0).map_err(|e| e.to_string())?;
         hd.out = svg.into_bytes();
         hd.out_w = 0;
         hd.out_h = 0;
@@ -191,18 +176,12 @@ pub unsafe extern "C" fn arm_render_rgba(h: *mut Handle, frame: f32, scale: f32)
             return Err("scale must be within 0.05..4".into());
         }
         // refuse before allocating: the pixel buffer must fit the module's memory and an i32 length
-        let (pw, ph) = (
-            (hd.info.width * scale).round().max(1.0) as u64,
-            (hd.info.height * scale).round().max(1.0) as u64,
-        );
+        let (pw, ph) = ((hd.info.width * scale).round().max(1.0) as u64, (hd.info.height * scale).round().max(1.0) as u64);
         let need = pw.saturating_mul(ph).saturating_mul(4);
         if need > MAX_ALLOC as u64 {
             return Err(format!("output would be {pw}x{ph} pixels ({need} bytes), more than the limit of {MAX_ALLOC} bytes: lower the scale"));
         }
-        let img = hd
-            .anim
-            .render_rgba(frame, &RenderSettings::new(scale))
-            .map_err(|e| e.to_string())?;
+        let img = hd.anim.render_rgba(frame, &RenderSettings::new(scale)).map_err(|e| e.to_string())?;
         hd.out_w = img.width;
         hd.out_h = img.height;
         hd.out = img.pixels;
@@ -235,6 +214,7 @@ pub unsafe extern "C" fn arm_out_height(h: *mut Handle) -> u32 {
     h.as_ref().map_or(0, |x| x.out_h)
 }
 
+
 // ---------------------------------------------------------------------------------------------
 // Interactive playback: state machines. Strings are passed as (ptr, len) UTF-8 in module memory
 // (copy them in with arm_alloc). Output goes through the same out buffer as the renders.
@@ -244,14 +224,11 @@ unsafe fn text<'a>(ptr: *const u8, len: usize) -> Result<&'a str, String> {
     if ptr.is_null() || len == 0 || len > 4096 {
         return Err("bad string pointer or length".into());
     }
-    std::str::from_utf8(std::slice::from_raw_parts(ptr, len))
-        .map_err(|_| "string is not UTF-8".to_string())
+    std::str::from_utf8(std::slice::from_raw_parts(ptr, len)).map_err(|_| "string is not UTF-8".to_string())
 }
 
 fn player(hd: &mut Handle) -> Result<&mut Player, String> {
-    hd.player
-        .as_mut()
-        .ok_or_else(|| "no player started (call arm_player_start)".to_string())
+    hd.player.as_mut().ok_or_else(|| "no player started (call arm_player_start)".to_string())
 }
 
 /// Number of state machines in the project.
@@ -276,9 +253,7 @@ pub unsafe extern "C" fn arm_machine_name(h: *mut Handle, index: u32) -> i32 {
     guarded(-1, || {
         let hd = handle(h)?;
         let names = hd.anim.machine_names();
-        let n = names
-            .get(index as usize)
-            .ok_or("machine index out of range")?;
+        let n = names.get(index as usize).ok_or("machine index out of range")?;
         hd.out = n.clone().into_bytes();
         Ok(hd.out.len() as i32)
     })
@@ -291,11 +266,7 @@ pub unsafe extern "C" fn arm_machine_name(h: *mut Handle, index: u32) -> i32 {
 pub unsafe extern "C" fn arm_player_start(h: *mut Handle, name: *const u8, len: usize) -> i32 {
     guarded(-1, || {
         let hd = handle(h)?;
-        hd.player = Some(
-            hd.anim
-                .player(text(name, len)?)
-                .map_err(|e| e.to_string())?,
-        );
+        hd.player = Some(hd.anim.player(text(name, len)?).map_err(|e| e.to_string())?);
         Ok(0)
     })
 }
@@ -313,65 +284,30 @@ pub unsafe extern "C" fn arm_player_stop(h: *mut Handle) {
 /// # Safety
 /// `h` live; `name` points to `len` readable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn arm_player_set_bool(
-    h: *mut Handle,
-    name: *const u8,
-    len: usize,
-    value: i32,
-) -> i32 {
-    guarded(-1, || {
-        player(handle(h)?)?
-            .set_bool(text(name, len)?, value != 0)
-            .map(|_| 0)
-            .map_err(|e| e.to_string())
-    })
+pub unsafe extern "C" fn arm_player_set_bool(h: *mut Handle, name: *const u8, len: usize, value: i32) -> i32 {
+    guarded(-1, || player(handle(h)?)?.set_bool(text(name, len)?, value != 0).map(|_| 0).map_err(|e| e.to_string()))
 }
 
 /// # Safety
 /// `h` live; `name` points to `len` readable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn arm_player_set_number(
-    h: *mut Handle,
-    name: *const u8,
-    len: usize,
-    value: f64,
-) -> i32 {
-    guarded(-1, || {
-        player(handle(h)?)?
-            .set_number(text(name, len)?, value)
-            .map(|_| 0)
-            .map_err(|e| e.to_string())
-    })
+pub unsafe extern "C" fn arm_player_set_number(h: *mut Handle, name: *const u8, len: usize, value: f64) -> i32 {
+    guarded(-1, || player(handle(h)?)?.set_number(text(name, len)?, value).map(|_| 0).map_err(|e| e.to_string()))
 }
 
 /// # Safety
 /// `h` live; `name` points to `len` readable bytes.
 #[no_mangle]
 pub unsafe extern "C" fn arm_player_fire(h: *mut Handle, name: *const u8, len: usize) -> i32 {
-    guarded(-1, || {
-        player(handle(h)?)?
-            .fire(text(name, len)?)
-            .map(|_| 0)
-            .map_err(|e| e.to_string())
-    })
+    guarded(-1, || player(handle(h)?)?.fire(text(name, len)?).map(|_| 0).map_err(|e| e.to_string()))
 }
 
 /// Publish an external value for the project's data bindings.
 /// # Safety
 /// `h` live; `path` points to `len` readable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn arm_player_set_value(
-    h: *mut Handle,
-    path: *const u8,
-    len: usize,
-    value: f64,
-) -> i32 {
-    guarded(-1, || {
-        player(handle(h)?)?
-            .set_value(text(path, len)?, value)
-            .map(|_| 0)
-            .map_err(|e| e.to_string())
-    })
+pub unsafe extern "C" fn arm_player_set_value(h: *mut Handle, path: *const u8, len: usize, value: f64) -> i32 {
+    guarded(-1, || player(handle(h)?)?.set_value(text(path, len)?, value).map(|_| 0).map_err(|e| e.to_string()))
 }
 
 /// Advance by `dt` seconds (0..10).
@@ -379,12 +315,7 @@ pub unsafe extern "C" fn arm_player_set_value(
 /// `h` live.
 #[no_mangle]
 pub unsafe extern "C" fn arm_player_advance(h: *mut Handle, dt: f64) -> i32 {
-    guarded(-1, || {
-        player(handle(h)?)?
-            .advance(dt)
-            .map(|_| 0)
-            .map_err(|e| e.to_string())
-    })
+    guarded(-1, || player(handle(h)?)?.advance(dt).map(|_| 0).map_err(|e| e.to_string()))
 }
 
 /// Write the layer's current state name into the out buffer; returns its length or -1.
@@ -394,9 +325,7 @@ pub unsafe extern "C" fn arm_player_advance(h: *mut Handle, dt: f64) -> i32 {
 pub unsafe extern "C" fn arm_player_state(h: *mut Handle, layer: *const u8, len: usize) -> i32 {
     guarded(-1, || {
         let hd = handle(h)?;
-        let s = player(hd)?
-            .state(text(layer, len)?)
-            .ok_or("unknown layer")?;
+        let s = player(hd)?.state(text(layer, len)?).ok_or("unknown layer")?;
         hd.out = s.into_bytes();
         Ok(hd.out.len() as i32)
     })
@@ -422,9 +351,7 @@ pub unsafe extern "C" fn arm_player_events(h: *mut Handle) -> i32 {
 pub unsafe extern "C" fn arm_player_render_svg(h: *mut Handle, show_bones: i32) -> i32 {
     guarded(-1, || {
         let hd = handle(h)?;
-        let svg = player(hd)?
-            .render_svg(show_bones != 0)
-            .map_err(|e| e.to_string())?;
+        let svg = player(hd)?.render_svg(show_bones != 0).map_err(|e| e.to_string())?;
         hd.out = svg.into_bytes();
         hd.out_w = 0;
         hd.out_h = 0;
@@ -442,9 +369,7 @@ pub unsafe extern "C" fn arm_player_render_rgba(h: *mut Handle, scale: f32) -> i
         if !scale.is_finite() || !(0.05..=4.0).contains(&scale) {
             return Err("scale must be within 0.05..4".into());
         }
-        let img = player(hd)?
-            .render_rgba(&RenderSettings::new(scale))
-            .map_err(|e| e.to_string())?;
+        let img = player(hd)?.render_rgba(&RenderSettings::new(scale)).map_err(|e| e.to_string())?;
         hd.out_w = img.width;
         hd.out_h = img.height;
         hd.out = img.pixels;
@@ -478,12 +403,7 @@ fn json_list(items: &[String]) -> String {
 /// `h` live.
 #[no_mangle]
 pub unsafe extern "C" fn arm_player_set_canvas(h: *mut Handle, width: f32, height: f32) -> i32 {
-    guarded(-1, || {
-        player(handle(h)?)?
-            .set_canvas_size(width, height)
-            .map(|_| 0)
-            .map_err(|e| e.to_string())
-    })
+    guarded(-1, || player(handle(h)?)?.set_canvas_size(width, height).map(|_| 0).map_err(|e| e.to_string()))
 }
 
 /// Write `{"canvas":[w,h],"scrolls":[ids],"lod":level}` into the out buffer.
@@ -495,11 +415,7 @@ pub unsafe extern "C" fn arm_player_layout(h: *mut Handle) -> i32 {
         let hd = handle(h)?;
         let pl = player(hd)?;
         let (w, hh) = pl.canvas_size();
-        let j = format!(
-            "{{\"canvas\":[{w},{hh}],\"scrolls\":{},\"lod\":{}}}",
-            json_list(&pl.scroll_ids()),
-            pl.lod_level()
-        );
+        let j = format!("{{\"canvas\":[{w},{hh}],\"scrolls\":{},\"lod\":{}}}", json_list(&pl.scroll_ids()), pl.lod_level());
         hd.out = j.into_bytes();
         Ok(hd.out.len() as i32)
     })
@@ -509,38 +425,16 @@ pub unsafe extern "C" fn arm_player_layout(h: *mut Handle) -> i32 {
 /// # Safety
 /// `h` live; `id` points to `len` readable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn arm_player_scroll_drag(
-    h: *mut Handle,
-    id: *const u8,
-    len: usize,
-    x: f32,
-    y: f32,
-) -> i32 {
-    guarded(-1, || {
-        player(handle(h)?)?
-            .scroll_drag(text(id, len)?, x, y)
-            .map(|_| 0)
-            .map_err(|e| e.to_string())
-    })
+pub unsafe extern "C" fn arm_player_scroll_drag(h: *mut Handle, id: *const u8, len: usize, x: f32, y: f32) -> i32 {
+    guarded(-1, || player(handle(h)?)?.scroll_drag(text(id, len)?, x, y).map(|_| 0).map_err(|e| e.to_string()))
 }
 
 /// Release a scroll region with a velocity in pixels per second. Returns 0 or -1.
 /// # Safety
 /// `h` live; `id` points to `len` readable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn arm_player_scroll_release(
-    h: *mut Handle,
-    id: *const u8,
-    len: usize,
-    vx: f32,
-    vy: f32,
-) -> i32 {
-    guarded(-1, || {
-        player(handle(h)?)?
-            .scroll_release(text(id, len)?, vx, vy)
-            .map(|_| 0)
-            .map_err(|e| e.to_string())
-    })
+pub unsafe extern "C" fn arm_player_scroll_release(h: *mut Handle, id: *const u8, len: usize, vx: f32, vy: f32) -> i32 {
+    guarded(-1, || player(handle(h)?)?.scroll_release(text(id, len)?, vx, vy).map(|_| 0).map_err(|e| e.to_string()))
 }
 
 /// Write `{"offset":[x,y],"max":[x,y],"settled":bool}` of a scroll region into the out buffer.
@@ -552,15 +446,8 @@ pub unsafe extern "C" fn arm_player_scroll_info(h: *mut Handle, id: *const u8, l
         let hd = handle(h)?;
         let pl = player(hd)?;
         let id = text(id, len)?;
-        let (o, m, s) = (
-            pl.scroll_offset(id).ok_or("unknown scroll")?,
-            pl.scroll_max(id).unwrap_or([0.0; 2]),
-            pl.scroll_settled(id).unwrap_or(true),
-        );
-        let j = format!(
-            "{{\"offset\":[{},{}],\"max\":[{},{}],\"settled\":{s}}}",
-            o[0], o[1], m[0], m[1]
-        );
+        let (o, m, s) = (pl.scroll_offset(id).ok_or("unknown scroll")?, pl.scroll_max(id).unwrap_or([0.0; 2]), pl.scroll_settled(id).unwrap_or(true));
+        let j = format!("{{\"offset\":[{},{}],\"max\":[{},{}],\"settled\":{s}}}", o[0], o[1], m[0], m[1]);
         hd.out = j.into_bytes();
         Ok(hd.out.len() as i32)
     })
@@ -570,18 +457,8 @@ pub unsafe extern "C" fn arm_player_scroll_info(h: *mut Handle, id: *const u8, l
 /// # Safety
 /// `h` live.
 #[no_mangle]
-pub unsafe extern "C" fn arm_player_set_screen(
-    h: *mut Handle,
-    width_px: f32,
-    height_px: f32,
-    max_error_px: f32,
-) -> i32 {
-    guarded(-1, || {
-        player(handle(h)?)?
-            .set_screen_size(width_px, height_px, max_error_px)
-            .map(|_| 0)
-            .map_err(|e| e.to_string())
-    })
+pub unsafe extern "C" fn arm_player_set_screen(h: *mut Handle, width_px: f32, height_px: f32, max_error_px: f32) -> i32 {
+    guarded(-1, || player(handle(h)?)?.set_screen_size(width_px, height_px, max_error_px).map(|_| 0).map_err(|e| e.to_string()))
 }
 
 /// UTF-8 bytes of the last error message (not NUL-terminated); valid until the next error.
@@ -639,8 +516,7 @@ mod tests {
             let n = arm_render_svg(h, 3.0, 0);
             assert!(n > 0);
             assert_eq!(arm_out_len(h), n as usize);
-            let s = std::str::from_utf8(std::slice::from_raw_parts(arm_out_ptr(h), n as usize))
-                .unwrap();
+            let s = std::str::from_utf8(std::slice::from_raw_parts(arm_out_ptr(h), n as usize)).unwrap();
             assert!(s.contains("<svg"));
             assert_eq!(arm_render_svg(h, f32::NAN, 0), -1);
             assert!(err().contains("finite"));
@@ -656,9 +532,7 @@ mod tests {
             assert!(n > 0);
             let (w, hh) = (arm_out_width(h), arm_out_height(h));
             assert_eq!(n as usize, (w * hh * 4) as usize);
-            assert!(std::slice::from_raw_parts(arm_out_ptr(h), n as usize)
-                .iter()
-                .any(|&b| b != 0));
+            assert!(std::slice::from_raw_parts(arm_out_ptr(h), n as usize).iter().any(|&b| b != 0));
             assert_eq!(arm_render_rgba(h, 0.0, 100.0), -1);
             assert_eq!(arm_render_rgba(h, 0.0, f32::NAN), -1);
             arm_close(h);
@@ -710,74 +584,27 @@ mod tests {
         let mut p = osatura_core::demo::project();
         let bone = p.bones[0].name.clone();
         let mk = |n: &str, v: f32| {
-            let keys = vec![
-                Key {
-                    frame: 0.0,
-                    value: v,
-                    ease: Ease::Linear,
-                },
-                Key {
-                    frame: 10.0,
-                    value: v,
-                    ease: Ease::Linear,
-                },
-            ];
-            osatura_core::clipstack::Clip::new(
-                n,
-                Take {
-                    name: n.into(),
-                    length: 10.0,
-                    tracks: vec![TakeTrack {
-                        target: bone.clone(),
-                        prop: Prop::BoneAngle,
-                        keys,
-                    }],
-                },
-            )
+            let keys = vec![Key { frame: 0.0, value: v, ease: Ease::Linear }, Key { frame: 10.0, value: v, ease: Ease::Linear }];
+            osatura_core::clipstack::Clip::new(n, Take { name: n.into(), length: 10.0, tracks: vec![TakeTrack { target: bone.clone(), prop: Prop::BoneAngle, keys }] })
         };
         p.clips = vec![mk("a", 0.0), mk("b", 40.0)];
-        let st = |n: &str| State {
-            name: n.into(),
-            source: StateSource::Clip { clip: n.into() },
-            mode: PlayMode::Loop,
-            speed: 1.0,
-            blend_in: 0.0,
-        };
+        let st = |n: &str| State { name: n.into(), source: StateSource::Clip { clip: n.into() }, mode: PlayMode::Loop, speed: 1.0, blend_in: 0.0 };
         p.machines.push(Machine {
             name: "hero".into(),
-            inputs: vec![Input {
-                name: "go".into(),
-                kind: InputKind::Bool,
-                default: 0.0,
-                hold: false,
-            }],
+            inputs: vec![Input { name: "go".into(), kind: InputKind::Bool, default: 0.0, hold: false }],
             layers: vec![Layer {
                 name: "body".into(),
                 mask: vec![],
                 entry: "a".into(),
                 states: vec![st("a"), st("b")],
-                transitions: vec![Transition {
-                    from: "a".into(),
-                    to: "b".into(),
-                    conditions: vec![Condition {
-                        input: "go".into(),
-                        op: Cmp::Eq,
-                        value: 1.0,
-                    }],
-                    exit_time: None,
-                    duration: Some(0.0),
-                    ease: Ease::Linear,
-                }],
+                transitions: vec![Transition { from: "a".into(), to: "b".into(), conditions: vec![Condition { input: "go".into(), op: Cmp::Eq, value: 1.0 }], exit_time: None, duration: Some(0.0), ease: Ease::Linear }],
             }],
         });
         p.to_json_pretty()
     }
 
     fn out_string(h: *mut Handle) -> String {
-        unsafe {
-            String::from_utf8(std::slice::from_raw_parts(arm_out_ptr(h), arm_out_len(h)).to_vec())
-                .unwrap()
-        }
+        unsafe { String::from_utf8(std::slice::from_raw_parts(arm_out_ptr(h), arm_out_len(h)).to_vec()).unwrap() }
     }
 
     #[test]
@@ -834,25 +661,11 @@ mod tests {
         use osatura_core::project::Layer;
         let mut p = osatura_core::project::Project::from_json(&machine_project_json()).unwrap();
         for i in 0..10 {
-            p.layers.push(Layer::vector(
-                &format!("row{i}"),
-                vec![VPath::rect("r", 0.0, 0.0, 100.0, 20.0).with_fill("#336699")],
-            ));
+            p.layers.push(Layer::vector(&format!("row{i}"), vec![VPath::rect("r", 0.0, 0.0, 100.0, 20.0).with_fill("#336699")]));
         }
-        p.containers.push(Container::new(
-            "col",
-            Dir::Column,
-            (0..10).map(|i| Member::layer(&format!("row{i}"))).collect(),
-        ));
+        p.containers.push(Container::new("col", Dir::Column, (0..10).map(|i| Member::layer(&format!("row{i}"))).collect()));
         let mut sc = Scroll::new("list", "col");
-        sc.viewport = RectRule::Pin {
-            left: Some(0.0),
-            top: Some(0.0),
-            right: None,
-            bottom: Some(0.0),
-            width: Some(100.0),
-            height: None,
-        };
+        sc.viewport = RectRule::Pin { left: Some(0.0), top: Some(0.0), right: None, bottom: Some(0.0), width: Some(100.0), height: None };
         p.scrolls.push(sc);
         let h = open(&p.to_json_pretty());
         assert!(!h.is_null());
@@ -861,21 +674,13 @@ mod tests {
             assert_eq!(arm_player_set_canvas(h, 100.0, 100.0), -1, "no player yet");
             assert_eq!(arm_player_start(h, hero.as_ptr(), 4), 0);
             assert!(arm_player_layout(h) > 10);
-            assert!(
-                out_string(h).contains("\"scrolls\":[\"list\"]"),
-                "{}",
-                out_string(h)
-            );
+            assert!(out_string(h).contains("\"scrolls\":[\"list\"]"), "{}", out_string(h));
             assert_eq!(arm_player_set_canvas(h, 100.0, 120.0), 0);
             assert!(arm_player_scroll_info(h, list.as_ptr(), 4) > 10);
             assert!(out_string(h).contains("\"max\":[0,80"), "{}", out_string(h));
             assert_eq!(arm_player_scroll_drag(h, list.as_ptr(), 4, 0.0, 50.0), 0);
             assert!(arm_player_scroll_info(h, list.as_ptr(), 4) > 10);
-            assert!(
-                out_string(h).contains("\"offset\":[0,50]"),
-                "{}",
-                out_string(h)
-            );
+            assert!(out_string(h).contains("\"offset\":[0,50]"), "{}", out_string(h));
             assert_eq!(arm_player_scroll_release(h, list.as_ptr(), 4, 0.0, 0.0), 0);
             assert_eq!(arm_player_advance(h, 1.0), 0);
             assert_eq!(arm_player_scroll_drag(h, b"zz".as_ptr(), 2, 0.0, 1.0), -1);

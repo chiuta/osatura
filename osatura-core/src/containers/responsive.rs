@@ -25,17 +25,9 @@ pub fn responsive(p: &Project, w: f32, h: f32) -> Result<Project, String> {
 /// Parse `WxH` (also `W×H`, `W,H`).
 pub fn parse_size(s: &str) -> Result<(f32, f32), String> {
     let t = s.replace(['X', '×', ','], "x");
-    let (a, b) = t
-        .split_once(['x'])
-        .ok_or_else(|| format!("size must look like 800x600, got '{s}'"))?;
-    let w: f32 = a
-        .trim()
-        .parse()
-        .map_err(|_| format!("bad width in '{s}'"))?;
-    let h: f32 = b
-        .trim()
-        .parse()
-        .map_err(|_| format!("bad height in '{s}'"))?;
+    let (a, b) = t.split_once(['x']).ok_or_else(|| format!("size must look like 800x600, got '{s}'"))?;
+    let w: f32 = a.trim().parse().map_err(|_| format!("bad width in '{s}'"))?;
+    let h: f32 = b.trim().parse().map_err(|_| format!("bad height in '{s}'"))?;
     if !(w.is_finite() && h.is_finite() && w > 0.0 && h > 0.0) {
         return Err(format!("size must be positive, got '{s}'"));
     }
@@ -64,11 +56,7 @@ pub fn set_offset(p: &mut Project, id: &str, offset: [f32; 2]) -> Result<(), Str
     if !offset.iter().all(|v| v.is_finite()) {
         return Err("offset must be finite".into());
     }
-    let s = p
-        .scrolls
-        .iter_mut()
-        .find(|s| s.id == id)
-        .ok_or_else(|| format!("no scroll '{id}'"))?;
+    let s = p.scrolls.iter_mut().find(|s| s.id == id).ok_or_else(|| format!("no scroll '{id}'"))?;
     s.offset = offset;
     Ok(())
 }
@@ -106,13 +94,7 @@ pub struct ScrollRuntime {
 impl ScrollRuntime {
     /// `max` is the largest useful offset per axis (see [`ScrollInfo::max`]).
     pub fn new(scroll: &Scroll, max: [f32; 2]) -> ScrollRuntime {
-        let mut r = ScrollRuntime {
-            pos: [0.0; 2],
-            vel: [0.0; 2],
-            target: None,
-            max,
-            scroll: scroll.clone(),
-        };
+        let mut r = ScrollRuntime { pos: [0.0; 2], vel: [0.0; 2], target: None, max, scroll: scroll.clone() };
         r.drag_to(scroll.offset);
         r
     }
@@ -124,8 +106,7 @@ impl ScrollRuntime {
     /// Replace the largest useful offset (after the canvas or the content changed). The current
     /// position is re-clamped (or left in its rubber band) accordingly.
     pub fn set_max(&mut self, max: [f32; 2]) {
-        let raw =
-            [0, 1].map(|a| raw_offset_for(self.pos[a], self.max[a], self.scroll.elastic.as_ref()));
+        let raw = [0, 1].map(|a| raw_offset_for(self.pos[a], self.max[a], self.scroll.elastic.as_ref()));
         self.max = max;
         if self.target.is_none() {
             self.drag_to(raw);
@@ -151,11 +132,7 @@ impl ScrollRuntime {
         #[allow(clippy::needless_range_loop)]
         for a in 0..2 {
             self.pos[a] = if self.scroll.scrolls(a) {
-                effective_offset(
-                    if raw[a].is_finite() { raw[a] } else { 0.0 },
-                    self.max[a],
-                    self.scroll.elastic.as_ref(),
-                )
+                effective_offset(if raw[a].is_finite() { raw[a] } else { 0.0 }, self.max[a], self.scroll.elastic.as_ref())
             } else {
                 0.0
             };
@@ -172,17 +149,9 @@ impl ScrollRuntime {
             if !self.scroll.scrolls(a) {
                 continue;
             }
-            let v = if velocity[a].is_finite() {
-                velocity[a]
-            } else {
-                0.0
-            };
+            let v = if velocity[a].is_finite() { velocity[a] } else { 0.0 };
             let proj = self.pos[a] + v * self.scroll.fling;
-            let pts = if a == 0 {
-                &self.scroll.snap_x
-            } else {
-                &self.scroll.snap_y
-            };
+            let pts = if a == 0 { &self.scroll.snap_x } else { &self.scroll.snap_y };
             t[a] = snap_to(proj, pts, self.max[a]);
         }
         self.vel = [0.0; 2];
@@ -222,22 +191,12 @@ impl ScrollRuntime {
 // Editing (project-level; each returns an undoable editor op)
 // ---------------------------------------------------------------------------------------------
 
-pub(super) fn vec_op<T: Serialize>(
-    field: &str,
-    present: bool,
-    v: &T,
-) -> Result<crate::edit::Op, String> {
+pub(super) fn vec_op<T: Serialize>(field: &str, present: bool, v: &T) -> Result<crate::edit::Op, String> {
     let value = serde_json::to_value(v).map_err(|e| e.to_string())?;
     Ok(if present {
-        crate::edit::Op::Insert {
-            path: format!("/{field}/-"),
-            value,
-        }
+        crate::edit::Op::Insert { path: format!("/{field}/-"), value }
     } else {
-        crate::edit::Op::Set {
-            path: format!("/{field}"),
-            value: serde_json::json!([value]),
-        }
+        crate::edit::Op::Set { path: format!("/{field}"), value: serde_json::json!([value]) }
     })
 }
 
@@ -263,11 +222,7 @@ pub fn add_container(p: &mut Project, c: Container) -> Result<(), String> {
 
 /// Remove a container; refused while something still refers to it.
 pub fn remove_container(p: &mut Project, id: &str) -> Result<(), String> {
-    let i = p
-        .containers
-        .iter()
-        .position(|c| c.id == id)
-        .ok_or_else(|| format!("no container '{id}'"))?;
+    let i = p.containers.iter().position(|c| c.id == id).ok_or_else(|| format!("no container '{id}'"))?;
     let mut t = p.clone();
     t.containers.remove(i);
     check_trial(&t)?;
@@ -287,11 +242,7 @@ pub fn add_scroll(p: &mut Project, s: Scroll) -> Result<(), String> {
 }
 
 pub fn remove_scroll(p: &mut Project, id: &str) -> Result<(), String> {
-    let i = p
-        .scrolls
-        .iter()
-        .position(|s| s.id == id)
-        .ok_or_else(|| format!("no scroll '{id}'"))?;
+    let i = p.scrolls.iter().position(|s| s.id == id).ok_or_else(|| format!("no scroll '{id}'"))?;
     p.scrolls.remove(i);
     Ok(())
 }
@@ -304,16 +255,10 @@ pub fn add_container_op(p: &Project, c: Container) -> Result<crate::edit::Op, St
 }
 
 pub fn remove_container_op(p: &Project, id: &str) -> Result<crate::edit::Op, String> {
-    let i = p
-        .containers
-        .iter()
-        .position(|c| c.id == id)
-        .ok_or_else(|| format!("no container '{id}'"))?;
+    let i = p.containers.iter().position(|c| c.id == id).ok_or_else(|| format!("no container '{id}'"))?;
     let mut t = p.clone();
     remove_container(&mut t, id)?;
-    Ok(crate::edit::Op::Remove {
-        path: format!("/containers/{i}"),
-    })
+    Ok(crate::edit::Op::Remove { path: format!("/containers/{i}") })
 }
 
 pub fn add_scroll_op(p: &Project, s: Scroll) -> Result<crate::edit::Op, String> {
@@ -323,21 +268,13 @@ pub fn add_scroll_op(p: &Project, s: Scroll) -> Result<crate::edit::Op, String> 
 }
 
 pub fn remove_scroll_op(p: &Project, id: &str) -> Result<crate::edit::Op, String> {
-    let i = p
-        .scrolls
-        .iter()
-        .position(|s| s.id == id)
-        .ok_or_else(|| format!("no scroll '{id}'"))?;
-    Ok(crate::edit::Op::Remove {
-        path: format!("/scrolls/{i}"),
-    })
+    let i = p.scrolls.iter().position(|s| s.id == id).ok_or_else(|| format!("no scroll '{id}'"))?;
+    Ok(crate::edit::Op::Remove { path: format!("/scrolls/{i}") })
 }
 
 /// SVG overlay (outlines of every container and viewport) for previews.
 pub fn overlay_svg(sol: &Solution) -> String {
-    let mut s = String::from(
-        "<g fill=\"none\" stroke-width=\"1\" font-family=\"monospace\" font-size=\"10\">",
-    );
+    let mut s = String::from("<g fill=\"none\" stroke-width=\"1\" font-family=\"monospace\" font-size=\"10\">");
     for (id, r) in &sol.rects {
         s.push_str(&format!(
             "<rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" stroke=\"#e0409a\" stroke-dasharray=\"4 3\"/><text x=\"{:.2}\" y=\"{:.2}\" fill=\"#e0409a\">{}</text>",

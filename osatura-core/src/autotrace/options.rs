@@ -100,8 +100,7 @@ impl TraceOptions {
         if self.smooth > 50 || self.denoise > 5 || self.prune > 1000 {
             return Err("smooth <= 50, denoise <= 5, prune <= 1000".into());
         }
-        if !self.corner_angle.is_finite() || self.corner_angle <= 5.0 || self.corner_angle >= 175.0
-        {
+        if !self.corner_angle.is_finite() || self.corner_angle <= 5.0 || self.corner_angle >= 175.0 {
             return Err("corner angle must be in (5, 175) degrees".into());
         }
         if self.corner_window < 2 || self.corner_window > 40 {
@@ -164,22 +163,11 @@ pub struct TraceResult {
 
 impl TraceResult {
     pub fn path_count(&self) -> usize {
-        self.regions
-            .iter()
-            .map(|r| 1 + r.holes.len())
-            .sum::<usize>()
-            + self.strokes.len()
+        self.regions.iter().map(|r| 1 + r.holes.len()).sum::<usize>() + self.strokes.len()
     }
     pub fn anchor_count(&self) -> usize {
-        self.regions
-            .iter()
-            .map(|r| r.outer.anchors.len() + r.holes.iter().map(|h| h.anchors.len()).sum::<usize>())
-            .sum::<usize>()
-            + self
-                .strokes
-                .iter()
-                .map(|s| s.path.anchors.len())
-                .sum::<usize>()
+        self.regions.iter().map(|r| r.outer.anchors.len() + r.holes.iter().map(|h| h.anchors.len()).sum::<usize>()).sum::<usize>()
+            + self.strokes.iter().map(|s| s.path.anchors.len()).sum::<usize>()
     }
 }
 
@@ -198,16 +186,12 @@ pub fn decode_image(bytes: &[u8]) -> Result<Image, String> {
         let px = d.decode().map_err(|e| format!("invalid JPEG: {e}"))?;
         let rgba: Vec<u8> = match info.pixel_format {
             jpeg_decoder::PixelFormat::L8 => px.iter().flat_map(|&g| [g, g, g, 255]).collect(),
-            jpeg_decoder::PixelFormat::RGB24 => px
-                .chunks_exact(3)
-                .flat_map(|c| [c[0], c[1], c[2], 255])
-                .collect(),
+            jpeg_decoder::PixelFormat::RGB24 => px.chunks_exact(3).flat_map(|c| [c[0], c[1], c[2], 255]).collect(),
             _ => return Err("only 8-bit grey and RGB JPEGs are supported".into()),
         };
         return Image::from_rgba(w, h, rgba);
     }
-    let pm = crate::assets::decode_png_checked(bytes)
-        .map_err(|e| format!("not a readable PNG or JPEG: {e}"))?;
+    let pm = crate::assets::decode_png_checked(bytes).map_err(|e| format!("not a readable PNG or JPEG: {e}"))?;
     let mut rgba = Vec::with_capacity(pm.pixels().len() * 4);
     for px in pm.pixels() {
         let c = px.demultiply();
@@ -403,11 +387,7 @@ pub fn quantise(img: &Image, k: usize, method: Quant, seed: u64) -> (Vec<[u8; 3]
     if exact.len() <= k {
         let mut pal: Vec<[u8; 3]> = exact.keys().copied().collect();
         pal.sort_by(|a, b| lum(*a).total_cmp(&lum(*b)).then(a.cmp(b)));
-        let idx: BTreeMap<[u8; 3], u16> = pal
-            .iter()
-            .enumerate()
-            .map(|(i, c)| (*c, i as u16))
-            .collect();
+        let idx: BTreeMap<[u8; 3], u16> = pal.iter().enumerate().map(|(i, c)| (*c, i as u16)).collect();
         for i in 0..n {
             if opaque(i) {
                 labels[i] = idx[&col(i)];
@@ -416,9 +396,7 @@ pub fn quantise(img: &Image, k: usize, method: Quant, seed: u64) -> (Vec<[u8; 3]
         return (pal, labels);
     }
     // 5-bit histogram
-    let bin = |c: [u8; 3]| {
-        ((c[0] as usize >> 3) << 10) | ((c[1] as usize >> 3) << 5) | (c[2] as usize >> 3)
-    };
+    let bin = |c: [u8; 3]| ((c[0] as usize >> 3) << 10) | ((c[1] as usize >> 3) << 5) | (c[2] as usize >> 3);
     let mut cnt = vec![0.0f64; 32768];
     let mut sum = vec![[0.0f64; 3]; 32768];
     for i in 0..n {
@@ -432,15 +410,7 @@ pub fn quantise(img: &Image, k: usize, method: Quant, seed: u64) -> (Vec<[u8; 3]
         }
     }
     let bins: Vec<usize> = (0..32768).filter(|&b| cnt[b] > 0.0).collect();
-    let pts: Vec<(V3, f64)> = bins
-        .iter()
-        .map(|&b| {
-            (
-                [sum[b][0] / cnt[b], sum[b][1] / cnt[b], sum[b][2] / cnt[b]],
-                cnt[b],
-            )
-        })
-        .collect();
+    let pts: Vec<(V3, f64)> = bins.iter().map(|&b| ([sum[b][0] / cnt[b], sum[b][1] / cnt[b], sum[b][2] / cnt[b]], cnt[b])).collect();
     let centres = match method {
         Quant::KMeans => kmeans(&pts, k, seed),
         Quant::MedianCut => median_cut(&pts, k),
@@ -465,16 +435,7 @@ pub fn quantise(img: &Image, k: usize, method: Quant, seed: u64) -> (Vec<[u8; 3]
     // drop empty clusters, sort dark to light
     let mut pal: Vec<(usize, [u8; 3])> = (0..centres.len())
         .filter(|&j| pwt[j] > 0.0)
-        .map(|j| {
-            (
-                j,
-                [
-                    (psum[j][0] / pwt[j]).round() as u8,
-                    (psum[j][1] / pwt[j]).round() as u8,
-                    (psum[j][2] / pwt[j]).round() as u8,
-                ],
-            )
-        })
+        .map(|j| (j, [(psum[j][0] / pwt[j]).round() as u8, (psum[j][1] / pwt[j]).round() as u8, (psum[j][2] / pwt[j]).round() as u8]))
         .collect();
     pal.sort_by(|a, b| lum(a.1).total_cmp(&lum(b.1)).then(a.1.cmp(&b.1)));
     let mut remap = vec![0u16; centres.len()];

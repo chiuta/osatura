@@ -69,12 +69,7 @@ pub(super) fn node_points(nd: &crate::engine::RenderNode, w: &A) -> Vec<P> {
     v
 }
 
-pub(super) fn analyze(
-    c: &Ctx,
-    samples: &[f32],
-    chans: &[(usize, LKind)],
-    mesh_nodes: &BTreeSet<usize>,
-) -> Analysis {
+pub(super) fn analyze(c: &Ctx, samples: &[f32], chans: &[(usize, LKind)], mesh_nodes: &BTreeSet<usize>) -> Analysis {
     let n = c.paths.len();
     let p = c.p;
     let mut an = Analysis {
@@ -87,14 +82,7 @@ pub(super) fn analyze(
         ..Default::default()
     };
     for &id in mesh_nodes {
-        an.mesh.insert(
-            id,
-            MeshTraj {
-                y: Vec::with_capacity(samples.len()),
-                rest: Vec::new(),
-                tris: Vec::new(),
-            },
-        );
+        an.mesh.insert(id, MeshTraj { y: Vec::with_capacity(samples.len()), rest: Vec::new(), tris: Vec::new() });
     }
     let subtrees: Vec<Vec<usize>> = (0..n).map(|i| c.subtree(i)).collect();
     let need_levers = !chans.is_empty();
@@ -103,12 +91,7 @@ pub(super) fn analyze(
     for (si, &t) in samples.iter().enumerate() {
         let fr = c.e.evaluate(t);
         let worlds: Vec<A> = fr.nodes.iter().map(|nd| a_of(&nd.world)).collect();
-        let pts: Vec<Vec<P>> = fr
-            .nodes
-            .iter()
-            .enumerate()
-            .map(|(id, nd)| node_points(nd, &worlds[id]))
-            .collect();
+        let pts: Vec<Vec<P>> = fr.nodes.iter().enumerate().map(|(id, nd)| node_points(nd, &worlds[id])).collect();
         for id in 0..n {
             let s = lin_norm(&worlds[id]);
             an.s[id][si] = s;
@@ -123,12 +106,7 @@ pub(super) fn analyze(
                     x1 = x1.max(q[0]);
                     y1 = y1.max(q[1]);
                 }
-                let hw = nd
-                    .paths
-                    .iter()
-                    .filter_map(|pp| pp.stroke.as_ref().map(|s| s.width as f64 * 0.5))
-                    .fold(0.0, f64::max)
-                    * s;
+                let hw = nd.paths.iter().filter_map(|pp| pp.stroke.as_ref().map(|s| s.width as f64 * 0.5)).fold(0.0, f64::max) * s;
                 let d = ((x1 - x0) + 2.0 * hw).hypot((y1 - y0) + 2.0 * hw);
                 if d > an.diam_max[id] {
                     an.diam_max[id] = d;
@@ -137,23 +115,10 @@ pub(super) fn analyze(
             if let Some(mt) = an.mesh.get_mut(&id) {
                 if let Some(m) = nd.image.as_ref().and_then(|i| i.mesh.as_ref()) {
                     if si == 0 {
-                        mt.tris = m
-                            .tris
-                            .iter()
-                            .map(|t| [t[0] as usize, t[1] as usize, t[2] as usize])
-                            .collect();
+                        mt.tris = m.tris.iter().map(|t| [t[0] as usize, t[1] as usize, t[2] as usize]).collect();
                         if let (Some(l), Some(img)) = (c.layer(id), nd.image.as_ref()) {
-                            if let LayerKind::Image {
-                                mesh: Some(ms),
-                                origin,
-                                ..
-                            } = &l.kind
-                            {
-                                mt.rest = ms
-                                    .rest_vertices(*origin, img.size)
-                                    .iter()
-                                    .map(|v| p_of(*v))
-                                    .collect();
+                            if let LayerKind::Image { mesh: Some(ms), origin, .. } = &l.kind {
+                                mt.rest = ms.rest_vertices(*origin, img.size).iter().map(|v| p_of(*v)).collect();
                             }
                         }
                     }
@@ -170,28 +135,13 @@ pub(super) fn analyze(
         for id in 0..n {
             if skin_rest[id].is_none() {
                 if let (Some(l), Some(img)) = (c.layer(id), fr.nodes[id].image.as_ref()) {
-                    if let LayerKind::Image {
-                        mesh: Some(m),
-                        origin,
-                        ..
-                    } = &l.kind
-                    {
-                        skin_rest[id] = Some(
-                            m.rest_vertices(*origin, img.size)
-                                .iter()
-                                .map(|v| p_of(*v))
-                                .collect(),
-                        );
+                    if let LayerKind::Image { mesh: Some(m), origin, .. } = &l.kind {
+                        skin_rest[id] = Some(m.rest_vertices(*origin, img.size).iter().map(|v| p_of(*v)).collect());
                     }
                 }
             }
         }
-        let skin: Vec<A> = fr
-            .world
-            .iter()
-            .zip(&c.rest_inv)
-            .map(|(w, ri)| a_mul(&a_of(w), ri))
-            .collect();
+        let skin: Vec<A> = fr.world.iter().zip(&c.rest_inv).map(|(w, ri)| a_mul(&a_of(w), ri)).collect();
         let mut locals: Vec<Option<A>> = vec![None; n];
         let local_of = |id: usize, locals: &mut Vec<Option<A>>| -> A {
             if locals[id].is_none() {
@@ -210,10 +160,7 @@ pub(super) fn analyze(
                 LKind::CamXY => {
                     let z = lin_norm(&a_of(&fr.camera));
                     for id in 0..n {
-                        let par = p
-                            .layers
-                            .get(c.e.node_idx_path(id)[0])
-                            .map_or(1.0, |l| l.parallax as f64);
+                        let par = p.layers.get(c.e.node_idx_path(id)[0]).map_or(1.0, |l| l.parallax as f64);
                         let ze = (1.0 + (z - 1.0) * par).max(0.01);
                         upd(&mut an.lever[ci], id, par.abs() * ze);
                     }
@@ -235,10 +182,7 @@ pub(super) fn analyze(
                     for &m in &subtrees[nid] {
                         let v = match *kind {
                             LKind::LayerRot(_) => {
-                                let r = pts[m]
-                                    .iter()
-                                    .map(|q| dist(a_apply(&pinv, *q), posv))
-                                    .fold(0.0, f64::max);
+                                let r = pts[m].iter().map(|q| dist(a_apply(&pinv, *q), posv)).fold(0.0, f64::max);
                                 ln * pi180 * r
                             }
                             _ => ln,
@@ -249,8 +193,7 @@ pub(super) fn analyze(
                 LKind::BoneAngle(b) | LKind::BoneOff(b) => {
                     let is_angle = matches!(kind, LKind::BoneAngle(_));
                     let ob = a_apply(&a_of(&fr.world[b]), [0.0, 0.0]);
-                    let parent_lin =
-                        c.bone_parent[b].map_or(1.0, |pb| lin_norm(&a_of(&fr.world[pb])));
+                    let parent_lin = c.bone_parent[b].map_or(1.0, |pb| lin_norm(&a_of(&fr.world[pb])));
                     for id in 0..n {
                         // skinned geometry
                         let mut skin_part = 0.0f64;
@@ -260,8 +203,7 @@ pub(super) fn analyze(
                             let mut lev = 0.0f64;
                             let mut hit = false;
                             for (k, (rp, ws)) in sp.iter().enumerate() {
-                                let wsub: f64 =
-                                    ws.iter().filter(|(bk, _)| c.sub[b][*bk]).map(|x| x.1).sum();
+                                let wsub: f64 = ws.iter().filter(|(bk, _)| c.sub[b][*bk]).map(|x| x.1).sum();
                                 if wsub <= 0.0 {
                                     continue;
                                 }
@@ -270,19 +212,9 @@ pub(super) fn analyze(
                                     an.blocked[ci] = true;
                                     continue;
                                 }
-                                let rp = if rp[0].is_nan() {
-                                    rest_mesh
-                                        .and_then(|r| r.get(k).copied())
-                                        .unwrap_or([0.0, 0.0])
-                                } else {
-                                    *rp
-                                };
+                                let rp = if rp[0].is_nan() { rest_mesh.and_then(|r| r.get(k).copied()).unwrap_or([0.0, 0.0]) } else { *rp };
                                 let v = if is_angle {
-                                    ws.iter()
-                                        .filter(|(bk, _)| c.sub[b][*bk])
-                                        .map(|(bk, w)| w * dist(a_apply(&skin[*bk], rp), ob))
-                                        .sum::<f64>()
-                                        * pi180
+                                    ws.iter().filter(|(bk, _)| c.sub[b][*bk]).map(|(bk, w)| w * dist(a_apply(&skin[*bk], rp), ob)).sum::<f64>() * pi180
                                 } else {
                                     wsub * parent_lin
                                 };
@@ -301,19 +233,12 @@ pub(super) fn analyze(
                                     if c.sub[b][k] {
                                         let loc = local_of(nn, &mut locals);
                                         let att = skin[k];
-                                        let q = a_inv(&loc).and_then(|li| {
-                                            a_inv(&att)
-                                                .map(|ai| a_mul(&a_mul(&worlds[nn], &li), &ai))
-                                        });
+                                        let q = a_inv(&loc).and_then(|li| a_inv(&att).map(|ai| a_mul(&a_mul(&worlds[nn], &li), &ai)));
                                         match q.and_then(|q| a_inv(&q).map(|qi| (q, qi))) {
                                             Some((q, qi)) => {
                                                 let lq = lin_norm(&q);
                                                 total += if is_angle {
-                                                    lq * pi180
-                                                        * pts[id]
-                                                            .iter()
-                                                            .map(|s| dist(a_apply(&qi, *s), ob))
-                                                            .fold(0.0, f64::max)
+                                                    lq * pi180 * pts[id].iter().map(|s| dist(a_apply(&qi, *s), ob)).fold(0.0, f64::max)
                                                 } else {
                                                     lq * parent_lin
                                                 };

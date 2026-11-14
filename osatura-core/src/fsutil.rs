@@ -44,12 +44,7 @@ pub fn random_bytes(n: usize) -> Vec<u8> {
         let t = crate::clock::unix_nanos();
         let c = COUNTER.fetch_add(1, Ordering::SeqCst);
         let local = 0u8;
-        let seed = format!(
-            "{t}/{}/{c}/{:p}/{:?}",
-            crate::clock::process_id(),
-            &local,
-            std::thread::current().id()
-        );
+        let seed = format!("{t}/{}/{c}/{:p}/{:?}", crate::clock::process_id(), &local, std::thread::current().id());
         let h = crate::vcs::sha256_hex(seed.as_bytes());
         for i in (0..h.len()).step_by(2) {
             if filled < n {
@@ -67,33 +62,19 @@ pub fn random_hex(n: usize) -> String {
 }
 
 fn sibling_tmp(path: &Path) -> PathBuf {
-    let name = path
-        .file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "out".into());
-    path.with_file_name(format!(
-        ".{name}.tmp-{}-{}",
-        crate::clock::process_id(),
-        random_hex(6)
-    ))
+    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "out".into());
+    path.with_file_name(format!(".{name}.tmp-{}-{}", crate::clock::process_id(), random_hex(6)))
 }
 
 #[cfg(unix)]
 fn open_new(path: &Path, mode: u32) -> std::io::Result<std::fs::File> {
     use std::os::unix::fs::OpenOptionsExt;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(mode)
-        .open(path)
+    std::fs::OpenOptions::new().write(true).create_new(true).mode(mode).open(path)
 }
 
 #[cfg(not(unix))]
 fn open_new(path: &Path, _mode: u32) -> std::io::Result<std::fs::File> {
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
+    std::fs::OpenOptions::new().write(true).create_new(true).open(path)
 }
 
 /// Create a new file that only the owner can read or write (mode 0600); fails when it already exists.
@@ -113,10 +94,7 @@ pub fn set_follow_symlinks(on: bool) {
 /// Overwrite an existing regular file in place (truncate, write, `fsync`). Not atomic: a crash or a full disk in the
 /// middle leaves a short file. Used only when no temporary file can be created next to the target.
 fn write_in_place(path: &Path, data: &[u8]) -> std::io::Result<()> {
-    let mut f = std::fs::OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(path)?;
+    let mut f = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
     f.write_all(data)?;
     f.sync_all()
 }
@@ -154,15 +132,8 @@ fn write_atomic_mode(path: &Path, data: &[u8], mode: u32) -> Result<(), String> 
             // No temporary file can be made next to the target (a read-only or unwritable directory) but the file
             // itself may still be writable: overwrite it in place. The write is then not atomic (a crash mid-write
             // leaves a truncated file), which is the price of an output the directory would otherwise forbid.
-            let is_file = std::fs::metadata(path)
-                .map(|m| m.is_file())
-                .unwrap_or(false);
-            if is_file
-                && matches!(
-                    e.kind(),
-                    std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::ReadOnlyFilesystem
-                )
-            {
+            let is_file = std::fs::metadata(path).map(|m| m.is_file()).unwrap_or(false);
+            if is_file && matches!(e.kind(), std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::ReadOnlyFilesystem) {
                 return write_in_place(path, data).map_err(|e2| io("cannot create a temporary file in this directory and the file itself is not writable either", e2));
             }
             return Err(io("cannot create temporary file", e));
@@ -224,11 +195,7 @@ pub fn write_atomic_private(path: &Path, data: &[u8]) -> Result<(), String> {
 /// `concat:...`): such names get a `./` in front.
 pub fn file_arg(p: &str) -> String {
     let first = p.split('/').next().unwrap_or("");
-    if p.starts_with('/')
-        || p.starts_with("./")
-        || p.starts_with("../")
-        || (!p.starts_with('-') && !first.contains(':') && !first.contains('|'))
-    {
+    if p.starts_with('/') || p.starts_with("./") || p.starts_with("../") || (!p.starts_with('-') && !first.contains(':') && !first.contains('|')) {
         p.to_string()
     } else {
         format!("./{p}")
@@ -317,12 +284,7 @@ pub fn private_temp_dir(prefix: &str) -> Result<TempDir, String> {
         match b.create(&p) {
             Ok(()) => return Ok(TempDir { path: p }),
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
-            Err(e) => {
-                return Err(format!(
-                    "cannot create a private temporary directory in {}: {e}",
-                    base.display()
-                ))
-            }
+            Err(e) => return Err(format!("cannot create a private temporary directory in {}: {e}", base.display())),
         }
     }
     Err("cannot find a free temporary directory name".into())
@@ -347,15 +309,9 @@ mod tests {
         write_atomic(&p, b"one").unwrap();
         write_atomic(&p, b"two").unwrap();
         assert_eq!(std::fs::read(&p).unwrap(), b"two");
-        let names: Vec<_> = std::fs::read_dir(d.path())
-            .unwrap()
-            .map(|e| e.unwrap().file_name())
-            .collect();
+        let names: Vec<_> = std::fs::read_dir(d.path()).unwrap().map(|e| e.unwrap().file_name()).collect();
         assert_eq!(names.len(), 1, "{names:?}");
-        assert!(
-            write_atomic(d.path(), b"x").is_err(),
-            "a directory is not a file"
-        );
+        assert!(write_atomic(d.path(), b"x").is_err(), "a directory is not a file");
     }
 
     #[test]
@@ -363,10 +319,7 @@ mod tests {
         assert_eq!(file_arg("out.mp4"), "out.mp4");
         assert_eq!(file_arg("/tmp/a b.mp4"), "/tmp/a b.mp4");
         assert_eq!(file_arg("-y"), "./-y");
-        assert_eq!(
-            file_arg("http://x/y.mp4"),
-            "http://x/y.mp4".replacen("http:", "./http:", 1)
-        );
+        assert_eq!(file_arg("http://x/y.mp4"), "http://x/y.mp4".replacen("http:", "./http:", 1));
         assert_eq!(file_arg("concat:a|b"), "./concat:a|b");
         assert_eq!(file_arg("dir/with:colon"), "dir/with:colon");
     }
@@ -376,10 +329,7 @@ mod tests {
     fn symlink_targets_are_refused_and_private_dirs_are_0700() {
         use std::os::unix::fs::PermissionsExt;
         let d = private_temp_dir("osatura-fsutil-test").unwrap();
-        assert_eq!(
-            std::fs::metadata(d.path()).unwrap().permissions().mode() & 0o777,
-            0o700
-        );
+        assert_eq!(std::fs::metadata(d.path()).unwrap().permissions().mode() & 0o777, 0o700);
         let victim = d.join("victim.txt");
         std::fs::write(&victim, b"precious").unwrap();
         let link = d.join("link.json");
@@ -389,10 +339,7 @@ mod tests {
         assert_eq!(std::fs::read(&victim).unwrap(), b"precious");
         let q = d.join("secret.log");
         write_atomic_private(&q, b"s").unwrap();
-        assert_eq!(
-            std::fs::metadata(&q).unwrap().permissions().mode() & 0o777,
-            0o600
-        );
+        assert_eq!(std::fs::metadata(&q).unwrap().permissions().mode() & 0o777, 0o600);
         assert!(create_private_file(&q).is_err(), "exclusive creation");
         let dir_path = d.path().to_path_buf();
         drop(d);

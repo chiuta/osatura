@@ -186,11 +186,7 @@ fn closest_on_segment(p: Vec2, a: Vec2, b: Vec2) -> (f32, f64) {
     let ab = sub(b, a);
     let ap = sub(p, a);
     let l2 = ab[0] * ab[0] + ab[1] * ab[1];
-    let t = if l2 <= 0.0 {
-        0.0
-    } else {
-        ((ap[0] * ab[0] + ap[1] * ab[1]) / l2).clamp(0.0, 1.0)
-    };
+    let t = if l2 <= 0.0 { 0.0 } else { ((ap[0] * ab[0] + ap[1] * ab[1]) / l2).clamp(0.0, 1.0) };
     let d = [ap[0] - t * ab[0], ap[1] - t * ab[1]];
     (t as f32, d[0] * d[0] + d[1] * d[1])
 }
@@ -234,11 +230,7 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
     let mut rests: HashMap<usize, UnitRest> = HashMap::new();
 
     // fetch a unit and validate that the path exists and (for images) has a mesh
-    let unit = |what: &str,
-                g: &GeomRef,
-                errs: &mut Vec<String>,
-                rests: &mut HashMap<usize, UnitRest>|
-     -> Option<Unit> {
+    let unit = |what: &str, g: &GeomRef, errs: &mut Vec<String>, rests: &mut HashMap<usize, UnitRest>| -> Option<Unit> {
         let Some(node) = e.node_index(&g.layer) else {
             errs.push(format!("{what}: no layer '{}'", g.layer));
             return None;
@@ -249,27 +241,18 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
                     slot.insert(r);
                 }
                 None => {
-                    errs.push(format!(
-                        "{what}: layer '{}' is neither a vector layer nor an image layer",
-                        g.layer
-                    ));
+                    errs.push(format!("{what}: layer '{}' is neither a vector layer nor an image layer", g.layer));
                     return None;
                 }
             }
         }
         let r = &rests[&node];
         if r.is_image && !r.has_mesh {
-            errs.push(format!(
-                "{what}: image layer '{}' has no mesh (run mesh/auto-skin first)",
-                g.layer
-            ));
+            errs.push(format!("{what}: image layer '{}' has no mesh (run mesh/auto-skin first)", g.layer));
             return None;
         }
         if g.path >= r.paths.len() {
-            errs.push(format!(
-                "{what}: layer '{}' has no path {}",
-                g.layer, g.path
-            ));
+            errs.push(format!("{what}: layer '{}' has no path {}", g.layer, g.path));
             return None;
         }
         if r.is_image && g.path != 0 {
@@ -277,10 +260,7 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
             return None;
         }
         if r.paths[g.path].iter().any(|v| !vec_ok(*v)) {
-            errs.push(format!(
-                "{what}: layer '{}' has non-finite vertices",
-                g.layer
-            ));
+            errs.push(format!("{what}: layer '{}' has non-finite vertices", g.layer));
             return None;
         }
         Some(Unit { node, path: g.path })
@@ -289,10 +269,7 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
     let mut names = HashSet::new();
     for l in &p.mesh_locks {
         if l.name.trim().is_empty() || !names.insert(("lock", l.name.clone())) {
-            errs.push(format!(
-                "mesh lock name '{}' is empty or duplicated",
-                l.name
-            ));
+            errs.push(format!("mesh lock name '{}' is empty or duplicated", l.name));
         }
     }
     for g in &p.glues {
@@ -314,10 +291,7 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
             errs.push(format!("{what}: strength must be within 0..1"));
             continue;
         }
-        let (Some(h), Some(f)) = (
-            unit(&what, &l.host, &mut errs, &mut rests),
-            unit(&what, &l.follower, &mut errs, &mut rests),
-        ) else {
+        let (Some(h), Some(f)) = (unit(&what, &l.host, &mut errs, &mut rests), unit(&what, &l.follower, &mut errs, &mut rests)) else {
             continue;
         };
         if h == f {
@@ -325,19 +299,13 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
             continue;
         }
         if (parallax_of(h) - parallax_of(f)).abs() > 1e-6 {
-            errs.push(format!(
-                "{what}: host and follower must have the same parallax"
-            ));
+            errs.push(format!("{what}: host and follower must have the same parallax"));
             continue;
         }
         let (hr, fr) = (&rests[&h.node], &rests[&f.node]);
         let hverts = &hr.paths[h.path];
         let fverts = &fr.paths[f.path];
-        let idx: Vec<usize> = if l.vertices.is_empty() {
-            (0..fverts.len()).collect()
-        } else {
-            l.vertices.clone()
-        };
+        let idx: Vec<usize> = if l.vertices.is_empty() { (0..fverts.len()).collect() } else { l.vertices.clone() };
         if idx.is_empty() {
             errs.push(format!("{what}: the follower has no vertices"));
             continue;
@@ -346,10 +314,7 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
         let mut seen = HashSet::new();
         for &i in &idx {
             if i >= fverts.len() {
-                errs.push(format!(
-                    "{what}: follower vertex {i} does not exist (0..{})",
-                    fverts.len().saturating_sub(1)
-                ));
+                errs.push(format!("{what}: follower vertex {i} does not exist (0..{})", fverts.len().saturating_sub(1)));
                 bad = true;
                 break;
             }
@@ -359,10 +324,7 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
                 break;
             }
             if !driven.insert((f, i)) {
-                errs.push(format!(
-                    "{what}: vertex {i} of '{}' is already driven by another constraint",
-                    l.follower.layer
-                ));
+                errs.push(format!("{what}: vertex {i} of '{}' is already driven by another constraint", l.follower.layer));
                 bad = true;
                 break;
             }
@@ -401,32 +363,14 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
                     let (i, j) = (s, (s + 1) % n);
                     let (t, d2) = closest_on_segment(q, hs[i], hs[j]);
                     if best.as_ref().is_none_or(|b| d2 < b.0) {
-                        best = Some((
-                            d2,
-                            Bind {
-                                v: [i, j, j],
-                                w: [1.0 - t, t, 0.0],
-                            },
-                        ));
+                        best = Some((d2, Bind { v: [i, j, j], w: [1.0 - t, t, 0.0] }));
                     }
                 }
                 bind.push(best.unwrap().1);
             }
         }
         edges.push((h, f, what.clone()));
-        items.push((
-            f,
-            seq,
-            Item::Lock(RLock {
-                f,
-                h,
-                idx,
-                f_rest: fs,
-                h_rest: hs,
-                bind,
-                strength: l.strength,
-            }),
-        ));
+        items.push((f, seq, Item::Lock(RLock { f, h, idx, f_rest: fs, h_rest: hs, bind, strength: l.strength })));
         seq += 1;
     }
 
@@ -440,31 +384,13 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
             errs.push(format!("{what}: no vertex pairs"));
             continue;
         }
-        let ga = GeomRef {
-            layer: g.pairs[0].a.layer.clone(),
-            path: g.pairs[0].a.path,
-        };
-        let gb = GeomRef {
-            layer: g.pairs[0].b.layer.clone(),
-            path: g.pairs[0].b.path,
-        };
-        if g.pairs.iter().any(|q| {
-            q.a.layer != ga.layer
-                || q.a.path != ga.path
-                || q.b.layer != gb.layer
-                || q.b.path != gb.path
-        }) {
-            errs.push(format!(
-                "{what}: all pairs must connect the same two paths (a side and b side)"
-            ));
+        let ga = GeomRef { layer: g.pairs[0].a.layer.clone(), path: g.pairs[0].a.path };
+        let gb = GeomRef { layer: g.pairs[0].b.layer.clone(), path: g.pairs[0].b.path };
+        if g.pairs.iter().any(|q| q.a.layer != ga.layer || q.a.path != ga.path || q.b.layer != gb.layer || q.b.path != gb.path) {
+            errs.push(format!("{what}: all pairs must connect the same two paths (a side and b side)"));
             continue;
         }
-        let (Some(a), Some(b)) = (
-            unit(&what, &ga, &mut errs, &mut rests),
-            unit(&what, &gb, &mut errs, &mut rests),
-        ) else {
-            continue;
-        };
+        let (Some(a), Some(b)) = (unit(&what, &ga, &mut errs, &mut rests), unit(&what, &gb, &mut errs, &mut rests)) else { continue };
         if a == b {
             errs.push(format!("{what}: cannot glue a path to itself"));
             continue;
@@ -479,18 +405,12 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
         let mut bad = false;
         for q in &g.pairs {
             if q.a.index >= av.len() || q.b.index >= bv.len() {
-                errs.push(format!(
-                    "{what}: pair ({}, {}) is out of range",
-                    q.a.index, q.b.index
-                ));
+                errs.push(format!("{what}: pair ({}, {}) is out of range", q.a.index, q.b.index));
                 bad = true;
                 break;
             }
             if !driven.insert((b, q.b.index)) {
-                errs.push(format!(
-                    "{what}: vertex {} of '{}' is already driven by another constraint",
-                    q.b.index, gb.layer
-                ));
+                errs.push(format!("{what}: vertex {} of '{}' is already driven by another constraint", q.b.index, gb.layer));
                 bad = true;
                 break;
             }
@@ -502,20 +422,7 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
         let a_rest = pairs.iter().map(|&(i, _)| ar.stage.apply(av[i])).collect();
         let b_rest = pairs.iter().map(|&(_, j)| br.stage.apply(bv[j])).collect();
         edges.push((a, b, what.clone()));
-        items.push((
-            b,
-            seq,
-            Item::Glue(RGlue {
-                a,
-                b,
-                pairs,
-                a_rest,
-                b_rest,
-                a_frame_rest: ar.stage,
-                mode: g.mode,
-                strength: g.strength,
-            }),
-        ));
+        items.push((b, seq, Item::Glue(RGlue { a, b, pairs, a_rest, b_rest, a_frame_rest: ar.stage, mode: g.mode, strength: g.strength })));
         seq += 1;
     }
 
@@ -550,23 +457,14 @@ pub(crate) fn resolve(e: &Engine) -> Result<Option<Resolved>, Vec<String>> {
         }
     }
     if rank.len() < units.len() {
-        let stuck: Vec<&str> = edges
-            .iter()
-            .filter(|(_, f, _)| !rank.contains_key(f))
-            .map(|(_, _, w)| w.as_str())
-            .collect();
-        errs.push(format!(
-            "constraint cycle: {} depend on each other",
-            stuck.join(", ")
-        ));
+        let stuck: Vec<&str> = edges.iter().filter(|(_, f, _)| !rank.contains_key(f)).map(|(_, _, w)| w.as_str()).collect();
+        errs.push(format!("constraint cycle: {} depend on each other", stuck.join(", ")));
     }
     if !errs.is_empty() {
         return Err(errs);
     }
     items.sort_by_key(|(f, s, _)| (rank[f], *s));
-    Ok(Some(Resolved {
-        items: items.into_iter().map(|x| x.2).collect(),
-    }))
+    Ok(Some(Resolved { items: items.into_iter().map(|x| x.2).collect() }))
 }
 
 // ---- per frame ----
@@ -582,17 +480,8 @@ fn get_stage(nodes: &[RenderNode], stage: &[Affine2], u: Unit, i: usize) -> Opti
 }
 
 /// Move vertex `i` of `u` towards stage-space `target` by `strength`.
-fn set_stage(
-    nodes: &mut [RenderNode],
-    stage: &[Affine2],
-    u: Unit,
-    i: usize,
-    target: Vec2,
-    strength: f32,
-) {
-    let Some(inv) = stage[u.node].inverse() else {
-        return;
-    };
+fn set_stage(nodes: &mut [RenderNode], stage: &[Affine2], u: Unit, i: usize, target: Vec2, strength: f32) {
+    let Some(inv) = stage[u.node].inverse() else { return };
     let want = inv.apply(target);
     if !vec_ok(want) {
         return;
@@ -656,18 +545,13 @@ impl Resolved {
                     }
                 }
                 Item::Glue(g) => {
-                    let rel =
-                        stage[g.a.node].mul(g.a_frame_rest.inverse().unwrap_or(Affine2::IDENTITY));
+                    let rel = stage[g.a.node].mul(g.a_frame_rest.inverse().unwrap_or(Affine2::IDENTITY));
                     for (n, &(ai, bi)) in g.pairs.iter().enumerate() {
-                        let Some(a_now) = get_stage(nodes, stage, g.a, ai) else {
-                            continue;
-                        };
+                        let Some(a_now) = get_stage(nodes, stage, g.a, ai) else { continue };
                         let target = match g.mode {
                             GlueMode::Snap => a_now,
                             GlueMode::Offset => a_now + (g.b_rest[n] - g.a_rest[n]),
-                            GlueMode::Rigid => {
-                                a_now + rel.apply(g.b_rest[n]) - rel.apply(g.a_rest[n])
-                            }
+                            GlueMode::Rigid => a_now + rel.apply(g.b_rest[n]) - rel.apply(g.a_rest[n]),
                         };
                         set_stage(nodes, stage, g.b, bi, target, g.strength);
                     }
@@ -694,11 +578,7 @@ pub fn add_mesh_lock(p: &Project, l: MeshLock) -> Result<Project, String> {
 }
 
 pub fn remove_mesh_lock(p: &Project, name: &str) -> Result<Project, String> {
-    let i = p
-        .mesh_locks
-        .iter()
-        .position(|x| x.name == name)
-        .ok_or_else(|| format!("no mesh lock named '{name}'"))?;
+    let i = p.mesh_locks.iter().position(|x| x.name == name).ok_or_else(|| format!("no mesh lock named '{name}'"))?;
     let mut q = p.clone();
     q.mesh_locks.remove(i);
     compile(q)
@@ -714,11 +594,7 @@ pub fn add_glue(p: &Project, g: Glue) -> Result<Project, String> {
 }
 
 pub fn remove_glue(p: &Project, name: &str) -> Result<Project, String> {
-    let i = p
-        .glues
-        .iter()
-        .position(|x| x.name == name)
-        .ok_or_else(|| format!("no glue named '{name}'"))?;
+    let i = p.glues.iter().position(|x| x.name == name).ok_or_else(|| format!("no glue named '{name}'"))?;
     let mut q = p.clone();
     q.glues.remove(i);
     compile(q)
@@ -726,27 +602,15 @@ pub fn remove_glue(p: &Project, name: &str) -> Result<Project, String> {
 
 /// Pair every vertex of `b` that lies within `radius` (stage space, rest pose) of a vertex of `a`
 /// with its nearest `a` vertex (ties: lowest index). Used by `glue add ... auto=R`.
-pub fn auto_pairs(
-    p: &Project,
-    a: &GeomRef,
-    b: &GeomRef,
-    radius: f32,
-) -> Result<Vec<GluePair>, String> {
+pub fn auto_pairs(p: &Project, a: &GeomRef, b: &GeomRef, radius: f32) -> Result<Vec<GluePair>, String> {
     if !(radius.is_finite() && radius >= 0.0) {
         return Err("auto radius must be a number >= 0".into());
     }
     let e = Engine::new(p.clone()).map_err(|v| v.join("; "))?;
     let fetch = |g: &GeomRef| -> Result<Vec<Vec2>, String> {
-        let n = e
-            .node_index(&g.layer)
-            .ok_or_else(|| format!("no layer '{}'", g.layer))?;
-        let r = e
-            .link_unit(n)
-            .ok_or_else(|| format!("layer '{}' has no editable vertices", g.layer))?;
-        let v = r
-            .paths
-            .get(g.path)
-            .ok_or_else(|| format!("layer '{}' has no path {}", g.layer, g.path))?;
+        let n = e.node_index(&g.layer).ok_or_else(|| format!("no layer '{}'", g.layer))?;
+        let r = e.link_unit(n).ok_or_else(|| format!("layer '{}' has no editable vertices", g.layer))?;
+        let v = r.paths.get(g.path).ok_or_else(|| format!("layer '{}' has no path {}", g.layer, g.path))?;
         Ok(v.iter().map(|q| r.stage.apply(*q)).collect())
     };
     let (av, bv) = (fetch(a)?, fetch(b)?);
@@ -761,24 +625,13 @@ pub fn auto_pairs(
         }
         if let Some((_, i)) = best {
             out.push(GluePair {
-                a: VertexRef {
-                    layer: a.layer.clone(),
-                    path: a.path,
-                    index: i,
-                },
-                b: VertexRef {
-                    layer: b.layer.clone(),
-                    path: b.path,
-                    index: j,
-                },
+                a: VertexRef { layer: a.layer.clone(), path: a.path, index: i },
+                b: VertexRef { layer: b.layer.clone(), path: b.path, index: j },
             });
         }
     }
     if out.is_empty() {
-        return Err(format!(
-            "no vertex of '{}' lies within {radius} of a vertex of '{}'",
-            b.layer, a.layer
-        ));
+        return Err(format!("no vertex of '{}' lies within {radius} of a vertex of '{}'", b.layer, a.layer));
     }
     Ok(out)
 }
@@ -787,16 +640,10 @@ pub fn auto_pairs(
 pub fn parse_geom(s: &str) -> Result<GeomRef, String> {
     match s.rsplit_once(':') {
         Some((l, n)) if n.chars().all(|c| c.is_ascii_digit()) && !n.is_empty() && !l.is_empty() => {
-            Ok(GeomRef {
-                layer: l.to_string(),
-                path: n.parse().map_err(|_| format!("bad path index '{n}'"))?,
-            })
+            Ok(GeomRef { layer: l.to_string(), path: n.parse().map_err(|_| format!("bad path index '{n}'"))? })
         }
         _ if s.is_empty() => Err("empty layer reference".into()),
-        _ => Ok(GeomRef {
-            layer: s.to_string(),
-            path: 0,
-        }),
+        _ => Ok(GeomRef { layer: s.to_string(), path: 0 }),
     }
 }
 
@@ -804,14 +651,8 @@ pub fn parse_geom(s: &str) -> Result<GeomRef, String> {
 pub fn parse_pairs(s: &str) -> Result<Vec<(usize, usize)>, String> {
     let mut v = Vec::new();
     for part in s.split(';').filter(|x| !x.trim().is_empty()) {
-        let (a, b) = part
-            .split_once(':')
-            .ok_or_else(|| format!("bad pair '{part}' (use a:b)"))?;
-        let n = |t: &str| {
-            t.trim()
-                .parse::<usize>()
-                .map_err(|_| format!("bad vertex index '{t}'"))
-        };
+        let (a, b) = part.split_once(':').ok_or_else(|| format!("bad pair '{part}' (use a:b)"))?;
+        let n = |t: &str| t.trim().parse::<usize>().map_err(|_| format!("bad vertex index '{t}'"));
         v.push((n(a)?, n(b)?));
     }
     Ok(v)
@@ -821,11 +662,7 @@ pub fn parse_pairs(s: &str) -> Result<Vec<(usize, usize)>, String> {
 pub fn parse_indices(s: &str) -> Result<Vec<usize>, String> {
     let mut v = Vec::new();
     for part in s.split(',').filter(|x| !x.trim().is_empty()) {
-        let n = |t: &str| {
-            t.trim()
-                .parse::<usize>()
-                .map_err(|_| format!("bad vertex index '{t}'"))
-        };
+        let n = |t: &str| t.trim().parse::<usize>().map_err(|_| format!("bad vertex index '{t}'"));
         match part.split_once('-') {
             Some((a, b)) => {
                 let (a, b) = (n(a)?, n(b)?);
@@ -859,39 +696,21 @@ mod tests {
         Track::with_keys(&[(0.0, a, Ease::Linear), (10.0, b, Ease::Linear)])
     }
     fn gref(l: &str) -> GeomRef {
-        GeomRef {
-            layer: l.into(),
-            path: 0,
-        }
+        GeomRef { layer: l.into(), path: 0 }
     }
     fn vref(l: &str, p: usize, i: usize) -> VertexRef {
-        VertexRef {
-            layer: l.into(),
-            path: p,
-            index: i,
-        }
+        VertexRef { layer: l.into(), path: p, index: i }
     }
     fn img(name: &str, at: Vec2, cols: usize, rows: usize) -> Layer {
         let mut l = Layer::image_from_png(name, &png(60, 60), at);
         if let LayerKind::Image { mesh, size, .. } = &mut l.kind {
             *size = Some(v(60.0, 60.0));
-            *mesh = Some(MeshSpec {
-                cols,
-                rows,
-                ..Default::default()
-            });
+            *mesh = Some(MeshSpec { cols, rows, ..Default::default() });
         }
         l
     }
     fn pts(name: &str, ps: &[(f32, f32)]) -> Layer {
-        Layer::vector(
-            name,
-            vec![VPath::new(
-                "p",
-                false,
-                ps.iter().map(|&(x, y)| Anchor::corner(v(x, y))).collect(),
-            )],
-        )
+        Layer::vector(name, vec![VPath::new("p", false, ps.iter().map(|&(x, y)| Anchor::corner(v(x, y))).collect())])
     }
     fn base() -> Project {
         let mut p = Project::new("l", 400.0, 400.0, 24.0, 10);
@@ -899,25 +718,16 @@ mod tests {
         p
     }
     fn anchors(f: &crate::engine::Frame, n: usize) -> Vec<Vec2> {
-        f.nodes[n].paths[0]
-            .anchors
-            .iter()
-            .map(|a| f.nodes[n].world.apply(a.pos))
-            .collect()
+        f.nodes[n].paths[0].anchors.iter().map(|a| f.nodes[n].world.apply(a.pos)).collect()
     }
 
     #[test]
     fn closest_point_helpers() {
         let (w, d) = closest_on_triangle(v(0.25, 0.25), v(0.0, 0.0), v(1.0, 0.0), v(0.0, 1.0));
         assert_eq!(d, 0.0);
-        assert!(
-            (w[0] - 0.5).abs() < 1e-6 && (w[1] - 0.25).abs() < 1e-6 && (w[2] - 0.25).abs() < 1e-6
-        );
+        assert!((w[0] - 0.5).abs() < 1e-6 && (w[1] - 0.25).abs() < 1e-6 && (w[2] - 0.25).abs() < 1e-6);
         let (w, d) = closest_on_triangle(v(2.0, 0.0), v(0.0, 0.0), v(1.0, 0.0), v(0.0, 1.0));
-        assert!(
-            (d - 1.0).abs() < 1e-9 && (w[1] - 1.0).abs() < 1e-6,
-            "{w:?} {d}"
-        );
+        assert!((d - 1.0).abs() < 1e-9 && (w[1] - 1.0).abs() < 1e-6, "{w:?} {d}");
         let (t, d2) = closest_on_segment(v(5.0, 3.0), v(0.0, 0.0), v(10.0, 0.0));
         assert!((t - 0.5).abs() < 1e-6 && (d2 - 9.0).abs() < 1e-9);
     }
@@ -926,33 +736,18 @@ mod tests {
     fn locked_vector_follower_moves_with_the_host_mesh() {
         let mut p = base();
         // host: image mesh skinned fully to bone b; follower: three points over it
-        p.layers = vec![
-            img("body", v(100.0, 100.0), 2, 2),
-            pts("coat", &[(110.0, 110.0), (130.0, 150.0), (150.0, 125.0)]),
-        ];
+        p.layers = vec![img("body", v(100.0, 100.0), 2, 2), pts("coat", &[(110.0, 110.0), (130.0, 150.0), (150.0, 125.0)])];
         p.auto_skin("body", 1).unwrap();
         p.channels = vec![Channel::keys("b", Prop::BoneAngle, two(0.0, 90.0))];
-        p.mesh_locks = vec![MeshLock {
-            name: "l".into(),
-            host: gref("body"),
-            follower: gref("coat"),
-            vertices: vec![],
-            strength: 1.0,
-        }];
+        p.mesh_locks = vec![MeshLock { name: "l".into(), host: gref("body"), follower: gref("coat"), vertices: vec![], strength: 1.0 }];
         let e = Engine::new(p.clone()).unwrap();
         let rest = anchors(&e.evaluate(0.0), 1);
-        for (a, b) in rest
-            .iter()
-            .zip([v(110.0, 110.0), v(130.0, 150.0), v(150.0, 125.0)])
-        {
+        for (a, b) in rest.iter().zip([v(110.0, 110.0), v(130.0, 150.0), v(150.0, 125.0)]) {
             assert!(a.distance(b) < 1e-3, "{a:?}");
         }
         // bone b sits at (100,100): rotating 90 degrees about it maps (x,y) -> (100-(y-100), 100+(x-100))
         let turned = anchors(&e.evaluate(10.0), 1);
-        for (a, (x, y)) in turned
-            .iter()
-            .zip([(110.0, 110.0), (130.0, 150.0), (150.0, 125.0)])
-        {
+        for (a, (x, y)) in turned.iter().zip([(110.0, 110.0), (130.0, 150.0), (150.0, 125.0)]) {
             let want = v(100.0 - (y - 100.0), 100.0 + (x - 100.0));
             assert!(a.distance(want) < 0.05, "{a:?} vs {want:?}");
         }
@@ -966,50 +761,29 @@ mod tests {
     #[test]
     fn lock_strength_blends_and_handles_travel_with_the_anchor() {
         let mut p = base();
-        p.layers = vec![
-            img("body", v(100.0, 100.0), 2, 2),
-            pts("coat", &[(110.0, 110.0), (150.0, 150.0)]),
-        ];
+        p.layers = vec![img("body", v(100.0, 100.0), 2, 2), pts("coat", &[(110.0, 110.0), (150.0, 150.0)])];
         p.auto_skin("body", 1).unwrap();
         if let LayerKind::Vector { paths } = &mut p.layers[1].kind {
             paths[0].anchors[0].handle_out = Some(v(120.0, 110.0));
         }
         p.channels = vec![Channel::keys("b", Prop::BoneOffsetX, two(0.0, 40.0))];
-        p.mesh_locks = vec![MeshLock {
-            name: "l".into(),
-            host: gref("body"),
-            follower: gref("coat"),
-            vertices: vec![0],
-            strength: 0.5,
-        }];
+        p.mesh_locks = vec![MeshLock { name: "l".into(), host: gref("body"), follower: gref("coat"), vertices: vec![0], strength: 0.5 }];
         let e = Engine::new(p).unwrap();
         let f = e.evaluate(10.0);
         let a = &f.nodes[1].paths[0].anchors;
         assert!(a[0].pos.distance(v(130.0, 110.0)) < 1e-3, "{:?}", a[0].pos);
         assert!(a[0].handle_out.unwrap().distance(v(140.0, 110.0)) < 1e-3);
-        assert!(
-            a[1].pos.distance(v(150.0, 150.0)) < 1e-6,
-            "vertex 1 is not locked"
-        );
+        assert!(a[1].pos.distance(v(150.0, 150.0)) < 1e-6, "vertex 1 is not locked");
     }
 
     #[test]
     fn point_outside_the_host_uses_the_nearest_surface_point() {
         let mut p = base();
         // follower sits 30 px above the top edge of the body: it still follows the edge
-        p.layers = vec![
-            img("body", v(100.0, 100.0), 1, 1),
-            pts("hat", &[(130.0, 70.0)]),
-        ];
+        p.layers = vec![img("body", v(100.0, 100.0), 1, 1), pts("hat", &[(130.0, 70.0)])];
         p.auto_skin("body", 1).unwrap();
         p.channels = vec![Channel::keys("b", Prop::BoneOffsetX, two(0.0, 25.0))];
-        p.mesh_locks = vec![MeshLock {
-            name: "l".into(),
-            host: gref("body"),
-            follower: gref("hat"),
-            vertices: vec![],
-            strength: 1.0,
-        }];
+        p.mesh_locks = vec![MeshLock { name: "l".into(), host: gref("body"), follower: gref("hat"), vertices: vec![], strength: 1.0 }];
         let e = Engine::new(p).unwrap();
         let a = anchors(&e.evaluate(10.0), 1)[0];
         assert!(a.distance(v(155.0, 70.0)) < 1e-3, "{a:?}");
@@ -1021,21 +795,12 @@ mod tests {
         let mut wrist = pts("wrist", &[(100.0, 200.0), (200.0, 200.0)]);
         if let LayerKind::Vector { paths } = &mut wrist.kind {
             for a in &mut paths[0].anchors {
-                a.weights = vec![crate::path::BoneWeight {
-                    bone: "b".into(),
-                    weight: 1.0,
-                }];
+                a.weights = vec![crate::path::BoneWeight { bone: "b".into(), weight: 1.0 }];
             }
         }
         p.layers = vec![wrist, pts("cuff", &[(150.0, 190.0)])];
         p.channels = vec![Channel::keys("b", Prop::BoneOffsetY, two(0.0, 30.0))];
-        p.mesh_locks = vec![MeshLock {
-            name: "c".into(),
-            host: gref("wrist"),
-            follower: gref("cuff"),
-            vertices: vec![],
-            strength: 1.0,
-        }];
+        p.mesh_locks = vec![MeshLock { name: "c".into(), host: gref("wrist"), follower: gref("cuff"), vertices: vec![], strength: 1.0 }];
         let e = Engine::new(p).unwrap();
         let a = anchors(&e.evaluate(10.0), 1)[0];
         assert!(a.distance(v(150.0, 220.0)) < 1e-3, "{a:?}");
@@ -1054,10 +819,7 @@ mod tests {
         p.glues = vec![Glue {
             name: "g".into(),
             mode: GlueMode::Rigid,
-            pairs: vec![GluePair {
-                a: vref("a", 0, 0),
-                b: vref("c", 0, 0),
-            }],
+            pairs: vec![GluePair { a: vref("a", 0, 0), b: vref("c", 0, 0) }],
             strength: 1.0,
         }];
         let e = Engine::new(p).unwrap();
@@ -1065,11 +827,7 @@ mod tests {
             let fr = e.evaluate(f);
             let (pa, pb, pc) = (anchors(&fr, 0)[0], anchors(&fr, 1)[0], anchors(&fr, 2)[0]);
             // a rod from a: constant length, rotating with the bone like b2 does
-            assert!(
-                (pc.distance(pa) - 30.0).abs() < 1e-3,
-                "frame {f}: {}",
-                pc.distance(pa)
-            );
+            assert!((pc.distance(pa) - 30.0).abs() < 1e-3, "frame {f}: {}", pc.distance(pa));
             assert!((pb.distance(pa) - 30.0).abs() < 1e-3);
             let ang_c = (pc.y - pa.y).atan2(pc.x - pa.x);
             // (30, 0) rotated with the layer: the bone angle at this frame
@@ -1085,35 +843,17 @@ mod tests {
         a.bone = Some("b".into());
         p.layers = vec![a, pts("s", &[(200.0, 220.0)]), pts("o", &[(200.0, 240.0)])];
         p.channels = vec![Channel::keys("b", Prop::BoneOffsetX, two(0.0, 40.0))];
-        let pair = |l: &str| {
-            vec![GluePair {
-                a: vref("a", 0, 0),
-                b: vref(l, 0, 0),
-            }]
-        };
+        let pair = |l: &str| vec![GluePair { a: vref("a", 0, 0), b: vref(l, 0, 0) }];
         p.glues = vec![
-            Glue {
-                name: "s".into(),
-                mode: GlueMode::Snap,
-                pairs: pair("s"),
-                strength: 1.0,
-            },
-            Glue {
-                name: "o".into(),
-                mode: GlueMode::Offset,
-                pairs: pair("o"),
-                strength: 1.0,
-            },
+            Glue { name: "s".into(), mode: GlueMode::Snap, pairs: pair("s"), strength: 1.0 },
+            Glue { name: "o".into(), mode: GlueMode::Offset, pairs: pair("o"), strength: 1.0 },
         ];
         let e = Engine::new(p).unwrap();
         let fr = e.evaluate(10.0);
         let pa = anchors(&fr, 0)[0];
         assert!(pa.distance(v(190.0, 100.0)) < 1e-3);
         assert!(anchors(&fr, 1)[0].distance(pa) < 1e-3, "snap coincides");
-        assert!(
-            anchors(&fr, 2)[0].distance(v(190.0 + 50.0, 100.0 + 140.0)) < 1e-3,
-            "offset kept"
-        );
+        assert!(anchors(&fr, 2)[0].distance(v(190.0 + 50.0, 100.0 + 140.0)) < 1e-3, "offset kept");
     }
 
     #[test]
@@ -1124,45 +864,19 @@ mod tests {
         // c follows b2 which follows a; declared in the "wrong" order
         p.layers = vec![a, pts("b2", &[(150.0, 130.0)]), pts("c", &[(150.0, 160.0)])];
         p.channels = vec![Channel::keys("b", Prop::BoneOffsetX, two(0.0, 40.0))];
-        let g = |n: &str, x: &str, y: &str| Glue {
-            name: n.into(),
-            mode: GlueMode::Offset,
-            pairs: vec![GluePair {
-                a: vref(x, 0, 0),
-                b: vref(y, 0, 0),
-            }],
-            strength: 1.0,
-        };
+        let g = |n: &str, x: &str, y: &str| Glue { name: n.into(), mode: GlueMode::Offset, pairs: vec![GluePair { a: vref(x, 0, 0), b: vref(y, 0, 0) }], strength: 1.0 };
         p.glues = vec![g("second", "b2", "c"), g("first", "a", "b2")];
         let e = Engine::new(p).unwrap();
         let fr = e.evaluate(10.0);
-        assert!(
-            anchors(&fr, 2)[0].distance(v(190.0, 160.0)) < 1e-3,
-            "{:?}",
-            anchors(&fr, 2)[0]
-        );
+        assert!(anchors(&fr, 2)[0].distance(v(190.0, 160.0)) < 1e-3, "{:?}", anchors(&fr, 2)[0]);
     }
 
     #[test]
     fn cycles_self_references_and_overlaps_are_rejected() {
         let mut p = base();
-        p.layers = vec![
-            pts("a", &[(0.0, 0.0), (10.0, 0.0)]),
-            pts("b", &[(0.0, 5.0), (10.0, 5.0)]),
-            pts("c", &[(0.0, 9.0)]),
-        ];
-        let pair = |x: &str, y: &str| {
-            vec![GluePair {
-                a: vref(x, 0, 0),
-                b: vref(y, 0, 0),
-            }]
-        };
-        let glue = |n: &str, x: &str, y: &str| Glue {
-            name: n.into(),
-            mode: GlueMode::Snap,
-            pairs: pair(x, y),
-            strength: 1.0,
-        };
+        p.layers = vec![pts("a", &[(0.0, 0.0), (10.0, 0.0)]), pts("b", &[(0.0, 5.0), (10.0, 5.0)]), pts("c", &[(0.0, 9.0)])];
+        let pair = |x: &str, y: &str| vec![GluePair { a: vref(x, 0, 0), b: vref(y, 0, 0) }];
+        let glue = |n: &str, x: &str, y: &str| Glue { name: n.into(), mode: GlueMode::Snap, pairs: pair(x, y), strength: 1.0 };
         // a <- b <- a
         let mut q = p.clone();
         q.glues = vec![glue("g1", "a", "b"), glue("g2", "b", "a")];
@@ -1171,23 +885,11 @@ mod tests {
         // cycle through a lock and a glue
         let mut q = p.clone();
         q.glues = vec![glue("g1", "a", "b")];
-        q.mesh_locks = vec![MeshLock {
-            name: "m".into(),
-            host: gref("b"),
-            follower: gref("a"),
-            vertices: vec![],
-            strength: 1.0,
-        }];
+        q.mesh_locks = vec![MeshLock { name: "m".into(), host: gref("b"), follower: gref("a"), vertices: vec![], strength: 1.0 }];
         assert!(Engine::new(q).err().unwrap().join(";").contains("cycle"));
         // a lock to itself / a glue of a path with itself
         let mut q = p.clone();
-        q.mesh_locks = vec![MeshLock {
-            name: "m".into(),
-            host: gref("a"),
-            follower: gref("a"),
-            vertices: vec![],
-            strength: 1.0,
-        }];
+        q.mesh_locks = vec![MeshLock { name: "m".into(), host: gref("a"), follower: gref("a"), vertices: vec![], strength: 1.0 }];
         assert!(Engine::new(q).err().unwrap().join(";").contains("itself"));
         let mut q = p.clone();
         q.glues = vec![glue("g", "a", "a")];
@@ -1195,37 +897,20 @@ mod tests {
         // two constraints driving the same vertex
         let mut q = p.clone();
         q.glues = vec![glue("g1", "a", "c"), glue("g2", "b", "c")];
-        assert!(Engine::new(q)
-            .err()
-            .unwrap()
-            .join(";")
-            .contains("already driven"));
+        assert!(Engine::new(q).err().unwrap().join(";").contains("already driven"));
         // the add helpers refuse the same things and leave the input alone
         let mut q = p.clone();
         q.glues = vec![glue("g1", "a", "b")];
         assert!(add_glue(&q, glue("g2", "b", "a")).is_err());
-        assert!(
-            add_glue(&q, glue("g1", "a", "c")).is_err(),
-            "duplicate name"
-        );
+        assert!(add_glue(&q, glue("g1", "a", "c")).is_err(), "duplicate name");
         assert_eq!(q.glues.len(), 1);
     }
 
     #[test]
     fn validation_errors_are_reported_not_panicked() {
         let mut p = base();
-        p.layers = vec![
-            pts("a", &[(0.0, 0.0), (10.0, 0.0)]),
-            pts("b", &[(0.0, 5.0)]),
-            Layer::image_from_png("im", &png(8, 8), v(0.0, 0.0)),
-        ];
-        let lock = |h: &str, f: &str, vs: Vec<usize>, s: f32| MeshLock {
-            name: "m".into(),
-            host: gref(h),
-            follower: gref(f),
-            vertices: vs,
-            strength: s,
-        };
+        p.layers = vec![pts("a", &[(0.0, 0.0), (10.0, 0.0)]), pts("b", &[(0.0, 5.0)]), Layer::image_from_png("im", &png(8, 8), v(0.0, 0.0))];
+        let lock = |h: &str, f: &str, vs: Vec<usize>, s: f32| MeshLock { name: "m".into(), host: gref(h), follower: gref(f), vertices: vs, strength: s };
         for (l, needle) in [
             (lock("zz", "b", vec![], 1.0), "no layer"),
             (lock("a", "b", vec![5], 1.0), "does not exist"),
@@ -1233,16 +918,7 @@ mod tests {
             (lock("a", "b", vec![], 1.5), "strength"),
             (lock("a", "im", vec![], 1.0), "no mesh"),
             (lock("b", "a", vec![], 1.0), "at least 2 anchors"),
-            (
-                MeshLock {
-                    host: GeomRef {
-                        layer: "a".into(),
-                        path: 3,
-                    },
-                    ..lock("a", "b", vec![], 1.0)
-                },
-                "no path 3",
-            ),
+            (MeshLock { host: GeomRef { layer: "a".into(), path: 3 }, ..lock("a", "b", vec![], 1.0) }, "no path 3"),
         ] {
             let mut q = p.clone();
             q.mesh_locks = vec![l];
@@ -1250,32 +926,11 @@ mod tests {
             assert!(err.contains(needle), "wanted '{needle}' in '{err}'");
         }
         let mut q = p.clone();
-        q.glues = vec![Glue {
-            name: "g".into(),
-            mode: GlueMode::Snap,
-            pairs: vec![],
-            strength: 1.0,
-        }];
-        assert!(Engine::new(q)
-            .err()
-            .unwrap()
-            .join(";")
-            .contains("no vertex pairs"));
+        q.glues = vec![Glue { name: "g".into(), mode: GlueMode::Snap, pairs: vec![], strength: 1.0 }];
+        assert!(Engine::new(q).err().unwrap().join(";").contains("no vertex pairs"));
         let mut q = p.clone();
-        q.glues = vec![Glue {
-            name: "g".into(),
-            mode: GlueMode::Snap,
-            pairs: vec![GluePair {
-                a: vref("a", 0, 9),
-                b: vref("b", 0, 0),
-            }],
-            strength: 1.0,
-        }];
-        assert!(Engine::new(q)
-            .err()
-            .unwrap()
-            .join(";")
-            .contains("out of range"));
+        q.glues = vec![Glue { name: "g".into(), mode: GlueMode::Snap, pairs: vec![GluePair { a: vref("a", 0, 9), b: vref("b", 0, 0) }], strength: 1.0 }];
+        assert!(Engine::new(q).err().unwrap().join(";").contains("out of range"));
         assert!(remove_glue(&p, "none").is_err() && remove_mesh_lock(&p, "none").is_err());
     }
 
@@ -1283,10 +938,7 @@ mod tests {
     fn serde_defaults_and_old_projects_load() {
         let p = base();
         let j = p.to_json_pretty();
-        assert!(
-            !j.contains("mesh_locks") && !j.contains("glues"),
-            "empty lists are not written"
-        );
+        assert!(!j.contains("mesh_locks") && !j.contains("glues"), "empty lists are not written");
         let back = Project::from_json(&j).unwrap();
         assert!(back.mesh_locks.is_empty() && back.glues.is_empty());
         // the bundled demo (written before this feature) loads and evaluates unchanged
@@ -1295,19 +947,7 @@ mod tests {
         assert!(before > 0);
         let mut q = base();
         q.layers = vec![pts("a", &[(0.0, 0.0)]), pts("b", &[(0.0, 5.0)])];
-        let q = add_glue(
-            &q,
-            Glue {
-                name: "g".into(),
-                mode: GlueMode::Rigid,
-                pairs: vec![GluePair {
-                    a: vref("a", 0, 0),
-                    b: vref("b", 0, 0),
-                }],
-                strength: 1.0,
-            },
-        )
-        .unwrap();
+        let q = add_glue(&q, Glue { name: "g".into(), mode: GlueMode::Rigid, pairs: vec![GluePair { a: vref("a", 0, 0), b: vref("b", 0, 0) }], strength: 1.0 }).unwrap();
         let again = Project::from_json(&q.to_json_pretty()).unwrap();
         assert_eq!(again.glues, q.glues);
         assert_eq!(again.glues[0].mode, GlueMode::Rigid);
@@ -1316,19 +956,10 @@ mod tests {
     #[test]
     fn evaluation_is_deterministic() {
         let mut p = base();
-        p.layers = vec![
-            img("body", v(100.0, 100.0), 3, 3),
-            pts("coat", &[(110.0, 110.0), (130.0, 150.0)]),
-        ];
+        p.layers = vec![img("body", v(100.0, 100.0), 3, 3), pts("coat", &[(110.0, 110.0), (130.0, 150.0)])];
         p.auto_skin("body", 1).unwrap();
         p.channels = vec![Channel::keys("b", Prop::BoneAngle, two(0.0, 70.0))];
-        p.mesh_locks = vec![MeshLock {
-            name: "l".into(),
-            host: gref("body"),
-            follower: gref("coat"),
-            vertices: vec![],
-            strength: 1.0,
-        }];
+        p.mesh_locks = vec![MeshLock { name: "l".into(), host: gref("body"), follower: gref("coat"), vertices: vec![], strength: 1.0 }];
         let e = Engine::new(p).unwrap();
         let (a, b) = (anchors(&e.evaluate(4.0), 1), anchors(&e.evaluate(4.0), 1));
         assert_eq!(a, b);
@@ -1337,22 +968,13 @@ mod tests {
     #[test]
     fn auto_pairs_and_parsers() {
         let mut p = base();
-        p.layers = vec![
-            pts("a", &[(0.0, 0.0), (100.0, 0.0)]),
-            pts("b", &[(1.0, 1.0), (50.0, 0.0), (101.0, 0.0)]),
-        ];
+        p.layers = vec![pts("a", &[(0.0, 0.0), (100.0, 0.0)]), pts("b", &[(1.0, 1.0), (50.0, 0.0), (101.0, 0.0)])];
         let pr = auto_pairs(&p, &gref("a"), &gref("b"), 3.0).unwrap();
         let ix: Vec<(usize, usize)> = pr.iter().map(|x| (x.a.index, x.b.index)).collect();
         assert_eq!(ix, vec![(0, 0), (1, 2)]);
         assert!(auto_pairs(&p, &gref("a"), &gref("b"), 0.1).is_err());
         assert!(auto_pairs(&p, &gref("a"), &gref("b"), f32::NAN).is_err());
-        assert_eq!(
-            parse_geom("arm:2").unwrap(),
-            GeomRef {
-                layer: "arm".into(),
-                path: 2
-            }
-        );
+        assert_eq!(parse_geom("arm:2").unwrap(), GeomRef { layer: "arm".into(), path: 2 });
         assert_eq!(parse_geom("g/arm").unwrap(), gref("g/arm"));
         assert!(parse_geom("").is_err());
         assert_eq!(parse_pairs("0:1;2:3").unwrap(), vec![(0, 1), (2, 3)]);
@@ -1367,24 +989,10 @@ mod tests {
         let mut p = base();
         p.layers = vec![pts("a", &[(0.0, 0.0)]), pts("b", &[(0.0, 5.0)])];
         let mut ed = Editor::new(p).unwrap();
-        let g = |n: &str, x: &str, y: &str| Glue {
-            name: n.into(),
-            mode: GlueMode::Snap,
-            pairs: vec![GluePair {
-                a: vref(x, 0, 0),
-                b: vref(y, 0, 0),
-            }],
-            strength: 1.0,
-        };
+        let g = |n: &str, x: &str, y: &str| Glue { name: n.into(), mode: GlueMode::Snap, pairs: vec![GluePair { a: vref(x, 0, 0), b: vref(y, 0, 0) }], strength: 1.0 };
         // the empty list is not serialised, so the first glue creates the key
-        let first = Op::Set {
-            path: "/glues".into(),
-            value: serde_json::json!([g("g1", "a", "b")]),
-        };
-        let ins = |gl: &Glue| Op::Insert {
-            path: "/glues/-".into(),
-            value: serde_json::to_value(gl).unwrap(),
-        };
+        let first = Op::Set { path: "/glues".into(), value: serde_json::json!([g("g1", "a", "b")]) };
+        let ins = |gl: &Glue| Op::Insert { path: "/glues/-".into(), value: serde_json::to_value(gl).unwrap() };
         ed.apply(first).unwrap();
         assert_eq!(ed.project().glues.len(), 1);
         // a cycle is rolled back by the editor

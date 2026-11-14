@@ -13,11 +13,7 @@ pub fn otsu(hist: &[usize; 256]) -> u8 {
     if total == 0 {
         return 128;
     }
-    let sum_all: f64 = hist
-        .iter()
-        .enumerate()
-        .map(|(i, &c)| i as f64 * c as f64)
-        .sum();
+    let sum_all: f64 = hist.iter().enumerate().map(|(i, &c)| i as f64 * c as f64).sum();
     let (mut wb, mut sb, mut best, mut thr) = (0.0, 0.0, -1.0, 128u8);
     // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
     #[allow(clippy::needless_range_loop)]
@@ -44,13 +40,7 @@ pub fn otsu(hist: &[usize; 256]) -> u8 {
 /// Zhang-Suen (1984) thinning of a binary image (true = ink). Returns the skeleton.
 pub fn zhang_suen(bin: &[bool], w: usize, h: usize) -> Vec<bool> {
     let mut img = bin.to_vec();
-    let get = |im: &[bool], x: i32, y: i32| -> u8 {
-        (x >= 0
-            && y >= 0
-            && (x as usize) < w
-            && (y as usize) < h
-            && im[y as usize * w + x as usize]) as u8
-    };
+    let get = |im: &[bool], x: i32, y: i32| -> u8 { (x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h && im[y as usize * w + x as usize]) as u8 };
     loop {
         let mut changed = false;
         for step in 0..2 {
@@ -61,16 +51,7 @@ pub fn zhang_suen(bin: &[bool], w: usize, h: usize) -> Vec<bool> {
                         continue;
                     }
                     // P2..P9 clockwise from north
-                    let n = [
-                        get(&img, x, y - 1),
-                        get(&img, x + 1, y - 1),
-                        get(&img, x + 1, y),
-                        get(&img, x + 1, y + 1),
-                        get(&img, x, y + 1),
-                        get(&img, x - 1, y + 1),
-                        get(&img, x - 1, y),
-                        get(&img, x - 1, y - 1),
-                    ];
+                    let n = [get(&img, x, y - 1), get(&img, x + 1, y - 1), get(&img, x + 1, y), get(&img, x + 1, y + 1), get(&img, x, y + 1), get(&img, x - 1, y + 1), get(&img, x - 1, y), get(&img, x - 1, y - 1)];
                     let b: u8 = n.iter().sum();
                     if !(2..=6).contains(&b) {
                         continue;
@@ -80,11 +61,7 @@ pub fn zhang_suen(bin: &[bool], w: usize, h: usize) -> Vec<bool> {
                         continue;
                     }
                     let (p2, p4, p6, p8) = (n[0], n[2], n[4], n[6]);
-                    let ok = if step == 0 {
-                        p2 * p4 * p6 == 0 && p4 * p6 * p8 == 0
-                    } else {
-                        p2 * p4 * p8 == 0 && p2 * p6 * p8 == 0
-                    };
+                    let ok = if step == 0 { p2 * p4 * p6 == 0 && p4 * p6 * p8 == 0 } else { p2 * p4 * p8 == 0 && p2 * p6 * p8 == 0 };
                     if ok {
                         del.push(y as usize * w + x as usize);
                     }
@@ -107,16 +84,7 @@ pub fn zhang_suen(bin: &[bool], w: usize, h: usize) -> Vec<bool> {
             if get(&img, x, y) == 0 {
                 continue;
             }
-            let dirs: [(i32, i32); 8] = [
-                (0, -1),
-                (1, -1),
-                (1, 0),
-                (1, 1),
-                (0, 1),
-                (-1, 1),
-                (-1, 0),
-                (-1, -1),
-            ];
+            let dirs: [(i32, i32); 8] = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)];
             for q in 0..4 {
                 // orthogonal neighbours a = dirs[2q], b = dirs[(2q+2)%8], diagonal between = dirs[2q+1]
                 let (a, d, b) = (dirs[2 * q], dirs[2 * q + 1], dirs[(2 * q + 2) % 8]);
@@ -204,12 +172,7 @@ pub(super) struct RawChain {
     pub(super) ends: Option<(usize, usize)>,
 }
 
-pub(super) fn skeleton_chains(
-    sk: &[bool],
-    w: usize,
-    h: usize,
-    prune: usize,
-) -> Vec<(Vec<P>, bool)> {
+pub(super) fn skeleton_chains(sk: &[bool], w: usize, h: usize, prune: usize) -> Vec<(Vec<P>, bool)> {
     let nb = |i: usize| -> Vec<usize> {
         let (x, y) = ((i % w) as i32, (i / w) as i32);
         let mut v = Vec::new();
@@ -219,21 +182,14 @@ pub(super) fn skeleton_chains(
                     continue;
                 }
                 let (nx, ny) = (x + dx, y + dy);
-                if nx >= 0
-                    && ny >= 0
-                    && (nx as usize) < w
-                    && (ny as usize) < h
-                    && sk[ny as usize * w + nx as usize]
-                {
+                if nx >= 0 && ny >= 0 && (nx as usize) < w && (ny as usize) < h && sk[ny as usize * w + nx as usize] {
                     v.push(ny as usize * w + nx as usize);
                 }
             }
         }
         v
     };
-    let deg: Vec<usize> = (0..w * h)
-        .map(|i| if sk[i] { nb(i).len() } else { 0 })
-        .collect();
+    let deg: Vec<usize> = (0..w * h).map(|i| if sk[i] { nb(i).len() } else { 0 }).collect();
     // node pixels: degree != 2; cluster the junction pixels (degree >= 3) into single nodes
     let mut node_of = vec![usize::MAX; w * h];
     let mut nodes: Vec<Vec<usize>> = Vec::new();
@@ -260,9 +216,7 @@ pub(super) fn skeleton_chains(
     }
     let centre = |id: usize| -> P {
         let m = &nodes[id];
-        let (sx, sy) = m.iter().fold((0.0, 0.0), |a, &q| {
-            (a.0 + (q % w) as f64 + 0.5, a.1 + (q / w) as f64 + 0.5)
-        });
+        let (sx, sy) = m.iter().fold((0.0, 0.0), |a, &q| (a.0 + (q % w) as f64 + 0.5, a.1 + (q / w) as f64 + 0.5));
         p(sx / m.len() as f64, sy / m.len() as f64)
     };
     let mut visited = vec![false; w * h];
@@ -280,10 +234,7 @@ pub(super) fn skeleton_chains(
                     // node to node directly
                     let key = (m.min(r), m.max(r));
                     if direct.insert(key) {
-                        chains.push(RawChain {
-                            pix: vec![],
-                            ends: Some((id, node_of[r])),
-                        });
+                        chains.push(RawChain { pix: vec![], ends: Some((id, node_of[r])) });
                     }
                     continue;
                 }
@@ -296,10 +247,7 @@ pub(super) fn skeleton_chains(
                 loop {
                     visited[cur] = true;
                     pix.push(cur);
-                    let next: Vec<usize> = nb(cur)
-                        .into_iter()
-                        .filter(|&q| q != prev && !(pix.contains(&q)))
-                        .collect();
+                    let next: Vec<usize> = nb(cur).into_iter().filter(|&q| q != prev && !(pix.contains(&q))).collect();
                     // prefer a node neighbour
                     if let Some(&nn) = next.iter().find(|&&q| node_of[q] != usize::MAX) {
                         end = node_of[nn];
@@ -316,10 +264,7 @@ pub(super) fn skeleton_chains(
                         }
                     }
                 }
-                chains.push(RawChain {
-                    pix,
-                    ends: Some((id, end)),
-                });
+                chains.push(RawChain { pix, ends: Some((id, end)) });
             }
         }
     }
@@ -330,9 +275,7 @@ pub(super) fn skeleton_chains(
             visited[i] = true;
             let mut cur = i;
             loop {
-                let next = nb(cur)
-                    .into_iter()
-                    .find(|&q| !visited[q] && node_of[q] == usize::MAX);
+                let next = nb(cur).into_iter().find(|&q| !visited[q] && node_of[q] == usize::MAX);
                 match next {
                     Some(q) => {
                         visited[q] = true;
@@ -346,10 +289,7 @@ pub(super) fn skeleton_chains(
         }
     }
     // prune spurs: a chain with a free tip (degree-1 node) shorter than `prune`, attached to a junction
-    let node_deg: Vec<usize> = nodes
-        .iter()
-        .map(|m| if m.len() == 1 && deg[m[0]] == 1 { 1 } else { 3 })
-        .collect();
+    let node_deg: Vec<usize> = nodes.iter().map(|m| if m.len() == 1 && deg[m[0]] == 1 { 1 } else { 3 }).collect();
     let mut keep: Vec<bool> = vec![true; chains.len()];
     for (ci, c) in chains.iter().enumerate() {
         if let Some((a, b)) = c.ends {
@@ -359,12 +299,7 @@ pub(super) fn skeleton_chains(
             }
         }
     }
-    let chains: Vec<RawChain> = chains
-        .into_iter()
-        .zip(&keep)
-        .filter(|(_, k)| **k)
-        .map(|(c, _)| c)
-        .collect();
+    let chains: Vec<RawChain> = chains.into_iter().zip(&keep).filter(|(_, k)| **k).map(|(c, _)| c).collect();
     // incident count per node after pruning, then merge pass-through nodes (exactly two chain ends)
     type Poly = (Vec<P>, Option<(usize, usize)>);
     let mut polys: Vec<Poly> = chains
@@ -374,11 +309,7 @@ pub(super) fn skeleton_chains(
             if let Some((a, _)) = c.ends {
                 v.push(centre(a));
             }
-            v.extend(
-                c.pix
-                    .iter()
-                    .map(|&q| p((q % w) as f64 + 0.5, (q / w) as f64 + 0.5)),
-            );
+            v.extend(c.pix.iter().map(|&q| p((q % w) as f64 + 0.5, (q / w) as f64 + 0.5)));
             if let Some((_, b)) = c.ends {
                 v.push(centre(b));
             }
@@ -448,10 +379,7 @@ pub(super) fn trace_line(img: &Image, o: &TraceOptions) -> Result<TraceResult, S
         hist[l.round().clamp(0.0, 255.0) as usize] += 1;
     }
     let thr = o.threshold.unwrap_or_else(|| otsu(&hist)) as f64;
-    let mut ink: Vec<bool> = lumv
-        .iter()
-        .map(|&l| if o.invert { l > thr } else { l <= thr })
-        .collect();
+    let mut ink: Vec<bool> = lumv.iter().map(|&l| if o.invert { l > thr } else { l <= thr }).collect();
     // drop tiny ink specks (8-connected)
     let min_a = o.min_area.ceil() as usize;
     if min_a > 1 {
@@ -517,43 +445,18 @@ pub(super) fn trace_line(img: &Image, o: &TraceOptions) -> Result<TraceResult, S
                 cnt += 1.0;
             }
         }
-        let width = if cnt > 0.0 {
-            (ws / cnt * 10.0).round() / 10.0
-        } else {
-            1.0
-        };
+        let width = if cnt > 0.0 { (ws / cnt * 10.0).round() / 10.0 } else { 1.0 };
         let path = if o.fit == Fit::Bezier && pts.len() >= 3 {
-            let bez = fit_chain(
-                Chain {
-                    pts: pts.clone(),
-                    closed,
-                },
-                o,
-            );
+            let bez = fit_chain(Chain { pts: pts.clone(), closed }, o);
             VPath::new("line", closed, anchors_from(&bez, closed))
         } else {
             let v: Vec<Vec2> = pts.iter().map(|q| q.v2()).collect();
-            let s = if closed {
-                douglas_peucker_closed(&v, o.tol)
-            } else {
-                douglas_peucker(&v, o.tol)
-            };
+            let s = if closed { douglas_peucker_closed(&v, o.tol) } else { douglas_peucker(&v, o.tol) };
             VPath::new("line", closed, s.into_iter().map(Anchor::corner).collect())
         };
         if path.anchors.len() >= 2 {
-            strokes.push(Stroke {
-                path,
-                width: width as f32,
-            });
+            strokes.push(Stroke { path, width: width as f32 });
         }
     }
-    Ok(TraceResult {
-        width: w,
-        height: h,
-        mode: Mode::Line,
-        palette: vec![ink_col],
-        regions: Vec::new(),
-        strokes,
-        stroke_color: ink_col,
-    })
+    Ok(TraceResult { width: w, height: h, mode: Mode::Line, palette: vec![ink_col], regions: Vec::new(), strokes, stroke_color: ink_col })
 }

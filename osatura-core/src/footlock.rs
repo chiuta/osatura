@@ -20,11 +20,7 @@ pub struct LockOptions {
 
 impl Default for LockOptions {
     fn default() -> Self {
-        LockOptions {
-            ground_y: 0.0,
-            tolerance: 2.0,
-            min_frames: 3,
-        }
+        LockOptions { ground_y: 0.0, tolerance: 2.0, min_frames: 3 }
     }
 }
 
@@ -41,29 +37,18 @@ pub struct Contact {
 pub type ContactScan = (Vec<Contact>, Vec<(f32, f32)>);
 
 pub fn find_contacts(p: &Project, bone: &str, o: &LockOptions) -> Result<ContactScan, String> {
-    let bi = p
-        .bones
-        .iter()
-        .position(|b| b.name == bone)
-        .ok_or_else(|| format!("no bone '{bone}'"))?;
+    let bi = p.bones.iter().position(|b| b.name == bone).ok_or_else(|| format!("no bone '{bone}'"))?;
     if p.bones[bi].parent.is_some() {
         return Err("foot lock needs a root controller bone (no parent)".into());
     }
-    if !o.ground_y.is_finite()
-        || !matches!(
-            o.tolerance.partial_cmp(&0.0),
-            Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
-        )
-    {
+    if !o.ground_y.is_finite() || !matches!(o.tolerance.partial_cmp(&0.0), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) {
         return Err("invalid ground or tolerance".into());
     }
     let e = Engine::new(p.clone()).map_err(|v| v.join("; "))?;
-    let pos: Vec<(f32, f32)> = (0..p.frames)
-        .map(|f| {
-            let w = e.evaluate(f as f32).world[bi];
-            (w.tx, w.ty)
-        })
-        .collect();
+    let pos: Vec<(f32, f32)> = (0..p.frames).map(|f| {
+        let w = e.evaluate(f as f32).world[bi];
+        (w.tx, w.ty)
+    }).collect();
     let mut out = Vec::new();
     let mut i = 0;
     while i < pos.len() {
@@ -73,12 +58,7 @@ pub fn find_contacts(p: &Project, bone: &str, o: &LockOptions) -> Result<Contact
                 i += 1;
             }
             if i - s >= o.min_frames {
-                out.push(Contact {
-                    start: s,
-                    end: i - 1,
-                    x: pos[s].0,
-                    y: pos[s].1,
-                });
+                out.push(Contact { start: s, end: i - 1, x: pos[s].0, y: pos[s].1 });
             }
         } else {
             i += 1;
@@ -126,10 +106,8 @@ pub fn lock_feet(p: &mut Project, bone: &str, o: &LockOptions) -> Result<Vec<Con
             }
         });
     }
-    p.channels
-        .push(Channel::keys(bone, Prop::BoneOffsetX, Track::with_keys(&kx)).with_mode(Mode::Add));
-    p.channels
-        .push(Channel::keys(bone, Prop::BoneOffsetY, Track::with_keys(&ky)).with_mode(Mode::Add));
+    p.channels.push(Channel::keys(bone, Prop::BoneOffsetX, Track::with_keys(&kx)).with_mode(Mode::Add));
+    p.channels.push(Channel::keys(bone, Prop::BoneOffsetY, Track::with_keys(&ky)).with_mode(Mode::Add));
     Ok(contacts)
 }
 
@@ -144,18 +122,8 @@ mod tests {
         let mut p = Project::new("f", 400.0, 200.0, 24.0, 40);
         p.bones = vec![Bone::new("foot", None, 10.0, Vec2::new(0.0, 100.0), 0.0)];
         let xs: Vec<(f32, f32, Ease)> = vec![(0.0, 0.0, Ease::Linear), (39.0, 78.0, Ease::Linear)];
-        let ys: Vec<(f32, f32, Ease)> = vec![
-            (0.0, -30.0, Ease::Linear),
-            (9.0, -30.0, Ease::Linear),
-            (10.0, 0.0, Ease::Linear),
-            (19.0, 0.0, Ease::Linear),
-            (20.0, -30.0, Ease::Linear),
-            (39.0, -30.0, Ease::Linear),
-        ];
-        p.channels = vec![
-            Channel::keys("foot", Prop::BoneOffsetX, Track::with_keys(&xs)),
-            Channel::keys("foot", Prop::BoneOffsetY, Track::with_keys(&ys)),
-        ];
+        let ys: Vec<(f32, f32, Ease)> = vec![(0.0, -30.0, Ease::Linear), (9.0, -30.0, Ease::Linear), (10.0, 0.0, Ease::Linear), (19.0, 0.0, Ease::Linear), (20.0, -30.0, Ease::Linear), (39.0, -30.0, Ease::Linear)];
+        p.channels = vec![Channel::keys("foot", Prop::BoneOffsetX, Track::with_keys(&xs)), Channel::keys("foot", Prop::BoneOffsetY, Track::with_keys(&ys))];
         p
     }
 
@@ -166,10 +134,7 @@ mod tests {
     #[test]
     fn detects_one_contact() {
         let p = sliding();
-        let o = LockOptions {
-            ground_y: 100.0,
-            ..Default::default()
-        };
+        let o = LockOptions { ground_y: 100.0, ..Default::default() };
         let (c, _) = find_contacts(&p, "foot", &o).unwrap();
         assert_eq!(c.len(), 1);
         assert_eq!((c[0].start, c[0].end), (10, 19));
@@ -178,17 +143,11 @@ mod tests {
     #[test]
     fn locking_removes_sliding_only_during_contact() {
         let mut p = sliding();
-        let o = LockOptions {
-            ground_y: 100.0,
-            ..Default::default()
-        };
+        let o = LockOptions { ground_y: 100.0, ..Default::default() };
         assert!(x_at(&p, 19.0) - x_at(&p, 10.0) > 10.0, "slides before");
         lock_feet(&mut p, "foot", &o).unwrap();
         for f in 10..=19 {
-            assert!(
-                (x_at(&p, f as f32) - x_at(&p, 10.0)).abs() < 0.01,
-                "frame {f}"
-            );
+            assert!((x_at(&p, f as f32) - x_at(&p, 10.0)).abs() < 0.01, "frame {f}");
         }
         assert!((x_at(&p, 5.0) - 10.0).abs() < 0.01, "free frames unchanged");
         assert!((x_at(&p, 30.0) - 60.0).abs() < 0.01);
@@ -197,21 +156,12 @@ mod tests {
     #[test]
     fn no_contact_and_bad_input() {
         let mut p = sliding();
-        let o = LockOptions {
-            ground_y: 500.0,
-            ..Default::default()
-        };
+        let o = LockOptions { ground_y: 500.0, ..Default::default() };
         assert!(lock_feet(&mut p, "foot", &o).unwrap().is_empty());
         assert_eq!(p.channels.len(), 2);
         assert!(lock_feet(&mut p, "ghost", &o).is_err());
         let mut q = sliding();
-        q.bones.push(Bone::new(
-            "kid",
-            Some("foot"),
-            5.0,
-            Vec2::new(5.0, 0.0),
-            0.0,
-        ));
+        q.bones.push(Bone::new("kid", Some("foot"), 5.0, Vec2::new(5.0, 0.0), 0.0));
         assert!(lock_feet(&mut q, "kid", &o).is_err());
     }
 }

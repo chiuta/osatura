@@ -68,9 +68,7 @@ fn bridge_holes(outer: Vec<Vec2>, holes: &[Vec<Vec2>]) -> Vec<Vec2> {
 /// Returns one polygon per resulting shape; holes are bridged into their outline.
 pub fn boolean(subject: &[Vec<Vec2>], clip: &[Vec<Vec2>], op: BoolOp) -> Vec<Vec<Vec2>> {
     let conv = |ps: &[Vec<Vec2>]| -> Vec<Vec<[f32; 2]>> {
-        ps.iter()
-            .map(|p| p.iter().map(|v| [v.x, v.y]).collect())
-            .collect()
+        ps.iter().map(|p| p.iter().map(|v| [v.x, v.y]).collect()).collect()
     };
     let (s, c) = (conv(subject), conv(clip));
     let rule = match op {
@@ -93,27 +91,14 @@ pub fn boolean(subject: &[Vec<Vec2>], clip: &[Vec<Vec2>], op: BoolOp) -> Vec<Vec
 /// Boolean on whole paths: `paths[0]` is the subject, the rest are combined (union) into the clip.
 /// Result polygons take the subject's paint.
 pub fn boolean_paths(paths: &[VPath], op: BoolOp, tol: f32) -> Vec<VPath> {
-    let Some(first) = paths.first() else {
-        return Vec::new();
-    };
+    let Some(first) = paths.first() else { return Vec::new() };
     let subj = vec![first.flatten(tol)];
     let clip: Vec<Vec<Vec2>> = paths[1..].iter().map(|p| p.flatten(tol)).collect();
     boolean(&subj, &clip, op)
         .into_iter()
         .enumerate()
         .map(|(i, pts)| {
-            let mut v = VPath::polygon(
-                &format!(
-                    "{}{}",
-                    if first.name.is_empty() {
-                        "b"
-                    } else {
-                        &first.name
-                    },
-                    i
-                ),
-                &pts,
-            );
+            let mut v = VPath::polygon(&format!("{}{}", if first.name.is_empty() { "b" } else { &first.name }, i), &pts);
             v.fill = first.fill.clone();
             v.stroke = first.stroke.clone();
             v
@@ -146,15 +131,11 @@ fn field(blobs: &[(Vec2, f32)], p: Vec2) -> f32 {
 /// Iso-contours of the metaball field Σ r²/d² = `threshold` via marching squares.
 /// `cell` is the grid size in layer units. Returns closed polylines.
 pub fn metaball_contours(blobs: &[(Vec2, f32)], threshold: f32, cell: f32) -> Vec<Vec<Vec2>> {
-    if blobs.is_empty()
-        || (threshold.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        || (cell.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-    {
+    if blobs.is_empty() || (threshold.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || (cell.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) {
         return Vec::new();
     }
     // Field falls below threshold beyond r/sqrt(t); pad so contours close inside the grid.
-    let pad = blobs.iter().map(|b| b.1).fold(0.0f32, f32::max) * (1.0 / threshold.sqrt() + 0.5)
-        + cell * 2.0;
+    let pad = blobs.iter().map(|b| b.1).fold(0.0f32, f32::max) * (1.0 / threshold.sqrt() + 0.5) + cell * 2.0;
     let (mut lo, mut hi) = (Vec2::new(f32::MAX, f32::MAX), Vec2::new(f32::MIN, f32::MIN));
     for &(c, _) in blobs {
         lo = Vec2::new(lo.x.min(c.x), lo.y.min(c.y));
@@ -181,12 +162,7 @@ pub fn metaball_contours(blobs: &[(Vec2, f32)], threshold: f32, cell: f32) -> Ve
     };
     for j in 0..ny {
         for i in 0..nx {
-            let v = [
-                vals[j * stride + i],
-                vals[j * stride + i + 1],
-                vals[(j + 1) * stride + i + 1],
-                vals[(j + 1) * stride + i],
-            ];
+            let v = [vals[j * stride + i], vals[j * stride + i + 1], vals[(j + 1) * stride + i + 1], vals[(j + 1) * stride + i]];
             let mut case = 0u8;
             for (k, x) in v.iter().enumerate() {
                 if *x >= threshold {
@@ -201,20 +177,12 @@ pub fn metaball_contours(blobs: &[(Vec2, f32)], threshold: f32, cell: f32) -> Ve
                 3 | 12 => &[(3, 1)],
                 4 | 11 => &[(1, 2)],
                 5 => {
-                    if centre {
-                        &[(0, 1), (2, 3)]
-                    } else {
-                        &[(3, 0), (1, 2)]
-                    }
+                    if centre { &[(0, 1), (2, 3)] } else { &[(3, 0), (1, 2)] }
                 }
                 6 | 9 => &[(0, 2)],
                 7 | 8 => &[(3, 2)],
                 10 => {
-                    if centre {
-                        &[(3, 0), (1, 2)]
-                    } else {
-                        &[(0, 1), (2, 3)]
-                    }
+                    if centre { &[(3, 0), (1, 2)] } else { &[(0, 1), (2, 3)] }
                 }
                 _ => &[],
             };
@@ -225,17 +193,9 @@ pub fn metaball_contours(blobs: &[(Vec2, f32)], threshold: f32, cell: f32) -> Ve
     }
     let pos_of = |k: Key| -> Vec2 {
         let (i, j, dir) = k;
-        let (a, b) = if dir == 0 {
-            ((i, j), (i + 1, j))
-        } else {
-            ((i, j), (i, j + 1))
-        };
+        let (a, b) = if dir == 0 { ((i, j), (i + 1, j)) } else { ((i, j), (i, j + 1)) };
         let (va, vb) = (vals[a.1 * stride + a.0], vals[b.1 * stride + b.0]);
-        let t = if (vb - va).abs() < 1e-9 {
-            0.5
-        } else {
-            ((threshold - va) / (vb - va)).clamp(0.0, 1.0)
-        };
+        let t = if (vb - va).abs() < 1e-9 { 0.5 } else { ((threshold - va) / (vb - va)).clamp(0.0, 1.0) };
         at(a.0, a.1).lerp(at(b.0, b.1), t)
     };
     let mut keys: Vec<Key> = adj.keys().copied().collect();
@@ -256,11 +216,7 @@ pub fn metaball_contours(blobs: &[(Vec2, f32)], threshold: f32, cell: f32) -> Ve
         while cur != start && !visited.contains(&cur) {
             visited.insert(cur);
             contour.push(pos_of(cur));
-            let next = adj[&cur]
-                .iter()
-                .copied()
-                .find(|&n| n != prev)
-                .unwrap_or(start);
+            let next = adj[&cur].iter().copied().find(|&n| n != prev).unwrap_or(start);
             prev = cur;
             cur = next;
         }
@@ -272,13 +228,7 @@ pub fn metaball_contours(blobs: &[(Vec2, f32)], threshold: f32, cell: f32) -> Ve
 }
 
 /// Liquid layer geometry: smooth closed paths around the metaball iso-contour.
-pub fn liquid_paths(
-    blobs: &[(Vec2, f32)],
-    threshold: f32,
-    cell: f32,
-    fill: &Option<Paint>,
-    stroke: &Option<StrokeStyle>,
-) -> Vec<VPath> {
+pub fn liquid_paths(blobs: &[(Vec2, f32)], threshold: f32, cell: f32, fill: &Option<Paint>, stroke: &Option<StrokeStyle>) -> Vec<VPath> {
     metaball_contours(blobs, threshold, cell)
         .into_iter()
         .enumerate()
@@ -395,8 +345,7 @@ impl EmitterSpec {
         if self.lifetime.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater) {
             return Err("lifetime must be > 0".into());
         }
-        if !(0.0..=1.0).contains(&self.lifetime_jitter) || !(0.0..=1.0).contains(&self.speed_jitter)
-        {
+        if !(0.0..=1.0).contains(&self.lifetime_jitter) || !(0.0..=1.0).contains(&self.speed_jitter) {
             return Err("jitter values must be in 0..1".into());
         }
         Ok(())
@@ -464,12 +413,7 @@ mod tests {
     use super::*;
 
     fn square(x: f32, y: f32, s: f32) -> Vec<Vec2> {
-        vec![
-            Vec2::new(x, y),
-            Vec2::new(x + s, y),
-            Vec2::new(x + s, y + s),
-            Vec2::new(x, y + s),
-        ]
+        vec![Vec2::new(x, y), Vec2::new(x + s, y), Vec2::new(x + s, y + s), Vec2::new(x, y + s)]
     }
     fn area(p: &[Vec2]) -> f32 {
         let mut a = 0.0;
@@ -484,12 +428,7 @@ mod tests {
     fn boolean_areas() {
         let a = vec![square(0.0, 0.0, 10.0)];
         let b = vec![square(5.0, 5.0, 10.0)];
-        let ar = |op| {
-            boolean(&a, &b, op)
-                .iter()
-                .map(|p| area(p).abs())
-                .sum::<f32>()
-        };
+        let ar = |op| boolean(&a, &b, op).iter().map(|p| area(p).abs()).sum::<f32>();
         assert!((ar(BoolOp::Union) - 175.0).abs() < 1e-2);
         assert!((ar(BoolOp::Intersect) - 25.0).abs() < 1e-2);
         assert!((ar(BoolOp::Difference) - 75.0).abs() < 1e-2);
@@ -512,26 +451,13 @@ mod tests {
         let cs = metaball_contours(&[(Vec2::new(50.0, 50.0), 20.0)], 1.0, 2.0);
         assert_eq!(cs.len(), 1);
         for p in &cs[0] {
-            assert!(
-                (p.distance(Vec2::new(50.0, 50.0)) - 20.0).abs() < 0.6,
-                "{p:?}"
-            );
+            assert!((p.distance(Vec2::new(50.0, 50.0)) - 20.0).abs() < 0.6, "{p:?}");
         }
     }
 
     #[test]
     fn blobs_merge_when_close_and_split_when_far() {
-        let n = |d: f32| {
-            metaball_contours(
-                &[
-                    (Vec2::new(50.0, 50.0), 15.0),
-                    (Vec2::new(50.0 + d, 50.0), 15.0),
-                ],
-                1.0,
-                2.0,
-            )
-            .len()
-        };
+        let n = |d: f32| metaball_contours(&[(Vec2::new(50.0, 50.0), 15.0), (Vec2::new(50.0 + d, 50.0), 15.0)], 1.0, 2.0).len();
         assert_eq!(n(20.0), 1, "overlapping blobs fuse into one liquid body");
         assert_eq!(n(80.0), 2, "distant blobs are separate");
     }
@@ -539,22 +465,13 @@ mod tests {
     #[test]
     fn liquid_bridge_exists_between_near_blobs() {
         // gap between the circles (distance 36 > 2r = 30) is still filled by the field
-        let cs = metaball_contours(
-            &[(Vec2::new(0.0, 0.0), 15.0), (Vec2::new(36.0, 0.0), 15.0)],
-            1.0,
-            1.0,
-        );
+        let cs = metaball_contours(&[(Vec2::new(0.0, 0.0), 15.0), (Vec2::new(36.0, 0.0), 15.0)], 1.0, 1.0);
         assert_eq!(cs.len(), 1, "metaball neck forms before the circles touch");
     }
 
     #[test]
     fn particles_are_pure_function_of_time() {
-        let e = EmitterSpec {
-            gravity: Vec2::new(0.0, 100.0),
-            lifetime_jitter: 0.3,
-            speed_jitter: 0.3,
-            ..Default::default()
-        };
+        let e = EmitterSpec { gravity: Vec2::new(0.0, 100.0), lifetime_jitter: 0.3, speed_jitter: 0.3, ..Default::default() };
         let a = e.particles(2.37, Vec2::ZERO);
         let _ = e.particles(0.5, Vec2::ZERO);
         let b = e.particles(2.37, Vec2::ZERO);
@@ -564,11 +481,7 @@ mod tests {
 
     #[test]
     fn particle_count_matches_rate_times_lifetime() {
-        let e = EmitterSpec {
-            rate: 30.0,
-            lifetime: 1.0,
-            ..Default::default()
-        };
+        let e = EmitterSpec { rate: 30.0, lifetime: 1.0, ..Default::default() };
         let n = e.particles(5.0, Vec2::ZERO).len() as f32;
         assert!((n - 30.0).abs() <= 1.0, "{n}");
         assert!(e.particles(-0.1, Vec2::ZERO).is_empty());
@@ -576,33 +489,17 @@ mod tests {
 
     #[test]
     fn emitter_stops_after_duration() {
-        let e = EmitterSpec {
-            duration: Some(0.5),
-            lifetime: 0.5,
-            ..Default::default()
-        };
+        let e = EmitterSpec { duration: Some(0.5), lifetime: 0.5, ..Default::default() };
         assert!(!e.particles(0.6, Vec2::ZERO).is_empty());
         assert!(e.particles(1.2, Vec2::ZERO).is_empty());
     }
 
     #[test]
     fn particles_follow_ballistics() {
-        let e = EmitterSpec {
-            rate: 1.0,
-            lifetime: 10.0,
-            speed: 10.0,
-            direction: 0.0,
-            spread: 0.0,
-            gravity: Vec2::new(0.0, 8.0),
-            ..Default::default()
-        };
+        let e = EmitterSpec { rate: 1.0, lifetime: 10.0, speed: 10.0, direction: 0.0, spread: 0.0, gravity: Vec2::new(0.0, 8.0), ..Default::default() };
         let p = e.particles(2.0, Vec2::new(5.0, 5.0));
         let first = p[0]; // born at t=0, age 2
-        assert!(
-            (first.pos.x - 25.0).abs() < 1e-3 && (first.pos.y - 21.0).abs() < 1e-3,
-            "{:?}",
-            first.pos
-        );
+        assert!((first.pos.x - 25.0).abs() < 1e-3 && (first.pos.y - 21.0).abs() < 1e-3, "{:?}", first.pos);
     }
 
     #[test]

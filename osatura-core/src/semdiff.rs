@@ -49,9 +49,7 @@ pub fn canonicalize(v: &Value) -> Value {
                 return v.clone();
             }
             match n.as_f64() {
-                Some(f) if f.is_finite() && f.fract() == 0.0 && f.abs() < 9.0e15 => {
-                    Value::from(f as i64)
-                }
+                Some(f) if f.is_finite() && f.fract() == 0.0 && f.abs() < 9.0e15 => Value::from(f as i64),
                 Some(0.0) => Value::from(0i64),
                 _ => v.clone(),
             }
@@ -181,10 +179,7 @@ fn is_frame_keyed(arr: &[Value]) -> bool {
     !arr.is_empty()
         && arr.iter().all(|e| {
             e.as_object().is_some_and(|m| {
-                m.get("frame").is_some_and(|f| f.is_number())
-                    && !m.contains_key("id")
-                    && !m.contains_key("name")
-                    && !(m.contains_key("target") && m.contains_key("prop"))
+                m.get("frame").is_some_and(|f| f.is_number()) && !m.contains_key("id") && !m.contains_key("name") && !(m.contains_key("target") && m.contains_key("prop"))
             })
         })
 }
@@ -218,10 +213,7 @@ pub fn segs_of(pointer: &str) -> Result<Vec<String>, String> {
     if !pointer.starts_with('/') {
         return Err(format!("path '{pointer}' must start with '/'"));
     }
-    Ok(pointer[1..]
-        .split('/')
-        .map(|g| g.replace("~1", "/").replace("~0", "~"))
-        .collect())
+    Ok(pointer[1..].split('/').map(|g| g.replace("~1", "/").replace("~0", "~")).collect())
 }
 
 /// Value at an identity pointer (`/layers/sky/opacity`, `/channels/arm_up|bone_angle|keys/track/keys/12/value`).
@@ -255,9 +247,7 @@ pub fn set_at(root: &mut Value, segs: &[String], new: Option<Value>) -> Result<(
     let mut cur = root;
     for g in parents {
         cur = match cur {
-            Value::Object(m) => m
-                .get_mut(g)
-                .ok_or_else(|| format!("no '{g}' on the path"))?,
+            Value::Object(m) => m.get_mut(g).ok_or_else(|| format!("no '{g}' on the path"))?,
             Value::Array(a) => {
                 let idx = match elem_ids(a) {
                     Some(ids) => ids.iter().position(|i| i == g),
@@ -297,11 +287,7 @@ pub fn set_at(root: &mut Value, segs: &[String], new: Option<Value>) -> Result<(
                     }
                     a.push(v);
                     if is_frame_keyed(a) {
-                        a.sort_by(|x, y| {
-                            frame_of(x)
-                                .partial_cmp(&frame_of(y))
-                                .unwrap_or(std::cmp::Ordering::Equal)
-                        });
+                        a.sort_by(|x, y| frame_of(x).partial_cmp(&frame_of(y)).unwrap_or(std::cmp::Ordering::Equal));
                     }
                 }
                 (None, None) => {}
@@ -327,8 +313,7 @@ fn lcs_match<T: PartialEq>(a: &[T], b: &[T]) -> Vec<Option<usize>> {
         pre += 1;
     }
     let mut suf = 0;
-    while suf < a.len() - pre && suf < b.len() - pre && a[a.len() - 1 - suf] == b[b.len() - 1 - suf]
-    {
+    while suf < a.len() - pre && suf < b.len() - pre && a[a.len() - 1 - suf] == b[b.len() - 1 - suf] {
         res[a.len() - 1 - suf] = Some(b.len() - 1 - suf);
         suf += 1;
     }
@@ -341,11 +326,7 @@ fn lcs_match<T: PartialEq>(a: &[T], b: &[T]) -> Vec<Option<usize>> {
     let mut t = vec![0u32; (n + 1) * w];
     for i in (0..n).rev() {
         for j in (0..m).rev() {
-            t[i * w + j] = if am[i] == bm[j] {
-                t[(i + 1) * w + j + 1] + 1
-            } else {
-                t[(i + 1) * w + j].max(t[i * w + j + 1])
-            };
+            t[i * w + j] = if am[i] == bm[j] { t[(i + 1) * w + j + 1] + 1 } else { t[(i + 1) * w + j].max(t[i * w + j + 1]) };
         }
     }
     let (mut i, mut j) = (0, 0);
@@ -467,23 +448,11 @@ fn short(v: &Slot) -> String {
     }
 }
 
-fn push_conflict(
-    cs: &mut Vec<Conflict>,
-    path: &[String],
-    kind: ConflictKind,
-    b: Option<&Value>,
-    o: Option<&Value>,
-    t: Option<&Value>,
-) {
+fn push_conflict(cs: &mut Vec<Conflict>, path: &[String], kind: ConflictKind, b: Option<&Value>, o: Option<&Value>, t: Option<&Value>) {
     let (base, ours, theirs) = (Slot::of(b), Slot::of(o), Slot::of(t));
     let what = describe_path(path);
     let description = match kind {
-        ConflictKind::BothChanged => format!(
-            "{what}: ours {} vs theirs {} (base {})",
-            short(&ours),
-            short(&theirs),
-            short(&base)
-        ),
+        ConflictKind::BothChanged => format!("{what}: ours {} vs theirs {} (base {})", short(&ours), short(&theirs), short(&base)),
         ConflictKind::DeleteEdit => {
             if ours == Slot::Absent {
                 format!("{what}: removed on our side, edited on theirs")
@@ -495,14 +464,7 @@ fn push_conflict(
         ConflictKind::OrderConflict => format!("{what}: both sides reordered the same region"),
         ConflictKind::ArrayConflict => format!("{what}: overlapping edits of the same list"),
     };
-    cs.push(Conflict {
-        path: pointer_of(path),
-        kind,
-        description,
-        base,
-        ours,
-        theirs,
-    });
+    cs.push(Conflict { path: pointer_of(path), kind, description, base, ours, theirs });
 }
 
 /// Three-way merge of whole documents. The result carries `ours` at every conflict.
@@ -514,13 +476,7 @@ pub fn merge_docs(base: &Value, ours: &Value, theirs: &Value) -> (Value, Vec<Con
     (v, cs)
 }
 
-fn merge3(
-    path: &mut Vec<String>,
-    base: Option<&Value>,
-    ours: Option<&Value>,
-    theirs: Option<&Value>,
-    cs: &mut Vec<Conflict>,
-) -> Option<Value> {
+fn merge3(path: &mut Vec<String>, base: Option<&Value>, ours: Option<&Value>, theirs: Option<&Value>, cs: &mut Vec<Conflict>) -> Option<Value> {
     if ours == theirs || base == theirs {
         return ours.cloned();
     }
@@ -555,37 +511,20 @@ fn merge3(
             Some(merge_arrays(path, b, o, t, cs))
         }
         _ => {
-            let kind = if ours.is_none() || theirs.is_none() {
-                ConflictKind::DeleteEdit
-            } else {
-                ConflictKind::BothChanged
-            };
+            let kind = if ours.is_none() || theirs.is_none() { ConflictKind::DeleteEdit } else { ConflictKind::BothChanged };
             push_conflict(cs, path, kind, base, ours, theirs);
             ours.cloned()
         }
     }
 }
 
-fn merge_arrays(
-    path: &mut Vec<String>,
-    base: &[Value],
-    ours: &[Value],
-    theirs: &[Value],
-    cs: &mut Vec<Conflict>,
-) -> Value {
+fn merge_arrays(path: &mut Vec<String>, base: &[Value], ours: &[Value], theirs: &[Value], cs: &mut Vec<Conflict>) -> Value {
     let (Some(kb), Some(ko), Some(kt)) = (keyed(base), keyed(ours), keyed(theirs)) else {
         let (m, n) = diff3(base, ours, theirs);
         if n == 0 {
             return Value::Array(m);
         }
-        push_conflict(
-            cs,
-            path,
-            ConflictKind::ArrayConflict,
-            Some(&Value::Array(base.to_vec())),
-            Some(&Value::Array(ours.to_vec())),
-            Some(&Value::Array(theirs.to_vec())),
-        );
+        push_conflict(cs, path, ConflictKind::ArrayConflict, Some(&Value::Array(base.to_vec())), Some(&Value::Array(ours.to_vec())), Some(&Value::Array(theirs.to_vec())));
         return Value::Array(ours.to_vec());
     };
     let frame_keyed = is_frame_keyed(ours) || is_frame_keyed(theirs) || is_frame_keyed(base);
@@ -639,32 +578,17 @@ fn merge_arrays(
         let edited = |x: &Option<Value>| x.as_ref().is_some_and(|v| v != bv);
         if edited(&o) || edited(&t) {
             path.push(id.clone());
-            push_conflict(
-                cs,
-                path,
-                ConflictKind::DeleteEdit,
-                Some(bv),
-                o.as_ref(),
-                t.as_ref(),
-            );
+            push_conflict(cs, path, ConflictKind::DeleteEdit, Some(bv), o.as_ref(), t.as_ref());
             path.pop();
             if let Some(v) = o {
-                let pos = io
-                    .iter()
-                    .position(|i| i == id)
-                    .unwrap_or(out.len())
-                    .min(out.len());
+                let pos = io.iter().position(|i| i == id).unwrap_or(out.len()).min(out.len());
                 out.insert(pos, (id.clone(), v));
             }
         }
     }
     let mut vals: Vec<Value> = out.into_iter().map(|x| x.1).collect();
     if frame_keyed {
-        vals.sort_by(|a, b| {
-            frame_of(a)
-                .partial_cmp(&frame_of(b))
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+        vals.sort_by(|a, b| frame_of(a).partial_cmp(&frame_of(b)).unwrap_or(std::cmp::Ordering::Equal));
     }
     Value::Array(vals)
 }
@@ -683,9 +607,7 @@ fn retimes(base: &[(String, Value)], side: &[(String, Value)]) -> BTreeMap<Strin
     let mut used: BTreeSet<&str> = BTreeSet::new();
     for (f, bv) in base.iter().filter(|(i, _)| !side.iter().any(|s| &s.0 == i)) {
         let want = strip_frame(bv);
-        if let Some((g, _)) = side.iter().find(|(i, v)| {
-            !base.iter().any(|b| &b.0 == i) && !used.contains(i.as_str()) && strip_frame(v) == want
-        }) {
+        if let Some((g, _)) = side.iter().find(|(i, v)| !base.iter().any(|b| &b.0 == i) && !used.contains(i.as_str()) && strip_frame(v) == want) {
             used.insert(g);
             res.insert(f.clone(), g.clone());
         }
@@ -793,11 +715,7 @@ fn nice_id(top: &str, id: &str) -> String {
         let p: Vec<&str> = id.split('|').collect();
         if p.len() == 3 {
             let t = if p[0].is_empty() { "camera" } else { p[0] };
-            return if p[2] == "keys" || p[2].is_empty() {
-                format!("channel {t}.{}", p[1])
-            } else {
-                format!("channel {t}.{} ({})", p[1], p[2])
-            };
+            return if p[2] == "keys" || p[2].is_empty() { format!("channel {t}.{}", p[1]) } else { format!("channel {t}.{} ({})", p[1], p[2]) };
         }
     }
     format!("{} '{}'", singular(top), id)
@@ -813,29 +731,7 @@ fn subject(segs: &[String]) -> (String, Option<String>) {
         return ("project".into(), Some(top.clone()));
     }
     // top-level non-array objects (camera, ...) read as attributes of the project
-    let is_el = matches!(
-        top.as_str(),
-        "layers"
-            | "bones"
-            | "channels"
-            | "ik"
-            | "constraints"
-            | "springs"
-            | "markers"
-            | "comps"
-            | "events"
-            | "sounds"
-            | "skins"
-            | "shots"
-            | "clips"
-            | "machines"
-            | "bindings"
-            | "containers"
-            | "bone_vis"
-            | "channel_meta"
-            | "mesh_locks"
-            | "glues"
-    );
+    let is_el = matches!(top.as_str(), "layers" | "bones" | "channels" | "ik" | "constraints" | "springs" | "markers" | "comps" | "events" | "sounds" | "skins" | "shots" | "clips" | "machines" | "bindings" | "containers" | "bone_vis" | "channel_meta" | "mesh_locks" | "glues");
     if !is_el {
         return ("project".into(), Some(segs.join(".")));
     }
@@ -845,14 +741,7 @@ fn subject(segs: &[String]) -> (String, Option<String>) {
         subj = format!("key at frame {} of {}", rest[2], subj);
         rest = &rest[3..];
     }
-    (
-        subj,
-        if rest.is_empty() {
-            None
-        } else {
-            Some(rest.join("."))
-        },
-    )
+    (subj, if rest.is_empty() { None } else { Some(rest.join(".")) })
 }
 
 fn describe_path(segs: &[String]) -> String {
@@ -871,18 +760,9 @@ fn val_text(v: &Value) -> String {
     }
 }
 
-fn change(
-    out: &mut Vec<Change>,
-    kind: ChangeKind,
-    path: &[String],
-    text: impl FnOnce(&str, Option<&str>) -> String,
-) {
+fn change(out: &mut Vec<Change>, kind: ChangeKind, path: &[String], text: impl FnOnce(&str, Option<&str>) -> String) {
     let (s, a) = subject(path);
-    out.push(Change {
-        kind,
-        path: pointer_of(path),
-        description: text(&s, a.as_deref()),
-    });
+    out.push(Change { kind, path: pointer_of(path), description: text(&s, a.as_deref()) });
 }
 
 /// Semantic differences from `a` to `b`, in a stable order (document order of `b`/`a`, keys sorted).
@@ -925,12 +805,7 @@ fn diff_value(path: &mut Vec<String>, a: Option<&Value>, b: Option<&Value>, out:
                 }
             } else {
                 let (n, m) = (x.len(), y.len());
-                change(out, ChangeKind::Changed, path, |s, at| {
-                    format!(
-                        "{}list changed ({n} -> {m} items)",
-                        at.map_or(format!("{s}: "), |a| format!("{s}: {a} "))
-                    )
-                });
+                change(out, ChangeKind::Changed, path, |s, at| format!("{}list changed ({n} -> {m} items)", at.map_or(format!("{s}: "), |a| format!("{s}: {a} "))));
             }
         }
         (Some(x), Some(y)) => change(out, ChangeKind::Changed, path, |s, at| match at {
@@ -941,13 +816,7 @@ fn diff_value(path: &mut Vec<String>, a: Option<&Value>, b: Option<&Value>, out:
     }
 }
 
-fn diff_keyed(
-    path: &mut Vec<String>,
-    a: &[(String, Value)],
-    b: &[(String, Value)],
-    frame_keyed: bool,
-    out: &mut Vec<Change>,
-) {
+fn diff_keyed(path: &mut Vec<String>, a: &[(String, Value)], b: &[(String, Value)], frame_keyed: bool, out: &mut Vec<Change>) {
     let in_a = |id: &str| a.iter().any(|x| x.0 == id);
     let in_b = |id: &str| b.iter().any(|x| x.0 == id);
     let mut retimed: BTreeMap<String, String> = BTreeMap::new();
@@ -959,9 +828,7 @@ fn diff_keyed(
         path.push(id.clone());
         if let Some(g) = retimed.get(id) {
             let g = g.clone();
-            change(out, ChangeKind::Retimed, path, |s, _| {
-                format!("{s} retimed to frame {g}")
-            });
+            change(out, ChangeKind::Retimed, path, |s, _| format!("{s} retimed to frame {g}"));
         } else {
             change(out, ChangeKind::Removed, path, |s, at| match at {
                 Some(at) => format!("{s}: {at} removed"),
@@ -980,14 +847,7 @@ fn diff_keyed(
             None => {
                 if frame_keyed {
                     let val = v.get("value").map(val_text).unwrap_or_default();
-                    format!(
-                        "{s} added{}",
-                        if val.is_empty() {
-                            String::new()
-                        } else {
-                            format!(" (value {val})")
-                        }
-                    )
+                    format!("{s} added{}", if val.is_empty() { String::new() } else { format!(" (value {val})") })
                 } else {
                     format!("{s} added")
                 }
@@ -1012,9 +872,7 @@ fn diff_keyed(
                 let from = a.iter().position(|x| &&x.0 == id).unwrap_or(0);
                 let to = b.iter().position(|x| &&x.0 == id).unwrap_or(0);
                 path.push((*id).clone());
-                change(out, ChangeKind::Moved, path, |s, _| {
-                    format!("{s} moved from position {from} to {to}")
-                });
+                change(out, ChangeKind::Moved, path, |s, _| format!("{s} moved from position {from} to {to}"));
                 path.pop();
             }
         }
@@ -1055,24 +913,14 @@ mod tests {
     fn canonical_is_order_and_float_independent() {
         let a: Value = serde_json::from_str(r#"{"b":1.0,"a":[2.0,{"y":0.5,"x":-0.0}]}"#).unwrap();
         let b: Value = serde_json::from_str(r#"{"a":[2,{"x":0,"y":0.5}],"b":1}"#).unwrap();
-        assert_eq!(
-            canon_string(&canonicalize(&a), false),
-            canon_string(&canonicalize(&b), false)
-        );
-        assert_eq!(
-            canon_string(&canonicalize(&a), false),
-            r#"{"a":[2,{"x":0,"y":0.5}],"b":1}"#
-        );
+        assert_eq!(canon_string(&canonicalize(&a), false), canon_string(&canonicalize(&b), false));
+        assert_eq!(canon_string(&canonicalize(&a), false), r#"{"a":[2,{"x":0,"y":0.5}],"b":1}"#);
         assert!(canon_string(&canonicalize(&a), true).contains("\n  \"a\": ["));
     }
 
     #[test]
     fn identities_and_duplicates() {
-        let arr = vec![
-            json!({"name": "x"}),
-            json!({"name": "x"}),
-            json!({"target": "t", "prop": "p"}),
-        ];
+        let arr = vec![json!({"name": "x"}), json!({"name": "x"}), json!({"target": "t", "prop": "p"})];
         assert_eq!(elem_ids(&arr).unwrap(), vec!["x", "x#2", "t|p|"]);
         assert!(elem_ids(&[json!(1)]).is_none());
         assert!(elem_ids(&[json!({"pos": [1, 2]})]).is_none());
@@ -1094,10 +942,7 @@ mod tests {
     #[test]
     fn diff3_cases() {
         let b = vec![1, 2, 3, 4, 5];
-        assert_eq!(
-            diff3(&b, &[1, 2, 3, 4, 5, 6], &[0, 1, 2, 3, 4, 5]),
-            (vec![0, 1, 2, 3, 4, 5, 6], 0)
-        );
+        assert_eq!(diff3(&b, &[1, 2, 3, 4, 5, 6], &[0, 1, 2, 3, 4, 5]), (vec![0, 1, 2, 3, 4, 5, 6], 0));
         assert_eq!(diff3(&b, &[1, 3, 4, 5], &[1, 2, 3, 4]).0, vec![1, 3, 4]);
         let (m, n) = diff3(&b, &[1, 9, 3, 4, 5], &[1, 8, 3, 4, 5]);
         assert_eq!(n, 1);
@@ -1113,16 +958,8 @@ mod tests {
         set(&mut ours, "/layers/sky/opacity", json!(0.5));
         let mut theirs = base.clone();
         set(&mut theirs, "/layers/hill/visible", json!(false));
-        set(
-            &mut theirs,
-            "/channels/sun|layer_opacity|keys/track/keys/0/value",
-            json!(0.25),
-        );
-        set(
-            &mut ours,
-            "/channels/a|bone_angle|keys/track/keys/12/value",
-            json!(15),
-        );
+        set(&mut theirs, "/channels/sun|layer_opacity|keys/track/keys/0/value", json!(0.25));
+        set(&mut ours, "/channels/a|bone_angle|keys/track/keys/12/value", json!(15));
         let (m, cs) = merge_docs(&base, &ours, &theirs);
         assert!(cs.is_empty(), "{cs:?}");
         assert_eq!(m["layers"][0]["opacity"], json!(0.5));
@@ -1135,33 +972,15 @@ mod tests {
     fn merge_adds_removes_and_key_insert() {
         let base = canonicalize(&doc());
         let mut ours = base.clone();
-        set(
-            &mut ours,
-            "/channels/a|bone_angle|keys/track/keys/18",
-            json!({"frame": 18, "value": 5}),
-        );
+        set(&mut ours, "/channels/a|bone_angle|keys/track/keys/18", json!({"frame": 18, "value": 5}));
         let mut theirs = base.clone();
-        set(
-            &mut theirs,
-            "/layers/moon",
-            json!({"name": "moon", "opacity": 1}),
-        );
+        set(&mut theirs, "/layers/moon", json!({"name": "moon", "opacity": 1}));
         set_at(&mut theirs, &segs_of("/layers/sun").unwrap(), None).unwrap();
         let (m, cs) = merge_docs(&base, &ours, &theirs);
         assert!(cs.is_empty(), "{cs:?}");
-        let names: Vec<_> = m["layers"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|l| l["name"].as_str().unwrap())
-            .collect();
+        let names: Vec<_> = m["layers"].as_array().unwrap().iter().map(|l| l["name"].as_str().unwrap()).collect();
         assert_eq!(names, vec!["sky", "hill", "moon"]);
-        let frames: Vec<_> = m["channels"][0]["track"]["keys"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|k| k["frame"].as_i64().unwrap())
-            .collect();
+        let frames: Vec<_> = m["channels"][0]["track"]["keys"].as_array().unwrap().iter().map(|k| k["frame"].as_i64().unwrap()).collect();
         assert_eq!(frames, vec![0, 12, 18, 24]);
     }
 
@@ -1210,23 +1029,14 @@ mod tests {
         let retime = |frame: i64| {
             let mut d = base.clone();
             set_at(&mut d, &segs_of(&format!("{key}/12")).unwrap(), None).unwrap();
-            set(
-                &mut d,
-                &format!("{key}/{frame}"),
-                json!({"frame": frame, "value": 10}),
-            );
+            set(&mut d, &format!("{key}/{frame}"), json!({"frame": frame, "value": 10}));
             d
         };
         let (o, t) = (retime(14), retime(15));
         let (m, cs) = merge_docs(&base, &o, &t);
         assert_eq!(cs.len(), 1, "{cs:?}");
         assert_eq!(cs[0].kind, ConflictKind::KeyRetimed);
-        let frames: Vec<_> = m["channels"][0]["track"]["keys"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|k| k["frame"].as_i64().unwrap())
-            .collect();
+        let frames: Vec<_> = m["channels"][0]["track"]["keys"].as_array().unwrap().iter().map(|k| k["frame"].as_i64().unwrap()).collect();
         assert_eq!(frames, vec![0, 14, 24]);
         // one side retimes, the other untouched: clean
         let (m2, cs2) = merge_docs(&base, &o, &base);
@@ -1235,12 +1045,7 @@ mod tests {
         // resolve --theirs
         let mut d = m;
         resolve_in(&mut d, &cs[0], &Choice::Theirs).unwrap();
-        let frames: Vec<_> = d["channels"][0]["track"]["keys"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|k| k["frame"].as_i64().unwrap())
-            .collect();
+        let frames: Vec<_> = d["channels"][0]["track"]["keys"].as_array().unwrap().iter().map(|k| k["frame"].as_i64().unwrap()).collect();
         assert_eq!(frames, vec![0, 15, 24]);
     }
 
@@ -1249,18 +1054,7 @@ mod tests {
         let base = doc();
         let reorder = |names: [&str; 3]| {
             let mut d = base.clone();
-            let ls: Vec<Value> = names
-                .iter()
-                .map(|n| {
-                    base["layers"]
-                        .as_array()
-                        .unwrap()
-                        .iter()
-                        .find(|l| l["name"] == *n)
-                        .unwrap()
-                        .clone()
-                })
-                .collect();
+            let ls: Vec<Value> = names.iter().map(|n| base["layers"].as_array().unwrap().iter().find(|l| l["name"] == *n).unwrap().clone()).collect();
             d["layers"] = Value::Array(ls);
             d
         };
@@ -1275,10 +1069,7 @@ mod tests {
         // both move the same region differently
         let t2 = reorder(["sun", "hill", "sky"]);
         let (_, cs) = merge_docs(&base, &o, &t2);
-        assert!(
-            cs.iter().any(|c| c.kind == ConflictKind::OrderConflict),
-            "{cs:?}"
-        );
+        assert!(cs.iter().any(|c| c.kind == ConflictKind::OrderConflict), "{cs:?}");
     }
 
     #[test]
@@ -1299,32 +1090,15 @@ mod tests {
     fn diff_descriptions() {
         let a = canonicalize(&doc());
         let mut b = a.clone();
-        set(
-            &mut b,
-            "/channels/a|bone_angle|keys/track/keys/12/value",
-            json!(15),
-        );
+        set(&mut b, "/channels/a|bone_angle|keys/track/keys/12/value", json!(15));
         set(&mut b, "/layers/sky/opacity", json!(0.5));
         set(&mut b, "/fps", json!(30));
-        set(
-            &mut b,
-            "/channels/new|layer_x|keys",
-            json!({"target": "new", "prop": "layer_x", "source": "keys"}),
-        );
+        set(&mut b, "/channels/new|layer_x|keys", json!({"target": "new", "prop": "layer_x", "source": "keys"}));
         set_at(&mut b, &segs_of("/bones/a").unwrap(), None).unwrap();
-        let text: Vec<String> = diff_docs(&a, &b)
-            .into_iter()
-            .map(|c| c.description)
-            .collect();
+        let text: Vec<String> = diff_docs(&a, &b).into_iter().map(|c| c.description).collect();
         let all = text.join("\n");
-        assert!(
-            all.contains("key at frame 12 of channel a.bone_angle: value changed 10 -> 15"),
-            "{all}"
-        );
-        assert!(
-            all.contains("layer 'sky': opacity changed 1 -> 0.5"),
-            "{all}"
-        );
+        assert!(all.contains("key at frame 12 of channel a.bone_angle: value changed 10 -> 15"), "{all}");
+        assert!(all.contains("layer 'sky': opacity changed 1 -> 0.5"), "{all}");
         assert!(all.contains("project: fps changed 24 -> 30"), "{all}");
         assert!(all.contains("channel new.layer_x added"), "{all}");
         assert!(all.contains("bone 'a' removed"), "{all}");
@@ -1340,38 +1114,20 @@ mod tests {
         let d = diff_docs(&a, &b);
         assert_eq!(d.len(), 1);
         assert_eq!(d[0].kind, ChangeKind::Moved);
-        assert!(
-            d[0].description
-                .contains("layer 'hill' moved from position 2 to 0"),
-            "{}",
-            d[0].description
-        );
+        assert!(d[0].description.contains("layer 'hill' moved from position 2 to 0"), "{}", d[0].description);
         let key = "/channels/a|bone_angle|keys/track/keys";
         let mut c = a.clone();
         set_at(&mut c, &segs_of(&format!("{key}/12")).unwrap(), None).unwrap();
-        set(
-            &mut c,
-            &format!("{key}/13"),
-            json!({"frame": 13, "value": 10}),
-        );
+        set(&mut c, &format!("{key}/13"), json!({"frame": 13, "value": 10}));
         let d = diff_docs(&a, &c);
         assert_eq!(d.len(), 1, "{d:?}");
         assert_eq!(d[0].kind, ChangeKind::Retimed);
-        assert!(d[0]
-            .description
-            .contains("key at frame 12 of channel a.bone_angle retimed to frame 13"));
+        assert!(d[0].description.contains("key at frame 12 of channel a.bone_angle retimed to frame 13"));
     }
 
     #[test]
     fn merge_handles_odd_shapes_without_panic() {
-        let cases = [
-            json!(null),
-            json!(3),
-            json!("s"),
-            json!([1, [2]]),
-            json!({"a": [null, {"name": 1}]}),
-            json!({"layers": "x"}),
-        ];
+        let cases = [json!(null), json!(3), json!("s"), json!([1, [2]]), json!({"a": [null, {"name": 1}]}), json!({"layers": "x"})];
         for a in &cases {
             for b in &cases {
                 for c in &cases {

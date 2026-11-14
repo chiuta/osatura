@@ -83,12 +83,7 @@ pub struct SmoothOptions {
 
 impl Default for SmoothOptions {
     fn default() -> Self {
-        SmoothOptions {
-            iterations: 0,
-            lambda: 0.5,
-            taubin: true,
-            boundary: false,
-        }
+        SmoothOptions { iterations: 0, lambda: 0.5, taubin: true, boundary: false }
     }
 }
 
@@ -142,11 +137,7 @@ fn incircle(a: P, b: P, c: P, d: P) -> f64 {
 fn dist_seg(p: P, a: P, b: P) -> f64 {
     let (dx, dy) = (b[0] - a[0], b[1] - a[1]);
     let l2 = dx * dx + dy * dy;
-    let t = if l2 > 0.0 {
-        (((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2).clamp(0.0, 1.0)
-    } else {
-        0.0
-    };
+    let t = if l2 > 0.0 { (((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2).clamp(0.0, 1.0) } else { 0.0 };
     ((p[0] - a[0] - t * dx).powi(2) + (p[1] - a[1] - t * dy).powi(2)).sqrt()
 }
 
@@ -176,12 +167,7 @@ impl Region {
             hi = hi.max(e.0[1]).max(e.1[1]);
         }
         if edges.is_empty() {
-            return Region {
-                edges,
-                y0: 0.0,
-                bh: 1.0,
-                buckets: Vec::new(),
-            };
+            return Region { edges, y0: 0.0, bh: 1.0, buckets: Vec::new() };
         }
         let nb = (edges.len() / 2).clamp(1, 4096);
         let bh = ((hi - lo) / nb as f64).max(1e-6);
@@ -193,31 +179,18 @@ impl Region {
                 bucket.push(i as u32);
             }
         }
-        Region {
-            edges,
-            y0: lo,
-            bh,
-            buckets,
-        }
+        Region { edges, y0: lo, bh, buckets }
     }
 
     fn inside(&self, p: P) -> bool {
-        if self.buckets.is_empty()
-            || p[1] < self.y0
-            || !matches!(
-                p[1].partial_cmp(&(self.y0 + self.bh * (self.buckets.len() - 1) as f64 + self.bh)),
-                Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal)
-            )
-        {
+        if self.buckets.is_empty() || p[1] < self.y0 || !matches!(p[1].partial_cmp(&(self.y0 + self.bh * (self.buckets.len() - 1) as f64 + self.bh)), Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal)) {
             return false;
         }
         let b = (((p[1] - self.y0) / self.bh) as usize).min(self.buckets.len() - 1);
         let mut inside = false;
         for &ei in &self.buckets[b] {
             let (a, c) = self.edges[ei as usize];
-            if (a[1] > p[1]) != (c[1] > p[1])
-                && p[0] < (c[0] - a[0]) * (p[1] - a[1]) / (c[1] - a[1]) + a[0]
-            {
+            if (a[1] > p[1]) != (c[1] > p[1]) && p[0] < (c[0] - a[0]) * (p[1] - a[1]) / (c[1] - a[1]) + a[0] {
                 inside = !inside;
             }
         }
@@ -267,15 +240,7 @@ impl SegGrid {
                 }
             }
         }
-        SegGrid {
-            cell,
-            x0,
-            y0,
-            nx,
-            ny,
-            cells,
-            segs,
-        }
+        SegGrid { cell, x0, y0, nx, ny, cells, segs }
     }
 
     /// Distance to the nearest outline segment, searched within `reach` pixels (else `reach`).
@@ -312,8 +277,7 @@ impl SizeField<'_> {
         let d = self.outline.dist(p, self.reach);
         let mut h = (self.h_b + self.g * d).min(self.h_max);
         for s in self.hot {
-            let dh =
-                ((p[0] - s.pos.x as f64).hypot(p[1] - s.pos.y as f64) - s.radius as f64).max(0.0);
+            let dh = ((p[0] - s.pos.x as f64).hypot(p[1] - s.pos.y as f64) - s.radius as f64).max(0.0);
             h = h.min((self.h_hot + self.g * dh).min(self.h_max));
         }
         h
@@ -361,30 +325,13 @@ impl Delaunay {
     fn new(lo: P, hi: P) -> Delaunay {
         let (cx, cy) = ((lo[0] + hi[0]) * 0.5, (lo[1] + hi[1]) * 0.5);
         let r = ((hi[0] - lo[0]).max(hi[1] - lo[1]).max(1.0)) * 20.0;
-        let pts = vec![
-            [cx - 2.0 * r, cy - r],
-            [cx + 2.0 * r, cy - r],
-            [cx, cy + 2.0 * r],
-        ];
-        let t = Tri {
-            v: [0, 1, 2],
-            n: [NONE; 3],
-            alive: true,
-        };
-        Delaunay {
-            pts,
-            tris: vec![t],
-            last: 0,
-            n_super: 3,
-        }
+        let pts = vec![[cx - 2.0 * r, cy - r], [cx + 2.0 * r, cy - r], [cx, cy + 2.0 * r]];
+        let t = Tri { v: [0, 1, 2], n: [NONE; 3], alive: true };
+        Delaunay { pts, tris: vec![t], last: 0, n_super: 3 }
     }
 
     fn locate(&self, p: P) -> Option<usize> {
-        let mut t = if self.tris[self.last].alive {
-            self.last
-        } else {
-            self.tris.iter().position(|t| t.alive)?
-        };
+        let mut t = if self.tris[self.last].alive { self.last } else { self.tris.iter().position(|t| t.alive)? };
         for _ in 0..self.tris.len() * 3 + 16 {
             let tr = &self.tris[t];
             let mut moved = false;
@@ -406,10 +353,7 @@ impl Delaunay {
         // fall back to a scan (walk cycled on a degenerate configuration)
         (0..self.tris.len()).find(|&i| {
             let tr = &self.tris[i];
-            tr.alive
-                && (0..3).all(|k| {
-                    orient(self.pts[tr.v[(k + 1) % 3]], self.pts[tr.v[(k + 2) % 3]], p) >= 0.0
-                })
+            tr.alive && (0..3).all(|k| orient(self.pts[tr.v[(k + 1) % 3]], self.pts[tr.v[(k + 2) % 3]], p) >= 0.0)
         })
     }
 
@@ -459,8 +403,7 @@ impl Delaunay {
         // star-shaped and simple?
         let mut starts: HashMap<usize, usize> = HashMap::new();
         for (ei, e) in edges.iter().enumerate() {
-            if orient(self.pts[e.0], self.pts[e.1], p) <= 1e-12 || starts.insert(e.0, ei).is_some()
-            {
+            if orient(self.pts[e.0], self.pts[e.1], p) <= 1e-12 || starts.insert(e.0, ei).is_some() {
                 return None;
             }
         }
@@ -471,11 +414,7 @@ impl Delaunay {
         }
         let base = self.tris.len();
         for e in &edges {
-            self.tris.push(Tri {
-                v: [e.0, e.1, pi],
-                n: [NONE, NONE, e.2],
-                alive: true,
-            });
+            self.tris.push(Tri { v: [e.0, e.1, pi], n: [NONE, NONE, e.2], alive: true });
         }
         for (ei, e) in edges.iter().enumerate() {
             let me = base + ei;
@@ -521,12 +460,7 @@ fn finite_pos(x: f32) -> bool {
 }
 
 /// Trace an `w × h` alpha mask into a triangle mesh (positions in pixels).
-pub fn trace_mesh(
-    alpha: &[u8],
-    w: usize,
-    h: usize,
-    o: &TraceOptions,
-) -> Result<TracedMesh, String> {
+pub fn trace_mesh(alpha: &[u8], w: usize, h: usize, o: &TraceOptions) -> Result<TracedMesh, String> {
     if w == 0 || h == 0 || alpha.len() < w * h {
         return Err("alpha mask is empty or smaller than width x height".into());
     }
@@ -536,9 +470,7 @@ pub fn trace_mesh(
     if !finite_pos(o.density) || o.density < 1.0 {
         return Err("density must be a finite number >= 1".into());
     }
-    if !(o.edge_size == 0.0 || finite_pos(o.edge_size))
-        || !(o.hotspot_size == 0.0 || finite_pos(o.hotspot_size))
-    {
+    if !(o.edge_size == 0.0 || finite_pos(o.edge_size)) || !(o.hotspot_size == 0.0 || finite_pos(o.hotspot_size)) {
         return Err("edge size and hot-spot size must be positive".into());
     }
     if !o.tolerance.is_finite() || o.tolerance < 0.0 || !o.min_area.is_finite() {
@@ -555,25 +487,13 @@ pub fn trace_mesh(
         return Err("at most 1000 smoothing iterations".into());
     }
     for hs in &o.hotspots {
-        if !hs.pos.x.is_finite()
-            || !hs.pos.y.is_finite()
-            || !hs.radius.is_finite()
-            || hs.radius < 0.0
-        {
+        if !hs.pos.x.is_finite() || !hs.pos.y.is_finite() || !hs.radius.is_finite() || hs.radius < 0.0 {
             return Err("hot-spots need finite positions and a radius >= 0".into());
         }
     }
-    let h_b = if o.edge_size > 0.0 {
-        o.edge_size as f64
-    } else {
-        (o.density as f64 / 4.0).max(1.0)
-    };
+    let h_b = if o.edge_size > 0.0 { o.edge_size as f64 } else { (o.density as f64 / 4.0).max(1.0) };
     let h_max = (o.density as f64).max(h_b);
-    let h_hot = if o.hotspot_size > 0.0 {
-        o.hotspot_size as f64
-    } else {
-        h_b
-    };
+    let h_hot = if o.hotspot_size > 0.0 { o.hotspot_size as f64 } else { h_b };
 
     let contours = crate::trace::trace_alpha(alpha, w, h, o.threshold, o.tolerance, o.min_area);
     if contours.is_empty() {
@@ -598,17 +518,12 @@ pub fn trace_mesh(
                 ring.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
             }
             if pts.len() + ring.len() > MAX_POINTS {
-                return Err(format!(
-                    "more than {MAX_POINTS} outline vertices; raise edge size or tolerance"
-                ));
+                return Err(format!("more than {MAX_POINTS} outline vertices; raise edge size or tolerance"));
             }
         }
         // drop consecutive duplicates
         ring.dedup_by(|a, b| (a[0] - b[0]).abs() < 1e-9 && (a[1] - b[1]).abs() < 1e-9);
-        if ring.len() > 1
-            && (ring[0][0] - ring[ring.len() - 1][0]).abs() < 1e-9
-            && (ring[0][1] - ring[ring.len() - 1][1]).abs() < 1e-9
-        {
+        if ring.len() > 1 && (ring[0][0] - ring[ring.len() - 1][0]).abs() < 1e-9 && (ring[0][1] - ring[ring.len() - 1][1]).abs() < 1e-9 {
             ring.pop();
         }
         if ring.len() < 3 {
@@ -629,15 +544,7 @@ pub fn trace_mesh(
 
     // interior points: variable-radius Poisson-disc sampling
     let reach = (h_max - h_b) / o.grading as f64 + 1.0;
-    let size = SizeField {
-        h_b,
-        h_max,
-        g: o.grading as f64,
-        hot: &o.hotspots,
-        h_hot,
-        reach,
-        outline: SegGrid::new(&rings, h_max.max(4.0)),
-    };
+    let size = SizeField { h_b, h_max, g: o.grading as f64, hot: &o.hotspots, h_hot, reach, outline: SegGrid::new(&rings, h_max.max(4.0)) };
     let cell = (0.85 * h_max).max(1e-3);
     let mut hash: HashMap<(i64, i64), Vec<u32>> = HashMap::new();
     let key = |p: P| ((p[0] / cell).floor() as i64, (p[1] / cell).floor() as i64);
@@ -669,8 +576,7 @@ pub fn trace_mesh(
                         for &q in v {
                             let q = q as usize;
                             let need = 0.85 * 0.5 * (hc + hs[q]);
-                            if (pts[q][0] - c[0]).powi(2) + (pts[q][1] - c[1]).powi(2) < need * need
-                            {
+                            if (pts[q][0] - c[0]).powi(2) + (pts[q][1] - c[1]).powi(2) < need * need {
                                 ok = false;
                                 break 'chk;
                             }
@@ -711,10 +617,7 @@ pub fn trace_mesh(
         vid.push(dt.insert(*p));
     }
     // constraint edges in dt vertex ids; vertices on an outline
-    let mut cons: Vec<(usize, usize)> = constraints
-        .iter()
-        .filter_map(|&(a, b)| Some((vid[a]?, vid[b]?)).filter(|(x, y)| x != y))
-        .collect();
+    let mut cons: Vec<(usize, usize)> = constraints.iter().filter_map(|&(a, b)| Some((vid[a]?, vid[b]?)).filter(|(x, y)| x != y)).collect();
     let mut on_outline: HashSet<usize> = cons.iter().flat_map(|c| [c.0, c.1]).collect();
     let mut unresolved = constraints.len() - cons.len();
     // conforming recovery: split missing outline edges at their midpoints
@@ -748,21 +651,14 @@ pub fn trace_mesh(
         }
     }
     let present = dt.edge_set();
-    unresolved += cons
-        .iter()
-        .filter(|&&(a, b)| !present.contains(&(a.min(b), a.max(b))))
-        .count();
+    unresolved += cons.iter().filter(|&&(a, b)| !present.contains(&(a.min(b), a.max(b)))).count();
 
     // keep the triangles inside the silhouette
     let mut remap: HashMap<usize, u32> = HashMap::new();
     let mut vertices: Vec<Vec2> = Vec::new();
     let mut boundary: Vec<bool> = Vec::new();
     let mut triangles: Vec<[u32; 3]> = Vec::new();
-    for t in dt
-        .tris
-        .iter()
-        .filter(|t| t.alive && t.v.iter().all(|&v| v >= dt.n_super))
-    {
+    for t in dt.tris.iter().filter(|t| t.alive && t.v.iter().all(|&v| v >= dt.n_super)) {
         let (a, b, c) = (dt.pts[t.v[0]], dt.pts[t.v[1]], dt.pts[t.v[2]]);
         if orient(a, b, c) < 1e-9 {
             continue;
@@ -785,16 +681,9 @@ pub fn trace_mesh(
         triangles.push(ix);
     }
     if triangles.is_empty() {
-        return Err(
-            "triangulation produced no triangles (shape too thin for this edge size?)".into(),
-        );
+        return Err("triangulation produced no triangles (shape too thin for this edge size?)".into());
     }
-    let mut mesh = TracedMesh {
-        vertices,
-        triangles,
-        boundary,
-        unresolved_edges: unresolved,
-    };
+    let mut mesh = TracedMesh { vertices, triangles, boundary, unresolved_edges: unresolved };
     if s.iterations > 0 {
         smooth_mesh(&mut mesh, &s);
     }
@@ -815,10 +704,7 @@ fn tri_area(v: &[Vec2], t: [u32; 3]) -> f32 {
 /// four times and otherwise skipped.
 pub fn smooth_mesh(m: &mut TracedMesh, o: &SmoothOptions) {
     let n = m.vertices.len();
-    if n == 0
-        || o.iterations == 0
-        || (o.lambda.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-    {
+    if n == 0 || o.iterations == 0 || (o.lambda.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) {
         return;
     }
     // adjacency; boundary edges are those used by exactly one triangle
@@ -870,10 +756,7 @@ pub fn smooth_mesh(m: &mut TracedMesh, o: &SmoothOptions) {
             }
             mean = mean * (1.0 / ring.len() as f32);
             let delta = (mean - old[i]) * step;
-            let before: Vec<f32> = inc[i]
-                .iter()
-                .map(|&t| tri_area(&m.vertices, m.triangles[t as usize]))
-                .collect();
+            let before: Vec<f32> = inc[i].iter().map(|&t| tri_area(&m.vertices, m.triangles[t as usize])).collect();
             let cur = m.vertices[i];
             let mut f = 1.0f32;
             for _ in 0..5 {
@@ -906,18 +789,10 @@ pub fn smooth_mesh(m: &mut TracedMesh, o: &SmoothOptions) {
 pub fn mesh_stats(m: &TracedMesh) -> MeshStats {
     let (mut min_q, mut sum_q, mut area, mut min_ang) = (f32::MAX, 0.0f32, 0.0f32, f32::MAX);
     for t in &m.triangles {
-        let (a, b, c) = (
-            m.vertices[t[0] as usize],
-            m.vertices[t[1] as usize],
-            m.vertices[t[2] as usize],
-        );
+        let (a, b, c) = (m.vertices[t[0] as usize], m.vertices[t[1] as usize], m.vertices[t[2] as usize]);
         let ar = tri_area(&m.vertices, *t);
         let (la, lb, lc) = (b.distance(c), a.distance(c), a.distance(b));
-        let q = if la * la + lb * lb + lc * lc > 0.0 {
-            4.0 * 3f32.sqrt() * ar / (la * la + lb * lb + lc * lc)
-        } else {
-            0.0
-        };
+        let q = if la * la + lb * lb + lc * lc > 0.0 { 4.0 * 3f32.sqrt() * ar / (la * la + lb * lb + lc * lc) } else { 0.0 };
         min_q = min_q.min(q);
         sum_q += q;
         area += ar;
@@ -967,15 +842,10 @@ pub fn mesh_stats(m: &TracedMesh) -> MeshStats {
 // ---------------------------------------------------------------------------------------------
 
 /// Decode an image source into `(alpha, width, height)`.
-pub fn image_alpha(
-    src: &ImageSource,
-    asset_dir: &std::path::Path,
-) -> Result<(Vec<u8>, usize, usize), String> {
+pub fn image_alpha(src: &ImageSource, asset_dir: &std::path::Path) -> Result<(Vec<u8>, usize, usize), String> {
     let png = match (&src.png_base64, &src.file) {
         (Some(b), _) => crate::base64::decode(b)?,
-        (None, Some(f)) => {
-            crate::assets::read(asset_dir, f, crate::assets::MAX_IMAGE_BYTES, "image")?
-        }
+        (None, Some(f)) => crate::assets::read(asset_dir, f, crate::assets::MAX_IMAGE_BYTES, "image")?,
         (None, None) => return Err("image has neither 'png_base64' nor 'file'".into()),
     };
     let pm = crate::assets::decode_png_checked(&png)?;
@@ -994,10 +864,7 @@ pub fn bone_hotspots(p: &Project, radius: f32) -> Result<Vec<Hotspot>, String> {
         let (a, e) = (w.apply(Vec2::ZERO), w.apply(Vec2::new(b.length, 0.0)));
         let n = ((a.distance(e) / radius.max(1.0)).ceil() as usize).clamp(1, 64);
         for k in 0..=n {
-            out.push(Hotspot {
-                pos: a + (e - a) * (k as f32 / n as f32),
-                radius,
-            });
+            out.push(Hotspot { pos: a + (e - a) * (k as f32 / n as f32), radius });
         }
     }
     Ok(out)
@@ -1007,35 +874,14 @@ pub fn bone_hotspots(p: &Project, radius: f32) -> Result<Vec<Hotspot>, String> {
 /// layer space (the space of bone positions); they are converted to image pixels here. When the
 /// project has bones and `skin` is true the new mesh is skinned by diffusion weights
 /// (`Project::auto_skin_diffuse`).
-pub fn trace_layer_mesh(
-    p: &mut Project,
-    layer: &str,
-    o: &TraceOptions,
-    asset_dir: &std::path::Path,
-    skin: bool,
-    influences: usize,
-) -> Result<MeshStats, String> {
+pub fn trace_layer_mesh(p: &mut Project, layer: &str, o: &TraceOptions, asset_dir: &std::path::Path, skin: bool, influences: usize) -> Result<MeshStats, String> {
     let (alpha, w, h, origin, size) = {
-        let l = p
-            .find_layer_mut(layer)
-            .ok_or_else(|| format!("no layer at '{layer}'"))?;
-        let LayerKind::Image {
-            source,
-            origin,
-            size,
-            ..
-        } = &l.kind
-        else {
+        let l = p.find_layer_mut(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
+        let LayerKind::Image { source, origin, size, .. } = &l.kind else {
             return Err(format!("layer '{layer}' is not an image layer"));
         };
         let (alpha, w, h) = image_alpha(source, asset_dir)?;
-        (
-            alpha,
-            w,
-            h,
-            *origin,
-            size.unwrap_or(Vec2::new(w as f32, h as f32)),
-        )
+        (alpha, w, h, *origin, size.unwrap_or(Vec2::new(w as f32, h as f32)))
     };
     if !finite_pos(size.x) || !finite_pos(size.y) {
         return Err(format!("layer '{layer}' has an invalid size"));
@@ -1049,35 +895,17 @@ pub fn trace_layer_mesh(
     let mesh = trace_mesh(&alpha, w, h, &opts)?;
     let stats = mesh_stats(&mesh);
     let free = FreeMesh {
-        vertices: mesh
-            .vertices
-            .iter()
-            .map(|v| Vec2::new(origin.x + v.x / sx, origin.y + v.y / sy))
-            .collect(),
+        vertices: mesh.vertices.iter().map(|v| Vec2::new(origin.x + v.x / sx, origin.y + v.y / sy)).collect(),
         triangles: mesh.triangles.clone(),
         uvs: mesh.vertices.clone(),
     };
-    let l = p
-        .find_layer_mut(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?;
-    if let LayerKind::Image {
-        size: sz, mesh: m, ..
-    } = &mut l.kind
-    {
+    let l = p.find_layer_mut(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
+    if let LayerKind::Image { size: sz, mesh: m, .. } = &mut l.kind {
         sz.get_or_insert(size);
-        *m = Some(MeshSpec {
-            cols: 0,
-            rows: 0,
-            weights: Vec::new(),
-            free: Some(free),
-        });
+        *m = Some(MeshSpec { cols: 0, rows: 0, weights: Vec::new(), free: Some(free) });
     }
     if skin && !p.bones.is_empty() {
-        p.auto_skin_diffuse(
-            layer,
-            influences.max(1),
-            crate::weights::DiffusionOptions::default(),
-        )?;
+        p.auto_skin_diffuse(layer, influences.max(1), crate::weights::DiffusionOptions::default())?;
     }
     Ok(stats)
 }
@@ -1105,24 +933,14 @@ mod tests {
     }
 
     fn opts() -> TraceOptions {
-        TraceOptions {
-            density: 16.0,
-            edge_size: 4.0,
-            tolerance: 1.0,
-            ..Default::default()
-        }
+        TraceOptions { density: 16.0, edge_size: 4.0, tolerance: 1.0, ..Default::default() }
     }
 
     fn mask_at(a: &[u8], w: usize, h: usize, p: Vec2, grow: i32) -> bool {
         for dy in -grow..=grow {
             for dx in -grow..=grow {
                 let (x, y) = (p.x.floor() as i32 + dx, p.y.floor() as i32 + dy);
-                if x >= 0
-                    && y >= 0
-                    && (x as usize) < w
-                    && (y as usize) < h
-                    && a[y as usize * w + x as usize] >= 128
-                {
+                if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h && a[y as usize * w + x as usize] >= 128 {
                     return true;
                 }
             }
@@ -1133,10 +951,7 @@ mod tests {
     fn assert_valid(m: &TracedMesh) {
         for t in &m.triangles {
             assert!(t.iter().all(|&i| (i as usize) < m.vertices.len()));
-            assert!(
-                tri_area(&m.vertices, *t) > 1e-4,
-                "degenerate or inverted triangle {t:?}"
-            );
+            assert!(tri_area(&m.vertices, *t) > 1e-4, "degenerate or inverted triangle {t:?}");
         }
         assert_eq!(m.boundary.len(), m.vertices.len());
     }
@@ -1150,19 +965,10 @@ mod tests {
         assert_eq!(m.unresolved_edges, 0);
         let st = mesh_stats(&m);
         let want = opaque(&a) as f32;
-        assert!(
-            (st.area - want).abs() / want < 0.03,
-            "mesh area {} vs silhouette {want}",
-            st.area
-        );
+        assert!((st.area - want).abs() / want < 0.03, "mesh area {} vs silhouette {want}", st.area);
         for t in &m.triangles {
-            let c =
-                (m.vertices[t[0] as usize] + m.vertices[t[1] as usize] + m.vertices[t[2] as usize])
-                    * (1.0 / 3.0);
-            assert!(
-                mask_at(&a, w, h, c, 1),
-                "triangle centroid {c:?} outside the silhouette"
-            );
+            let c = (m.vertices[t[0] as usize] + m.vertices[t[1] as usize] + m.vertices[t[2] as usize]) * (1.0 / 3.0);
+            assert!(mask_at(&a, w, h, c, 1), "triangle centroid {c:?} outside the silhouette");
         }
         // every triangle edge is inside the (slightly grown) silhouette too
         for v in &m.vertices {
@@ -1179,25 +985,15 @@ mod tests {
         assert_eq!(m.unresolved_edges, 0);
         let want = opaque(&a) as f32;
         let st = mesh_stats(&m);
-        assert!(
-            (st.area - want).abs() / want < 0.04,
-            "area {} vs {want}",
-            st.area
-        );
+        assert!((st.area - want).abs() / want < 0.04, "area {} vs {want}", st.area);
         for t in &m.triangles {
-            let c =
-                (m.vertices[t[0] as usize] + m.vertices[t[1] as usize] + m.vertices[t[2] as usize])
-                    * (1.0 / 3.0);
+            let c = (m.vertices[t[0] as usize] + m.vertices[t[1] as usize] + m.vertices[t[2] as usize]) * (1.0 / 3.0);
             let d = ((c.x - 80.0).powi(2) + (c.y - 80.0).powi(2)).sqrt();
             assert!(d > 28.0, "triangle centroid inside the hole (r={d})");
             assert!(d < 66.5);
         }
         // the hole outline has vertices too
-        assert!(m
-            .vertices
-            .iter()
-            .zip(&m.boundary)
-            .any(|(v, &b)| b && ((v.x - 80.0).powi(2) + (v.y - 80.0).powi(2)).sqrt() < 32.0));
+        assert!(m.vertices.iter().zip(&m.boundary).any(|(v, &b)| b && ((v.x - 80.0).powi(2) + (v.y - 80.0).powi(2)).sqrt() < 32.0));
     }
 
     #[test]
@@ -1215,16 +1011,12 @@ mod tests {
         assert!((mesh_stats(&m).area - want).abs() / want < 0.05);
         // the island inside the ring is meshed, the gap around it (r in 14..23) is not
         let centre_tris = m.triangles.iter().filter(|t| {
-            let c =
-                (m.vertices[t[0] as usize] + m.vertices[t[1] as usize] + m.vertices[t[2] as usize])
-                    * (1.0 / 3.0);
+            let c = (m.vertices[t[0] as usize] + m.vertices[t[1] as usize] + m.vertices[t[2] as usize]) * (1.0 / 3.0);
             ((c.x - 150.0).powi(2) + (c.y - 50.0).powi(2)).sqrt() < 10.0
         });
         assert!(centre_tris.count() > 0);
         for t in &m.triangles {
-            let c =
-                (m.vertices[t[0] as usize] + m.vertices[t[1] as usize] + m.vertices[t[2] as usize])
-                    * (1.0 / 3.0);
+            let c = (m.vertices[t[0] as usize] + m.vertices[t[1] as usize] + m.vertices[t[2] as usize]) * (1.0 / 3.0);
             let d = ((c.x - 150.0).powi(2) + (c.y - 50.0).powi(2)).sqrt();
             assert!(!(15.0..23.0).contains(&d), "triangle in the gap at r={d}");
         }
@@ -1234,57 +1026,22 @@ mod tests {
     fn density_is_higher_near_the_boundary_and_in_hotspots() {
         let (w, h) = (200, 200);
         let a = disc(w, h, (100.0, 100.0), 90.0, 0.0);
-        let o = TraceOptions {
-            density: 30.0,
-            edge_size: 4.0,
-            grading: 0.4,
-            ..Default::default()
-        };
+        let o = TraceOptions { density: 30.0, edge_size: 4.0, grading: 0.4, ..Default::default() };
         let m = trace_mesh(&a, w, h, &o).unwrap();
         let st = mesh_stats(&m);
-        assert!(
-            st.mean_interior_edge > 1.8 * st.mean_boundary_edge,
-            "interior {} vs boundary {}",
-            st.mean_interior_edge,
-            st.mean_boundary_edge
-        );
+        assert!(st.mean_interior_edge > 1.8 * st.mean_boundary_edge, "interior {} vs boundary {}", st.mean_interior_edge, st.mean_boundary_edge);
         // vertex count per area: outer ring (r 80..90) vs core (r < 40)
         let dens = |lo: f32, hi: f32| {
-            let n = m
-                .vertices
-                .iter()
-                .filter(|v| (lo..hi).contains(&((v.x - 100.0).hypot(v.y - 100.0))))
-                .count() as f32;
+            let n = m.vertices.iter().filter(|v| (lo..hi).contains(&((v.x - 100.0).hypot(v.y - 100.0)))).count() as f32;
             n / (std::f32::consts::PI * (hi * hi - lo * lo))
         };
-        assert!(
-            dens(78.0, 90.0) > 4.0 * dens(0.0, 40.0),
-            "{} vs {}",
-            dens(78.0, 90.0),
-            dens(0.0, 40.0)
-        );
+        assert!(dens(78.0, 90.0) > 4.0 * dens(0.0, 40.0), "{} vs {}", dens(78.0, 90.0), dens(0.0, 40.0));
 
         // hot-spot in the middle refines its neighbourhood
-        let o2 = TraceOptions {
-            hotspots: vec![Hotspot {
-                pos: Vec2::new(100.0, 100.0),
-                radius: 12.0,
-            }],
-            ..o.clone()
-        };
+        let o2 = TraceOptions { hotspots: vec![Hotspot { pos: Vec2::new(100.0, 100.0), radius: 12.0 }], ..o.clone() };
         let m2 = trace_mesh(&a, w, h, &o2).unwrap();
-        let near = |m: &TracedMesh| {
-            m.vertices
-                .iter()
-                .filter(|v| (v.x - 100.0).hypot(v.y - 100.0) < 20.0)
-                .count()
-        };
-        assert!(
-            near(&m2) > 3 * near(&m).max(1),
-            "hotspot {} vs plain {}",
-            near(&m2),
-            near(&m)
-        );
+        let near = |m: &TracedMesh| m.vertices.iter().filter(|v| (v.x - 100.0).hypot(v.y - 100.0) < 20.0).count();
+        assert!(near(&m2) > 3 * near(&m).max(1), "hotspot {} vs plain {}", near(&m2), near(&m));
         assert_valid(&m2);
     }
 
@@ -1294,29 +1051,11 @@ mod tests {
         let a = disc(w, h, (80.0, 80.0), 70.0, 20.0);
         let raw = trace_mesh(&a, w, h, &opts()).unwrap();
         let mut sm = raw.clone();
-        smooth_mesh(
-            &mut sm,
-            &SmoothOptions {
-                iterations: 15,
-                lambda: 0.6,
-                taubin: true,
-                boundary: false,
-            },
-        );
+        smooth_mesh(&mut sm, &SmoothOptions { iterations: 15, lambda: 0.6, taubin: true, boundary: false });
         assert_valid(&sm);
         let (q0, q1) = (mesh_stats(&raw), mesh_stats(&sm));
-        assert!(
-            q1.mean_quality > q0.mean_quality,
-            "mean quality {} -> {}",
-            q0.mean_quality,
-            q1.mean_quality
-        );
-        assert!(
-            q1.min_quality >= q0.min_quality * 0.95,
-            "min quality {} -> {}",
-            q0.min_quality,
-            q1.min_quality
-        );
+        assert!(q1.mean_quality > q0.mean_quality, "mean quality {} -> {}", q0.mean_quality, q1.mean_quality);
+        assert!(q1.min_quality >= q0.min_quality * 0.95, "min quality {} -> {}", q0.min_quality, q1.min_quality);
         for i in 0..raw.vertices.len() {
             if raw.boundary[i] {
                 assert_eq!(raw.vertices[i], sm.vertices[i], "boundary vertex moved");
@@ -1324,42 +1063,20 @@ mod tests {
         }
         assert_eq!(raw.triangles, sm.triangles);
         // through the options as well, and with boundary smoothing the outline moves but stays valid
-        let o = TraceOptions {
-            smooth: SmoothOptions {
-                iterations: 5,
-                lambda: 0.5,
-                taubin: true,
-                boundary: true,
-            },
-            ..opts()
-        };
+        let o = TraceOptions { smooth: SmoothOptions { iterations: 5, lambda: 0.5, taubin: true, boundary: true }, ..opts() };
         let mb = trace_mesh(&a, w, h, &o).unwrap();
         assert_valid(&mb);
         assert!((mesh_stats(&mb).area - opaque(&a) as f32).abs() / (opaque(&a) as f32) < 0.06);
         // plain Laplacian (no Taubin) shrinks less than it would collapse; still valid
         let mut lap = raw.clone();
-        smooth_mesh(
-            &mut lap,
-            &SmoothOptions {
-                iterations: 5,
-                lambda: 1.0,
-                taubin: false,
-                boundary: false,
-            },
-        );
+        smooth_mesh(&mut lap, &SmoothOptions { iterations: 5, lambda: 1.0, taubin: false, boundary: false });
         assert_valid(&lap);
     }
 
     #[test]
     fn deterministic() {
         let a = disc(120, 120, (60.0, 60.0), 50.0, 15.0);
-        let o = TraceOptions {
-            smooth: SmoothOptions {
-                iterations: 3,
-                ..Default::default()
-            },
-            ..opts()
-        };
+        let o = TraceOptions { smooth: SmoothOptions { iterations: 3, ..Default::default() }, ..opts() };
         let m1 = trace_mesh(&a, 120, 120, &o).unwrap();
         let m2 = trace_mesh(&a, 120, 120, &o).unwrap();
         assert_eq!(m1, m2);
@@ -1384,55 +1101,21 @@ mod tests {
         let m = trace_mesh(&a, w, h, &opts()).unwrap();
         assert_valid(&m);
         let want = opaque(&a) as f32;
-        assert!(
-            (mesh_stats(&m).area - want).abs() / want < 0.08,
-            "{} vs {want}",
-            mesh_stats(&m).area
-        );
+        assert!((mesh_stats(&m).area - want).abs() / want < 0.08, "{} vs {want}", mesh_stats(&m).area);
         // a single opaque pixel and a 1-pixel line: either a mesh or a clean error, never a panic
         let mut dot = vec![0u8; 20 * 20];
         dot[5 * 20 + 5] = 255;
-        let _ = trace_mesh(
-            &dot,
-            20,
-            20,
-            &TraceOptions {
-                min_area: 0.0,
-                ..opts()
-            },
-        );
+        let _ = trace_mesh(&dot, 20, 20, &TraceOptions { min_area: 0.0, ..opts() });
         let mut line = vec![0u8; 50 * 10];
         for x in 5..45 {
             line[5 * 50 + x] = 255;
         }
-        let _ = trace_mesh(
-            &line,
-            50,
-            10,
-            &TraceOptions {
-                min_area: 0.0,
-                ..opts()
-            },
-        );
+        let _ = trace_mesh(&line, 50, 10, &TraceOptions { min_area: 0.0, ..opts() });
         // image touching its borders
         let full = vec![255u8; 30 * 30];
-        let m = trace_mesh(
-            &full,
-            30,
-            30,
-            &TraceOptions {
-                density: 10.0,
-                edge_size: 5.0,
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        let m = trace_mesh(&full, 30, 30, &TraceOptions { density: 10.0, edge_size: 5.0, ..Default::default() }).unwrap();
         assert_valid(&m);
-        assert!(
-            (mesh_stats(&m).area - 900.0).abs() < 40.0,
-            "{}",
-            mesh_stats(&m).area
-        );
+        assert!((mesh_stats(&m).area - 900.0).abs() < 40.0, "{}", mesh_stats(&m).area);
     }
 
     #[test]
@@ -1440,110 +1123,23 @@ mod tests {
         let a = disc(40, 40, (20.0, 20.0), 15.0, 0.0);
         assert!(trace_mesh(&[], 0, 0, &opts()).is_err());
         assert!(trace_mesh(&a[..10], 40, 40, &opts()).is_err());
-        assert!(trace_mesh(&vec![0u8; 1600], 40, 40, &opts())
-            .unwrap_err()
-            .contains("no opaque"));
+        assert!(trace_mesh(&vec![0u8; 1600], 40, 40, &opts()).unwrap_err().contains("no opaque"));
         for bad in [f32::NAN, 0.0, -3.0, f32::INFINITY, 0.5] {
-            assert!(
-                trace_mesh(
-                    &a,
-                    40,
-                    40,
-                    &TraceOptions {
-                        density: bad,
-                        ..opts()
-                    }
-                )
-                .is_err(),
-                "density {bad}"
-            );
+            assert!(trace_mesh(&a, 40, 40, &TraceOptions { density: bad, ..opts() }).is_err(), "density {bad}");
         }
-        assert!(trace_mesh(
-            &a,
-            40,
-            40,
-            &TraceOptions {
-                edge_size: -1.0,
-                ..opts()
-            }
-        )
-        .is_err());
-        assert!(trace_mesh(
-            &a,
-            40,
-            40,
-            &TraceOptions {
-                tolerance: f32::NAN,
-                ..opts()
-            }
-        )
-        .is_err());
-        assert!(trace_mesh(
-            &a,
-            40,
-            40,
-            &TraceOptions {
-                grading: 0.0,
-                ..opts()
-            }
-        )
-        .is_err());
-        let bad_s = SmoothOptions {
-            iterations: 1,
-            lambda: 0.0,
-            ..Default::default()
-        };
-        assert!(trace_mesh(
-            &a,
-            40,
-            40,
-            &TraceOptions {
-                smooth: bad_s,
-                ..opts()
-            }
-        )
-        .is_err());
-        let hs = Hotspot {
-            pos: Vec2::new(f32::NAN, 0.0),
-            radius: 1.0,
-        };
-        assert!(trace_mesh(
-            &a,
-            40,
-            40,
-            &TraceOptions {
-                hotspots: vec![hs],
-                ..opts()
-            }
-        )
-        .is_err());
+        assert!(trace_mesh(&a, 40, 40, &TraceOptions { edge_size: -1.0, ..opts() }).is_err());
+        assert!(trace_mesh(&a, 40, 40, &TraceOptions { tolerance: f32::NAN, ..opts() }).is_err());
+        assert!(trace_mesh(&a, 40, 40, &TraceOptions { grading: 0.0, ..opts() }).is_err());
+        let bad_s = SmoothOptions { iterations: 1, lambda: 0.0, ..Default::default() };
+        assert!(trace_mesh(&a, 40, 40, &TraceOptions { smooth: bad_s, ..opts() }).is_err());
+        let hs = Hotspot { pos: Vec2::new(f32::NAN, 0.0), radius: 1.0 };
+        assert!(trace_mesh(&a, 40, 40, &TraceOptions { hotspots: vec![hs], ..opts() }).is_err());
         // so many vertices that the cap triggers
         let big = disc(400, 400, (200.0, 200.0), 190.0, 0.0);
-        assert!(trace_mesh(
-            &big,
-            400,
-            400,
-            &TraceOptions {
-                density: 1.0,
-                edge_size: 1.0,
-                ..Default::default()
-            }
-        )
-        .is_err());
+        assert!(trace_mesh(&big, 400, 400, &TraceOptions { density: 1.0, edge_size: 1.0, ..Default::default() }).is_err());
         // smoothing an empty mesh is a no-op
-        let mut e = TracedMesh {
-            vertices: vec![],
-            triangles: vec![],
-            boundary: vec![],
-            unresolved_edges: 0,
-        };
-        smooth_mesh(
-            &mut e,
-            &SmoothOptions {
-                iterations: 3,
-                ..Default::default()
-            },
-        );
+        let mut e = TracedMesh { vertices: vec![], triangles: vec![], boundary: vec![], unresolved_edges: 0 };
+        smooth_mesh(&mut e, &SmoothOptions { iterations: 3, ..Default::default() });
         assert_eq!(mesh_stats(&e).triangles, 0);
     }
 
@@ -1555,11 +1151,7 @@ mod tests {
         for i in 0..5 {
             ids.push(dt.insert([i as f64, 0.0]));
         }
-        assert_eq!(
-            dt.insert([2.0, 0.0]),
-            ids[2],
-            "duplicate returns the existing vertex"
-        );
+        assert_eq!(dt.insert([2.0, 0.0]), ids[2], "duplicate returns the existing vertex");
         assert_eq!(dt.insert([f64::NAN, 0.0]), None);
         for y in 1..5 {
             for x in 0..5 {
@@ -1569,10 +1161,7 @@ mod tests {
         let alive: Vec<_> = dt.tris.iter().filter(|t| t.alive).collect();
         assert!(!alive.is_empty());
         for t in &alive {
-            assert!(
-                orient(dt.pts[t.v[0]], dt.pts[t.v[1]], dt.pts[t.v[2]]) > 0.0,
-                "inverted triangle"
-            );
+            assert!(orient(dt.pts[t.v[0]], dt.pts[t.v[1]], dt.pts[t.v[2]]) > 0.0, "inverted triangle");
         }
         // adjacency is symmetric
         for (i, t) in dt.tris.iter().enumerate().filter(|(_, t)| t.alive) {
@@ -1599,57 +1188,24 @@ mod tests {
         use crate::project::Layer;
         let mut p = Project::new("t", 200.0, 200.0, 24.0, 24);
         let a = disc(160, 160, (80.0, 80.0), 70.0, 22.0);
-        p.layers.push(Layer::image_from_png(
-            "pic",
-            &png_of(&a, 160, 160),
-            Vec2::new(20.0, 20.0),
-        ));
-        p.bones.push(crate::project::Bone::new(
-            "root",
-            None,
-            80.0,
-            Vec2::new(20.0, 100.0),
-            0.0,
-        ));
-        p.bones.push(crate::project::Bone::new(
-            "tip",
-            Some("root"),
-            80.0,
-            Vec2::new(80.0, 0.0),
-            0.0,
-        ));
+        p.layers.push(Layer::image_from_png("pic", &png_of(&a, 160, 160), Vec2::new(20.0, 20.0)));
+        p.bones.push(crate::project::Bone::new("root", None, 80.0, Vec2::new(20.0, 100.0), 0.0));
+        p.bones.push(crate::project::Bone::new("tip", Some("root"), 80.0, Vec2::new(80.0, 0.0), 0.0));
         p
     }
 
     fn pic_mesh(f: &crate::engine::Frame) -> crate::engine::MeshOut {
-        f.nodes
-            .iter()
-            .find(|n| n.name == "pic")
-            .and_then(|n| n.image.as_ref())
-            .and_then(|i| i.mesh.clone())
-            .expect("mesh")
+        f.nodes.iter().find(|n| n.name == "pic").and_then(|n| n.image.as_ref()).and_then(|i| i.mesh.clone()).expect("mesh")
     }
 
     #[test]
     fn layer_integration_free_mesh_deforms_with_bones_and_round_trips() {
         let mut p = rigged();
-        let st =
-            trace_layer_mesh(&mut p, "pic", &opts(), std::path::Path::new("."), true, 4).unwrap();
+        let st = trace_layer_mesh(&mut p, "pic", &opts(), std::path::Path::new("."), true, 4).unwrap();
         assert!(st.triangles > 50 && st.min_quality > 0.0);
-        let LayerKind::Image {
-            mesh: Some(m),
-            size,
-            ..
-        } = &p.layers[0].kind
-        else {
-            panic!()
-        };
+        let LayerKind::Image { mesh: Some(m), size, .. } = &p.layers[0].kind else { panic!() };
         let f = m.free.as_ref().unwrap();
-        assert_eq!(
-            m.weights.len(),
-            f.vertices.len(),
-            "one weight list per free vertex"
-        );
+        assert_eq!(m.weights.len(), f.vertices.len(), "one weight list per free vertex");
         assert!(m.weights.iter().all(|w| !w.is_empty()));
         assert_eq!(*size, Some(Vec2::new(160.0, 160.0)));
         // layer space = origin + pixels
@@ -1673,55 +1229,27 @@ mod tests {
             assert!(a.distance(*b) < 0.05);
         }
         let mut q = p.clone();
-        let tr = crate::anim::Track::with_keys(&[
-            (0.0, 0.0, crate::anim::Ease::Linear),
-            (12.0, 60.0, crate::anim::Ease::Linear),
-        ]);
-        q.channels.push(crate::project::Channel::keys(
-            "tip",
-            crate::project::Prop::BoneAngle,
-            tr,
-        ));
+        let tr = crate::anim::Track::with_keys(&[(0.0, 0.0, crate::anim::Ease::Linear), (12.0, 60.0, crate::anim::Ease::Linear)]);
+        q.channels.push(crate::project::Channel::keys("tip", crate::project::Prop::BoneAngle, tr));
         let e2 = crate::engine::Engine::new(q).unwrap();
         let posed = e2.evaluate(12.0);
         let mesh1 = pic_mesh(&posed);
-        let moved = mesh1
-            .positions
-            .iter()
-            .zip(&f.vertices)
-            .filter(|(a, b)| a.distance(**b) > 5.0)
-            .count();
+        let moved = mesh1.positions.iter().zip(&f.vertices).filter(|(a, b)| a.distance(**b) > 5.0).count();
         assert!(moved > f.vertices.len() / 5, "only {moved} vertices moved");
-        assert!(mesh1
-            .positions
-            .iter()
-            .all(|v| v.x.is_finite() && v.y.is_finite()));
+        assert!(mesh1.positions.iter().all(|v| v.x.is_finite() && v.y.is_finite()));
     }
 
     #[test]
     fn layer_errors() {
         let mut p = rigged();
-        assert!(
-            trace_layer_mesh(&mut p, "nope", &opts(), std::path::Path::new("."), false, 4)
-                .unwrap_err()
-                .contains("no layer")
-        );
+        assert!(trace_layer_mesh(&mut p, "nope", &opts(), std::path::Path::new("."), false, 4).unwrap_err().contains("no layer"));
         p.layers.push(crate::project::Layer::group("g", vec![]));
-        assert!(
-            trace_layer_mesh(&mut p, "g", &opts(), std::path::Path::new("."), false, 4)
-                .unwrap_err()
-                .contains("not an image")
-        );
+        assert!(trace_layer_mesh(&mut p, "g", &opts(), std::path::Path::new("."), false, 4).unwrap_err().contains("not an image"));
         let mut q = rigged();
         if let LayerKind::Image { source, .. } = &mut q.layers[0].kind {
-            *source = ImageSource {
-                file: Some("missing.png".into()),
-                png_base64: None,
-            };
+            *source = ImageSource { file: Some("missing.png".into()), png_base64: None };
         }
-        assert!(
-            trace_layer_mesh(&mut q, "pic", &opts(), std::path::Path::new("."), false, 4).is_err()
-        );
+        assert!(trace_layer_mesh(&mut q, "pic", &opts(), std::path::Path::new("."), false, 4).is_err());
         // the engine rejects broken free meshes with errors, not panics
         let mut r = rigged();
         trace_layer_mesh(&mut r, "pic", &opts(), std::path::Path::new("."), false, 4).unwrap();
@@ -1732,10 +1260,7 @@ mod tests {
             }
             crate::engine::Engine::new(x).err()
         };
-        assert!(mutate(&|f| f.triangles.push([0, 1, 99999]))
-            .unwrap()
-            .join(";")
-            .contains("missing vertex"));
+        assert!(mutate(&|f| f.triangles.push([0, 1, 99999])).unwrap().join(";").contains("missing vertex"));
         assert!(mutate(&|f| f.vertices[0] = Vec2::new(f32::NAN, 0.0)).is_some());
         assert!(mutate(&|f| f.uvs.truncate(3)).is_some());
         assert!(mutate(&|f| {
@@ -1756,12 +1281,8 @@ mod tests {
         let p = rigged();
         let hs = bone_hotspots(&p, 10.0).unwrap();
         assert!(hs.len() > 10);
-        assert!(hs
-            .iter()
-            .any(|h| h.pos.distance(Vec2::new(20.0, 100.0)) < 1e-3));
-        assert!(hs
-            .iter()
-            .any(|h| h.pos.distance(Vec2::new(180.0, 100.0)) < 1e-3));
+        assert!(hs.iter().any(|h| h.pos.distance(Vec2::new(20.0, 100.0)) < 1e-3));
+        assert!(hs.iter().any(|h| h.pos.distance(Vec2::new(180.0, 100.0)) < 1e-3));
         assert!(bone_hotspots(&p, -1.0).is_err());
     }
 }

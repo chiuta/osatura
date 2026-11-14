@@ -68,9 +68,7 @@ fn hog_cells(g: &Gray, cell: usize) -> (usize, usize, Vec<f32>) {
         return (cw, ch, hist);
     }
     let s: Vec<f32> = g.px.iter().map(|v| v.max(0.0).sqrt()).collect();
-    let at = |x: isize, y: isize| {
-        s[y.clamp(0, g.h as isize - 1) as usize * g.w + x.clamp(0, g.w as isize - 1) as usize]
-    };
+    let at = |x: isize, y: isize| s[y.clamp(0, g.h as isize - 1) as usize * g.w + x.clamp(0, g.w as isize - 1) as usize];
     let k = BINS as f32 / std::f32::consts::PI;
     for y in 0..ch * cell {
         for x in 0..cw * cell {
@@ -182,10 +180,7 @@ fn cholesky_solve(a: &mut [f64], n: usize, b: &mut [f64], m: usize) -> Result<()
 
 /// `X^T diag(w) X` (lower triangle filled, then mirrored) for `x` of `n` rows x `d` columns.
 fn gram(x: &[f32], n: usize, d: usize, w: Option<&[f64]>) -> Vec<f64> {
-    let threads = std::thread::available_parallelism()
-        .map(|v| v.get())
-        .unwrap_or(1)
-        .clamp(1, 8);
+    let threads = std::thread::available_parallelism().map(|v| v.get()).unwrap_or(1).clamp(1, 8);
     let chunk = n.div_ceil(threads).max(1);
     let parts: Vec<Vec<f64>> = std::thread::scope(|sc| {
         let hs: Vec<_> = (0..n)
@@ -233,21 +228,8 @@ fn gram(x: &[f32], n: usize, d: usize, w: Option<&[f64]>) -> Vec<f64> {
 /// Result of [`ridge_fit`]: three flat `f32` vectors (weights, offsets, scales).
 pub type RidgeFit = (Vec<f32>, Vec<f32>, Vec<f32>);
 
-pub fn ridge_fit(
-    x: &[f32],
-    y: &[f32],
-    n: usize,
-    d: usize,
-    k: usize,
-    lambda: f64,
-) -> Result<RidgeFit, String> {
-    if n < 2
-        || d == 0
-        || k == 0
-        || x.len() != n * d
-        || y.len() != n * k
-        || (lambda.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-    {
+pub fn ridge_fit(x: &[f32], y: &[f32], n: usize, d: usize, k: usize, lambda: f64) -> Result<RidgeFit, String> {
+    if n < 2 || d == 0 || k == 0 || x.len() != n * d || y.len() != n * k || (lambda.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) {
         return Err("ridge: need n >= 2, matching sizes and lambda > 0".into());
     }
     let mut mx = vec![0.0f64; d];
@@ -283,48 +265,22 @@ pub fn ridge_fit(
             w[c * d + i] = b[i * k + c] as f32;
         }
     }
-    let icpt: Vec<f32> = (0..k)
-        .map(|c| (my[c] - (0..d).map(|i| b[i * k + c] * mx[i]).sum::<f64>()) as f32)
-        .collect();
+    let icpt: Vec<f32> = (0..k).map(|c| (my[c] - (0..d).map(|i| b[i * k + c] * mx[i]).sum::<f64>()) as f32).collect();
     // The model subtracts the mean before the dot product, so keep the plain-mean form: y = W (x - mean) + my.
     let _ = icpt;
-    Ok((
-        mx.iter().map(|&v| v as f32).collect(),
-        w,
-        my.iter().map(|&v| v as f32).collect(),
-    ))
+    Ok((mx.iter().map(|&v| v as f32).collect(), w, my.iter().map(|&v| v as f32).collect()))
 }
 
 /// Logistic regression (labels 0/1, optional per-sample weights) by Newton / IRLS with an L2 penalty
 /// on the weights (not the bias). Returns `(w, bias)`.
-pub fn logistic_fit(
-    x: &[f32],
-    y: &[f32],
-    sw: &[f64],
-    n: usize,
-    d: usize,
-    lambda: f64,
-    iters: usize,
-) -> Result<(Vec<f32>, f32), String> {
-    if n < 2
-        || d == 0
-        || x.len() != n * d
-        || y.len() != n
-        || sw.len() != n
-        || (lambda.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-    {
+pub fn logistic_fit(x: &[f32], y: &[f32], sw: &[f64], n: usize, d: usize, lambda: f64, iters: usize) -> Result<(Vec<f32>, f32), String> {
+    if n < 2 || d == 0 || x.len() != n * d || y.len() != n || sw.len() != n || (lambda.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) {
         return Err("logistic: need n >= 2, matching sizes and lambda > 0".into());
     }
     let dd = d + 1;
     let mut th = vec![0.0f64; dd];
     // start the bias at the weighted log-odds so the first step is well conditioned
-    let (sp, sn) = (0..n).fold((1e-3, 1e-3), |(p, q), i| {
-        if y[i] > 0.5 {
-            (p + sw[i], q)
-        } else {
-            (p, q + sw[i])
-        }
-    });
+    let (sp, sn) = (0..n).fold((1e-3, 1e-3), |(p, q), i| if y[i] > 0.5 { (p + sw[i], q) } else { (p, q + sw[i]) });
     th[d] = (sp / sn).ln();
     for _ in 0..iters.max(1) {
         let mut p = vec![0.0f64; n];
@@ -455,30 +411,13 @@ pub struct DetectOpts {
 }
 impl Default for DetectOpts {
     fn default() -> Self {
-        DetectOpts {
-            min_side: 0.0,
-            max_side: f32::INFINITY,
-            step: 1.2,
-            nms_iou: 0.3,
-            threshold: None,
-            max_faces: 8,
-        }
+        DetectOpts { min_side: 0.0, max_side: f32::INFINITY, step: 1.2, nms_iou: 0.3, threshold: None, max_faces: 8 }
     }
 }
 
 pub fn iou(a: &Detection, b: &Detection) -> f32 {
-    let (ax0, ay0, ax1, ay1) = (
-        a.cx - a.side / 2.0,
-        a.cy - a.side / 2.0,
-        a.cx + a.side / 2.0,
-        a.cy + a.side / 2.0,
-    );
-    let (bx0, by0, bx1, by1) = (
-        b.cx - b.side / 2.0,
-        b.cy - b.side / 2.0,
-        b.cx + b.side / 2.0,
-        b.cy + b.side / 2.0,
-    );
+    let (ax0, ay0, ax1, ay1) = (a.cx - a.side / 2.0, a.cy - a.side / 2.0, a.cx + a.side / 2.0, a.cy + a.side / 2.0);
+    let (bx0, by0, bx1, by1) = (b.cx - b.side / 2.0, b.cy - b.side / 2.0, b.cx + b.side / 2.0, b.cy + b.side / 2.0);
     let iw = (ax1.min(bx1) - ax0.max(bx0)).max(0.0);
     let ih = (ay1.min(by1) - ay0.max(by0)).max(0.0);
     let i = iw * ih;
@@ -494,10 +433,7 @@ impl FaceModel {
     }
 
     pub fn validate(&self) -> Result<(), String> {
-        for (n, win, cell) in [
-            ("det", self.det_win, self.det_cell),
-            ("reg", self.reg_win, self.reg_cell),
-        ] {
+        for (n, win, cell) in [("det", self.det_win, self.det_cell), ("reg", self.reg_win, self.reg_cell)] {
             if !(2..=32).contains(&cell) || win < cell * 3 || win > 256 || win % cell != 0 {
                 return Err(format!("{n}: window {win} / cell {cell} is not valid (cell 2..32, window a multiple of it, 3..256 cells)"));
             }
@@ -506,10 +442,7 @@ impl FaceModel {
             return Err("detector weight count does not match its window".into());
         }
         let nin = hog_len(self.reg_win, self.reg_cell);
-        if self.reg_mean.len() != nin
-            || self.reg_w.len() != nin * N_OUT
-            || self.reg_b.len() != N_OUT
-        {
+        if self.reg_mean.len() != nin || self.reg_w.len() != nin * N_OUT || self.reg_b.len() != N_OUT {
             return Err("regressor sizes do not match its window".into());
         }
         if !self.stages.is_empty() && (self.refine_win < 32 || self.refine_win > 512) {
@@ -519,12 +452,7 @@ impl FaceModel {
             return Err("at most 8 refinement stages".into());
         }
         for st in &self.stages {
-            if st.cell < 2
-                || st.cell > 32
-                || st.patch < st.cell * 2
-                || st.patch > 128
-                || st.patch % st.cell != 0
-            {
+            if st.cell < 2 || st.cell > 32 || st.patch < st.cell * 2 || st.patch > 128 || st.patch % st.cell != 0 {
                 return Err("refinement stage: patch / cell size is not valid".into());
             }
             let n = N_LM * hog_len(st.patch, st.cell);
@@ -532,21 +460,8 @@ impl FaceModel {
                 return Err("refinement stage sizes do not match its patch".into());
             }
         }
-        let all = self
-            .det_w
-            .iter()
-            .chain(&self.reg_mean)
-            .chain(&self.reg_w)
-            .chain(&self.reg_b)
-            .chain(
-                self.stages
-                    .iter()
-                    .flat_map(|s| s.mean.iter().chain(&s.w).chain(&s.b)),
-            );
-        if all.into_iter().any(|v| !v.is_finite())
-            || !self.det_bias.is_finite()
-            || !self.det_threshold.is_finite()
-        {
+        let all = self.det_w.iter().chain(&self.reg_mean).chain(&self.reg_w).chain(&self.reg_b).chain(self.stages.iter().flat_map(|s| s.mean.iter().chain(&s.w).chain(&s.b)));
+        if all.into_iter().any(|v| !v.is_finite()) || !self.det_bias.is_finite() || !self.det_threshold.is_finite() {
             return Err("model contains a non-finite number".into());
         }
         Ok(())
@@ -557,29 +472,12 @@ impl FaceModel {
             "det_bias": self.det_bias, "det_threshold": self.det_threshold, "n_det": self.det_w.len(), "n_reg_in": self.reg_mean.len(), "n_reg_out": N_OUT, "refine_win": self.refine_win,
             "stages": self.stages.iter().map(|s| json!({"patch": s.patch, "cell": s.cell, "n_in": s.mean.len()})).collect::<Vec<_>>(), "meta": self.meta});
         let h = serde_json::to_vec(&head).unwrap_or_default();
-        let mut b = Vec::with_capacity(
-            8 + h.len()
-                + 4 * (self.det_w.len()
-                    + self.reg_mean.len()
-                    + self.reg_w.len()
-                    + self.reg_b.len()),
-        );
-        let st_iter = || {
-            self.stages
-                .iter()
-                .flat_map(|s| s.mean.iter().chain(&s.w).chain(&s.b))
-        };
+        let mut b = Vec::with_capacity(8 + h.len() + 4 * (self.det_w.len() + self.reg_mean.len() + self.reg_w.len() + self.reg_b.len()));
+        let st_iter = || self.stages.iter().flat_map(|s| s.mean.iter().chain(&s.w).chain(&s.b));
         b.extend_from_slice(MAGIC);
         b.extend_from_slice(&(h.len() as u32).to_le_bytes());
         b.extend_from_slice(&h);
-        for v in self
-            .det_w
-            .iter()
-            .chain(&self.reg_mean)
-            .chain(&self.reg_w)
-            .chain(&self.reg_b)
-            .chain(st_iter())
-        {
+        for v in self.det_w.iter().chain(&self.reg_mean).chain(&self.reg_w).chain(&self.reg_b).chain(st_iter()) {
             b.extend_from_slice(&v.to_le_bytes());
         }
         b
@@ -602,43 +500,25 @@ impl FaceModel {
             if n > bytes.len() - 8 {
                 return Err("truncated face model header".into());
             }
-            let h: Value = serde_json::from_slice(&bytes[8..8 + n])
-                .map_err(|e| format!("bad face model header: {e}"))?;
+            let h: Value = serde_json::from_slice(&bytes[8..8 + n]).map_err(|e| format!("bad face model header: {e}"))?;
             if h["format"] != "osatura-facedet" || h["version"] != 1 {
                 return Err("not an osatura-facedet v1 file".into());
             }
-            let geti = |k: &str| {
-                h[k].as_u64()
-                    .map(|v| v as usize)
-                    .ok_or_else(|| format!("header lacks {k}"))
-            };
+            let geti = |k: &str| h[k].as_u64().map(|v| v as usize).ok_or_else(|| format!("header lacks {k}"));
             let (n_det, n_in, n_out) = (geti("n_det")?, geti("n_reg_in")?, geti("n_reg_out")?);
             if n_out != N_OUT {
                 return Err(format!("regressor has {n_out} outputs, expected {N_OUT}"));
             }
-            let mut total = n_det
-                .checked_add(n_in)
-                .and_then(|v| v.checked_add(n_in.checked_mul(n_out)?))
-                .and_then(|v| v.checked_add(n_out))
-                .ok_or("size overflow")?;
+            let mut total = n_det.checked_add(n_in).and_then(|v| v.checked_add(n_in.checked_mul(n_out)?)).and_then(|v| v.checked_add(n_out)).ok_or("size overflow")?;
             let mut specs: Vec<(usize, usize, usize)> = Vec::new();
             if let Some(a) = h["stages"].as_array() {
                 if a.len() > 8 {
                     return Err("at most 8 refinement stages".into());
                 }
                 for st in a {
-                    let g = |k: &str| {
-                        st[k]
-                            .as_u64()
-                            .map(|v| v as usize)
-                            .ok_or_else(|| format!("stage lacks {k}"))
-                    };
+                    let g = |k: &str| st[k].as_u64().map(|v| v as usize).ok_or_else(|| format!("stage lacks {k}"));
                     let (patch, cell, nin) = (g("patch")?, g("cell")?, g("n_in")?);
-                    total = total
-                        .checked_add(nin)
-                        .and_then(|v| v.checked_add(nin.checked_mul(2 * N_LM)?))
-                        .and_then(|v| v.checked_add(2 * N_LM))
-                        .ok_or("size overflow")?;
+                    total = total.checked_add(nin).and_then(|v| v.checked_add(nin.checked_mul(2 * N_LM)?)).and_then(|v| v.checked_add(2 * N_LM)).ok_or("size overflow")?;
                     specs.push((patch, cell, nin));
                 }
             }
@@ -646,10 +526,7 @@ impl FaceModel {
             if body.len() != total.checked_mul(4).ok_or("size overflow")? {
                 return Err("face model body has the wrong length".into());
             }
-            let f: Vec<f32> = body
-                .chunks_exact(4)
-                .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
-                .collect();
+            let f: Vec<f32> = body.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect();
             let (a, rest) = f.split_at(n_det);
             let (mean, rest) = rest.split_at(n_in);
             let (w, b) = rest.split_at(n_in * n_out);
@@ -659,13 +536,7 @@ impl FaceModel {
                 let (mean, r) = rest.split_at(nin);
                 let (w, r) = r.split_at(nin * 2 * N_LM);
                 let (bb, r) = r.split_at(2 * N_LM);
-                stages.push(Stage {
-                    patch,
-                    cell,
-                    mean: mean.to_vec(),
-                    w: w.to_vec(),
-                    b: bb.to_vec(),
-                });
+                stages.push(Stage { patch, cell, mean: mean.to_vec(), w: w.to_vec(), b: bb.to_vec() });
                 rest = r;
             }
             FaceModel {
@@ -677,17 +548,14 @@ impl FaceModel {
                 reg_cell: geti("reg_cell")?,
                 det_w: a.to_vec(),
                 det_bias: h["det_bias"].as_f64().ok_or("header lacks det_bias")? as f32,
-                det_threshold: h["det_threshold"]
-                    .as_f64()
-                    .ok_or("header lacks det_threshold")? as f32,
+                det_threshold: h["det_threshold"].as_f64().ok_or("header lacks det_threshold")? as f32,
                 reg_mean: mean.to_vec(),
                 reg_w: w.to_vec(),
                 reg_b: b.to_vec(),
                 meta: h["meta"].clone(),
             }
         } else {
-            serde_json::from_slice(bytes)
-                .map_err(|e| format!("not an osatura-facedet file: {e}"))?
+            serde_json::from_slice(bytes).map_err(|e| format!("not an osatura-facedet file: {e}"))?
         };
         m.validate()?;
         Ok(m)
@@ -725,13 +593,7 @@ impl FaceModel {
                         continue;
                     }
                     // crop by shifting: build a view as a new image (cheap relative to HOG)
-                    let sub = Gray {
-                        w: img.w - ox,
-                        h: img.h - oy,
-                        px: (oy..img.h)
-                            .flat_map(|y| img.px[y * img.w + ox..(y + 1) * img.w].iter().copied())
-                            .collect(),
-                    };
+                    let sub = Gray { w: img.w - ox, h: img.h - oy, px: (oy..img.h).flat_map(|y| img.px[y * img.w + ox..(y + 1) * img.w].iter().copied()).collect() };
                     let (cw, ch, hist) = hog_cells(&sub, cell);
                     let (bw, bh, blk) = hog_blocks(cw, ch, &hist);
                     if bw < nb || bh < nb {
@@ -741,20 +603,14 @@ impl FaceModel {
                         for i in 0..=(bw - nb) {
                             let mut z = self.det_bias;
                             for r in 0..nb {
-                                let src = &blk[((j + r) * bw + i) * 4 * BINS
-                                    ..((j + r) * bw + i + nb) * 4 * BINS];
+                                let src = &blk[((j + r) * bw + i) * 4 * BINS..((j + r) * bw + i + nb) * 4 * BINS];
                                 let w = &self.det_w[r * nb * 4 * BINS..(r + 1) * nb * 4 * BINS];
                                 z += src.iter().zip(w).map(|(a, b)| a * b).sum::<f32>();
                             }
                             if z > thr {
                                 let px = ox as f32 + (i * cell) as f32 + win as f32 * 0.5;
                                 let py = oy as f32 + (j * cell) as f32 + win as f32 * 0.5;
-                                hits.push(Detection {
-                                    cx: px * s,
-                                    cy: py * s,
-                                    side: win as f32 * s,
-                                    score: z,
-                                });
+                                hits.push(Detection { cx: px * s, cy: py * s, side: win as f32 * s, score: z });
                             }
                         }
                     }
@@ -769,11 +625,7 @@ impl FaceModel {
     pub fn detect_boxes(&self, g: &Gray, o: &DetectOpts) -> Vec<Detection> {
         let thr = o.threshold.unwrap_or(self.det_threshold);
         let mut hits = self.scan(g, o, thr);
-        hits.sort_by(|a, b| {
-            b.score
-                .partial_cmp(&a.score)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+        hits.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
         let mut out: Vec<Detection> = Vec::new();
         let mut used = vec![false; hits.len()];
         for i in 0..hits.len() {
@@ -791,12 +643,7 @@ impl FaceModel {
                     sw += w;
                 }
             }
-            out.push(Detection {
-                cx: sx / sw,
-                cy: sy / sw,
-                side: ss / sw,
-                score: hits[i].score,
-            });
+            out.push(Detection { cx: sx / sw, cy: sy / sw, side: ss / sw, score: hits[i].score });
             if out.len() >= o.max_faces.max(1) {
                 break;
             }
@@ -813,12 +660,7 @@ impl FaceModel {
         let mut out = [0.0f32; N_OUT];
         for (k, o) in out.iter_mut().enumerate() {
             let w = &self.reg_w[k * n..(k + 1) * n];
-            *o = self.reg_b[k]
-                + f.iter()
-                    .zip(&self.reg_mean)
-                    .zip(w)
-                    .map(|((a, m), w)| (a - m) * w)
-                    .sum::<f32>();
+            *o = self.reg_b[k] + f.iter().zip(&self.reg_mean).zip(w).map(|((a, m), w)| (a - m) * w).sum::<f32>();
         }
         out
     }
@@ -830,12 +672,7 @@ impl FaceModel {
         let mut y = self.regress(g, &cur);
         for _ in 0..2 {
             let side = (cur.side * (1.0 + y[2 * N_LM + 2])).clamp(cur.side * 0.5, cur.side * 2.0);
-            cur = Detection {
-                cx: cur.cx + y[2 * N_LM] * cur.side,
-                cy: cur.cy + y[2 * N_LM + 1] * cur.side,
-                side,
-                score: d.score,
-            };
+            cur = Detection { cx: cur.cx + y[2 * N_LM] * cur.side, cy: cur.cy + y[2 * N_LM + 1] * cur.side, side, score: d.score };
             y = self.regress(g, &cur);
         }
         (cur, y[..2 * N_LM].to_vec())
@@ -861,12 +698,7 @@ impl FaceModel {
         #[allow(clippy::needless_range_loop)]
         for k in 0..2 * N_LM {
             let w = &st.w[k * n..(k + 1) * n];
-            shape[k] += st.b[k]
-                + f.iter()
-                    .zip(&st.mean)
-                    .zip(w)
-                    .map(|((a, m), w)| (a - m) * w)
-                    .sum::<f32>();
+            shape[k] += st.b[k] + f.iter().zip(&st.mean).zip(w).map(|((a, m), w)| (a - m) * w).sum::<f32>();
         }
     }
 
@@ -885,23 +717,13 @@ impl FaceModel {
     pub fn landmarks(&self, g: &Gray, d: &Detection) -> FaceResult {
         let (cur, mut y) = self.global_shape(g, d);
         self.refine(g, &cur, &mut y);
-        let pts = (0..N_LM)
-            .map(|i| {
-                Vec2::new(
-                    cur.cx + y[2 * i] * cur.side,
-                    cur.cy + y[2 * i + 1] * cur.side,
-                )
-            })
-            .collect();
+        let pts = (0..N_LM).map(|i| Vec2::new(cur.cx + y[2 * i] * cur.side, cur.cy + y[2 * i + 1] * cur.side)).collect();
         FaceResult { det: cur, pts }
     }
 
     /// All faces of an image, strongest first.
     pub fn detect(&self, g: &Gray, o: &DetectOpts) -> Vec<FaceResult> {
-        self.detect_boxes(g, o)
-            .iter()
-            .map(|d| self.landmarks(g, d))
-            .collect()
+        self.detect_boxes(g, o).iter().map(|d| self.landmarks(g, d)).collect()
     }
 }
 
@@ -922,10 +744,7 @@ impl BoxTracker {
             let sc = m.score_box(g, r.det.cx, r.det.cy, r.det.side);
             if sc > o.threshold.unwrap_or(m.det_threshold) - 1.0 {
                 self.last = Some(Detection { score: sc, ..r.det });
-                return Some(FaceResult {
-                    det: Detection { score: sc, ..r.det },
-                    pts: r.pts,
-                });
+                return Some(FaceResult { det: Detection { score: sc, ..r.det }, pts: r.pts });
             }
             self.last = None;
         }
@@ -962,34 +781,12 @@ pub struct TrainOpts {
 }
 impl Default for TrainOpts {
     fn default() -> Self {
-        TrainOpts {
-            samples: 1500,
-            seed: 1,
-            scene: 128,
-            det_win: 32,
-            det_cell: 8,
-            reg_win: 48,
-            reg_cell: 8,
-            ridge_lambda: 4.0,
-            logistic_lambda: 1.0,
-            mine_rounds: 1,
-            threshold: 1.0,
-            stages: 3,
-            refine_win: 64,
-            stage_patch: 16,
-            stage_cell: 8,
-            stage_lambda: 20.0,
-        }
+        TrainOpts { samples: 1500, seed: 1, scene: 128, det_win: 32, det_cell: 8, reg_win: 48, reg_cell: 8, ridge_lambda: 4.0, logistic_lambda: 1.0, mine_rounds: 1, threshold: 1.0, stages: 3, refine_win: 64, stage_patch: 16, stage_cell: 8, stage_lambda: 20.0 }
     }
 }
 
 fn truth_det(t: &FaceTruth) -> Detection {
-    Detection {
-        cx: t.cx,
-        cy: t.cy,
-        side: t.side,
-        score: 0.0,
-    }
+    Detection { cx: t.cx, cy: t.cy, side: t.side, score: 0.0 }
 }
 
 /// Train the box finder and the landmark regressor from scratch. Deterministic for a given option set
@@ -1003,29 +800,12 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
         return Err("scene size must be 64..512".into());
     }
     let started = crate::clock::Stamp::now();
-    let proto = FaceModel {
-        det_win: o.det_win,
-        det_cell: o.det_cell,
-        reg_win: o.reg_win,
-        reg_cell: o.reg_cell,
-        det_w: vec![0.0; hog_len(o.det_win, o.det_cell)],
-        det_bias: 0.0,
-        det_threshold: o.threshold,
-        reg_mean: vec![0.0; hog_len(o.reg_win, o.reg_cell)],
-        reg_w: vec![0.0; hog_len(o.reg_win, o.reg_cell) * N_OUT],
-        reg_b: vec![0.0; N_OUT],
-        refine_win: 0,
-        stages: vec![],
-        meta: Value::Null,
-    };
+    let proto = FaceModel { det_win: o.det_win, det_cell: o.det_cell, reg_win: o.reg_win, reg_cell: o.reg_cell, det_w: vec![0.0; hog_len(o.det_win, o.det_cell)], det_bias: 0.0, det_threshold: o.threshold, reg_mean: vec![0.0; hog_len(o.reg_win, o.reg_cell)], reg_w: vec![0.0; hog_len(o.reg_win, o.reg_cell) * N_OUT], reg_b: vec![0.0; N_OUT], refine_win: 0, stages: vec![], meta: Value::Null };
     proto.validate()?;
     let sc = o.scene;
     let scf = sc as f32;
     let mut rng = Rng::new(o.seed);
-    let (nd, nr) = (
-        hog_len(o.det_win, o.det_cell),
-        hog_len(o.reg_win, o.reg_cell),
-    );
+    let (nd, nr) = (hog_len(o.det_win, o.det_cell), hog_len(o.reg_win, o.reg_cell));
     let (mut dx, mut dy): (Vec<f32>, Vec<f32>) = (Vec::new(), Vec::new());
     let (mut rx, mut ry): (Vec<f32>, Vec<f32>) = (Vec::new(), Vec::new());
     let mut scenes: Vec<(Gray, FaceTruth)> = Vec::new();
@@ -1033,12 +813,7 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
     let hw_hi = scf * 0.34;
     let jit = |r: &mut Rng, d: &Detection, pos: f32, sc_: f32| -> Detection {
         let u = |r: &mut Rng| r.unit() * 2.0 - 1.0;
-        Detection {
-            cx: d.cx + u(r) * pos * d.side,
-            cy: d.cy + u(r) * pos * d.side,
-            side: d.side * (1.0 + u(r) * sc_),
-            score: 0.0,
-        }
+        Detection { cx: d.cx + u(r) * pos * d.side, cy: d.cy + u(r) * pos * d.side, side: d.side * (1.0 + u(r) * sc_), score: 0.0 }
     };
     for _ in 0..o.samples {
         let (g, t) = facegen::face_scene(&mut rng, sc, sc, hw_lo, hw_hi, true)?;
@@ -1058,10 +833,7 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
         }
         // detector positive (+-4 % position, +-6 % scale)
         let b = jit(&mut rng, &td, 0.04, 0.06);
-        dx.extend(hog_window(
-            &g.crop_resize(b.cx, b.cy, b.side, o.det_win),
-            o.det_cell,
-        ));
+        dx.extend(hog_window(&g.crop_resize(b.cx, b.cy, b.side, o.det_win), o.det_cell));
         dy.push(1.0);
         // negatives from the same scene: boxes with a small IoU with the truth
         let mut got = 0;
@@ -1069,34 +841,17 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
         while got < 3 && tries < 30 {
             tries += 1;
             let side = rng.unit() * (scf * 0.9 - o.det_win as f32) + o.det_win as f32;
-            let c = Detection {
-                cx: rr(&mut rng, side / 2.0, scf - side / 2.0),
-                cy: rr(&mut rng, side / 2.0, scf - side / 2.0),
-                side,
-                score: 0.0,
-            };
+            let c = Detection { cx: rr(&mut rng, side / 2.0, scf - side / 2.0), cy: rr(&mut rng, side / 2.0, scf - side / 2.0), side, score: 0.0 };
             if iou(&c, &td) < 0.25 {
-                dx.extend(hog_window(
-                    &g.crop_resize(c.cx, c.cy, c.side, o.det_win),
-                    o.det_cell,
-                ));
+                dx.extend(hog_window(&g.crop_resize(c.cx, c.cy, c.side, o.det_win), o.det_cell));
                 dy.push(0.0);
                 got += 1;
             }
         }
         // near-miss negatives (shifted by 35..60 % of the side, or at half / double the scale)
-        let near = Detection {
-            cx: td.cx
-                + (if rng.unit() < 0.5 { -1.0 } else { 1.0 }) * rr(&mut rng, 0.4, 0.6) * td.side,
-            cy: td.cy + rr(&mut rng, -0.2, 0.2) * td.side,
-            side: td.side * rr(&mut rng, 0.8, 1.2),
-            score: 0.0,
-        };
+        let near = Detection { cx: td.cx + (if rng.unit() < 0.5 { -1.0 } else { 1.0 }) * rr(&mut rng, 0.4, 0.6) * td.side, cy: td.cy + rr(&mut rng, -0.2, 0.2) * td.side, side: td.side * rr(&mut rng, 0.8, 1.2), score: 0.0 };
         if iou(&near, &td) < 0.3 {
-            dx.extend(hog_window(
-                &g.crop_resize(near.cx, near.cy, near.side, o.det_win),
-                o.det_cell,
-            ));
+            dx.extend(hog_window(&g.crop_resize(near.cx, near.cy, near.side, o.det_win), o.det_cell));
             dy.push(0.0);
         }
         scenes.push((g, t));
@@ -1108,14 +863,8 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
         let g = facegen::negative_scene(&mut rng, sc, sc)?;
         for _ in 0..6 {
             let side = rng.unit() * (scf * 0.9 - o.det_win as f32) + o.det_win as f32;
-            let (cx, cy) = (
-                rr(&mut rng, side / 2.0, scf - side / 2.0),
-                rr(&mut rng, side / 2.0, scf - side / 2.0),
-            );
-            dx.extend(hog_window(
-                &g.crop_resize(cx, cy, side, o.det_win),
-                o.det_cell,
-            ));
+            let (cx, cy) = (rr(&mut rng, side / 2.0, scf - side / 2.0), rr(&mut rng, side / 2.0, scf - side / 2.0));
+            dx.extend(hog_window(&g.crop_resize(cx, cy, side, o.det_win), o.det_cell));
         }
         dy.extend(std::iter::repeat_n(0.0, 6));
         if k < nneg / 2 {
@@ -1135,44 +884,18 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
         let npos = dy.iter().filter(|&&v| v > 0.5).count().max(1) as f64;
         let nneg = (n as f64 - npos).max(1.0);
         // balance classes to equal total weight, so mining negatives do not drown the positives
-        let sw: Vec<f64> = dy
-            .iter()
-            .map(|&v| {
-                if v > 0.5 {
-                    0.5 * n as f64 / npos
-                } else {
-                    0.5 * n as f64 / nneg
-                }
-            })
-            .collect();
+        let sw: Vec<f64> = dy.iter().map(|&v| if v > 0.5 { 0.5 * n as f64 / npos } else { 0.5 * n as f64 / nneg }).collect();
         logistic_fit(dx, dy, &sw, n, nd, o.logistic_lambda, 12)
     };
     let (mut det_w, mut det_bias) = fit_det(&dx, &dy)?;
     let mut mined = 0usize;
     for _round in 0..o.mine_rounds {
-        let tmp = FaceModel {
-            det_w: det_w.clone(),
-            det_bias,
-            det_threshold: 0.0,
-            reg_mean: reg_mean.clone(),
-            reg_w: reg_w.clone(),
-            reg_b: reg_b.clone(),
-            meta: Value::Null,
-            ..proto.clone()
-        };
-        let opts = DetectOpts {
-            threshold: Some(0.0),
-            nms_iou: 0.5,
-            max_faces: 1000,
-            ..Default::default()
-        };
+        let tmp = FaceModel { det_w: det_w.clone(), det_bias, det_threshold: 0.0, reg_mean: reg_mean.clone(), reg_w: reg_w.clone(), reg_b: reg_b.clone(), meta: Value::Null, ..proto.clone() };
+        let opts = DetectOpts { threshold: Some(0.0), nms_iou: 0.5, max_faces: 1000, ..Default::default() };
         let mut added = 0;
         for g in &neg_scenes {
             for b in tmp.detect_boxes(g, &opts) {
-                dx.extend(hog_window(
-                    &g.crop_resize(b.cx, b.cy, b.side, o.det_win),
-                    o.det_cell,
-                ));
+                dx.extend(hog_window(&g.crop_resize(b.cx, b.cy, b.side, o.det_win), o.det_cell));
                 dy.push(0.0);
                 added += 1;
             }
@@ -1181,10 +904,7 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
             let td = truth_det(t);
             for b in tmp.detect_boxes(g, &opts) {
                 if iou(&b, &td) < 0.25 {
-                    dx.extend(hog_window(
-                        &g.crop_resize(b.cx, b.cy, b.side, o.det_win),
-                        o.det_cell,
-                    ));
+                    dx.extend(hog_window(&g.crop_resize(b.cx, b.cy, b.side, o.det_win), o.det_cell));
                     dy.push(0.0);
                     added += 1;
                 }
@@ -1202,12 +922,7 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
     let mut stages: Vec<Stage> = Vec::new();
     let mut stage_rmse: Vec<f32> = Vec::new();
     if o.stages > 0 {
-        let glob = FaceModel {
-            reg_mean: reg_mean.clone(),
-            reg_w: reg_w.clone(),
-            reg_b: reg_b.clone(),
-            ..proto.clone()
-        };
+        let glob = FaceModel { reg_mean: reg_mean.clone(), reg_w: reg_w.clone(), reg_b: reg_b.clone(), ..proto.clone() };
         let (rw, ps, pc) = (o.refine_win, o.stage_patch, o.stage_cell);
         let mut crops: Vec<Gray> = Vec::new();
         let mut truth: Vec<Vec<f32>> = Vec::new();
@@ -1222,25 +937,11 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
             for _ in 0..2 {
                 let b = jit(&mut rng, &td, 0.10, 0.17);
                 let (cur, y) = glob.global_shape(g, &b);
-                let tr: Vec<f32> = t
-                    .pts
-                    .iter()
-                    .flat_map(|p| [(p.x - cur.cx) / cur.side, (p.y - cur.cy) / cur.side])
-                    .collect();
+                let tr: Vec<f32> = t.pts.iter().flat_map(|p| [(p.x - cur.cx) / cur.side, (p.y - cur.cy) / cur.side]).collect();
                 crops.push(g.crop_resize(cur.cx, cur.cy, cur.side, rw));
                 // initialisation 1: what the global stage really predicts; 2: truth plus a random shape error
-                let (tx, ty, sc_) = (
-                    gauss(&mut rng) * 0.012,
-                    gauss(&mut rng) * 0.012,
-                    1.0 + gauss(&mut rng) * 0.03,
-                );
-                let y2: Vec<f32> = tr
-                    .iter()
-                    .enumerate()
-                    .map(|(i, v)| {
-                        v * sc_ + if i % 2 == 0 { tx } else { ty } + gauss(&mut rng) * 0.012
-                    })
-                    .collect();
+                let (tx, ty, sc_) = (gauss(&mut rng) * 0.012, gauss(&mut rng) * 0.012, 1.0 + gauss(&mut rng) * 0.03);
+                let y2: Vec<f32> = tr.iter().enumerate().map(|(i, v)| v * sc_ + if i % 2 == 0 { tx } else { ty } + gauss(&mut rng) * 0.012).collect();
                 truth.push(tr.clone());
                 shapes.push(y);
                 owner.push(crops.len() - 1);
@@ -1250,56 +951,26 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
             }
         }
         let rmse = |sh: &[Vec<f32>], tr: &[Vec<f32>]| -> f32 {
-            let s: f64 = sh
-                .iter()
-                .zip(tr)
-                .map(|(a, b)| {
-                    a.iter()
-                        .zip(b)
-                        .map(|(x, y)| ((x - y) as f64).powi(2))
-                        .sum::<f64>()
-                })
-                .sum();
+            let s: f64 = sh.iter().zip(tr).map(|(a, b)| a.iter().zip(b).map(|(x, y)| ((x - y) as f64).powi(2)).sum::<f64>()).sum();
             (s / (sh.len() * 2 * N_LM) as f64).sqrt() as f32
         };
         stage_rmse.push(rmse(&shapes, &truth));
         for _ in 0..o.stages {
-            let st0 = Stage {
-                patch: ps,
-                cell: pc,
-                mean: vec![],
-                w: vec![],
-                b: vec![],
-            };
+            let st0 = Stage { patch: ps, cell: pc, mean: vec![], w: vec![], b: vec![] };
             let nf = N_LM * hog_len(ps, pc);
             let mut fx: Vec<f32> = Vec::with_capacity(shapes.len() * nf);
             for (i, sh) in shapes.iter().enumerate() {
                 fx.extend(glob.stage_features(&crops[owner[i]], sh, &st0));
             }
-            let dy: Vec<f32> = shapes
-                .iter()
-                .zip(&truth)
-                .flat_map(|(a, b)| a.iter().zip(b).map(|(x, y)| y - x))
-                .collect();
+            let dy: Vec<f32> = shapes.iter().zip(&truth).flat_map(|(a, b)| a.iter().zip(b).map(|(x, y)| y - x)).collect();
             let (mean, w, b) = ridge_fit(&fx, &dy, shapes.len(), nf, 2 * N_LM, o.stage_lambda)?;
-            let st = Stage {
-                patch: ps,
-                cell: pc,
-                mean,
-                w,
-                b,
-            };
+            let st = Stage { patch: ps, cell: pc, mean, w, b };
             for (i, sh) in shapes.iter_mut().enumerate() {
                 let f = &fx[i * nf..(i + 1) * nf];
                 // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
                 #[allow(clippy::needless_range_loop)]
                 for k in 0..2 * N_LM {
-                    sh[k] += st.b[k]
-                        + f.iter()
-                            .zip(&st.mean)
-                            .zip(&st.w[k * nf..(k + 1) * nf])
-                            .map(|((a, m), w)| (a - m) * w)
-                            .sum::<f32>();
+                    sh[k] += st.b[k] + f.iter().zip(&st.mean).zip(&st.w[k * nf..(k + 1) * nf]).map(|((a, m), w)| (a - m) * w).sum::<f32>();
                 }
             }
             stage_rmse.push(rmse(&shapes, &truth));
@@ -1314,18 +985,7 @@ pub fn train(o: &TrainOpts) -> Result<FaceModel, String> {
         "train_seconds": started.elapsed().as_secs_f32(),
         "scope": "stylised / cartoon faces; not validated on photographs or webcams",
     });
-    let m = FaceModel {
-        det_w,
-        det_bias,
-        det_threshold: o.threshold,
-        reg_mean,
-        reg_w,
-        reg_b,
-        refine_win: if stages.is_empty() { 0 } else { o.refine_win },
-        stages,
-        meta,
-        ..proto
-    };
+    let m = FaceModel { det_w, det_bias, det_threshold: o.threshold, reg_mean, reg_w, reg_b, refine_win: if stages.is_empty() { 0 } else { o.refine_win }, stages, meta, ..proto };
     m.validate()?;
     Ok(m)
 }
@@ -1363,34 +1023,15 @@ fn pct(v: &mut [f32], q: f32) -> f32 {
 }
 
 /// Evaluate on freshly generated scenes. `tweak` customises each face (for the sweeps).
-pub fn evaluate_set(
-    m: &FaceModel,
-    n: usize,
-    seed: u64,
-    scene: usize,
-    mut tweak: impl FnMut(&mut facegen::FaceSpec, &mut facegen::Post, &mut Rng),
-) -> Result<Stat, String> {
+pub fn evaluate_set(m: &FaceModel, n: usize, seed: u64, scene: usize, mut tweak: impl FnMut(&mut facegen::FaceSpec, &mut facegen::Post, &mut Rng)) -> Result<Stat, String> {
     let mut rng = Rng::new(seed ^ 0x5eed_f00d);
     let (mut hits, mut nmes, mut oracle) = (0usize, Vec::new(), Vec::new());
     let scf = scene as f32;
     for _ in 0..n {
-        let (g, t) = facegen::face_scene_with(
-            &mut rng,
-            scene,
-            scene,
-            m.det_win as f32 * 0.5,
-            scf * 0.34,
-            |s, p, r| tweak(s, p, r),
-        )?;
+        let (g, t) = facegen::face_scene_with(&mut rng, scene, scene, m.det_win as f32 * 0.5, scf * 0.34, |s, p, r| tweak(s, p, r))?;
         let td = truth_det(&t);
         oracle.push(t.nme(&m.landmarks(&g, &td).pts));
-        let res = m.detect(
-            &g,
-            &DetectOpts {
-                max_faces: 1,
-                ..Default::default()
-            },
-        );
+        let res = m.detect(&g, &DetectOpts { max_faces: 1, ..Default::default() });
         if let Some(r) = res.first() {
             if iou(&r.det, &td) >= 0.5 {
                 hits += 1;
@@ -1398,34 +1039,15 @@ pub fn evaluate_set(
             }
         }
     }
-    let mean = |v: &[f32]| {
-        if v.is_empty() {
-            f32::NAN
-        } else {
-            v.iter().sum::<f32>() / v.len() as f32
-        }
-    };
+    let mean = |v: &[f32]| if v.is_empty() { f32::NAN } else { v.iter().sum::<f32>() / v.len() as f32 };
     let fails = nmes.iter().filter(|&&v| v > 0.1).count() as f32 / nmes.len().max(1) as f32;
     let nme_mean = mean(&nmes);
     let nme_oracle_box = mean(&oracle);
-    Ok(Stat {
-        n,
-        detect_rate: hits as f32 / n.max(1) as f32,
-        nme_mean,
-        nme_median: pct(&mut nmes.clone(), 0.5),
-        nme_p90: pct(&mut nmes, 0.9),
-        nme_oracle_box,
-        fail_rate_nme_gt_0_1: fails,
-    })
+    Ok(Stat { n, detect_rate: hits as f32 / n.max(1) as f32, nme_mean, nme_median: pct(&mut nmes.clone(), 0.5), nme_p90: pct(&mut nmes, 0.9), nme_oracle_box, fail_rate_nme_gt_0_1: fails })
 }
 
 /// Detections on `n` scenes that contain no complete face: `(false positives, scenes, fp per scene)`.
-pub fn false_positives(
-    m: &FaceModel,
-    n: usize,
-    seed: u64,
-    scene: usize,
-) -> Result<(usize, usize, f32), String> {
+pub fn false_positives(m: &FaceModel, n: usize, seed: u64, scene: usize) -> Result<(usize, usize, f32), String> {
     let mut rng = Rng::new(seed ^ 0xbad_c0de);
     let mut fp = 0;
     for _ in 0..n {
@@ -1441,10 +1063,7 @@ pub fn report(m: &FaceModel, n: usize, seed: u64, scene: usize) -> Result<Value,
     let (fp, nn, rate) = false_positives(m, n, seed, scene)?;
     let mut sweeps = serde_json::Map::new();
     let nn_s = (n / 3).max(10);
-    let mut add = |name: &str,
-                   vals: &[f32],
-                   f: &dyn Fn(&mut facegen::FaceSpec, &mut facegen::Post, f32)|
-     -> Result<(), String> {
+    let mut add = |name: &str, vals: &[f32], f: &dyn Fn(&mut facegen::FaceSpec, &mut facegen::Post, f32)| -> Result<(), String> {
         let mut rows = Vec::new();
         for &v in vals {
             let s = evaluate_set(m, nn_s, seed + 1, scene, |s, p, _| f(s, p, v))?;
@@ -1453,83 +1072,40 @@ pub fn report(m: &FaceModel, n: usize, seed: u64, scene: usize) -> Result<Value,
         sweeps.insert(name.into(), Value::Array(rows));
         Ok(())
     };
-    add("roll_deg", &[0.0, 10.0, 20.0, 30.0, 45.0], &|s, _, v| {
-        s.roll = v
-    })?;
+    add("roll_deg", &[0.0, 10.0, 20.0, 30.0, 45.0], &|s, _, v| s.roll = v)?;
     add("yaw_rad", &[0.0, 0.3, 0.6, 0.9], &|s, _, v| s.yaw = v)?;
     add("pitch_rad", &[0.0, 0.3, 0.5], &|s, _, v| s.pitch = v)?;
-    add(
-        "head_half_width_px",
-        &[
-            m.det_win as f32 * 0.5,
-            m.det_win as f32 * 0.75,
-            scene as f32 * 0.2,
-            scene as f32 * 0.3,
-        ],
-        &|s, _, v| {
-            s.hw = v;
-            s.cx = scene as f32 * 0.5;
-            s.cy = scene as f32 * 0.5;
-        },
-    )?;
-    add("noise_sigma", &[0.0, 0.03, 0.06, 0.1, 0.15], &|_, p, v| {
-        p.noise = v
+    add("head_half_width_px", &[m.det_win as f32 * 0.5, m.det_win as f32 * 0.75, scene as f32 * 0.2, scene as f32 * 0.3], &|s, _, v| {
+        s.hw = v;
+        s.cx = scene as f32 * 0.5;
+        s.cy = scene as f32 * 0.5;
     })?;
-    add("blur_sigma_px", &[0.0, 1.0, 1.5, 2.5], &|_, p, v| {
-        p.blur = v
-    })?;
+    add("noise_sigma", &[0.0, 0.03, 0.06, 0.1, 0.15], &|_, p, v| p.noise = v)?;
+    add("blur_sigma_px", &[0.0, 1.0, 1.5, 2.5], &|_, p, v| p.blur = v)?;
     add("lighting_ramp", &[0.0, 0.3, 0.6], &|_, p, v| p.light = v)?;
     let cart = cartoon_report(m)?;
     let e2e = e2e_report(m, 60, 128, 7)?;
-    Ok(
-        json!({"cartoons": cart, "end_to_end": e2e, "held_out": main, "negatives": {"scenes": nn, "false_positives": fp, "per_scene": rate}, "sweeps": Value::Object(sweeps), "scene_px": scene, "seed": seed}),
-    )
+    Ok(json!({"cartoons": cart, "end_to_end": e2e, "held_out": main, "negatives": {"scenes": nn, "false_positives": fp, "per_scene": rate}, "sweeps": Value::Object(sweeps), "scene_px": scene, "seed": seed}))
 }
 
 /// Hand-drawn SVG variants ([`facegen::cartoons`]) in 6 placements each (scale, roll, position).
 pub fn cartoon_report(m: &FaceModel) -> Result<Value, String> {
-    let placements = [
-        (0.75f32, 0.0f32, 128.0f32, 128.0f32),
-        (0.55, 0.0, 100.0, 140.0),
-        (0.9, 8.0, 128.0, 120.0),
-        (0.65, -10.0, 150.0, 110.0),
-        (0.8, 0.0, 120.0, 135.0),
-        (0.6, 15.0, 110.0, 120.0),
-    ];
+    let placements = [(0.75f32, 0.0f32, 128.0f32, 128.0f32), (0.55, 0.0, 100.0, 140.0), (0.9, 8.0, 128.0, 120.0), (0.65, -10.0, 150.0, 110.0), (0.8, 0.0, 120.0, 135.0), (0.6, 15.0, 110.0, 120.0)];
     let mut rows = Vec::new();
     for c in facegen::cartoons() {
         let (mut hit, mut nm, mut orc) = (0usize, Vec::new(), Vec::new());
         for (i, (sc, roll, cx, cy)) in placements.iter().enumerate() {
-            let bg = if i % 2 == 0 {
-                [0.92, 0.92, 0.95]
-            } else {
-                [0.25, 0.3, 0.4]
-            };
+            let bg = if i % 2 == 0 { [0.92, 0.92, 0.95] } else { [0.25, 0.3, 0.4] };
             let (g, t) = c.render(256, 256, *sc, *roll, *cx, *cy, bg)?;
             orc.push(t.nme(&m.landmarks(&g, &truth_det(&t)).pts));
-            if let Some(r) = m
-                .detect(
-                    &g,
-                    &DetectOpts {
-                        max_faces: 1,
-                        ..Default::default()
-                    },
-                )
-                .first()
-            {
+            if let Some(r) = m.detect(&g, &DetectOpts { max_faces: 1, ..Default::default() }).first() {
                 if iou(&r.det, &truth_det(&t)) >= 0.5 {
                     hit += 1;
                     nm.push(t.nme(&r.pts));
                 }
             }
         }
-        let mean = |v: &[f32]| {
-            if v.is_empty() {
-                Value::Null
-            } else {
-                json!(v.iter().sum::<f32>() / v.len() as f32)
-            }
-        };
+        let mean = |v: &[f32]| if v.is_empty() { Value::Null } else { json!(v.iter().sum::<f32>() / v.len() as f32) };
         rows.push(json!({"design": c.name, "placements": placements.len(), "detected": hit, "nme_mean_detected": mean(&nm), "nme_mean_true_box": mean(&orc)}));
     }
     Ok(Value::Array(rows))
@@ -1567,28 +1143,10 @@ pub fn e2e_report(m: &FaceModel, frames: usize, size: usize, seed: u64) -> Resul
     for i in 0..frames {
         let t = i as f32 / fps;
         let s = facegen::anim_spec(seed, t, sz);
-        let g = facegen::render_spec(
-            &s,
-            size,
-            size,
-            Some(seed + 1),
-            &facegen::Post::NONE,
-            i as u64,
-        )?;
-        let norm = |pts: &[Vec2]| {
-            pts.iter()
-                .map(|p| json!([p.x / sz, p.y / sz]))
-                .collect::<Vec<_>>()
-        };
+        let g = facegen::render_spec(&s, size, size, Some(seed + 1), &facegen::Post::NONE, i as u64)?;
+        let norm = |pts: &[Vec2]| pts.iter().map(|p| json!([p.x / sz, p.y / sz])).collect::<Vec<_>>();
         truth_lines.push(json!({"t": t, "p": norm(&s.landmarks())}).to_string());
-        match tr.step(
-            m,
-            &g,
-            &DetectOpts {
-                max_faces: 1,
-                ..Default::default()
-            },
-        ) {
+        match tr.step(m, &g, &DetectOpts { max_faces: 1, ..Default::default() }) {
             Some(r) => {
                 found += 1;
                 tracked.push(json!({"t": t, "p": norm(&r.pts)}).to_string());
@@ -1598,19 +1156,16 @@ pub fn e2e_report(m: &FaceModel, frames: usize, size: usize, seed: u64) -> Resul
         specs.push(s);
     }
     let cfg = FaceConfig::default();
-    let series =
-        |lines: &[String]| -> Result<std::collections::HashMap<String, Vec<(usize, f32)>>, String> {
-            let st = faceparam::parse_ndjson(&lines.join("\n"), fps, None)?;
-            let mut h: std::collections::HashMap<String, Vec<(usize, f32)>> = Default::default();
-            // per-sequence calibration (neutral = first 10 frames, ranges = whole sequence), as `face-bake --calibrate-frames` does
-            let cal: Calibration = faceparam::calibrate(&st, &cfg, 10)?;
-            for e in faceparam::events(&st, &cfg, &cal)? {
-                h.entry(e.id)
-                    .or_default()
-                    .push(((e.time * fps).round() as usize, e.value));
-            }
-            Ok(h)
-        };
+    let series = |lines: &[String]| -> Result<std::collections::HashMap<String, Vec<(usize, f32)>>, String> {
+        let st = faceparam::parse_ndjson(&lines.join("\n"), fps, None)?;
+        let mut h: std::collections::HashMap<String, Vec<(usize, f32)>> = Default::default();
+        // per-sequence calibration (neutral = first 10 frames, ranges = whole sequence), as `face-bake --calibrate-frames` does
+        let cal: Calibration = faceparam::calibrate(&st, &cfg, 10)?;
+        for e in faceparam::events(&st, &cfg, &cal)? {
+            h.entry(e.id).or_default().push(((e.time * fps).round() as usize, e.value));
+        }
+        Ok(h)
+    };
     let (a, b) = (series(&tracked)?, series(&truth_lines)?);
     type Getter = fn(&facegen::FaceSpec) -> f32;
     let pairs: [(&str, Getter); 7] = [
@@ -1630,14 +1185,9 @@ pub fn e2e_report(m: &FaceModel, frames: usize, size: usize, seed: u64) -> Resul
             let y: Vec<f32> = v.iter().filter_map(|p| specs.get(p.0)).map(f).collect();
             pearson(&x, &y)
         };
-        out.insert(
-            name.into(),
-            json!({"tracked_corr": corr(&a), "ground_truth_landmarks_corr": corr(&b)}),
-        );
+        out.insert(name.into(), json!({"tracked_corr": corr(&a), "ground_truth_landmarks_corr": corr(&b)}));
     }
-    Ok(
-        json!({"frames": frames, "tracked_frames": found, "size_px": size, "fps": fps, "signals": Value::Object(out)}),
-    )
+    Ok(json!({"frames": frames, "tracked_frames": found, "size_px": size, "fps": fps, "signals": Value::Object(out)}))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1649,21 +1199,7 @@ mod tests {
     use super::*;
 
     fn tiny() -> TrainOpts {
-        TrainOpts {
-            samples: 24,
-            seed: 3,
-            scene: 96,
-            det_win: 24,
-            det_cell: 6,
-            reg_win: 32,
-            reg_cell: 8,
-            mine_rounds: 1,
-            stages: 1,
-            refine_win: 48,
-            stage_patch: 16,
-            stage_cell: 8,
-            ..Default::default()
-        }
+        TrainOpts { samples: 24, seed: 3, scene: 96, det_win: 24, det_cell: 6, reg_win: 32, reg_cell: 8, mine_rounds: 1, stages: 1, refine_win: 48, stage_patch: 16, stage_cell: 8, ..Default::default() }
     }
     fn shared() -> &'static FaceModel {
         static M: std::sync::OnceLock<FaceModel> = std::sync::OnceLock::new();
@@ -1692,10 +1228,7 @@ mod tests {
     fn ridge_recovers_a_linear_map_and_rejects_bad_input() {
         let mut r = Rng::new(1);
         let (n, d, k) = (200, 6, 2);
-        let w = [
-            [1.0f32, -2.0, 0.5, 0.0, 3.0, -1.0],
-            [0.0, 1.0, 1.0, -1.0, 0.0, 2.0],
-        ];
+        let w = [[1.0f32, -2.0, 0.5, 0.0, 3.0, -1.0], [0.0, 1.0, 1.0, -1.0, 0.0, 2.0]];
         let x: Vec<f32> = (0..n * d).map(|_| r.unit() * 2.0 - 1.0).collect();
         let mut y = Vec::new();
         for i in 0..n {
@@ -1708,11 +1241,7 @@ mod tests {
         let (mx, ww, my) = ridge_fit(&x, &y, n, d, k, 1e-6).unwrap();
         for c in 0..k {
             for j in 0..d {
-                assert!(
-                    (ww[c * d + j] - w[c][j]).abs() < 1e-2,
-                    "w {c} {j}: {}",
-                    ww[c * d + j]
-                );
+                assert!((ww[c * d + j] - w[c][j]).abs() < 1e-2, "w {c} {j}: {}", ww[c * d + j]);
             }
         }
         assert_eq!(mx.len(), d);
@@ -1736,36 +1265,16 @@ mod tests {
         }
         let sw = vec![1.0; n];
         let (w, b) = logistic_fit(&x, &y, &sw, n, d, 0.1, 15).unwrap();
-        let acc = (0..n)
-            .filter(|&i| {
-                ((0..d).map(|j| w[j] * x[i * d + j]).sum::<f32>() + b > 0.0) == (y[i] > 0.5)
-            })
-            .count() as f32
-            / n as f32;
+        let acc = (0..n).filter(|&i| ((0..d).map(|j| w[j] * x[i * d + j]).sum::<f32>() + b > 0.0) == (y[i] > 0.5)).count() as f32 / n as f32;
         assert!(acc > 0.95, "acc {acc}");
         assert!(logistic_fit(&x, &y, &sw[1..], n, d, 0.1, 5).is_err());
     }
 
     #[test]
     fn nms_merges_and_iou_is_sane() {
-        let a = Detection {
-            cx: 50.0,
-            cy: 50.0,
-            side: 40.0,
-            score: 3.0,
-        };
-        let b = Detection {
-            cx: 52.0,
-            cy: 50.0,
-            side: 40.0,
-            score: 2.0,
-        };
-        let c = Detection {
-            cx: 150.0,
-            cy: 50.0,
-            side: 40.0,
-            score: 1.0,
-        };
+        let a = Detection { cx: 50.0, cy: 50.0, side: 40.0, score: 3.0 };
+        let b = Detection { cx: 52.0, cy: 50.0, side: 40.0, score: 2.0 };
+        let c = Detection { cx: 150.0, cy: 50.0, side: 40.0, score: 1.0 };
         assert!(iou(&a, &b) > 0.8 && iou(&a, &c) == 0.0 && (iou(&a, &a) - 1.0).abs() < 1e-6);
     }
 
@@ -1775,12 +1284,7 @@ mod tests {
         let m2 = train(&tiny()).unwrap();
         // identical up to float summation order of the multi-threaded Gram sums
         assert_eq!(m.det_w.len(), m2.det_w.len());
-        let dmax = m
-            .reg_w
-            .iter()
-            .zip(&m2.reg_w)
-            .map(|(a, b)| (a - b).abs())
-            .fold(0.0f32, f32::max);
+        let dmax = m.reg_w.iter().zip(&m2.reg_w).map(|(a, b)| (a - b).abs()).fold(0.0f32, f32::max);
         assert!(dmax < 1e-3, "{dmax}");
         // binary and JSON round trips
         let b = m.to_bytes();
@@ -1797,14 +1301,7 @@ mod tests {
         let (g, t) = facegen::face_scene(&mut rng, 96, 96, 22.0, 26.0, false).unwrap();
         let td = truth_det(&t);
         let r = m.landmarks(&g, &td);
-        let mean_face: Vec<Vec2> = (0..N_LM)
-            .map(|i| {
-                Vec2::new(
-                    m.reg_b[2 * i] * t.side + t.cx,
-                    m.reg_b[2 * i + 1] * t.side + t.cy,
-                )
-            })
-            .collect();
+        let mean_face: Vec<Vec2> = (0..N_LM).map(|i| Vec2::new(m.reg_b[2 * i] * t.side + t.cx, m.reg_b[2 * i + 1] * t.side + t.cy)).collect();
         let e_reg = t.nme(&r.pts);
         let e_mean = t.nme(&mean_face);
         assert!(e_reg < e_mean * 1.5 + 0.05, "reg {e_reg} mean {e_mean}");
@@ -1834,44 +1331,19 @@ mod tests {
 
     #[test]
     fn train_validates_options() {
-        assert!(train(&TrainOpts {
-            samples: 5,
-            ..tiny()
-        })
-        .is_err());
-        assert!(train(&TrainOpts {
-            scene: 10,
-            ..tiny()
-        })
-        .is_err());
-        assert!(train(&TrainOpts {
-            det_cell: 5,
-            ..tiny()
-        })
-        .is_err());
+        assert!(train(&TrainOpts { samples: 5, ..tiny() }).is_err());
+        assert!(train(&TrainOpts { scene: 10, ..tiny() }).is_err());
+        assert!(train(&TrainOpts { det_cell: 5, ..tiny() }).is_err());
     }
 
     #[test]
     fn tracker_and_detect_never_panic_on_tiny_or_flat_images() {
         let m = shared().clone();
-        for g in [
-            Gray::new(5, 5, 0.5),
-            Gray::new(200, 20, 0.1),
-            Gray::new(96, 96, 1.0),
-        ] {
+        for g in [Gray::new(5, 5, 0.5), Gray::new(200, 20, 0.1), Gray::new(96, 96, 1.0)] {
             let _ = m.detect(&g, &DetectOpts::default());
         }
         let mut t = BoxTracker::default();
-        assert!(t
-            .step(
-                &m,
-                &Gray::new(96, 96, 0.5),
-                &DetectOpts {
-                    threshold: Some(1e6),
-                    ..Default::default()
-                }
-            )
-            .is_none());
+        assert!(t.step(&m, &Gray::new(96, 96, 0.5), &DetectOpts { threshold: Some(1e6), ..Default::default() }).is_none());
     }
 
     #[test]
@@ -1879,18 +1351,9 @@ mod tests {
         let m = FaceModel::builtin().unwrap();
         assert!(m.to_bytes().len() < 1_000_000);
         assert_eq!(m.stages.len(), 3);
-        assert!(m.meta["scope"]
-            .as_str()
-            .unwrap()
-            .contains("not validated on photographs"));
+        assert!(m.meta["scope"].as_str().unwrap().contains("not validated on photographs"));
         let (g, t) = facegen::face_scene(&mut Rng::new(4242), 128, 128, 25.0, 40.0, true).unwrap();
-        let r = m.detect(
-            &g,
-            &DetectOpts {
-                max_faces: 1,
-                ..Default::default()
-            },
-        );
+        let r = m.detect(&g, &DetectOpts { max_faces: 1, ..Default::default() });
         assert_eq!(r.len(), 1);
         assert!(iou(&r[0].det, &truth_det(&t)) > 0.5);
         assert!(t.nme(&r[0].pts) < 0.08, "nme {}", t.nme(&r[0].pts));
@@ -1903,17 +1366,13 @@ mod tests {
     fn cartoon_ground_truth_is_consistent_with_the_drawing() {
         for c in facegen::cartoons() {
             assert_eq!(c.pts.len(), 23, "{}", c.name);
-            let (g, t) = c
-                .render(200, 200, 1.0, 0.0, 100.0, 100.0, [1.0, 1.0, 1.0])
-                .unwrap();
+            let (g, t) = c.render(200, 200, 1.0, 0.0, 100.0, 100.0, [1.0, 1.0, 1.0]).unwrap();
             // identity placement keeps design coordinates
             assert!((t.pts[0].x - c.pts[0].x).abs() < 1e-3);
             // the head box is inside the image and the picture is not blank
             assert!(g.px.iter().any(|&v| v < 0.5), "{}", c.name);
             // rotation keeps the inter-ocular distance
-            let (_, t2) = c
-                .render(200, 200, 1.0, 20.0, 100.0, 100.0, [1.0, 1.0, 1.0])
-                .unwrap();
+            let (_, t2) = c.render(200, 200, 1.0, 20.0, 100.0, 100.0, [1.0, 1.0, 1.0]).unwrap();
             assert!((facegen::interocular(&t.pts) - facegen::interocular(&t2.pts)).abs() < 1e-2);
         }
     }
@@ -1933,24 +1392,11 @@ mod tests {
         let r = e2e_report(&m, 32, 112, 7).unwrap();
         assert_eq!(r["tracked_frames"], 32);
         let c = |k: &str| r["signals"][k]["tracked_corr"].as_f64().unwrap();
-        let ceil = |k: &str| {
-            r["signals"][k]["ground_truth_landmarks_corr"]
-                .as_f64()
-                .unwrap()
-        };
+        let ceil = |k: &str| r["signals"][k]["ground_truth_landmarks_corr"].as_f64().unwrap();
         // head angles and mouth are recovered nearly perfectly, and the exact landmarks are the ceiling
         for k in ["head_yaw", "head_roll", "mouth_open"] {
-            assert!(
-                c(k) > 0.75 && c(k) > ceil(k) - 0.1,
-                "{k}: {} (ceiling {})",
-                c(k),
-                ceil(k)
-            );
+            assert!(c(k) > 0.75 && c(k) > ceil(k) - 0.1, "{k}: {} (ceiling {})", c(k), ceil(k));
         }
-        assert!(
-            c("head_pitch").is_finite()
-                && c("brow_raise").is_finite()
-                && c("eye_r_open").is_finite()
-        );
+        assert!(c("head_pitch").is_finite() && c("brow_raise").is_finite() && c("eye_r_open").is_finite());
     }
 }

@@ -14,23 +14,13 @@ pub enum Ease {
     EaseOut,
     EaseInOut,
     /// CSS-style cubic-bezier easing curve through (0,0) and (1,1).
-    CubicBezier {
-        x1: f32,
-        y1: f32,
-        x2: f32,
-        y2: f32,
-    },
+    CubicBezier { x1: f32, y1: f32, x2: f32, y2: f32 },
     /// Catmull-Rom spline through neighbouring keys (smooth, no overshoot control).
     Smooth,
     /// Damped-spring settle: overshoots and rings, then lands exactly on the target.
-    Spring {
-        bounces: f32,
-        decay: f32,
-    },
+    Spring { bounces: f32, decay: f32 },
     /// Ease-out with overshoot ("back"): cubic with start slope `3 + overshoot`, own derivation (see `back`).
-    Back {
-        overshoot: f32,
-    },
+    Back { overshoot: f32 },
     /// Bouncing ball landing: restitution series e = 0.6, three rebounds (own derivation, see `bounce`).
     Bounce,
 }
@@ -166,10 +156,7 @@ pub struct Track {
 
 impl Track {
     pub fn new() -> Self {
-        Track {
-            keys: Vec::new(),
-            extrapolate: Extrapolate::Hold,
-        }
+        Track { keys: Vec::new(), extrapolate: Extrapolate::Hold }
     }
 
     /// Insert or replace a key, keeping the list sorted by frame.
@@ -241,9 +228,7 @@ impl Track {
                     last.value + slope * (frame - last.frame)
                 }
             }
-            Extrapolate::Loop => {
-                self.eval_inside(first.frame + (frame - first.frame).rem_euclid(span))
-            }
+            Extrapolate::Loop => self.eval_inside(first.frame + (frame - first.frame).rem_euclid(span)),
             Extrapolate::PingPong => {
                 let m = (frame - first.frame).rem_euclid(2.0 * span);
                 self.eval_inside(first.frame + if m <= span { m } else { 2.0 * span - m })
@@ -267,11 +252,7 @@ impl Track {
         }
         let (a, b) = (&keys[i - 1], &keys[i]);
         let span = b.frame - a.frame;
-        let u = if span <= 0.0 {
-            1.0
-        } else {
-            (frame - a.frame) / span
-        };
+        let u = if span <= 0.0 { 1.0 } else { (frame - a.frame) / span };
         if let Ease::Smooth = a.ease {
             // Cubic Hermite with non-uniform Catmull-Rom tangents.
             let tan = |k: usize| -> f32 {
@@ -329,12 +310,7 @@ mod tests {
 
     #[test]
     fn bezier_ease_hits_endpoints_and_is_monotone() {
-        let e = Ease::CubicBezier {
-            x1: 0.42,
-            y1: 0.0,
-            x2: 0.58,
-            y2: 1.0,
-        };
+        let e = Ease::CubicBezier { x1: 0.42, y1: 0.0, x2: 0.58, y2: 1.0 };
         assert!(e.apply(0.0).abs() < 1e-4);
         assert!((e.apply(1.0) - 1.0).abs() < 1e-4);
         let mut prev = 0.0;
@@ -348,16 +324,10 @@ mod tests {
 
     #[test]
     fn spring_back_and_bounce_land_exactly_and_overshoot() {
-        let s = Ease::Spring {
-            bounces: 2.5,
-            decay: 5.0,
-        };
+        let s = Ease::Spring { bounces: 2.5, decay: 5.0 };
         assert!(s.apply(0.0).abs() < 1e-5);
         assert!((s.apply(1.0) - 1.0).abs() < 1e-5);
-        assert!(
-            (0..=100).any(|i| s.apply(i as f32 / 100.0) > 1.02),
-            "spring overshoots"
-        );
+        assert!((0..=100).any(|i| s.apply(i as f32 / 100.0) > 1.02), "spring overshoots");
 
         let b = Ease::Back { overshoot: 1.7 };
         assert!(b.apply(0.0).abs() < 1e-5 && (b.apply(1.0) - 1.0).abs() < 1e-5);
@@ -365,10 +335,7 @@ mod tests {
 
         let bo = Ease::Bounce;
         assert!(bo.apply(0.0).abs() < 1e-5 && (bo.apply(1.0) - 1.0).abs() < 1e-4);
-        assert!(
-            (0..=100).all(|i| bo.apply(i as f32 / 100.0) <= 1.0001),
-            "bounce never exceeds target"
-        );
+        assert!((0..=100).all(|i| bo.apply(i as f32 / 100.0) <= 1.0001), "bounce never exceeds target");
     }
 
     #[test]
@@ -387,27 +354,16 @@ mod tests {
         let s = 1.7f32;
         let k = 3.0 + s;
         let b = Ease::Back { overshoot: s };
-        assert!(
-            (b.apply(0.001) / 0.001 - k).abs() < 0.05,
-            "start slope {}",
-            b.apply(0.001) / 0.001
-        );
+        assert!((b.apply(0.001) / 0.001 - k).abs() < 0.05, "start slope {}", b.apply(0.001) / 0.001);
         let tp = k / (3.0 * (k - 2.0));
         let peak = b.apply(tp);
         assert!(peak > 1.09 && peak < 1.12, "peak {peak}");
         assert!((0..=100).all(|i| b.apply(i as f32 / 100.0) <= peak + 1e-5));
-        assert!((0..100)
-            .filter(|&i| (i as f32 / 100.0) < tp - 0.01)
-            .all(|i| b.apply((i + 1) as f32 / 100.0) >= b.apply(i as f32 / 100.0)));
+        assert!((0..100).filter(|&i| (i as f32 / 100.0) < tp - 0.01).all(|i| b.apply((i + 1) as f32 / 100.0) >= b.apply(i as f32 / 100.0)));
         assert_eq!(b.apply(1.0), 1.0);
         // more overshoot gives a higher peak; very negative values are clamped, never NaN
         let hi = Ease::Back { overshoot: 4.0 };
-        assert!(
-            (0..=100)
-                .map(|i| hi.apply(i as f32 / 100.0))
-                .fold(0.0, f32::max)
-                > peak
-        );
+        assert!((0..=100).map(|i| hi.apply(i as f32 / 100.0)).fold(0.0, f32::max) > peak);
         assert!(Ease::Back { overshoot: -50.0 }.apply(0.5).is_finite());
     }
 
@@ -429,10 +385,7 @@ mod tests {
         let mut prev = bo.apply(0.0);
         for i in 1..=2000 {
             let v = bo.apply(i as f32 / 2000.0);
-            assert!(
-                v <= 1.0 + 1e-6 && (v - prev).abs() < 0.05,
-                "jump at {i}: {prev} -> {v}"
-            );
+            assert!(v <= 1.0 + 1e-6 && (v - prev).abs() < 0.05, "jump at {i}: {prev} -> {v}");
             prev = v;
         }
     }

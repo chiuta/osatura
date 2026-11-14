@@ -78,24 +78,11 @@ pub struct KeyHandles {
 /// frame inside the range; step segments get a vertical riser so the corner is drawn. Empty when
 /// the track has no keys, the range is empty, or `n < 2`. Deterministic.
 pub fn sample_track(t: &Track, f0: f32, f1: f32, n: usize) -> Vec<(f32, f32)> {
-    if t.keys.is_empty()
-        || n < 2
-        || (f1.partial_cmp(&f0) != Some(std::cmp::Ordering::Greater))
-        || !f0.is_finite()
-        || !f1.is_finite()
-    {
+    if t.keys.is_empty() || n < 2 || (f1.partial_cmp(&f0) != Some(std::cmp::Ordering::Greater)) || !f0.is_finite() || !f1.is_finite() {
         return Vec::new();
     }
     let n = n.min(MAX_SAMPLES);
-    let mut times: Vec<f32> = (0..n)
-        .map(|i| {
-            if i + 1 == n {
-                f1
-            } else {
-                f0 + (f1 - f0) * i as f32 / (n - 1) as f32
-            }
-        })
-        .collect();
+    let mut times: Vec<f32> = (0..n).map(|i| if i + 1 == n { f1 } else { f0 + (f1 - f0) * i as f32 / (n - 1) as f32 }).collect();
     times.extend(t.keys.iter().map(|k| k.frame).filter(|&f| f > f0 && f < f1));
     times.sort_by(|a, b| a.total_cmp(b));
     times.dedup();
@@ -161,19 +148,12 @@ pub fn tangents(keys: &[Key], kind: TangentKind) -> Vec<f32> {
     match kind {
         TangentKind::CatmullRom => (0..n).map(|k| catmull_tangent(keys, k)).collect(),
         TangentKind::Monotone => {
-            let d: Vec<f32> = keys
-                .windows(2)
-                .map(|w| (w[1].value - w[0].value) / (w[1].frame - w[0].frame))
-                .collect();
+            let d: Vec<f32> = keys.windows(2).map(|w| (w[1].value - w[0].value) / (w[1].frame - w[0].frame)).collect();
             let mut m = vec![0.0f32; n];
             m[0] = d[0];
             m[n - 1] = d[n - 2];
             for k in 1..n - 1 {
-                m[k] = if d[k - 1] * d[k] <= 0.0 {
-                    0.0
-                } else {
-                    0.5 * (d[k - 1] + d[k])
-                };
+                m[k] = if d[k - 1] * d[k] <= 0.0 { 0.0 } else { 0.5 * (d[k - 1] + d[k]) };
             }
             for k in 0..n - 1 {
                 if d[k].abs() < EPS {
@@ -207,18 +187,9 @@ pub fn hermite_params(a: &Key, b: &Key, m0: f32, m1: f32) -> Option<[f32; 4]> {
     let span = b.frame - a.frame;
     let dv = b.value - a.value;
     if dv.abs() < EPS {
-        return if m0.abs() < EPS && m1.abs() < EPS {
-            Some([1.0 / 3.0, 0.0, 2.0 / 3.0, 0.0])
-        } else {
-            None
-        };
+        return if m0.abs() < EPS && m1.abs() < EPS { Some([1.0 / 3.0, 0.0, 2.0 / 3.0, 0.0]) } else { None };
     }
-    Some([
-        1.0 / 3.0,
-        m0 * span / (3.0 * dv),
-        2.0 / 3.0,
-        1.0 - m1 * span / (3.0 * dv),
-    ])
+    Some([1.0 / 3.0, m0 * span / (3.0 * dv), 2.0 / 3.0, 1.0 - m1 * span / (3.0 * dv)])
 }
 
 /// Normalised Bezier parameters of the segment starting at key `i`, if it can be expressed.
@@ -235,28 +206,14 @@ pub fn segment_params(t: &Track, i: usize) -> Option<[f32; 4]> {
         Ease::EaseOut => Some([T, 2.0 * T, 2.0 * T, 1.0]),
         Ease::EaseInOut => Some([T, 0.0, 2.0 * T, 1.0]),
         Ease::CubicBezier { x1, y1, x2, y2 } => Some([x1, y1, x2, y2]),
-        Ease::Smooth => hermite_params(
-            a,
-            b,
-            catmull_tangent(&t.keys, i),
-            catmull_tangent(&t.keys, i + 1),
-        ),
+        Ease::Smooth => hermite_params(a, b, catmull_tangent(&t.keys, i), catmull_tangent(&t.keys, i + 1)),
         _ => None,
     }
 }
 
 fn abs_handles(a: &Key, b: &Key, p: [f32; 4]) -> (HandlePos, HandlePos) {
     let (span, dv) = (b.frame - a.frame, b.value - a.value);
-    (
-        HandlePos {
-            t: a.frame + p[0] * span,
-            v: a.value + p[1] * dv,
-        },
-        HandlePos {
-            t: a.frame + p[2] * span,
-            v: a.value + p[3] * dv,
-        },
-    )
+    (HandlePos { t: a.frame + p[0] * span, v: a.value + p[1] * dv }, HandlePos { t: a.frame + p[2] * span, v: a.value + p[3] * dv })
 }
 
 /// Handles of every key (for drawing). Key `i`'s `out` belongs to segment `i`, its `in` to segment `i-1`.
@@ -265,23 +222,14 @@ pub fn handles(t: &Track) -> Vec<KeyHandles> {
     (0..n)
         .map(|i| {
             let out = segment_params(t, i).map(|p| abs_handles(&t.keys[i], &t.keys[i + 1], p).0);
-            let inn = if i > 0 {
-                segment_params(t, i - 1).map(|p| abs_handles(&t.keys[i - 1], &t.keys[i], p).1)
-            } else {
-                None
-            };
+            let inn = if i > 0 { segment_params(t, i - 1).map(|p| abs_handles(&t.keys[i - 1], &t.keys[i], p).1) } else { None };
             KeyHandles { index: i, inn, out }
         })
         .collect()
 }
 
 fn set_params(t: &mut Track, i: usize, p: [f32; 4]) {
-    t.keys[i].ease = Ease::CubicBezier {
-        x1: p[0].clamp(0.0, 1.0),
-        y1: p[1],
-        x2: p[2].clamp(0.0, 1.0),
-        y2: p[3],
-    };
+    t.keys[i].ease = Ease::CubicBezier { x1: p[0].clamp(0.0, 1.0), y1: p[1], x2: p[2].clamp(0.0, 1.0), y2: p[3] };
 }
 
 /// Rewrite the segment starting at `i` as an explicit Bezier (so its handles become editable).
@@ -305,23 +253,12 @@ fn seg_of(t: &Track, key: usize, side: Side) -> Result<(usize, bool), String> {
 }
 
 /// Write an absolute handle position into segment `seg`; returns the clamped absolute position.
-fn put_handle(
-    t: &mut Track,
-    seg: usize,
-    out_end: bool,
-    pos: HandlePos,
-) -> Result<HandlePos, String> {
-    let mut p = segment_params(t, seg).ok_or_else(|| {
-        format!("segment {seg} has no editable handles (convert it to a Bezier first)")
-    })?;
+fn put_handle(t: &mut Track, seg: usize, out_end: bool, pos: HandlePos) -> Result<HandlePos, String> {
+    let mut p = segment_params(t, seg).ok_or_else(|| format!("segment {seg} has no editable handles (convert it to a Bezier first)"))?;
     let (a, b) = (t.keys[seg], t.keys[seg + 1]);
     let (span, dv) = (b.frame - a.frame, b.value - a.value);
     let x = ((pos.t - a.frame) / span).clamp(0.0, 1.0);
-    let y = if dv.abs() < EPS {
-        0.0
-    } else {
-        (pos.v - a.value) / dv
-    };
+    let y = if dv.abs() < EPS { 0.0 } else { (pos.v - a.value) / dv };
     if out_end {
         p[0] = x;
         p[1] = y;
@@ -335,13 +272,7 @@ fn put_handle(
 }
 
 /// Move one handle (absolute `pos`) with a constraint. Errors leave the track unchanged.
-pub fn set_handle(
-    t: &mut Track,
-    key: usize,
-    side: Side,
-    pos: HandlePos,
-    mode: HandleMode,
-) -> Result<(), String> {
+pub fn set_handle(t: &mut Track, key: usize, side: Side, pos: HandlePos, mode: HandleMode) -> Result<(), String> {
     if !pos.t.is_finite() || !pos.v.is_finite() {
         return Err("handle position must be finite".into());
     }
@@ -372,15 +303,7 @@ pub fn set_handle(
                         let cur = if oout { o } else { i };
                         let len = (cur.t - k.frame).abs();
                         let sgn = if oout { 1.0 } else { -1.0 };
-                        put_handle(
-                            t,
-                            oseg,
-                            oout,
-                            HandlePos {
-                                t: k.frame + sgn * len,
-                                v: k.value + slope * sgn * len,
-                            },
-                        )?;
+                        put_handle(t, oseg, oout, HandlePos { t: k.frame + sgn * len, v: k.value + slope * sgn * len })?;
                     }
                 }
                 Ok(())
@@ -404,24 +327,15 @@ pub fn auto_handles(t: &mut Track, key: usize) -> Result<(), String> {
         let mut p = segment_params(t, key).unwrap_or([1.0 / 3.0, 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0]);
         let dv = b.value - a.value;
         p[0] = 1.0 / 3.0;
-        p[1] = if dv.abs() < EPS {
-            0.0
-        } else {
-            m * (b.frame - a.frame) / (3.0 * dv)
-        };
+        p[1] = if dv.abs() < EPS { 0.0 } else { m * (b.frame - a.frame) / (3.0 * dv) };
         set_params(t, key, p);
     }
     if key > 0 {
         let (a, b) = (t.keys[key - 1], t.keys[key]);
-        let mut p =
-            segment_params(t, key - 1).unwrap_or([1.0 / 3.0, 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0]);
+        let mut p = segment_params(t, key - 1).unwrap_or([1.0 / 3.0, 1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0]);
         let dv = b.value - a.value;
         p[2] = 2.0 / 3.0;
-        p[3] = if dv.abs() < EPS {
-            0.0
-        } else {
-            1.0 - m * (b.frame - a.frame) / (3.0 * dv)
-        };
+        p[3] = if dv.abs() < EPS { 0.0 } else { 1.0 - m * (b.frame - a.frame) / (3.0 * dv) };
         set_params(t, key - 1, p);
     }
     Ok(())
@@ -439,12 +353,10 @@ pub fn smooth_segments(t: &mut Track, starts: &[usize], kind: TangentKind) -> us
         }
         match kind {
             TangentKind::CatmullRom => t.keys[i].ease = Ease::Smooth,
-            TangentKind::Monotone => {
-                match hermite_params(&t.keys[i], &t.keys[i + 1], m[i], m[i + 1]) {
-                    Some(p) => set_params(t, i, p),
-                    None => t.keys[i].ease = Ease::Linear,
-                }
-            }
+            TangentKind::Monotone => match hermite_params(&t.keys[i], &t.keys[i + 1], m[i], m[i + 1]) {
+                Some(p) => set_params(t, i, p),
+                None => t.keys[i].ease = Ease::Linear,
+            },
         }
         n += 1;
     }
@@ -463,11 +375,7 @@ mod tests {
 
     #[test]
     fn sampling_includes_keys_risers_and_is_deterministic() {
-        let t = tr(&[
-            (0.0, 0.0, Ease::Step),
-            (10.0, 5.0, Ease::Linear),
-            (20.0, 15.0, Ease::Linear),
-        ]);
+        let t = tr(&[(0.0, 0.0, Ease::Step), (10.0, 5.0, Ease::Linear), (20.0, 15.0, Ease::Linear)]);
         let s = sample_track(&t, 0.0, 20.0, 5);
         assert_eq!(s, sample_track(&t, 0.0, 20.0, 5));
         // uniform 0,5,10,15,20 plus riser at 10
@@ -476,19 +384,13 @@ mod tests {
         assert_eq!(s.first(), Some(&(0.0, 0.0)));
         assert_eq!(s.last(), Some(&(20.0, 15.0)));
         assert!(sample_track(&Track::new(), 0.0, 1.0, 4).is_empty());
-        assert!(
-            sample_track(&t, 5.0, 5.0, 4).is_empty() && sample_track(&t, 0.0, 9.0, 1).is_empty()
-        );
+        assert!(sample_track(&t, 5.0, 5.0, 4).is_empty() && sample_track(&t, 0.0, 9.0, 1).is_empty());
         assert!(sample_track(&t, 0.0, 20.0, usize::MAX).len() <= MAX_SAMPLES + 8);
     }
 
     #[test]
     fn key_frames_inside_range_are_sampled_even_between_samples() {
-        let t = tr(&[
-            (0.0, 0.0, Ease::Linear),
-            (3.0, 9.0, Ease::Linear),
-            (10.0, 0.0, Ease::Linear),
-        ]);
+        let t = tr(&[(0.0, 0.0, Ease::Linear), (3.0, 9.0, Ease::Linear), (10.0, 0.0, Ease::Linear)]);
         let s = sample_track(&t, 0.0, 10.0, 2); // only the end points uniformly
         assert!(s.contains(&(3.0, 9.0)));
     }
@@ -508,18 +410,8 @@ mod tests {
 
     #[test]
     fn segment_params_reproduce_the_builtin_eases_exactly() {
-        for e in [
-            Ease::Linear,
-            Ease::EaseIn,
-            Ease::EaseOut,
-            Ease::EaseInOut,
-            Ease::Smooth,
-        ] {
-            let t = tr(&[
-                (0.0, 0.0, e),
-                (10.0, 10.0, Ease::Linear),
-                (20.0, 4.0, Ease::Linear),
-            ]);
+        for e in [Ease::Linear, Ease::EaseIn, Ease::EaseOut, Ease::EaseInOut, Ease::Smooth] {
+            let t = tr(&[(0.0, 0.0, e), (10.0, 10.0, Ease::Linear), (20.0, 4.0, Ease::Linear)]);
             let mut u = t.clone();
             convert_to_bezier(&mut u, 0).unwrap();
             assert!(matches!(u.keys[0].ease, Ease::CubicBezier { .. }));
@@ -548,231 +440,104 @@ mod tests {
     #[test]
     fn free_handle_move_writes_normalised_bezier_and_clamps_time() {
         let mut t = tr(&[(0.0, 0.0, Ease::Linear), (10.0, 10.0, Ease::Linear)]);
-        set_handle(
-            &mut t,
-            0,
-            Side::Out,
-            HandlePos { t: 4.0, v: 0.0 },
-            HandleMode::Free,
-        )
-        .unwrap();
+        set_handle(&mut t, 0, Side::Out, HandlePos { t: 4.0, v: 0.0 }, HandleMode::Free).unwrap();
         match t.keys[0].ease {
             Ease::CubicBezier { x1, y1, x2, y2 } => {
                 assert!((x1 - 0.4).abs() < 1e-6 && y1.abs() < 1e-6);
-                assert!(
-                    (x2 - 2.0 / 3.0).abs() < 1e-6 && (y2 - 2.0 / 3.0).abs() < 1e-6,
-                    "other handle untouched"
-                );
+                assert!((x2 - 2.0 / 3.0).abs() < 1e-6 && (y2 - 2.0 / 3.0).abs() < 1e-6, "other handle untouched");
             }
             e => panic!("{e:?}"),
         }
         // time beyond the segment clamps to the segment
-        set_handle(
-            &mut t,
-            1,
-            Side::In,
-            HandlePos { t: -50.0, v: 3.0 },
-            HandleMode::Free,
-        )
-        .unwrap();
+        set_handle(&mut t, 1, Side::In, HandlePos { t: -50.0, v: 3.0 }, HandleMode::Free).unwrap();
         let h = handles(&t);
         assert_eq!(h[1].inn.unwrap().t, 0.0);
         assert!((h[1].inn.unwrap().v - 3.0).abs() < 1e-5);
         // errors: ends, bad numbers, non-bezier segments; track unchanged
         let before = t.clone();
-        assert!(set_handle(
-            &mut t,
-            1,
-            Side::Out,
-            HandlePos { t: 1.0, v: 1.0 },
-            HandleMode::Free
-        )
-        .is_err());
-        assert!(set_handle(
-            &mut t,
-            0,
-            Side::In,
-            HandlePos { t: 1.0, v: 1.0 },
-            HandleMode::Free
-        )
-        .is_err());
-        assert!(set_handle(
-            &mut t,
-            0,
-            Side::Out,
-            HandlePos {
-                t: f32::NAN,
-                v: 1.0
-            },
-            HandleMode::Free
-        )
-        .is_err());
-        assert!(set_handle(
-            &mut t,
-            9,
-            Side::Out,
-            HandlePos { t: 1.0, v: 1.0 },
-            HandleMode::Free
-        )
-        .is_err());
+        assert!(set_handle(&mut t, 1, Side::Out, HandlePos { t: 1.0, v: 1.0 }, HandleMode::Free).is_err());
+        assert!(set_handle(&mut t, 0, Side::In, HandlePos { t: 1.0, v: 1.0 }, HandleMode::Free).is_err());
+        assert!(set_handle(&mut t, 0, Side::Out, HandlePos { t: f32::NAN, v: 1.0 }, HandleMode::Free).is_err());
+        assert!(set_handle(&mut t, 9, Side::Out, HandlePos { t: 1.0, v: 1.0 }, HandleMode::Free).is_err());
         assert_eq!(t, before);
         let mut s = tr(&[(0.0, 0.0, Ease::Step), (10.0, 10.0, Ease::Linear)]);
-        assert!(set_handle(
-            &mut s,
-            0,
-            Side::Out,
-            HandlePos { t: 1.0, v: 1.0 },
-            HandleMode::Free
-        )
-        .is_err());
+        assert!(set_handle(&mut s, 0, Side::Out, HandlePos { t: 1.0, v: 1.0 }, HandleMode::Free).is_err());
     }
 
     #[test]
     fn aligned_mode_equalises_slopes_and_keeps_opposite_length() {
-        let mut t = tr(&[
-            (0.0, 0.0, Ease::Linear),
-            (10.0, 10.0, Ease::Linear),
-            (30.0, 0.0, Ease::Linear),
-        ]);
+        let mut t = tr(&[(0.0, 0.0, Ease::Linear), (10.0, 10.0, Ease::Linear), (30.0, 0.0, Ease::Linear)]);
         let before_len = (10.0 - handles(&t)[1].inn.unwrap().t).abs();
         // drag the out handle of the middle key up-right: slope (14-10)/(15-10)... pick t=14, v=14
-        set_handle(
-            &mut t,
-            1,
-            Side::Out,
-            HandlePos { t: 14.0, v: 14.0 },
-            HandleMode::Aligned,
-        )
-        .unwrap();
+        set_handle(&mut t, 1, Side::Out, HandlePos { t: 14.0, v: 14.0 }, HandleMode::Aligned).unwrap();
         let h = handles(&t);
         let (o, i) = (h[1].out.unwrap(), h[1].inn.unwrap());
         let so = (o.v - 10.0) / (o.t - 10.0);
         let si = (10.0 - i.v) / (10.0 - i.t);
         assert!((so - 1.0).abs() < 1e-4, "{so}");
         assert!((so - si).abs() < 1e-4, "slopes {so} vs {si}");
-        assert!(
-            ((10.0 - i.t).abs() - before_len).abs() < 1e-4,
-            "opposite keeps its time length"
-        );
+        assert!(((10.0 - i.t).abs() - before_len).abs() < 1e-4, "opposite keeps its time length");
         // the end key has no opposite handle: aligned degrades to free
         let mut u = tr(&[(0.0, 0.0, Ease::Linear), (10.0, 10.0, Ease::Linear)]);
-        set_handle(
-            &mut u,
-            0,
-            Side::Out,
-            HandlePos { t: 5.0, v: 0.0 },
-            HandleMode::Aligned,
-        )
-        .unwrap();
+        set_handle(&mut u, 0, Side::Out, HandlePos { t: 5.0, v: 0.0 }, HandleMode::Aligned).unwrap();
         assert_eq!(handles(&u)[0].out.unwrap(), HandlePos { t: 5.0, v: 0.0 });
     }
 
     #[test]
     fn catmull_rom_tangents_match_smooth_ease() {
-        let keys = Track::with_keys(&[
-            (0.0, 0.0, Ease::Smooth),
-            (10.0, 10.0, Ease::Smooth),
-            (25.0, 4.0, Ease::Smooth),
-            (30.0, 9.0, Ease::Linear),
-        ])
-        .keys;
+        let keys = Track::with_keys(&[(0.0, 0.0, Ease::Smooth), (10.0, 10.0, Ease::Smooth), (25.0, 4.0, Ease::Smooth), (30.0, 9.0, Ease::Linear)]).keys;
         let m = tangents(&keys, TangentKind::CatmullRom);
         assert!((m[1] - (4.0 - 0.0) / 25.0).abs() < 1e-6);
         assert!((m[0] - 1.0).abs() < 1e-6 && (m[3] - 1.0).abs() < 1e-6);
         // baked to bezier it evaluates like Smooth
-        let t = Track {
-            keys: keys.clone(),
-            ..Track::new()
-        };
+        let t = Track { keys: keys.clone(), ..Track::new() };
         let mut u = t.clone();
         for i in 0..3 {
             convert_to_bezier(&mut u, i).unwrap();
         }
         for i in 0..=60 {
             let f = i as f32 * 0.5;
-            assert!(
-                (t.eval(f).unwrap() - u.eval(f).unwrap()).abs() < 3e-3,
-                "at {f}"
-            );
+            assert!((t.eval(f).unwrap() - u.eval(f).unwrap()).abs() < 3e-3, "at {f}");
         }
     }
 
     #[test]
     fn monotone_cubic_does_not_overshoot() {
         // Data with a sharp step-like rise: Catmull-Rom overshoots, monotone must not.
-        let pts = [
-            (0.0, 0.0),
-            (10.0, 0.0),
-            (12.0, 10.0),
-            (14.0, 10.0),
-            (30.0, 11.0),
-            (31.0, 25.0),
-            (50.0, 25.0),
-        ];
+        let pts = [(0.0, 0.0), (10.0, 0.0), (12.0, 10.0), (14.0, 10.0), (30.0, 11.0), (31.0, 25.0), (50.0, 25.0)];
         let keys: Vec<(f32, f32, Ease)> = pts.iter().map(|&(f, v)| (f, v, Ease::Smooth)).collect();
         let mut cr = Track::with_keys(&keys);
         let mut mono = cr.clone();
         let n = mono.keys.len();
-        smooth_segments(
-            &mut mono,
-            &(0..n - 1).collect::<Vec<_>>(),
-            TangentKind::Monotone,
-        );
-        smooth_segments(
-            &mut cr,
-            &(0..n - 1).collect::<Vec<_>>(),
-            TangentKind::CatmullRom,
-        );
+        smooth_segments(&mut mono, &(0..n - 1).collect::<Vec<_>>(), TangentKind::Monotone);
+        smooth_segments(&mut cr, &(0..n - 1).collect::<Vec<_>>(), TangentKind::CatmullRom);
         let mut cr_over = false;
         let mut prev = f32::NEG_INFINITY;
         for i in 0..=2000 {
             let f = i as f32 * 0.025;
             let v = mono.eval(f).unwrap();
-            assert!(
-                v >= prev - 2e-3,
-                "monotone data must give monotone curve at {f}: {v} < {prev}"
-            );
+            assert!(v >= prev - 2e-3, "monotone data must give monotone curve at {f}: {v} < {prev}");
             assert!((-2e-3..=25.002).contains(&v), "overshoot {v} at {f}");
             // never outside the two neighbouring keys of its segment
             let j = mono.keys.partition_point(|k| k.frame <= f).clamp(1, n - 1);
-            let (lo, hi) = (
-                mono.keys[j - 1].value.min(mono.keys[j].value),
-                mono.keys[j - 1].value.max(mono.keys[j].value),
-            );
-            assert!(
-                v >= lo - 2e-3 && v <= hi + 2e-3,
-                "segment overshoot at {f}: {v} not in [{lo},{hi}]"
-            );
+            let (lo, hi) = (mono.keys[j - 1].value.min(mono.keys[j].value), mono.keys[j - 1].value.max(mono.keys[j].value));
+            assert!(v >= lo - 2e-3 && v <= hi + 2e-3, "segment overshoot at {f}: {v} not in [{lo},{hi}]");
             prev = v;
             let c = cr.eval(f).unwrap();
             if c > hi + 0.05 || c < lo - 0.05 {
                 cr_over = true;
             }
         }
-        assert!(
-            cr_over,
-            "test data must actually make Catmull-Rom overshoot"
-        );
+        assert!(cr_over, "test data must actually make Catmull-Rom overshoot");
     }
 
     #[test]
     fn monotone_tangents_are_zero_at_extrema_and_limited() {
-        let keys = Track::with_keys(&[
-            (0.0, 0.0, Ease::Linear),
-            (1.0, 5.0, Ease::Linear),
-            (2.0, 0.0, Ease::Linear),
-            (3.0, 0.1, Ease::Linear),
-        ])
-        .keys;
+        let keys = Track::with_keys(&[(0.0, 0.0, Ease::Linear), (1.0, 5.0, Ease::Linear), (2.0, 0.0, Ease::Linear), (3.0, 0.1, Ease::Linear)]).keys;
         let m = tangents(&keys, TangentKind::Monotone);
         assert_eq!(m[1], 0.0, "local maximum");
         assert_eq!(m[2], 0.0, "local minimum");
-        let flat = Track::with_keys(&[
-            (0.0, 1.0, Ease::Linear),
-            (1.0, 1.0, Ease::Linear),
-            (2.0, 3.0, Ease::Linear),
-        ])
-        .keys;
+        let flat = Track::with_keys(&[(0.0, 1.0, Ease::Linear), (1.0, 1.0, Ease::Linear), (2.0, 3.0, Ease::Linear)]).keys;
         let mf = tangents(&flat, TangentKind::Monotone);
         assert_eq!((mf[0], mf[1]), (0.0, 0.0));
         assert_eq!(tangents(&[], TangentKind::Monotone), Vec::<f32>::new());
@@ -780,24 +545,11 @@ mod tests {
 
     #[test]
     fn auto_mode_sets_both_handles_to_thirds_with_equal_slope() {
-        let mut t = tr(&[
-            (0.0, 0.0, Ease::Linear),
-            (10.0, 4.0, Ease::Linear),
-            (20.0, 20.0, Ease::Linear),
-        ]);
-        set_handle(
-            &mut t,
-            1,
-            Side::Out,
-            HandlePos { t: 0.0, v: 0.0 },
-            HandleMode::Auto,
-        )
-        .unwrap();
+        let mut t = tr(&[(0.0, 0.0, Ease::Linear), (10.0, 4.0, Ease::Linear), (20.0, 20.0, Ease::Linear)]);
+        set_handle(&mut t, 1, Side::Out, HandlePos { t: 0.0, v: 0.0 }, HandleMode::Auto).unwrap();
         let h = handles(&t)[1];
         let (i, o) = (h.inn.unwrap(), h.out.unwrap());
-        assert!(
-            (i.t - (10.0 - 10.0 / 3.0)).abs() < 1e-4 && (o.t - (10.0 + 10.0 / 3.0)).abs() < 1e-4
-        );
+        assert!((i.t - (10.0 - 10.0 / 3.0)).abs() < 1e-4 && (o.t - (10.0 + 10.0 / 3.0)).abs() < 1e-4);
         let (si, so) = ((4.0 - i.v) / (10.0 - i.t), (o.v - 4.0) / (o.t - 10.0));
         assert!((si - so).abs() < 1e-4);
         let m = tangents(&t.keys, TangentKind::Monotone)[1];
@@ -806,12 +558,7 @@ mod tests {
 
     #[test]
     fn smooth_segments_only_touches_requested_and_flat_falls_back_to_linear() {
-        let mut t = tr(&[
-            (0.0, 0.0, Ease::Step),
-            (5.0, 5.0, Ease::Step),
-            (10.0, 5.0, Ease::Step),
-            (15.0, 9.0, Ease::Linear),
-        ]);
+        let mut t = tr(&[(0.0, 0.0, Ease::Step), (5.0, 5.0, Ease::Step), (10.0, 5.0, Ease::Step), (15.0, 9.0, Ease::Linear)]);
         let n = smooth_segments(&mut t, &[1, 2, 3], TangentKind::Monotone);
         assert_eq!(n, 2, "the last key starts no segment");
         assert!(matches!(t.keys[0].ease, Ease::Step), "untouched");

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
 use crate::anim::{Ease, Track};
-use crate::fx::{Blob, BoolOp, EmitterSpec};
 use crate::math::{Affine2, Vec2};
 use crate::path::{BoneWeight, VPath};
 use crate::rig::{dist_to_segment, fk, resolve_parents, BonePose};
+use crate::fx::{Blob, BoolOp, EmitterSpec};
 use crate::style::{Blend, Paint, Rgba, StrokeStyle};
 use serde::{Deserialize, Serialize};
 
@@ -31,13 +31,7 @@ pub struct Bone {
 }
 
 impl Bone {
-    pub fn new(
-        name: &str,
-        parent: Option<&str>,
-        length: f32,
-        offset: Vec2,
-        rest_angle: f32,
-    ) -> Bone {
+    pub fn new(name: &str, parent: Option<&str>, length: f32, offset: Vec2, rest_angle: f32) -> Bone {
         Bone {
             name: name.into(),
             parent: parent.map(String::from),
@@ -200,35 +194,17 @@ pub struct Transform2D {
 
 impl Default for Transform2D {
     fn default() -> Self {
-        Transform2D {
-            position: Vec2::ZERO,
-            rotation: 0.0,
-            scale: one_vec(),
-            skew: 0.0,
-            anchor: Vec2::ZERO,
-        }
+        Transform2D { position: Vec2::ZERO, rotation: 0.0, scale: one_vec(), skew: 0.0, anchor: Vec2::ZERO }
     }
 }
 
 impl Transform2D {
     pub fn matrix(&self) -> Affine2 {
-        compose_transform(
-            self.position,
-            self.rotation,
-            self.scale,
-            self.skew,
-            self.anchor,
-        )
+        compose_transform(self.position, self.rotation, self.scale, self.skew, self.anchor)
     }
 }
 
-pub fn compose_transform(
-    pos: Vec2,
-    rot_deg: f32,
-    scale: Vec2,
-    skew_deg: f32,
-    anchor: Vec2,
-) -> Affine2 {
+pub fn compose_transform(pos: Vec2, rot_deg: f32, scale: Vec2, skew_deg: f32, anchor: Vec2) -> Affine2 {
     Affine2::translate(pos)
         .mul(Affine2::rotate(rot_deg.to_radians()))
         .mul(Affine2::shear_x(skew_deg.to_radians()))
@@ -330,11 +306,7 @@ pub enum Deformer {
 impl Deformer {
     pub fn name(&self) -> &str {
         match self {
-            Deformer::Lattice { name, .. }
-            | Deformer::Spine { name, .. }
-            | Deformer::Pin { name, .. }
-            | Deformer::Cloth { name, .. }
-            | Deformer::Cage { name, .. } => name,
+            Deformer::Lattice { name, .. } | Deformer::Spine { name, .. } | Deformer::Pin { name, .. } | Deformer::Cloth { name, .. } | Deformer::Cage { name, .. } => name,
         }
     }
 }
@@ -388,11 +360,7 @@ impl MeshSpec {
     /// Triangles (as `usize` indices) of this mesh.
     pub fn tri_indices(&self) -> Vec<[usize; 3]> {
         match &self.free {
-            Some(f) => f
-                .triangles
-                .iter()
-                .map(|t| [t[0] as usize, t[1] as usize, t[2] as usize])
-                .collect(),
+            Some(f) => f.triangles.iter().map(|t| [t[0] as usize, t[1] as usize, t[2] as usize]).collect(),
             None => crate::weights::grid_triangles(self.cols, self.rows),
         }
     }
@@ -529,25 +497,10 @@ impl Layer {
         Layer::base(name, LayerKind::Group { layers })
     }
     pub fn switch(name: &str, layers: Vec<Layer>) -> Layer {
-        Layer::base(
-            name,
-            LayerKind::Selector {
-                layers,
-                selected: 0,
-            },
-        )
+        Layer::base(name, LayerKind::Selector { layers, selected: 0 })
     }
     pub fn liquid(name: &str, blobs: Vec<Blob>, fill: Paint) -> Layer {
-        Layer::base(
-            name,
-            LayerKind::Metaball {
-                blobs,
-                threshold: 1.0,
-                cell: 3.0,
-                fill: Some(fill),
-                stroke: None,
-            },
-        )
+        Layer::base(name, LayerKind::Metaball { blobs, threshold: 1.0, cell: 3.0, fill: Some(fill), stroke: None })
     }
     pub fn boolean(name: &str, op: BoolOp, paths: Vec<VPath>) -> Layer {
         Layer::base(name, LayerKind::Boolean { op, paths })
@@ -556,26 +509,11 @@ impl Layer {
         Layer::base(name, LayerKind::Emitter { spec })
     }
     pub fn image(name: &str, source: ImageSource, origin: Vec2) -> Layer {
-        Layer::base(
-            name,
-            LayerKind::Image {
-                source,
-                origin,
-                size: None,
-                mesh: None,
-            },
-        )
+        Layer::base(name, LayerKind::Image { source, origin, size: None, mesh: None })
     }
     /// Embed PNG bytes (self-contained).
     pub fn image_from_png(name: &str, png: &[u8], origin: Vec2) -> Layer {
-        Layer::image(
-            name,
-            ImageSource {
-                file: None,
-                png_base64: Some(crate::base64::encode(png)),
-            },
-            origin,
-        )
+        Layer::image(name, ImageSource { file: None, png_base64: Some(crate::base64::encode(png)) }, origin)
     }
 
     /// Frame-by-frame animation: a switch layer holding one child per drawing
@@ -583,11 +521,7 @@ impl Layer {
     pub fn frame_by_frame(name: &str, drawings: Vec<Vec<VPath>>) -> Layer {
         Layer::switch(
             name,
-            drawings
-                .into_iter()
-                .enumerate()
-                .map(|(i, paths)| Layer::vector(&format!("d{i}"), paths))
-                .collect(),
+            drawings.into_iter().enumerate().map(|(i, paths)| Layer::vector(&format!("d{i}"), paths)).collect(),
         )
     }
 
@@ -691,16 +625,12 @@ impl Prop {
         use Prop::*;
         match self {
             BoneAngle | BoneScale | BoneOffsetX | BoneOffsetY => TargetKind::Bone,
-            LayerOpacity | LayerX | LayerY | LayerRotation | LayerScaleX | LayerScaleY
-            | LayerSkew | LayerSwitch | LayerWobble => TargetKind::Layer,
-            CameraX | CameraY | CameraZoom | CameraRotation | CameraFocus | CameraBlur => {
-                TargetKind::Camera
-            }
+            LayerOpacity | LayerX | LayerY | LayerRotation | LayerScaleX | LayerScaleY | LayerSkew
+            | LayerSwitch | LayerWobble => TargetKind::Layer,
+            CameraX | CameraY | CameraZoom | CameraRotation | CameraFocus | CameraBlur => TargetKind::Camera,
             IkMix => TargetKind::Ik,
             ConstraintWeight => TargetKind::Constraint,
-            PathMorph | PointDx | PointDy | LatticeDx | LatticeDy | SpineDx | SpineDy | PinDx
-            | PinDy | CageDx | CageDy | FxBlur | FxDx | FxDy | FxSoft | FxAmount | GradDx
-            | GradDy => TargetKind::Sub,
+            PathMorph | PointDx | PointDy | LatticeDx | LatticeDy | SpineDx | SpineDy | PinDx | PinDy | CageDx | CageDy | FxBlur | FxDx | FxDy | FxSoft | FxAmount | GradDx | GradDy => TargetKind::Sub,
         }
     }
 
@@ -739,11 +669,7 @@ pub enum Source {
     },
     /// Driven key: the curve maps another value (`input`/`input_prop`) to this one.
     /// The curve's "frames" are input values (e.g. elbow angle → bulge amount).
-    Driven {
-        input: String,
-        input_prop: Prop,
-        curve: Track,
-    },
+    Driven { input: String, input_prop: Prop, curve: Track },
 }
 
 fn one_u() -> u32 {
@@ -769,62 +695,32 @@ pub struct Channel {
 
 impl Channel {
     pub fn keys(target: &str, prop: Prop, track: Track) -> Channel {
-        Channel {
-            target: target.into(),
-            prop,
-            source: Source::Keys { track },
-            mode: Mode::Replace,
-            weight: 1.0,
-        }
+        Channel { target: target.into(), prop, source: Source::Keys { track }, mode: Mode::Replace, weight: 1.0 }
     }
     pub fn expr(target: &str, prop: Prop, expr: &str, mode: Mode) -> Channel {
-        Channel {
-            target: target.into(),
-            prop,
-            source: Source::Expr { expr: expr.into() },
-            mode,
-            weight: 1.0,
-        }
+        Channel { target: target.into(), prop, source: Source::Expr { expr: expr.into() }, mode, weight: 1.0 }
     }
     pub fn noise(target: &str, prop: Prop, amp: f32, freq: f32, seed: u32) -> Channel {
         Channel {
             target: target.into(),
             prop,
-            source: Source::Noise {
-                amp,
-                freq,
-                seed,
-                octaves: 2,
-            },
+            source: Source::Noise { amp, freq, seed, octaves: 2 },
             mode: Mode::Add,
             weight: 1.0,
         }
     }
-    pub fn driven(
-        target: &str,
-        prop: Prop,
-        input: &str,
-        input_prop: Prop,
-        curve: Track,
-    ) -> Channel {
+    pub fn driven(target: &str, prop: Prop, input: &str, input_prop: Prop, curve: Track) -> Channel {
         Channel {
             target: target.into(),
             prop,
-            source: Source::Driven {
-                input: input.into(),
-                input_prop,
-                curve,
-            },
+            source: Source::Driven { input: input.into(), input_prop, curve },
             mode: Mode::Replace,
             weight: 1.0,
         }
     }
     /// Frame-by-frame exposure sheet: `(frame, drawing index)` pairs held with step interpolation.
     pub fn exposure(target: &str, exposures: &[(f32, usize)]) -> Channel {
-        let keys: Vec<(f32, f32, Ease)> = exposures
-            .iter()
-            .map(|&(f, i)| (f, i as f32, Ease::Step))
-            .collect();
+        let keys: Vec<(f32, f32, Ease)> = exposures.iter().map(|&(f, i)| (f, i as f32, Ease::Step)).collect();
         Channel::keys(target, Prop::LayerSwitch, Track::with_keys(&keys))
     }
     pub fn with_mode(mut self, m: Mode) -> Self {
@@ -867,13 +763,7 @@ fn is_default_blur(v: &f32) -> bool {
 
 impl Default for Camera {
     fn default() -> Self {
-        Camera {
-            position: None,
-            zoom: 1.0,
-            rotation: 0.0,
-            focus: 1.0,
-            blur: 12.0,
-        }
+        Camera { position: None, zoom: 1.0, rotation: 0.0, focus: 1.0, blur: 12.0 }
     }
 }
 
@@ -907,6 +797,7 @@ impl ColorSpace {
         }
     }
 }
+
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Project {
@@ -1074,9 +965,7 @@ impl Project {
     pub fn is_layer_locked(&self, path: &str) -> bool {
         let mut layers: &[Layer] = &self.layers;
         for part in path.split('/') {
-            let Some(l) = layers.iter().find(|l| l.name == part) else {
-                return false;
-            };
+            let Some(l) = layers.iter().find(|l| l.name == part) else { return false };
             if l.locked {
                 return true;
             }
@@ -1102,11 +991,7 @@ impl Project {
     pub fn layer_paths(&self) -> Vec<String> {
         fn walk(ls: &[Layer], prefix: &str, out: &mut Vec<String>) {
             for l in ls {
-                let p = if prefix.is_empty() {
-                    l.name.clone()
-                } else {
-                    format!("{prefix}/{}", l.name)
-                };
+                let p = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
                 out.push(p.clone());
                 walk(l.children(), &p, out);
             }
@@ -1139,9 +1024,7 @@ impl Project {
     /// anchor), measured in the rest pose. Image layers with a mesh are skinned too.
     pub fn auto_skin(&mut self, layer: &str, max_influences: usize) -> Result<(), String> {
         let (segs, names) = self.bone_segments()?;
-        let layer = self
-            .find_layer_mut(layer)
-            .ok_or_else(|| format!("no layer at '{layer}'"))?;
+        let layer = self.find_layer_mut(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
         skin_layer(layer, &segs, &names, max_influences.max(1));
         Ok(())
     }
@@ -1151,25 +1034,13 @@ impl Project {
     /// Skin the mesh of an image layer by harmonic diffusion on the mesh graph
     /// (see `weights`): smooth, partition of unity, no leaking across gaps.
     /// Needs the layer's `mesh` and displayed `size`.
-    pub fn auto_skin_diffuse(
-        &mut self,
-        layer: &str,
-        max_influences: usize,
-        opts: crate::weights::DiffusionOptions,
-    ) -> Result<(), String> {
+    pub fn auto_skin_diffuse(&mut self, layer: &str, max_influences: usize, opts: crate::weights::DiffusionOptions) -> Result<(), String> {
         let (segs, names) = self.bone_segments()?;
-        let l = self
-            .find_layer_mut(layer)
-            .ok_or_else(|| format!("no layer at '{layer}'"))?;
-        let LayerKind::Image {
-            origin, size, mesh, ..
-        } = &mut l.kind
-        else {
+        let l = self.find_layer_mut(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
+        let LayerKind::Image { origin, size, mesh, .. } = &mut l.kind else {
             return Err(format!("layer '{layer}' is not an image layer"));
         };
-        let m = mesh
-            .as_mut()
-            .ok_or_else(|| format!("layer '{layer}' has no mesh"))?;
+        let m = mesh.as_mut().ok_or_else(|| format!("layer '{layer}' has no mesh"))?;
         let sz = size.ok_or_else(|| format!("layer '{layer}' needs an explicit size"))?;
         let verts = m.rest_vertices(*origin, sz);
         let tris = m.tri_indices();
@@ -1181,25 +1052,13 @@ impl Project {
 
 /// Inverse-distance weights of `p` against the bone segments (top `k`, normalised).
 fn weights_for(p: Vec2, segs: &[(Vec2, Vec2)], names: &[String], k: usize) -> Vec<BoneWeight> {
-    let mut cand: Vec<(usize, f32)> = segs
-        .iter()
-        .enumerate()
-        .map(|(i, &(a, b))| (i, dist_to_segment(p, a, b)))
-        .collect();
+    let mut cand: Vec<(usize, f32)> =
+        segs.iter().enumerate().map(|(i, &(a, b))| (i, dist_to_segment(p, a, b))).collect();
     cand.sort_by(|x, y| x.1.total_cmp(&y.1));
     cand.truncate(k);
-    let ws: Vec<f32> = cand
-        .iter()
-        .map(|&(_, d)| 1.0 / ((d + 6.0) * (d + 6.0)))
-        .collect();
+    let ws: Vec<f32> = cand.iter().map(|&(_, d)| 1.0 / ((d + 6.0) * (d + 6.0))).collect();
     let sum: f32 = ws.iter().sum();
-    cand.iter()
-        .zip(&ws)
-        .map(|(&(i, _), &w)| BoneWeight {
-            bone: names[i].clone(),
-            weight: w / sum,
-        })
-        .collect()
+    cand.iter().zip(&ws).map(|(&(i, _), &w)| BoneWeight { bone: names[i].clone(), weight: w / sum }).collect()
 }
 
 fn skin_layer(l: &mut Layer, segs: &[(Vec2, Vec2)], names: &[String], k: usize) {
@@ -1216,15 +1075,12 @@ fn skin_layer(l: &mut Layer, segs: &[(Vec2, Vec2)], names: &[String], k: usize) 
                 skin_layer(c, segs, names, k);
             }
         }
-        LayerKind::Image {
-            origin, size, mesh, ..
-        } => {
+        LayerKind::Image { origin, size, mesh, .. } => {
             if let Some(m) = mesh {
                 // Vertex positions need the displayed size; without it (pixel size unknown
                 // here) fall back to a 1:1 pixel grid only when `size` is given.
                 let Some(sz) = *size else { return };
-                m.weights = m
-                    .rest_vertices(*origin, sz)
+                m.weights = m.rest_vertices(*origin, sz)
                     .into_iter()
                     .map(|p| weights_for(p, segs, names, k))
                     .collect();
@@ -1240,13 +1096,7 @@ pub fn mesh_vertices(origin: Vec2, size: Vec2, cols: usize, rows: usize) -> Vec<
     let mut v = Vec::with_capacity((cols + 1) * (rows + 1));
     for r in 0..=rows {
         for c in 0..=cols {
-            v.push(
-                origin
-                    + Vec2::new(
-                        size.x * c as f32 / cols as f32,
-                        size.y * r as f32 / rows as f32,
-                    ),
-            );
+            v.push(origin + Vec2::new(size.x * c as f32 / cols as f32, size.y * r as f32 / rows as f32));
         }
     }
     v
@@ -1260,18 +1110,11 @@ mod tests {
     fn switch_and_liquid_keep_their_file_names_and_the_new_names_are_read_aliases() {
         let sw = Layer::switch("s", vec![]);
         let lq = Layer::liquid("l", vec![], Paint::solid("#ffffff"));
-        let (a, b) = (
-            serde_json::to_value(&sw).unwrap(),
-            serde_json::to_value(&lq).unwrap(),
-        );
+        let (a, b) = (serde_json::to_value(&sw).unwrap(), serde_json::to_value(&lq).unwrap());
         assert_eq!(a["type"], "switch");
         assert_eq!(b["type"], "liquid");
         for (alias, want) in [("selector", &sw), ("metaball", &lq)] {
-            let mut v = if alias == "selector" {
-                a.clone()
-            } else {
-                b.clone()
-            };
+            let mut v = if alias == "selector" { a.clone() } else { b.clone() };
             v["type"] = alias.into();
             let back: Layer = serde_json::from_value(v).unwrap();
             assert_eq!(&back, want, "{alias}");
@@ -1280,13 +1123,7 @@ mod tests {
 
     #[test]
     fn layer_json_is_flat_and_round_trips() {
-        let l = Layer::group(
-            "g",
-            vec![Layer::vector(
-                "v",
-                vec![VPath::rect("r", 0.0, 0.0, 1.0, 1.0)],
-            )],
-        );
+        let l = Layer::group("g", vec![Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 1.0, 1.0)])]);
         let json = serde_json::to_string(&l).unwrap();
         assert!(json.contains("\"type\":\"group\""), "{json}");
         let back: Layer = serde_json::from_str(&json).unwrap();
@@ -1296,11 +1133,7 @@ mod tests {
     #[test]
     fn channel_json_round_trips_for_every_source() {
         let chans = vec![
-            Channel::keys(
-                "a",
-                Prop::BoneAngle,
-                Track::with_keys(&[(0.0, 1.0, Ease::Linear)]),
-            ),
+            Channel::keys("a", Prop::BoneAngle, Track::with_keys(&[(0.0, 1.0, Ease::Linear)])),
             Channel::expr("a", Prop::BoneScale, "1 + 0.1 * sin(time)", Mode::Replace),
             Channel::noise("a", Prop::BoneOffsetX, 3.0, 2.0, 9),
             Channel::driven("a", Prop::BoneOffsetY, "b", Prop::BoneAngle, Track::new()),
@@ -1318,59 +1151,17 @@ mod tests {
         p.bones = vec![Bone::new("a", None, 1.0, Vec2::ZERO, 0.0).with_angle_limits(-10.0, 90.0)];
         p.ik = vec![IkChain::chain("tail", &["a", "b", "c"], "t")];
         p.constraints = vec![
-            Constraint {
-                name: "aim".into(),
-                bone: "a".into(),
-                kind: ConstraintKind::Aim {
-                    target: "t".into(),
-                    offset: 5.0,
-                },
-                weight: 0.5,
-            },
-            Constraint {
-                name: "cp".into(),
-                bone: "a".into(),
-                kind: ConstraintKind::CopyRotation { source: "b".into() },
-                weight: 1.0,
-            },
-            Constraint {
-                name: "pin".into(),
-                bone: "a".into(),
-                kind: ConstraintKind::Pin { target: "t".into() },
-                weight: 1.0,
-            },
+            Constraint { name: "aim".into(), bone: "a".into(), kind: ConstraintKind::Aim { target: "t".into(), offset: 5.0 }, weight: 0.5 },
+            Constraint { name: "cp".into(), bone: "a".into(), kind: ConstraintKind::CopyRotation { source: "b".into() }, weight: 1.0 },
+            Constraint { name: "pin".into(), bone: "a".into(), kind: ConstraintKind::Pin { target: "t".into() }, weight: 1.0 },
         ];
-        p.springs = vec![Spring {
-            bone: "a".into(),
-            frequency: 2.0,
-            damping: 0.4,
-            warmup: true,
-        }];
-        let mut l = Layer::vector(
-            "v",
-            vec![VPath::rect("r", 0.0, 0.0, 1.0, 1.0).with_morph("m", |a| a.clone())],
-        );
+        p.springs = vec![Spring { bone: "a".into(), frequency: 2.0, damping: 0.4, warmup: true }];
+        let mut l = Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 1.0, 1.0).with_morph("m", |a| a.clone())]);
         l.deformers = vec![
-            Deformer::Lattice {
-                name: "lat".into(),
-                cols: 2,
-                rows: 2,
-                rect: [0.0, 0.0, 1.0, 1.0],
-                offsets: vec![],
-            },
-            Deformer::Spine {
-                name: "sp".into(),
-                rest: vec![Vec2::ZERO, Vec2::new(1.0, 0.0)],
-                offsets: vec![],
-                radius: Some(5.0),
-            },
+            Deformer::Lattice { name: "lat".into(), cols: 2, rows: 2, rect: [0.0, 0.0, 1.0, 1.0], offsets: vec![] },
+            Deformer::Spine { name: "sp".into(), rest: vec![Vec2::ZERO, Vec2::new(1.0, 0.0)], offsets: vec![], radius: Some(5.0) },
         ];
-        l.wobble = Some(Wobble {
-            amp: 1.0,
-            scale: 0.05,
-            rate: 8.0,
-            seed: 3,
-        });
+        l.wobble = Some(Wobble { amp: 1.0, scale: 0.05, rate: 8.0, seed: 3 });
         p.layers = vec![l, Layer::image_from_png("img", &[1, 2, 3], Vec2::ZERO)];
         let back = Project::from_json(&p.to_json_pretty()).unwrap();
         assert_eq!(p, back);
@@ -1388,12 +1179,7 @@ mod tests {
 
     #[test]
     fn transform_matrix_order() {
-        let t = Transform2D {
-            position: Vec2::new(10.0, 0.0),
-            scale: Vec2::new(2.0, 2.0),
-            anchor: Vec2::new(1.0, 0.0),
-            ..Default::default()
-        };
+        let t = Transform2D { position: Vec2::new(10.0, 0.0), scale: Vec2::new(2.0, 2.0), anchor: Vec2::new(1.0, 0.0), ..Default::default() };
         let m = t.matrix();
         assert!(m.apply(Vec2::new(1.0, 0.0)).distance(Vec2::new(10.0, 0.0)) < 1e-5);
         assert!(m.apply(Vec2::new(2.0, 0.0)).distance(Vec2::new(12.0, 0.0)) < 1e-5);
@@ -1427,10 +1213,7 @@ mod tests {
     #[test]
     fn layer_lock_flag_is_saved_only_when_set_and_old_projects_load() {
         let mut l = Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 1.0, 1.0)]);
-        assert!(
-            !serde_json::to_string(&l).unwrap().contains("locked"),
-            "default is not written"
-        );
+        assert!(!serde_json::to_string(&l).unwrap().contains("locked"), "default is not written");
         let old: Layer = serde_json::from_str(&serde_json::to_string(&l).unwrap()).unwrap();
         assert!(!old.locked);
         l.locked = true;
@@ -1444,16 +1227,7 @@ mod tests {
     #[test]
     fn a_locked_group_locks_everything_below_it() {
         let mut p = Project::new("t", 10.0, 10.0, 24.0, 5);
-        p.layers = vec![
-            Layer::group(
-                "g",
-                vec![
-                    Layer::vector("c", vec![]),
-                    Layer::group("h", vec![Layer::vector("d", vec![])]),
-                ],
-            ),
-            Layer::vector("o", vec![]),
-        ];
+        p.layers = vec![Layer::group("g", vec![Layer::vector("c", vec![]), Layer::group("h", vec![Layer::vector("d", vec![])])]), Layer::vector("o", vec![])];
         assert!(!p.is_layer_locked("g/c") && !p.is_layer_locked("nope"));
         p.find_layer_mut("g").unwrap().locked = true;
         assert!(p.is_layer_locked("g") && p.is_layer_locked("g/c") && p.is_layer_locked("g/h/d"));

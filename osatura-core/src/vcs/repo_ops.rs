@@ -72,8 +72,7 @@ impl Repo {
         if self.read_ref_file(&format!("refs/heads/{name}"))?.is_none() {
             return Err(format!("no branch '{name}'"));
         }
-        fs::remove_file(self.dir.join("refs/heads").join(name))
-            .map_err(|e| format!("cannot delete branch: {e}"))
+        fs::remove_file(self.dir.join("refs/heads").join(name)).map_err(|e| format!("cannot delete branch: {e}"))
     }
 
     pub fn tag_create(&self, name: &str, at: Option<&str>) -> Result<String, String> {
@@ -96,15 +95,8 @@ impl Repo {
         }
         let doc = self.doc_of(&h)?;
         self.write_working(&doc)?;
-        if valid_ref_name(target).is_ok()
-            && self
-                .read_ref_file(&format!("refs/heads/{target}"))?
-                .is_some()
-        {
-            write_atomic(
-                &self.dir.join("HEAD"),
-                format!("ref: refs/heads/{target}\n").as_bytes(),
-            )?;
+        if valid_ref_name(target).is_ok() && self.read_ref_file(&format!("refs/heads/{target}"))?.is_some() {
+            write_atomic(&self.dir.join("HEAD"), format!("ref: refs/heads/{target}\n").as_bytes())?;
         } else {
             write_atomic(&self.dir.join("HEAD"), format!("{h}\n").as_bytes())?;
         }
@@ -122,16 +114,7 @@ impl Repo {
 
     // internal merge helper threading one merge context; kept flat to match its callers.
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn apply_three_way(
-        &self,
-        kind: &str,
-        base: &Value,
-        ours: &Value,
-        theirs: &Value,
-        second_parent: Option<String>,
-        message: String,
-        author: Option<&str>,
-    ) -> Result<MergeOutcome, String> {
+    pub(super) fn apply_three_way(&self, kind: &str, base: &Value, ours: &Value, theirs: &Value, second_parent: Option<String>, message: String, author: Option<&str>) -> Result<MergeOutcome, String> {
         let (merged, conflicts) = semdiff::merge_docs(base, ours, theirs);
         self.write_working(&merged)?;
         if conflicts.is_empty() {
@@ -144,27 +127,14 @@ impl Repo {
             self.set_head_commit(&h)?;
             return Ok(MergeOutcome::Merged(h));
         }
-        self.save_state(&MergeState {
-            kind: kind.to_string(),
-            theirs: second_parent,
-            message,
-            conflicts: conflicts.clone(),
-        })?;
+        self.save_state(&MergeState { kind: kind.to_string(), theirs: second_parent, message, conflicts: conflicts.clone() })?;
         Ok(MergeOutcome::Conflicted(conflicts))
     }
 
     /// Merge `rev` into the current branch. Fast-forwards when possible (unless `no_ff`).
-    pub fn merge(
-        &self,
-        rev: &str,
-        no_ff: bool,
-        message: Option<&str>,
-        author: Option<&str>,
-    ) -> Result<MergeOutcome, String> {
+    pub fn merge(&self, rev: &str, no_ff: bool, message: Option<&str>, author: Option<&str>) -> Result<MergeOutcome, String> {
         self.require_no_merge()?;
-        let head = self
-            .head_commit()?
-            .ok_or("nothing to merge into: there are no commits yet")?;
+        let head = self.head_commit()?.ok_or("nothing to merge into: there are no commits yet")?;
         let theirs = self.resolve_rev(rev)?;
         self.require_clean()?;
         let base = self.merge_base(&head, &theirs)?;
@@ -181,21 +151,11 @@ impl Repo {
             Some(b) => self.doc_of(b)?,
             None => Value::Object(Default::default()),
         };
-        let msg = message
-            .map(String::from)
-            .unwrap_or_else(|| match self.current_branch() {
-                Ok(Some(b)) => format!("Merge {rev} into {b}"),
-                _ => format!("Merge {rev}"),
-            });
-        self.apply_three_way(
-            "merge",
-            &base_doc,
-            &self.doc_of(&head)?,
-            &theirs_doc,
-            Some(theirs),
-            msg,
-            author,
-        )
+        let msg = message.map(String::from).unwrap_or_else(|| match self.current_branch() {
+            Ok(Some(b)) => format!("Merge {rev} into {b}"),
+            _ => format!("Merge {rev}"),
+        });
+        self.apply_three_way("merge", &base_doc, &self.doc_of(&head)?, &theirs_doc, Some(theirs), msg, author)
     }
 
     /// Replay the change a commit made (relative to its first parent) onto the current state.
@@ -209,15 +169,7 @@ impl Repo {
             Some(p) => self.doc_of(p)?,
             None => Value::Object(Default::default()),
         };
-        self.apply_three_way(
-            "cherry-pick",
-            &base,
-            &self.doc_of(&head)?,
-            &self.read_tree(&commit.tree)?,
-            None,
-            commit.message.clone(),
-            author,
-        )
+        self.apply_three_way("cherry-pick", &base, &self.doc_of(&head)?, &self.read_tree(&commit.tree)?, None, commit.message.clone(), author)
     }
 
     /// Undo the change a commit made (relative to its first parent) on the current state.
@@ -227,20 +179,9 @@ impl Repo {
         self.require_clean()?;
         let c = self.resolve_rev(rev)?;
         let commit = self.read_commit(&c)?;
-        let parent = commit
-            .parents
-            .first()
-            .ok_or("cannot revert the root commit")?;
+        let parent = commit.parents.first().ok_or("cannot revert the root commit")?;
         let msg = format!("Revert \"{}\"", commit.message.lines().next().unwrap_or(""));
-        self.apply_three_way(
-            "revert",
-            &self.read_tree(&commit.tree)?,
-            &self.doc_of(&head)?,
-            &self.doc_of(parent)?,
-            None,
-            msg,
-            author,
-        )
+        self.apply_three_way("revert", &self.read_tree(&commit.tree)?, &self.doc_of(&head)?, &self.doc_of(parent)?, None, msg, author)
     }
 
     /// Drop an in-progress merge / cherry-pick / revert and restore the committed project.
@@ -256,11 +197,7 @@ impl Repo {
     /// Resolve one recorded conflict by its path.
     pub fn resolve(&self, path: &str, choice: &Choice) -> Result<usize, String> {
         let mut st = self.load_state()?.ok_or("no merge in progress")?;
-        let idx = st
-            .conflicts
-            .iter()
-            .position(|c| c.path == path)
-            .ok_or_else(|| format!("no conflict at '{path}' (see 'vcs status')"))?;
+        let idx = st.conflicts.iter().position(|c| c.path == path).ok_or_else(|| format!("no conflict at '{path}' (see 'vcs status')"))?;
         let mut doc = self.read_working()?;
         semdiff::resolve_in(&mut doc, &st.conflicts[idx], choice)?;
         self.write_working(&doc)?;
@@ -298,11 +235,7 @@ impl Repo {
             stack.extend(c.parents.iter().cloned());
             let t = self.get_json(&c.tree, "tree")?;
             seen.insert(c.tree.clone());
-            for (_, ph) in t
-                .get("parts")
-                .and_then(|p| p.as_object())
-                .ok_or("tree has no parts")?
-            {
+            for (_, ph) in t.get("parts").and_then(|p| p.as_object()).ok_or("tree has no parts")? {
                 let ph = ph.as_str().ok_or("tree part hash is not text")?;
                 if !is_hash(ph) {
                     return Err("tree holds a malformed hash".into());
@@ -316,16 +249,13 @@ impl Repo {
     /// Delete objects no ref (branch, tag, HEAD, pending merge) reaches. Aborts without deleting
     /// anything if the reachable history cannot be read.
     pub fn gc(&self) -> Result<GcReport, String> {
-        let keep = self
-            .reachable()
-            .map_err(|e| format!("gc aborted, nothing deleted: {e}"))?;
+        let keep = self.reachable().map_err(|e| format!("gc aborted, nothing deleted: {e}"))?;
         let mut rep = GcReport::default();
         for h in self.all_object_names()? {
             if keep.contains(&h) {
                 rep.kept += 1;
             } else {
-                fs::remove_file(self.obj_path(&h)?)
-                    .map_err(|e| format!("cannot delete object: {e}"))?;
+                fs::remove_file(self.obj_path(&h)?).map_err(|e| format!("cannot delete object: {e}"))?;
                 rep.removed += 1;
             }
         }
@@ -367,65 +297,42 @@ impl Repo {
                     }
                 };
                 if sha256_hex(&bytes) != name {
-                    bad.push(format!(
-                        "object {}: content does not match its hash (corrupt)",
-                        &name[..12]
-                    ));
+                    bad.push(format!("object {}: content does not match its hash (corrupt)", &name[..12]));
                     continue;
                 }
                 match decode_object(&bytes) {
                     Err(e) => bad.push(format!("object {}: {e}", &name[..12])),
-                    Ok((kind, payload)) => {
-                        match (kind.as_str(), serde_json::from_slice::<Value>(&payload)) {
-                            (_, Err(e)) => bad
-                                .push(format!("object {}: payload is not JSON ({e})", &name[..12])),
-                            ("commit", Ok(v)) => match serde_json::from_value::<Commit>(v) {
-                                Err(e) => {
-                                    bad.push(format!("commit {}: malformed ({e})", &name[..12]))
-                                }
-                                Ok(c) => {
-                                    let mut refs = vec![(c.tree.clone(), "tree")];
-                                    refs.extend(c.parents.iter().map(|p| (p.clone(), "commit")));
-                                    for (r, k) in refs {
-                                        match self.get_object(&r) {
-                                            Ok((rk, _)) if rk == k => {}
-                                            Ok((rk, _)) => bad.push(format!(
-                                                "commit {}: {k} {} is a {rk}",
-                                                &name[..12],
-                                                &r[..r.len().min(12)]
-                                            )),
-                                            Err(e) => {
-                                                bad.push(format!("commit {}: {e}", &name[..12]))
-                                            }
-                                        }
+                    Ok((kind, payload)) => match (kind.as_str(), serde_json::from_slice::<Value>(&payload)) {
+                        (_, Err(e)) => bad.push(format!("object {}: payload is not JSON ({e})", &name[..12])),
+                        ("commit", Ok(v)) => match serde_json::from_value::<Commit>(v) {
+                            Err(e) => bad.push(format!("commit {}: malformed ({e})", &name[..12])),
+                            Ok(c) => {
+                                let mut refs = vec![(c.tree.clone(), "tree")];
+                                refs.extend(c.parents.iter().map(|p| (p.clone(), "commit")));
+                                for (r, k) in refs {
+                                    match self.get_object(&r) {
+                                        Ok((rk, _)) if rk == k => {}
+                                        Ok((rk, _)) => bad.push(format!("commit {}: {k} {} is a {rk}", &name[..12], &r[..r.len().min(12)])),
+                                        Err(e) => bad.push(format!("commit {}: {e}", &name[..12])),
                                     }
                                 }
-                            },
-                            ("tree", Ok(v)) => match v.get("parts").and_then(|p| p.as_object()) {
-                                None => bad.push(format!("tree {}: no parts", &name[..12])),
-                                Some(p) => {
-                                    for (pn, ph) in p {
-                                        match ph.as_str().map(|h| self.get_object(h)) {
-                                            Some(Ok((k, _))) if k == "blob" => {}
-                                            Some(Ok((k, _))) => bad.push(format!(
-                                                "tree {}: part {pn} is a {k}",
-                                                &name[..12]
-                                            )),
-                                            Some(Err(e)) => bad.push(format!(
-                                                "tree {}: part {pn}: {e}",
-                                                &name[..12]
-                                            )),
-                                            None => bad.push(format!(
-                                                "tree {}: part {pn} has no hash",
-                                                &name[..12]
-                                            )),
-                                        }
+                            }
+                        },
+                        ("tree", Ok(v)) => match v.get("parts").and_then(|p| p.as_object()) {
+                            None => bad.push(format!("tree {}: no parts", &name[..12])),
+                            Some(p) => {
+                                for (pn, ph) in p {
+                                    match ph.as_str().map(|h| self.get_object(h)) {
+                                        Some(Ok((k, _))) if k == "blob" => {}
+                                        Some(Ok((k, _))) => bad.push(format!("tree {}: part {pn} is a {k}", &name[..12])),
+                                        Some(Err(e)) => bad.push(format!("tree {}: part {pn}: {e}", &name[..12])),
+                                        None => bad.push(format!("tree {}: part {pn} has no hash", &name[..12])),
                                     }
                                 }
-                            },
-                            _ => {}
-                        }
-                    }
+                            }
+                        },
+                        _ => {}
+                    },
                 }
             }
         }

@@ -30,35 +30,18 @@ fn falloff(d: f32, r: f32) -> f32 {
 }
 
 /// Returns the number of frames in which the magnet pulled.
-pub fn bake_magnet(
-    p: &mut Project,
-    ctrl: &str,
-    target: &Target,
-    m: &Magnet,
-) -> Result<usize, String> {
-    if (m.radius.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        || !(0.0..=1.0).contains(&m.strength)
-        || !m.radius.is_finite()
-    {
+pub fn bake_magnet(p: &mut Project, ctrl: &str, target: &Target, m: &Magnet) -> Result<usize, String> {
+    if (m.radius.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !(0.0..=1.0).contains(&m.strength) || !m.radius.is_finite() {
         return Err("radius must be positive and strength within 0..1".into());
     }
     crate::chanmeta::assert_unlocked(p, ctrl, Prop::BoneOffsetX)?;
     crate::chanmeta::assert_unlocked(p, ctrl, Prop::BoneOffsetY)?;
-    let ci = p
-        .bones
-        .iter()
-        .position(|b| b.name == ctrl)
-        .ok_or_else(|| format!("no bone '{ctrl}'"))?;
+    let ci = p.bones.iter().position(|b| b.name == ctrl).ok_or_else(|| format!("no bone '{ctrl}'"))?;
     if p.bones[ci].parent.is_some() {
         return Err("a magnet needs a root controller bone (no parent)".into());
     }
     let ti = match target {
-        Target::Bone(n) => Some(
-            p.bones
-                .iter()
-                .position(|b| &b.name == n)
-                .ok_or_else(|| format!("no bone '{n}'"))?,
-        ),
+        Target::Bone(n) => Some(p.bones.iter().position(|b| &b.name == n).ok_or_else(|| format!("no bone '{n}'"))?),
         Target::Point(_) => None,
     };
     if ti == Some(ci) {
@@ -76,11 +59,7 @@ pub fn bake_magnet(
             _ => unreachable!(),
         };
         let d = me.distance(goal);
-        let w = if d < m.radius {
-            falloff(d, m.radius) * m.strength
-        } else {
-            0.0
-        };
+        let w = if d < m.radius { falloff(d, m.radius) * m.strength } else { 0.0 };
         if w > 0.0 {
             pulled += 1;
         }
@@ -91,10 +70,8 @@ pub fn bake_magnet(
     if pulled == 0 {
         return Ok(0);
     }
-    p.channels
-        .push(Channel::keys(ctrl, Prop::BoneOffsetX, Track::with_keys(&kx)).with_mode(Mode::Add));
-    p.channels
-        .push(Channel::keys(ctrl, Prop::BoneOffsetY, Track::with_keys(&ky)).with_mode(Mode::Add));
+    p.channels.push(Channel::keys(ctrl, Prop::BoneOffsetX, Track::with_keys(&kx)).with_mode(Mode::Add));
+    p.channels.push(Channel::keys(ctrl, Prop::BoneOffsetY, Track::with_keys(&ky)).with_mode(Mode::Add));
     Ok(pulled)
 }
 
@@ -105,15 +82,8 @@ mod tests {
 
     fn moving() -> Project {
         let mut p = Project::new("m", 300.0, 100.0, 24.0, 21);
-        p.bones = vec![
-            Bone::new("hand", None, 5.0, Vec2::new(0.0, 50.0), 0.0),
-            Bone::new("cup", None, 5.0, Vec2::new(100.0, 50.0), 0.0),
-        ];
-        p.channels = vec![Channel::keys(
-            "hand",
-            Prop::BoneOffsetX,
-            Track::with_keys(&[(0.0, 0.0, Ease::Linear), (20.0, 200.0, Ease::Linear)]),
-        )];
+        p.bones = vec![Bone::new("hand", None, 5.0, Vec2::new(0.0, 50.0), 0.0), Bone::new("cup", None, 5.0, Vec2::new(100.0, 50.0), 0.0)];
+        p.channels = vec![Channel::keys("hand", Prop::BoneOffsetX, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (20.0, 200.0, Ease::Linear)]))];
         p
     }
     fn pos(p: &Project, f: f32) -> Vec2 {
@@ -124,107 +94,29 @@ mod tests {
     #[test]
     fn full_strength_snaps_at_target_and_fades_out() {
         let mut p = moving();
-        let n = bake_magnet(
-            &mut p,
-            "hand",
-            &Target::Bone("cup".into()),
-            &Magnet {
-                radius: 30.0,
-                strength: 1.0,
-            },
-        )
-        .unwrap();
+        let n = bake_magnet(&mut p, "hand", &Target::Bone("cup".into()), &Magnet { radius: 30.0, strength: 1.0 }).unwrap();
         assert!(n > 0);
-        assert!(
-            (pos(&p, 10.0).x - 100.0).abs() < 0.01,
-            "hand passes x=100 at frame 10 and is pinned there"
-        );
-        assert!(
-            (pos(&p, 0.0).x).abs() < 0.01 && (pos(&p, 20.0).x - 200.0).abs() < 0.01,
-            "far away: untouched"
-        );
-        assert!(
-            pos(&p, 8.0).x > 80.0 && pos(&p, 8.0).x < 100.0,
-            "pulled forward but not snapped"
-        );
+        assert!((pos(&p, 10.0).x - 100.0).abs() < 0.01, "hand passes x=100 at frame 10 and is pinned there");
+        assert!((pos(&p, 0.0).x).abs() < 0.01 && (pos(&p, 20.0).x - 200.0).abs() < 0.01, "far away: untouched");
+        assert!(pos(&p, 8.0).x > 80.0 && pos(&p, 8.0).x < 100.0, "pulled forward but not snapped");
     }
 
     #[test]
     fn partial_strength_and_point_target() {
         let mut p = moving();
-        bake_magnet(
-            &mut p,
-            "hand",
-            &Target::Point(Vec2::new(100.0, 70.0)),
-            &Magnet {
-                radius: 40.0,
-                strength: 0.5,
-            },
-        )
-        .unwrap();
+        bake_magnet(&mut p, "hand", &Target::Point(Vec2::new(100.0, 70.0)), &Magnet { radius: 40.0, strength: 0.5 }).unwrap();
         let q = pos(&p, 10.0);
-        assert!(
-            (q.y - 55.0).abs() < 0.01,
-            "distance 20 of radius 40: falloff 0.5 x strength 0.5 = 25% of 20 px"
-        );
+        assert!((q.y - 55.0).abs() < 0.01, "distance 20 of radius 40: falloff 0.5 x strength 0.5 = 25% of 20 px");
     }
 
     #[test]
     fn no_pull_adds_nothing_and_bad_input_fails() {
         let mut p = moving();
-        assert_eq!(
-            bake_magnet(
-                &mut p,
-                "hand",
-                &Target::Point(Vec2::new(1000.0, 1000.0)),
-                &Magnet {
-                    radius: 10.0,
-                    strength: 1.0
-                }
-            )
-            .unwrap(),
-            0
-        );
+        assert_eq!(bake_magnet(&mut p, "hand", &Target::Point(Vec2::new(1000.0, 1000.0)), &Magnet { radius: 10.0, strength: 1.0 }).unwrap(), 0);
         assert_eq!(p.channels.len(), 1);
-        assert!(bake_magnet(
-            &mut p,
-            "hand",
-            &Target::Bone("hand".into()),
-            &Magnet {
-                radius: 10.0,
-                strength: 1.0
-            }
-        )
-        .is_err());
-        assert!(bake_magnet(
-            &mut p,
-            "ghost",
-            &Target::Point(Vec2::ZERO),
-            &Magnet {
-                radius: 10.0,
-                strength: 1.0
-            }
-        )
-        .is_err());
-        assert!(bake_magnet(
-            &mut p,
-            "hand",
-            &Target::Point(Vec2::ZERO),
-            &Magnet {
-                radius: 0.0,
-                strength: 1.0
-            }
-        )
-        .is_err());
-        assert!(bake_magnet(
-            &mut p,
-            "hand",
-            &Target::Point(Vec2::ZERO),
-            &Magnet {
-                radius: 5.0,
-                strength: 2.0
-            }
-        )
-        .is_err());
+        assert!(bake_magnet(&mut p, "hand", &Target::Bone("hand".into()), &Magnet { radius: 10.0, strength: 1.0 }).is_err());
+        assert!(bake_magnet(&mut p, "ghost", &Target::Point(Vec2::ZERO), &Magnet { radius: 10.0, strength: 1.0 }).is_err());
+        assert!(bake_magnet(&mut p, "hand", &Target::Point(Vec2::ZERO), &Magnet { radius: 0.0, strength: 1.0 }).is_err());
+        assert!(bake_magnet(&mut p, "hand", &Target::Point(Vec2::ZERO), &Magnet { radius: 5.0, strength: 2.0 }).is_err());
     }
 }

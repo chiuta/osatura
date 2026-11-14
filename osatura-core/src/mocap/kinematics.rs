@@ -25,11 +25,7 @@ pub(super) fn mmul(a: &M, b: &M) -> M {
 }
 
 pub(super) fn trans(v: V3) -> M {
-    [
-        [1.0, 0.0, 0.0, v[0]],
-        [0.0, 1.0, 0.0, v[1]],
-        [0.0, 0.0, 1.0, v[2]],
-    ]
+    [[1.0, 0.0, 0.0, v[0]], [0.0, 1.0, 0.0, v[1]], [0.0, 0.0, 1.0, v[2]]]
 }
 
 /// Right-handed elementary rotation about axis 0/1/2 by `deg` degrees.
@@ -74,9 +70,7 @@ impl Bvh {
 
     /// Pose of a frame, or the rest pose (all channels zero) for `None`.
     pub fn pose(&self, frame: Option<usize>) -> Pose {
-        let row: Option<&[f64]> = frame
-            .filter(|&f| f < self.frames)
-            .map(|f| &self.data[f * self.num_channels..(f + 1) * self.num_channels]);
+        let row: Option<&[f64]> = frame.filter(|&f| f < self.frames).map(|f| &self.data[f * self.num_channels..(f + 1) * self.num_channels]);
         let mut world: Vec<M> = Vec::with_capacity(self.joints.len());
         for j in &self.joints {
             let mut m = trans(j.offset);
@@ -165,19 +159,8 @@ impl Bvh {
     pub fn summary(&self) -> String {
         let mut s = String::new();
         let n_end = self.joints.iter().filter(|j| j.end_site.is_some()).count();
-        s.push_str(&format!(
-            "{} joints ({} end sites), {} channels per frame\n",
-            self.joints.len(),
-            n_end,
-            self.num_channels
-        ));
-        s.push_str(&format!(
-            "{} frames at {:.4} s ({:.3} fps), duration {:.3} s\n",
-            self.frames,
-            self.frame_time,
-            self.fps(),
-            self.duration()
-        ));
+        s.push_str(&format!("{} joints ({} end sites), {} channels per frame\n", self.joints.len(), n_end, self.num_channels));
+        s.push_str(&format!("{} frames at {:.4} s ({:.3} fps), duration {:.3} s\n", self.frames, self.frame_time, self.fps(), self.duration()));
         fn walk(b: &Bvh, j: usize, depth: usize, s: &mut String) {
             let jt = &b.joints[j];
             let ch: Vec<&str> = jt
@@ -192,15 +175,7 @@ impl Bvh {
                     Chan::Zrot => "Zrot",
                 })
                 .collect();
-            s.push_str(&format!(
-                "{}{}  offset ({:.3}, {:.3}, {:.3})  [{}]\n",
-                "  ".repeat(depth),
-                jt.name,
-                jt.offset[0],
-                jt.offset[1],
-                jt.offset[2],
-                ch.join(" ")
-            ));
+            s.push_str(&format!("{}{}  offset ({:.3}, {:.3}, {:.3})  [{}]\n", "  ".repeat(depth), jt.name, jt.offset[0], jt.offset[1], jt.offset[2], ch.join(" ")));
             for &c in &jt.children {
                 walk(b, c, depth + 1, s);
             }
@@ -220,10 +195,7 @@ impl Bvh {
                     }
                 }
             }
-            s.push_str(&format!(
-                "joint extent over the clip: x {:.2}..{:.2}, y {:.2}..{:.2}, z {:.2}..{:.2}\n",
-                lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]
-            ));
+            s.push_str(&format!("joint extent over the clip: x {:.2}..{:.2}, y {:.2}..{:.2}, z {:.2}..{:.2}\n", lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]));
         }
         s
     }

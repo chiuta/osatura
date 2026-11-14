@@ -23,10 +23,7 @@ pub struct Revision {
 
 impl Snapshots {
     pub fn new(dir: impl AsRef<Path>, keep: usize) -> Snapshots {
-        Snapshots {
-            dir: dir.as_ref().to_path_buf(),
-            keep: keep.max(1),
-        }
+        Snapshots { dir: dir.as_ref().to_path_buf(), keep: keep.max(1) }
     }
 
     pub fn list(&self) -> Vec<Revision> {
@@ -35,17 +32,10 @@ impl Snapshots {
             for e in rd.flatten() {
                 let name = e.file_name().to_string_lossy().to_string();
                 // rev-000012-<hash>.json
-                if let Some(rest) = name
-                    .strip_prefix("rev-")
-                    .and_then(|r| r.strip_suffix(".json"))
-                {
+                if let Some(rest) = name.strip_prefix("rev-").and_then(|r| r.strip_suffix(".json")) {
                     if let Some((n, h)) = rest.split_once('-') {
                         if let Ok(number) = n.parse::<u64>() {
-                            out.push(Revision {
-                                number,
-                                hash: h.to_string(),
-                                path: e.path(),
-                            });
+                            out.push(Revision { number, hash: h.to_string(), path: e.path() });
                         }
                     }
                 }
@@ -57,8 +47,7 @@ impl Snapshots {
 
     /// Save a snapshot unless it is identical to the newest one. Returns the revision if written.
     pub fn save(&self, p: &Project) -> Result<Option<Revision>, String> {
-        fs::create_dir_all(&self.dir)
-            .map_err(|e| format!("cannot create {}: {e}", self.dir.display()))?;
+        fs::create_dir_all(&self.dir).map_err(|e| format!("cannot create {}: {e}", self.dir.display()))?;
         let json = p.to_json_pretty();
         let hash = format!("{:016x}", fnv1a(json.as_bytes()));
         let existing = self.list();
@@ -92,11 +81,7 @@ impl Snapshots {
 
     /// Newest revision that still parses — used after a crash.
     pub fn recover(&self) -> Option<Project> {
-        self.list().iter().rev().find_map(|r| {
-            fs::read_to_string(&r.path)
-                .ok()
-                .and_then(|t| Project::from_json(&t).ok())
-        })
+        self.list().iter().rev().find_map(|r| fs::read_to_string(&r.path).ok().and_then(|t| Project::from_json(&t).ok()))
     }
 }
 
@@ -115,10 +100,7 @@ mod tests {
         let s = Snapshots::new(&d, 3);
         let mut p = demo::project();
         assert!(s.save(&p).unwrap().is_some());
-        assert!(
-            s.save(&p).unwrap().is_none(),
-            "identical project is not saved twice"
-        );
+        assert!(s.save(&p).unwrap().is_none(), "identical project is not saved twice");
         for i in 0..5 {
             p.fps = 25.0 + i as f32;
             s.save(&p).unwrap();
@@ -142,11 +124,7 @@ mod tests {
         let r = s.save(&p).unwrap().unwrap();
         fs::write(&r.path, "{ truncated").unwrap();
         assert!(s.load(None).is_err());
-        assert_eq!(
-            s.recover().unwrap().fps,
-            24.0,
-            "falls back to the last good revision"
-        );
+        assert_eq!(s.recover().unwrap().fps, 24.0, "falls back to the last good revision");
         let _ = fs::remove_dir_all(&d);
         assert!(Snapshots::new(tmp("c"), 2).recover().is_none());
     }

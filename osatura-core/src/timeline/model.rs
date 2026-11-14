@@ -91,20 +91,10 @@ pub(super) fn kind_label(k: TargetKind) -> &'static str {
     }
 }
 
-pub(super) const KIND_ORDER: [TargetKind; 6] = [
-    TargetKind::Bone,
-    TargetKind::Layer,
-    TargetKind::Camera,
-    TargetKind::Ik,
-    TargetKind::Constraint,
-    TargetKind::Sub,
-];
+pub(super) const KIND_ORDER: [TargetKind; 6] = [TargetKind::Bone, TargetKind::Layer, TargetKind::Camera, TargetKind::Ik, TargetKind::Constraint, TargetKind::Sub];
 
 pub(super) fn prop_name(p: Prop) -> String {
-    serde_json::to_value(p)
-        .ok()
-        .and_then(|v| v.as_str().map(String::from))
-        .unwrap_or_else(|| format!("{p:?}"))
+    serde_json::to_value(p).ok().and_then(|v| v.as_str().map(String::from)).unwrap_or_else(|| format!("{p:?}"))
 }
 
 pub(super) fn is_keyed(c: &Channel) -> bool {
@@ -145,11 +135,7 @@ pub(super) fn chain_of(p: &Project, c: &Channel, kind: TargetKind) -> Vec<(Strin
         TargetKind::Ik | TargetKind::Constraint => vec![(c.target.clone(), c.target.clone())],
         TargetKind::Sub => {
             let parts: Vec<&str> = c.target.split("::").collect();
-            let upto = if parts.len() >= 2 {
-                parts.len() - 1
-            } else {
-                parts.len()
-            };
+            let upto = if parts.len() >= 2 { parts.len() - 1 } else { parts.len() };
             let mut out = Vec::new();
             for i in 0..upto {
                 out.push((parts[i].to_string(), parts[..=i].join("::")));
@@ -159,11 +145,7 @@ pub(super) fn chain_of(p: &Project, c: &Channel, kind: TargetKind) -> Vec<(Strin
     }
 }
 
-pub(super) fn meta_for(
-    p: &Project,
-    target: &str,
-    prop: Prop,
-) -> (bool, bool, bool, Option<String>) {
+pub(super) fn meta_for(p: &Project, target: &str, prop: Prop) -> (bool, bool, bool, Option<String>) {
     let (mut lock, mut shy, mut solo) = (false, false, false);
     let mut color: Option<(bool, String)> = None; // (specific to the prop, colour)
     for m in &p.channel_meta {
@@ -180,12 +162,7 @@ pub(super) fn meta_for(
             }
         }
     }
-    (
-        lock || chanmeta::layer_locked(p, target, prop),
-        shy,
-        solo,
-        color.map(|c| c.1),
-    )
+    (lock || chanmeta::layer_locked(p, target, prop), shy, solo, color.map(|c| c.1))
 }
 
 /// Build the timeline model. Deterministic: order follows the kind order, then channel order.
@@ -202,17 +179,7 @@ pub fn build(p: &Project) -> TimelineModel {
                 continue;
             }
             let root = *root_of.entry(ki).or_insert_with(|| {
-                groups.push(GroupInfo {
-                    id: groups.len(),
-                    label: kind_label(*kind).into(),
-                    kind: kind_name(*kind),
-                    depth: 0,
-                    parent: None,
-                    children: vec![],
-                    tracks: vec![],
-                    frames: vec![],
-                    locked: false,
-                });
+                groups.push(GroupInfo { id: groups.len(), label: kind_label(*kind).into(), kind: kind_name(*kind), depth: 0, parent: None, children: vec![], tracks: vec![], frames: vec![], locked: false });
                 groups.len() - 1
             });
             let mut parent = root;
@@ -221,17 +188,7 @@ pub fn build(p: &Project) -> TimelineModel {
                     Some(&i) => i,
                     None => {
                         let id = groups.len();
-                        groups.push(GroupInfo {
-                            id,
-                            label,
-                            kind: kind_name(*kind),
-                            depth: groups[parent].depth + 1,
-                            parent: Some(parent),
-                            children: vec![],
-                            tracks: vec![],
-                            frames: vec![],
-                            locked: false,
-                        });
+                        groups.push(GroupInfo { id, label, kind: kind_name(*kind), depth: groups[parent].depth + 1, parent: Some(parent), children: vec![], tracks: vec![], frames: vec![], locked: false });
                         groups[parent].children.push(id);
                         index.insert((ki, path), id);
                         id
@@ -246,31 +203,14 @@ pub fn build(p: &Project) -> TimelineModel {
     for (ci, c) in p.channels.iter().enumerate() {
         let (lock, shy, solo, color) = meta_for(p, &c.target, c.prop);
         let (source, keys, extrap) = match &c.source {
-            Source::Keys { track } => (
-                "keys",
-                track
-                    .keys
-                    .iter()
-                    .map(|k| KeyInfo {
-                        frame: k.frame,
-                        value: k.value,
-                        ease: k.ease,
-                    })
-                    .collect(),
-                Some(track.extrapolate),
-            ),
+            Source::Keys { track } => ("keys", track.keys.iter().map(|k| KeyInfo { frame: k.frame, value: k.value, ease: k.ease }).collect(), Some(track.extrapolate)),
             Source::Expr { .. } => ("expr", vec![], None),
             Source::Noise { .. } => ("noise", vec![], None),
             Source::Driven { .. } => ("driven", vec![], None),
         };
         let mut label = prop_name(c.prop);
         if c.prop.target_kind() == TargetKind::Sub {
-            if let Some(last) = c
-                .target
-                .rsplit("::")
-                .next()
-                .filter(|_| c.target.contains("::"))
-            {
+            if let Some(last) = c.target.rsplit("::").next().filter(|_| c.target.contains("::")) {
                 label = format!("{last} {label}");
             }
         }
@@ -294,11 +234,7 @@ pub fn build(p: &Project) -> TimelineModel {
     }
     // summaries bottom-up (children always have larger ids than their parents)
     for gi in (0..groups.len()).rev() {
-        let mut fr: Vec<f32> = groups[gi]
-            .tracks
-            .iter()
-            .flat_map(|&t| tracks[t].keys.iter().map(|k| k.frame))
-            .collect();
+        let mut fr: Vec<f32> = groups[gi].tracks.iter().flat_map(|&t| tracks[t].keys.iter().map(|k| k.frame)).collect();
         for &c in &groups[gi].children.clone() {
             fr.extend(groups[c].frames.iter().copied());
         }
@@ -334,13 +270,7 @@ pub fn build(p: &Project) -> TimelineModel {
     for g in groups.iter().filter(|g| g.parent.is_none()) {
         walk(g.id, &groups, &mut rows);
     }
-    TimelineModel {
-        frames: p.frames,
-        fps: p.fps,
-        groups,
-        tracks,
-        rows,
-    }
+    TimelineModel { frames: p.frames, fps: p.fps, groups, tracks, rows }
 }
 
 // ---------------------------------------------------------------- selection
@@ -381,38 +311,18 @@ pub fn select_apply(current: &[KeyRef], hits: &[KeyRef], mode: SelMode) -> Vec<K
         SelMode::Replace => hits.to_vec(),
         SelMode::Add => current.iter().chain(hits).copied().collect(),
         SelMode::Subtract => current.iter().filter(|k| !has(hits, k)).copied().collect(),
-        SelMode::Toggle => current
-            .iter()
-            .filter(|k| !has(hits, k))
-            .chain(hits.iter().filter(|k| !has(current, k)))
-            .copied()
-            .collect(),
+        SelMode::Toggle => current.iter().filter(|k| !has(hits, k)).chain(hits.iter().filter(|k| !has(current, k))).copied().collect(),
     };
     normalize(&mut out);
     out
 }
 
-pub(super) fn track_keys(
-    m: &TimelineModel,
-    t: usize,
-    f0: f32,
-    f1: f32,
-    include_locked: bool,
-    out: &mut Vec<KeyRef>,
-) {
+pub(super) fn track_keys(m: &TimelineModel, t: usize, f0: f32, f1: f32, include_locked: bool, out: &mut Vec<KeyRef>) {
     let tr = &m.tracks[t];
     if !tr.editable || (tr.locked && !include_locked) {
         return;
     }
-    out.extend(
-        tr.keys
-            .iter()
-            .filter(|k| k.frame >= f0 && k.frame <= f1)
-            .map(|k| KeyRef {
-                ch: t,
-                frame: k.frame,
-            }),
-    );
+    out.extend(tr.keys.iter().filter(|k| k.frame >= f0 && k.frame <= f1).map(|k| KeyRef { ch: t, frame: k.frame }));
 }
 
 pub(super) fn descendants(m: &TimelineModel, g: usize, out: &mut Vec<usize>) {
@@ -424,14 +334,7 @@ pub(super) fn descendants(m: &TimelineModel, g: usize, out: &mut Vec<usize>) {
 
 /// Keys inside `[f0, f1]` on the display rows `row0..=row1` (either order). A group row stands for
 /// every track below it. Locked tracks are skipped unless `include_locked`.
-pub fn select_box(
-    m: &TimelineModel,
-    f0: f32,
-    f1: f32,
-    row0: usize,
-    row1: usize,
-    include_locked: bool,
-) -> Vec<KeyRef> {
+pub fn select_box(m: &TimelineModel, f0: f32, f1: f32, row0: usize, row1: usize, include_locked: bool) -> Vec<KeyRef> {
     let (f0, f1) = (f0.min(f1), f0.max(f1));
     let (r0, r1) = (row0.min(row1), row0.max(row1));
     let mut chans: Vec<usize> = Vec::new();
@@ -455,14 +358,7 @@ pub fn select_box(
 pub fn select_channel(m: &TimelineModel, ch: usize, include_locked: bool) -> Vec<KeyRef> {
     let mut out = Vec::new();
     if ch < m.tracks.len() {
-        track_keys(
-            m,
-            ch,
-            f32::NEG_INFINITY,
-            f32::INFINITY,
-            include_locked,
-            &mut out,
-        );
+        track_keys(m, ch, f32::NEG_INFINITY, f32::INFINITY, include_locked, &mut out);
     }
     out
 }
@@ -474,14 +370,7 @@ pub fn select_group(m: &TimelineModel, group: usize, include_locked: bool) -> Ve
         let mut chans = Vec::new();
         descendants(m, group, &mut chans);
         for t in chans {
-            track_keys(
-                m,
-                t,
-                f32::NEG_INFINITY,
-                f32::INFINITY,
-                include_locked,
-                &mut out,
-            );
+            track_keys(m, t, f32::NEG_INFINITY, f32::INFINITY, include_locked, &mut out);
         }
     }
     normalize(&mut out);
@@ -492,28 +381,14 @@ pub fn select_group(m: &TimelineModel, group: usize, include_locked: bool) -> Ve
 pub fn select_all(m: &TimelineModel, include_locked: bool) -> Vec<KeyRef> {
     let mut out = Vec::new();
     for t in 0..m.tracks.len() {
-        track_keys(
-            m,
-            t,
-            f32::NEG_INFINITY,
-            f32::INFINITY,
-            include_locked,
-            &mut out,
-        );
+        track_keys(m, t, f32::NEG_INFINITY, f32::INFINITY, include_locked, &mut out);
     }
     out
 }
 
 /// Drop references that no longer point at a key (after an edit elsewhere).
 pub fn prune(m: &TimelineModel, sel: &[KeyRef]) -> Vec<KeyRef> {
-    sel.iter()
-        .filter(|r| {
-            m.tracks
-                .get(r.ch)
-                .is_some_and(|t| t.keys.iter().any(|k| k.frame == r.frame))
-        })
-        .copied()
-        .collect()
+    sel.iter().filter(|r| m.tracks.get(r.ch).is_some_and(|t| t.keys.iter().any(|k| k.frame == r.frame))).copied().collect()
 }
 
 // ---------------------------------------------------------------- options, plan, clip
@@ -558,11 +433,7 @@ pub struct EditOpts {
 
 impl Default for EditOpts {
     fn default() -> Self {
-        EditOpts {
-            snap: true,
-            collision: Collision::Replace,
-            bounds: Bounds::Project,
-        }
+        EditOpts { snap: true, collision: Collision::Replace, bounds: Bounds::Project }
     }
 }
 

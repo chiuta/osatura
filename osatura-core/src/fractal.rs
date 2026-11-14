@@ -11,7 +11,7 @@
 //! * Shading: Sobel normals from the height field, Lambert + Blinn-Phong with a metallic/dielectric specular term,
 //!   two-scale cavity ambient occlusion and optional emission in the low parts (lava, cracks).
 //!
-//! Pure function of [`Params`]: the same parameters give the same bytes on every machine and thread count (each pixel
+//! Pure function of [`Params`]: the same parameters give the same bytes on every thread count (each pixel
 //! depends only on its own coordinates). The ideas (gradient noise, fBm, ridged multifractal, Worley cells, domain
 //! warping, smooth escape-time colouring) are textbook techniques; the code is written from the definitions.
 //! Third-party constants: the golden-ratio/lowbias32 hash is [`crate::noise::hash01`] (see CLEANROOM.md); the Julia
@@ -24,6 +24,8 @@ pub const MAX_SIZE: u32 = 4096;
 /// Smallest side in pixels.
 pub const MIN_SIZE: u32 = 8;
 const MAX_SAMPLES: u64 = 1 << 27;
+/// Worst-case escape-time iterations (samples x iteration limit); about half a minute on a laptop.
+const MAX_ESCAPE_WORK: u64 = 1 << 34;
 
 /// The pattern that makes the height field.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -34,19 +36,21 @@ pub enum Kind {
     Warp,
     Cellular,
     Marble,
+    Crag,
     Mandelbrot,
     Julia,
     BurningShip,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 9] = [
+    pub const ALL: [Kind; 10] = [
         Kind::Fbm,
         Kind::Ridged,
         Kind::Billow,
         Kind::Warp,
         Kind::Cellular,
         Kind::Marble,
+        Kind::Crag,
         Kind::Mandelbrot,
         Kind::Julia,
         Kind::BurningShip,
@@ -59,6 +63,7 @@ impl Kind {
             Kind::Warp => "warp",
             Kind::Cellular => "cellular",
             Kind::Marble => "marble",
+            Kind::Crag => "crag",
             Kind::Mandelbrot => "mandelbrot",
             Kind::Julia => "julia",
             Kind::BurningShip => "burning-ship",
@@ -225,6 +230,13 @@ fn fade(t: f32) -> f32 {
     t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
 }
 
+/// Seed of octave `o`: a hash of both, so two different seeds never share an octave pattern
+/// (a plain `seed + o * K` makes seed `s` octave 1 identical to seed `s + K` octave 0).
+fn octave_seed(seed: u32, o: u32) -> u32 {
+    let h = (hash01(o as i32, seed) * 16_777_216.0) as u32;
+    h ^ seed.rotate_left(7 * (o % 31) + 1)
+}
+
 fn lattice(ix: i32, iy: i32, per: i32, seed: u32) -> (f32, f32) {
     let (x, y) = if per > 0 {
         (ix.rem_euclid(per), iy.rem_euclid(per))
@@ -236,9 +248,23 @@ fn lattice(ix: i32, iy: i32, per: i32, seed: u32) -> (f32, f32) {
         ((a * 16_777_216.0) as i32) ^ y.wrapping_mul(0x1B87_3593),
         seed ^ 0xA5A5_5A5A,
     );
-    let th = h * std::f32::consts::TAU;
-    (th.cos(), th.sin())
+    // 32 unit directions (cos, sin of k * 11.25 degrees): a table lookup instead of two trig calls per lattice corner
+    GRADS[((h * 32.0) as usize).min(31)]
 }
+
+const R: f32 = std::f32::consts::FRAC_1_SQRT_2;
+
+#[rustfmt::skip]
+const GRADS: [(f32, f32); 32] = [
+    (1.0, 0.0), (0.980_785, 0.195_090), (0.923_880, 0.382_683), (0.831_470, 0.555_570),
+    (R, R), (0.555_570, 0.831_470), (0.382_683, 0.923_880), (0.195_090, 0.980_785),
+    (0.0, 1.0), (-0.195_090, 0.980_785), (-0.382_683, 0.923_880), (-0.555_570, 0.831_470),
+    (-R, R), (-0.831_470, 0.555_570), (-0.923_880, 0.382_683), (-0.980_785, 0.195_090),
+    (-1.0, 0.0), (-0.980_785, -0.195_090), (-0.923_880, -0.382_683), (-0.831_470, -0.555_570),
+    (-R, -R), (-0.555_570, -0.831_470), (-0.382_683, -0.923_880), (-0.195_090, -0.980_785),
+    (0.0, -1.0), (0.195_090, -0.980_785), (0.382_683, -0.923_880), (0.555_570, -0.831_470),
+    (R, -R), (0.831_470, -0.555_570), (0.923_880, -0.382_683), (0.980_785, -0.195_090),
+];
 
 /// Gradient noise, about -1..1. `per > 0` repeats every `per` lattice cells on both axes.
 fn gnoise(x: f32, y: f32, per: i32, seed: u32) -> f32 {
@@ -267,15 +293,12 @@ fn worley(x: f32, y: f32, per: i32, seed: u32) -> (f32, f32) {
             } else {
                 (cx, cy)
             };
-            let a = hash01(wx, seed);
-            let px = cx as f32 + 0.15 + 0.7 * a;
-            let py = cy as f32
-                + 0.15
-                + 0.7
-                    * hash01(
-                        ((a * 16_777_216.0) as i32) ^ wy.wrapping_mul(0x1B87_3593),
-                        seed ^ 0x3C6E_F372,
-                    );
+            // both offsets depend on the whole cell (wx, wy): an offset from wx alone lines the points up in columns
+            let a = (hash01(wx, seed) * 16_777_216.0) as i32;
+            let jx = hash01(a ^ wy.wrapping_mul(0x1B87_3593), seed ^ 0x3C6E_F372);
+            let jy = hash01(a ^ wy.wrapping_mul(0x2545_F491), seed ^ 0xA54F_F53A);
+            let px = cx as f32 + 0.1 + 0.8 * jx;
+            let py = cy as f32 + 0.1 + 0.8 * jy;
             let d = ((px - x) * (px - x) + (py - y) * (py - y)).sqrt();
             if d < f1 {
                 f2 = f1;
@@ -336,7 +359,7 @@ impl Field {
         let mut per = self.per0 as f64;
         for o in 0..self.octaves {
             let p = per.round() as i32;
-            let s = self.seed.wrapping_add(o.wrapping_mul(0x9E37));
+            let s = octave_seed(self.seed, o);
             // the offset must be a whole number of periods to stay seamless
             let (x, y) = if self.tile {
                 (
@@ -362,6 +385,32 @@ impl Field {
         self.sum(u, v, off, gnoise)
     }
 
+    /// Ridged multifractal, 0..1.
+    fn ridged(&self, u: f32, v: f32) -> f32 {
+        let (mut amp, mut freq, mut acc, mut norm, mut w) =
+            (1.0f32, self.base, 0.0f32, 0.0f32, 1.0f32);
+        let mut per = self.per0 as f64;
+        for o in 0..self.octaves {
+            let p = per.round() as i32;
+            let n = gnoise(
+                u * freq,
+                v * freq,
+                if self.tile { p } else { 0 },
+                octave_seed(self.seed, o),
+            );
+            let mut s = 1.0 - n.abs();
+            s *= s;
+            s *= w;
+            w = (s * 2.0).clamp(0.0, 1.0);
+            acc += s * amp;
+            norm += amp;
+            amp *= self.gain;
+            freq *= self.lac;
+            per *= self.lac as f64;
+        }
+        (acc / norm.max(1e-6)).clamp(0.0, 1.0)
+    }
+
     /// Height 0..1 at image coordinates `(u, v)`.
     fn height(&self, u: f32, v: f32) -> f32 {
         match self.kind {
@@ -370,29 +419,31 @@ impl Field {
                 let s = self.sum(u, v, 0.0, |x, y, p, s| gnoise(x, y, p, s).abs() * 2.0 - 1.0);
                 0.5 + 0.5 * s * 1.4
             }
-            Kind::Ridged => {
-                let (mut amp, mut freq, mut acc, mut norm, mut w) =
-                    (1.0f32, self.base, 0.0f32, 0.0f32, 1.0f32);
-                let mut per = self.per0 as f64;
-                for o in 0..self.octaves {
-                    let p = per.round() as i32;
-                    let n = gnoise(
-                        u * freq,
-                        v * freq,
-                        if self.tile { p } else { 0 },
-                        self.seed.wrapping_add(o.wrapping_mul(0x9E37)),
-                    );
-                    let mut s = 1.0 - n.abs();
-                    s *= s;
-                    s *= w;
-                    w = (s * 2.0).clamp(0.0, 1.0);
-                    acc += s * amp;
-                    norm += amp;
-                    amp *= self.gain;
-                    freq *= self.lac;
-                    per *= self.lac as f64;
-                }
-                (acc / norm.max(1e-6)).clamp(0.0, 1.0)
+            Kind::Ridged => self.ridged(u, v),
+            Kind::Crag => {
+                // weathered rock: a ridged mass cut by two scales of fractures
+                let mass = 0.65 * self.ridged(u, v) + 0.35 * (0.5 + 0.5 * self.fbm(u, v, 2.0));
+                let (f1, f2) = worley(
+                    u * self.base * 2.0,
+                    v * self.base * 2.0,
+                    self.per0 * 2,
+                    self.seed ^ 0x51,
+                );
+                let (g1, g2) = worley(
+                    u * self.base * 8.0,
+                    v * self.base * 8.0,
+                    self.per0 * 8,
+                    self.seed ^ 0x77,
+                );
+                let step = |x: f32, w: f32| {
+                    let t = (x / w).clamp(0.0, 1.0);
+                    t * t * (3.0 - 2.0 * t)
+                };
+                let big = step(f2 - f1, 0.10);
+                let small = step(g2 - g1, 0.05);
+                let slab = 0.82 + 0.18 * (1.0 - f1);
+                let depth = 0.35 + 0.35 * (0.5 + 0.5 * self.fbm(u, v, 6.0));
+                (mass * slab * (1.0 - depth * (1.0 - big)) * (0.92 + 0.08 * small)).clamp(0.0, 1.0)
             }
             Kind::Warp => {
                 let k = self.warp * 0.12;
@@ -421,7 +472,7 @@ impl Field {
                         * std::f32::consts::TAU;
                 let vein = 1.0 - ph.sin().abs();
                 let vein = vein.powf(3.0);
-                let fine = 1.0 - ((ph * 3.1 + self.fbm(u, v, 4.0) * 9.0).sin()).abs();
+                let fine = 1.0 - ((ph * 3.0 + self.fbm(u, v, 4.0) * 9.0).sin()).abs();
                 (0.7 + 0.2 * self.fbm(u, v, 0.0)
                     - 0.5 * vein
                     - 0.18 * fine.powf(8.0) * (0.4 + vein))
@@ -461,39 +512,37 @@ struct Escape {
     max_iter: u32,
 }
 
+/// Iteration limit for a zoom level.
+fn max_iter_for(zoom: f64) -> u32 {
+    (256.0 + 96.0 * zoom.max(1.0).log2()).min(6000.0) as u32
+}
+
 impl Escape {
     fn new(p: &Params) -> Escape {
         let zoom = p.zoom.clamp(1.0, 1e12);
         let i = p.seed as usize;
+        // the view slides from the whole set to the seed's target between zoom 1 and 8, so no zoom value jumps
+        let k = (zoom.log2() / 3.0).clamp(0.0, 1.0);
+        let k = k * k * (3.0 - 2.0 * k);
+        let lerp = |a: f64, b: f64| a + (b - a) * k;
         let (cx, cy, span, jc) = match p.kind {
             Kind::Julia => (0.0, 0.0, 3.0 / zoom, JULIA_C[i % JULIA_C.len()]),
             Kind::BurningShip => {
                 let (x, y) = SHIP_VIEWS[i % SHIP_VIEWS.len()];
-                (
-                    if zoom > 1.0 { x } else { -0.5 },
-                    if zoom > 1.0 { y } else { -0.5 },
-                    3.2 / zoom,
-                    (0.0, 0.0),
-                )
+                (lerp(-0.5, x), lerp(-0.5, y), 3.2 / zoom, (0.0, 0.0))
             }
             _ => {
                 let (x, y) = MANDEL_VIEWS[i % MANDEL_VIEWS.len()];
-                (
-                    if zoom > 1.0 { x } else { -0.6 },
-                    if zoom > 1.0 { y } else { 0.0 },
-                    3.2 / zoom,
-                    (0.0, 0.0),
-                )
+                (lerp(-0.6, x), lerp(0.0, y), 3.2 / zoom, (0.0, 0.0))
             }
         };
-        let max_iter = (256.0 + 96.0 * zoom.log2().max(0.0)).min(6000.0) as u32;
         Escape {
             kind: p.kind,
             cx,
             cy,
             span,
             jc,
-            max_iter,
+            max_iter: max_iter_for(zoom),
         }
     }
 
@@ -501,6 +550,13 @@ impl Escape {
     fn nu(&self, u: f64, v: f64) -> Option<f64> {
         let x = self.cx + (u - 0.5) * self.span;
         let y = self.cy + (v - 0.5) * self.span;
+        if self.kind == Kind::Mandelbrot {
+            // main cardioid and period-2 bulb are inside: exact, and they are the slowest pixels
+            let q = (x - 0.25) * (x - 0.25) + y * y;
+            if q * (q + (x - 0.25)) <= 0.25 * y * y || (x + 1.0) * (x + 1.0) + y * y <= 0.0625 {
+                return None;
+            }
+        }
         let (mut zr, mut zi, cr, ci) = match self.kind {
             Kind::Julia => (x, y, self.jc.0, self.jc.1),
             _ => (0.0, 0.0, x, y),
@@ -563,23 +619,31 @@ fn blur(src: &[f32], n: usize, r: usize, wrap: bool) -> Vec<f32> {
     };
     let k = (2 * r + 1) as f32;
     let mut tmp = vec![0.0f32; n * n];
-    for y in 0..n {
+    par_rows(&mut tmp, n, &|y, out: &mut [f32]| {
         let row = &src[y * n..(y + 1) * n];
         let mut acc: f32 = (-(r as isize)..=r as isize).map(|d| row[idx(d)]).sum();
-        for x in 0..n {
-            tmp[y * n + x] = acc / k;
+        for (x, o) in out.iter_mut().enumerate() {
+            *o = acc / k;
             acc += row[idx(x as isize + r as isize + 1)] - row[idx(x as isize - r as isize)];
         }
-    }
+    });
+    // vertical pass: one running sum per column, advanced a whole row at a time
     let mut out = vec![0.0f32; n * n];
-    for x in 0..n {
-        let mut acc: f32 = (-(r as isize)..=r as isize)
-            .map(|d| tmp[idx(d) * n + x])
-            .sum();
-        for y in 0..n {
-            out[y * n + x] = acc / k;
-            acc += tmp[idx(y as isize + r as isize + 1) * n + x]
-                - tmp[idx(y as isize - r as isize) * n + x];
+    let mut acc = vec![0.0f32; n];
+    for d in -(r as isize)..=r as isize {
+        let row = &tmp[idx(d) * n..(idx(d) + 1) * n];
+        for (a, v) in acc.iter_mut().zip(row) {
+            *a += v;
+        }
+    }
+    for y in 0..n {
+        for (o, a) in out[y * n..(y + 1) * n].iter_mut().zip(&acc) {
+            *o = a / k;
+        }
+        let add = &tmp[idx(y as isize + r as isize + 1) * n..][..n];
+        let sub = &tmp[idx(y as isize - r as isize) * n..][..n];
+        for ((a, p), q) in acc.iter_mut().zip(add).zip(sub) {
+            *a += p - q;
         }
     }
     out
@@ -623,6 +687,17 @@ pub fn validate(p: &Params) -> Result<(), String> {
     if !p.zoom.is_finite() {
         return Err("zoom must be a finite number".into());
     }
+    if p.kind.is_escape() {
+        let work = (p.size as u64).pow(2)
+            * (p.ssaa as u64).pow(2)
+            * max_iter_for(p.zoom.clamp(1.0, 1e12)) as u64;
+        if work > MAX_ESCAPE_WORK {
+            return Err(format!(
+                "{}x{} at ssaa {} and zoom {} needs too many iterations; lower the size, the ssaa or the zoom",
+                p.size, p.size, p.ssaa, p.zoom
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -632,44 +707,65 @@ pub fn generate(p: &Params) -> Result<Texture, String> {
     let n = p.size as usize;
     let aa = p.ssaa as usize;
     let tile = p.tile && !p.kind.is_escape();
+    let esc_kind = p.kind.is_escape();
     let field = Field::new(p);
     let esc = Escape::new(p);
-    // height and colour coordinate per pixel
-    let mut ht = vec![[0.0f32; 2]; n * n];
-    let sample = |px: usize, py: usize| -> [f32; 2] {
-        let (mut hs, mut ts) = (0.0f32, 0.0f32);
+    // Height per pixel; for escape-time kinds also the linear colour, averaged over the sub-samples
+    // (averaging the palette position instead would blend the interior into the boundary colours).
+    let mut hgt = vec![0.0f32; n * n];
+    let mut col = vec![[0.0f32; 3]; if esc_kind { n * n } else { 0 }];
+    let sample = |px: usize, py: usize| -> (f32, [f32; 3]) {
+        let (mut hs, mut cs) = (0.0f32, [0.0f32; 3]);
         for sy in 0..aa {
             for sx in 0..aa {
                 let u = (px as f64 + (sx as f64 + 0.5) / aa as f64) / n as f64;
                 let v = (py as f64 + (sy as f64 + 0.5) / aa as f64) / n as f64;
-                if p.kind.is_escape() {
-                    if let Some(nu) = esc.nu(u, v) {
-                        let nu = nu as f32;
-                        hs += 1.0 - (-nu * 0.045).exp();
-                        ts += nu.max(1.0).ln() * 0.9 * p.color_speed;
+                if esc_kind {
+                    let c = match esc.nu(u, v) {
+                        Some(nu) => {
+                            let nu = nu as f32;
+                            hs += 1.0 - (-nu * 0.045).exp();
+                            let t = nu.max(1.0).ln() * 0.9 * p.color_speed;
+                            p.palette.at(1.0 - (2.0 * t.rem_euclid(1.0) - 1.0).abs())
+                        }
+                        None => [0.012, 0.012, 0.018],
+                    };
+                    for k in 0..3 {
+                        cs[k] += c[k];
                     }
                 } else {
-                    let h = field.height(u as f32, v as f32);
-                    hs += h;
-                    ts += h;
+                    hs += field.height(u as f32, v as f32);
                 }
             }
         }
         let k = (aa * aa) as f32;
-        [hs / k, ts / k]
+        (hs / k, [cs[0] / k, cs[1] / k, cs[2] / k])
     };
-    par_rows(&mut ht, n, &|y, row: &mut [[f32; 2]]| {
-        for (x, o) in row.iter_mut().enumerate() {
-            *o = sample(x, y);
+    if esc_kind {
+        let mut both = vec![(0.0f32, [0.0f32; 3]); n * n];
+        par_rows(&mut both, n, &|y, row: &mut [(f32, [f32; 3])]| {
+            for (x, o) in row.iter_mut().enumerate() {
+                *o = sample(x, y);
+            }
+        });
+        for (i, (h, c)) in both.into_iter().enumerate() {
+            hgt[i] = h;
+            col[i] = c;
         }
-    });
+    } else {
+        par_rows(&mut hgt, n, &|y, row: &mut [f32]| {
+            for (x, o) in row.iter_mut().enumerate() {
+                *o = sample(x, y).0;
+            }
+        });
+    }
     // contrast around the mean, then clamp
-    let mean = ht.iter().map(|v| v[0] as f64).sum::<f64>() as f32 / (n * n) as f32;
-    let mut height: Vec<f32> = ht
-        .iter()
-        .map(|v| ((v[0] - mean) * p.contrast + mean).clamp(0.0, 1.0))
-        .collect();
-    if !p.kind.is_escape() {
+    let mean = (hgt.iter().map(|&v| v as f64).sum::<f64>() / (n * n) as f64) as f32;
+    let mut height = hgt;
+    for v in height.iter_mut() {
+        *v = ((*v - mean) * p.contrast + mean).clamp(0.0, 1.0);
+    }
+    if !esc_kind {
         // stretch to the full range so every preset uses the whole palette
         let (lo, hi) = height
             .iter()
@@ -680,7 +776,21 @@ pub fn generate(p: &Params) -> Result<Texture, String> {
             }
         }
     }
-    // normals (Sobel; +Y up)
+    // cavity occlusion at two scales
+    let (b1, b2) = (
+        blur(&height, n, (n / 128).max(2), tile),
+        blur(&height, n, (n / 32).max(4), tile),
+    );
+    let (az, el) = (
+        p.light_az.to_radians(),
+        p.light_elev.clamp(1.0, 89.0).to_radians(),
+    );
+    let ld = [el.cos() * az.cos(), el.cos() * az.sin(), el.sin()];
+    let hv = {
+        let h = [ld[0], ld[1], ld[2] + 1.0];
+        let l = (h[0] * h[0] + h[1] * h[1] + h[2] * h[2]).sqrt();
+        [h[0] / l, h[1] / l, h[2] / l]
+    };
     let at = |x: isize, y: isize| -> f32 {
         let (xi, yi) = if tile {
             (
@@ -696,75 +806,49 @@ pub fn generate(p: &Params) -> Result<Texture, String> {
         height[yi * n + xi]
     };
     let slope = p.relief * n as f32 / 256.0 * 2.0;
-    let mut nrm = vec![[0.0f32; 3]; n * n];
-    par_rows(&mut nrm, n, &|y, row: &mut [[f32; 3]]| {
+    // shading pass: albedo, lit colour and normal of one pixel, 12 bytes
+    let mut px = vec![[0u8; 12]; n * n];
+    par_rows(&mut px, n, &|y, row: &mut [[u8; 12]]| {
         for (x, o) in row.iter_mut().enumerate() {
+            let i = y * n + x;
             let (xi, yi) = (x as isize, y as isize);
+            // Sobel normal, +Y up
             let dx = (at(xi + 1, yi - 1) + 2.0 * at(xi + 1, yi) + at(xi + 1, yi + 1))
                 - (at(xi - 1, yi - 1) + 2.0 * at(xi - 1, yi) + at(xi - 1, yi + 1));
             let dy = (at(xi - 1, yi + 1) + 2.0 * at(xi, yi + 1) + at(xi + 1, yi + 1))
                 - (at(xi - 1, yi - 1) + 2.0 * at(xi, yi - 1) + at(xi + 1, yi - 1));
-            let (gx, gy) = (dx * 0.125 * slope, dy * 0.125 * slope);
-            let (nx, ny, nz) = (-gx, gy, 1.0f32);
+            let (nx, ny, nz) = (-dx * 0.125 * slope, dy * 0.125 * slope, 1.0f32);
             let l = (nx * nx + ny * ny + nz * nz).sqrt();
-            *o = [nx / l, ny / l, nz / l];
+            let nv = [nx / l, ny / l, nz / l];
+            let h = height[i];
+            let alb = if esc_kind { col[i] } else { p.palette.at(h) };
+            let diff = (nv[0] * ld[0] + nv[1] * ld[1] + nv[2] * ld[2]).max(0.0);
+            let spec = (nv[0] * hv[0] + nv[1] * hv[1] + nv[2] * hv[2])
+                .max(0.0)
+                .powf(p.shininess.max(1.0))
+                * p.specular
+                * (0.35 + 0.65 * h);
+            let cav = 0.6 * (b1[i] - h).max(0.0) / 0.12 + 0.4 * (b2[i] - h).max(0.0) / 0.3;
+            let ao = (1.0 - p.ao * cav.min(1.0) * 0.85).clamp(0.15, 1.0);
+            let glow = p.glow * (1.0 - h).powi(3) * 2.5;
+            for k in 0..3 {
+                let lit = alb[k] * (0.22 + 0.95 * diff) * ao + spec * ao + alb[k] * glow;
+                o[k] = (lin_to_srgb(alb[k]) * 255.0 + 0.5) as u8;
+                o[4 + k] = (lin_to_srgb(lit) * 255.0 + 0.5) as u8;
+                o[8 + k] = ((nv[k] * 0.5 + 0.5) * 255.0 + 0.5) as u8;
+            }
+            o[3] = 255;
+            o[7] = 255;
+            o[11] = 255;
         }
     });
-    // cavity occlusion at two scales
-    let r1 = (n / 128).max(2);
-    let r2 = (n / 32).max(4);
-    let (b1, b2) = (blur(&height, n, r1, tile), blur(&height, n, r2, tile));
-    let (az, el) = (
-        p.light_az.to_radians(),
-        p.light_elev.clamp(1.0, 89.0).to_radians(),
-    );
-    let ld = [el.cos() * az.cos(), el.cos() * az.sin(), el.sin()];
-    let hv = {
-        let h = [ld[0], ld[1], ld[2] + 1.0];
-        let l = (h[0] * h[0] + h[1] * h[1] + h[2] * h[2]).sqrt();
-        [h[0] / l, h[1] / l, h[2] / l]
-    };
-    let mut albedo = vec![0u8; n * n * 4];
-    let mut color = vec![0u8; n * n * 4];
-    let mut normal = vec![0u8; n * n * 4];
-    let esc_kind = p.kind.is_escape();
-    for i in 0..n * n {
-        let t = ht[i][1];
-        let h = height[i];
-        let base_t = if esc_kind {
-            if h <= 0.0 && ht[i][0] <= 0.0 {
-                0.0
-            } else {
-                1.0 - (2.0 * t.fract() - 1.0).abs()
-            }
-        } else {
-            h
-        };
-        let alb = if esc_kind && ht[i][0] <= 0.0 {
-            [0.012, 0.012, 0.018]
-        } else {
-            p.palette.at(base_t)
-        };
-        let nv = nrm[i];
-        let diff = (nv[0] * ld[0] + nv[1] * ld[1] + nv[2] * ld[2]).max(0.0);
-        let spec = (nv[0] * hv[0] + nv[1] * hv[1] + nv[2] * hv[2])
-            .max(0.0)
-            .powf(p.shininess.max(1.0))
-            * p.specular
-            * (0.35 + 0.65 * h);
-        let cav = 0.6 * (b1[i] - h).max(0.0) / 0.12 + 0.4 * (b2[i] - h).max(0.0) / 0.3;
-        let ao = (1.0 - p.ao * cav.min(1.0) * 0.85).clamp(0.15, 1.0);
-        let lit = |c: f32| {
-            c * (0.22 + 0.95 * diff) * ao + spec * ao + c * p.glow * (1.0 - h).powi(3) * 2.5
-        };
-        for k in 0..3 {
-            albedo[i * 4 + k] = (lin_to_srgb(alb[k]) * 255.0 + 0.5) as u8;
-            color[i * 4 + k] = (lin_to_srgb(lit(alb[k])) * 255.0 + 0.5) as u8;
-            normal[i * 4 + k] = ((nv[k] * 0.5 + 0.5) * 255.0 + 0.5) as u8;
-        }
-        albedo[i * 4 + 3] = 255;
-        color[i * 4 + 3] = 255;
-        normal[i * 4 + 3] = 255;
+    let mut albedo = Vec::with_capacity(n * n * 4);
+    let mut color = Vec::with_capacity(n * n * 4);
+    let mut normal = Vec::with_capacity(n * n * 4);
+    for q in &px {
+        albedo.extend_from_slice(&q[0..4]);
+        color.extend_from_slice(&q[4..8]);
+        normal.extend_from_slice(&q[8..12]);
     }
     Ok(Texture {
         size: p.size,
@@ -818,11 +902,11 @@ pub fn preset(name: &str) -> Option<Params> {
     let d = Params::default();
     let p = match name {
         "rock" => Params {
-            kind: Kind::Ridged,
+            kind: Kind::Crag,
             cells: 3,
             octaves: 12,
             gain: 0.52,
-            relief: 2.4,
+            relief: 3.0,
             specular: 0.12,
             shininess: 12.0,
             ao: 0.9,
@@ -1121,9 +1205,15 @@ mod tests {
             Kind::Warp,
             Kind::Cellular,
             Kind::Marble,
-        ] {
+            Kind::Crag,
+        ]
+        .into_iter()
+        .flat_map(|k| [1u32, 2, 3, 5, 7, 24].map(|c| (k, c)))
+        {
+            let (kind, cells) = kind;
             let p = Params {
                 kind,
+                cells,
                 size: 64,
                 tile: true,
                 ..Params::default()
@@ -1133,11 +1223,11 @@ mod tests {
                 let t = i as f32 / 16.0 + 0.013;
                 assert!(
                     (f.height(0.0, t) - f.height(1.0, t)).abs() < 1e-3,
-                    "{kind:?} u"
+                    "{kind:?} cells {cells} u"
                 );
                 assert!(
                     (f.height(t, 0.0) - f.height(t, 1.0)).abs() < 1e-3,
-                    "{kind:?} v"
+                    "{kind:?} cells {cells} v"
                 );
             }
         }
@@ -1269,5 +1359,151 @@ mod tests {
         assert!(height_png16(&t)
             .unwrap()
             .starts_with(&[0x89, b'P', b'N', b'G']));
+    }
+
+    #[test]
+    fn octave_seeds_do_not_overlap_between_seeds() {
+        // the old `seed + o * 0x9E37` made seed s octave 1 equal to seed s + 0x9E37 octave 0
+        let mut seen = std::collections::HashSet::new();
+        for seed in [0u32, 1, 2, 0x9E37, 0x9E37 + 1, 12345] {
+            for o in 0..16 {
+                assert!(
+                    seen.insert(octave_seed(seed, o)),
+                    "seed {seed} octave {o} repeats another"
+                );
+            }
+        }
+        let a = generate(&Params {
+            size: 64,
+            seed: 1,
+            ..preset("rock").unwrap()
+        })
+        .unwrap();
+        let b = generate(&Params {
+            size: 64,
+            seed: 1 + 0x9E37,
+            ..preset("rock").unwrap()
+        })
+        .unwrap();
+        let same = a
+            .height
+            .iter()
+            .zip(&b.height)
+            .filter(|(x, y)| (*x - *y).abs() < 1e-6)
+            .count();
+        assert!(
+            same < a.height.len() / 20,
+            "heights of unrelated seeds agree at {same} pixels"
+        );
+    }
+
+    #[test]
+    fn the_escape_view_is_continuous_in_zoom() {
+        let near = |z: f64| {
+            Escape::new(&Params {
+                kind: Kind::Mandelbrot,
+                zoom: z,
+                ..Params::default()
+            })
+        };
+        let (a, b) = (near(1.0), near(1.0001));
+        assert!(
+            (a.cx - b.cx).abs() < 1e-3 && (a.cy - b.cy).abs() < 1e-3,
+            "view jumps between zoom 1 and 1.0001"
+        );
+        let c = near(8.0);
+        assert!(
+            (c.cx - MANDEL_VIEWS[1].0).abs() < 1e-12,
+            "from zoom 8 on the view is the seed's target"
+        );
+    }
+
+    #[test]
+    fn an_unbounded_escape_request_is_refused_before_any_work() {
+        let r = generate(&Params {
+            kind: Kind::Mandelbrot,
+            tile: false,
+            size: 4096,
+            ssaa: 2,
+            zoom: 1e12,
+            ..Params::default()
+        });
+        assert!(r.unwrap_err().contains("too many iterations"));
+    }
+
+    #[test]
+    fn supersampled_boundary_pixels_blend_colours_not_palette_positions() {
+        // across the set's edge every albedo must be a mix of the two sides, never a colour from elsewhere on the ramp
+        let p = Params {
+            size: 96,
+            ssaa: 3,
+            zoom: 1.0,
+            ..preset("mandelbrot").unwrap()
+        };
+        let t = generate(&p).unwrap();
+        let dark = lin_to_srgb(0.012);
+        let inside = t
+            .albedo
+            .chunks(4)
+            .filter(|q| (q[0] as f32 / 255.0 - dark).abs() < 0.01)
+            .count();
+        assert!(inside > 0 && inside < 96 * 96);
+    }
+
+    #[test]
+    fn random_parameters_never_panic_or_produce_non_finite_maps() {
+        let mut r = crate::noise::Rng::new(7);
+        for _ in 0..60 {
+            let kind = Kind::ALL[(r.f32() * 10.0) as usize % Kind::ALL.len()];
+            let p = Params {
+                kind,
+                size: 8 + (r.f32() * 40.0) as u32,
+                seed: (r.f32() * 4e9) as u32,
+                octaves: (r.f32() * 20.0) as u32,
+                lacunarity: r.f32() * 6.0,
+                gain: r.f32() * 1.2,
+                cells: (r.f32() * 300.0) as u32,
+                warp: (r.f32() - 0.3) * 40.0,
+                tile: r.f32() > 0.5,
+                zoom: (r.f32() * 30.0 - 5.0) as f64,
+                ssaa: 1 + (r.f32() * 3.0) as u32,
+                contrast: (r.f32() - 0.3) * 30.0,
+                relief: (r.f32() - 0.3) * 50.0,
+                light_az: r.f32() * 720.0 - 360.0,
+                light_elev: r.f32() * 200.0 - 50.0,
+                specular: r.f32() * 3.0,
+                shininess: r.f32() * 500.0 - 20.0,
+                ao: r.f32() * 3.0,
+                glow: r.f32() * 5.0,
+                color_speed: r.f32() * 20.0 - 5.0,
+                palette: Palette(vec![]),
+            };
+            let t = generate(&p).unwrap_or_else(|e| panic!("{p:?}: {e}"));
+            assert!(
+                t.height
+                    .iter()
+                    .all(|h| h.is_finite() && (0.0..=1.0).contains(h)),
+                "{p:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn worley_points_are_not_aligned_in_columns_or_rows() {
+        // the first version drew the x offset from the column alone, so every cell of a column shared it
+        let off = |cx: i32, cy: i32| {
+            let a = (hash01(cx, 3) * 16_777_216.0) as i32;
+            (
+                hash01(a ^ cy.wrapping_mul(0x1B87_3593), 3 ^ 0x3C6E_F372),
+                hash01(a ^ cy.wrapping_mul(0x2545_F491), 3 ^ 0xA54F_F53A),
+            )
+        };
+        let col: std::collections::HashSet<u32> =
+            (0..32).map(|y| (off(5, y).0 * 1e6) as u32).collect();
+        let row: std::collections::HashSet<u32> =
+            (0..32).map(|x| (off(x, 5).1 * 1e6) as u32).collect();
+        assert!(col.len() > 28 && row.len() > 28);
+        let (f1, _) = worley(0.5, 0.5, 0, 9);
+        assert!(f1.is_finite() && f1 < 1.5);
     }
 }

@@ -8,20 +8,12 @@
 //! the simplest valid variant: single-part, scanline, uncompressed, HALF A/B/G/R channels.
 
 pub fn srgb_to_linear(c: f32) -> f32 {
-    if c <= 0.04045 {
-        c / 12.92
-    } else {
-        ((c + 0.055) / 1.055).powf(2.4)
-    }
+    if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
 }
 
 pub fn linear_to_srgb(c: f32) -> f32 {
     let c = c.clamp(0.0, 1.0);
-    if c <= 0.0031308 {
-        c * 12.92
-    } else {
-        1.055 * c.powf(1.0 / 2.4) - 0.055
-    }
+    if c <= 0.0031308 { c * 12.92 } else { 1.055 * c.powf(1.0 / 2.4) - 0.055 }
 }
 
 /// IEEE 754 binary16 from f32 (round to nearest even, overflow to infinity, subnormals kept).
@@ -82,11 +74,7 @@ pub fn f16_to_f32(h: u16) -> f32 {
 }
 
 fn check(w: u32, h: u32, rgba: &[u8]) -> Result<(), String> {
-    if w == 0
-        || h == 0
-        || rgba.len() != (w as usize) * (h as usize) * 4
-        || (w as u64) * (h as u64) > 64_000_000
-    {
+    if w == 0 || h == 0 || rgba.len() != (w as usize) * (h as usize) * 4 || (w as u64) * (h as u64) > 64_000_000 {
         return Err("bad image size".into());
     }
     Ok(())
@@ -100,11 +88,7 @@ pub fn encode_png16(w: u32, h: u32, rgba: &[u8], linear: bool) -> Result<Vec<u8>
     for p in rgba.chunks_exact(4) {
         for (i, &c) in p.iter().enumerate() {
             let v = c as f32 / 255.0;
-            let v = if i < 3 && linear {
-                srgb_to_linear(v)
-            } else {
-                v
-            };
+            let v = if i < 3 && linear { srgb_to_linear(v) } else { v };
             let q = (v * 65535.0).round().clamp(0.0, 65535.0) as u16;
             data.extend_from_slice(&q.to_be_bytes());
         }
@@ -167,26 +151,13 @@ fn write_exr(w: u32, h: u32, lin: &[f32], prec: Precision) -> Vec<u8> {
     chlist.push(0);
     attr(&mut out, "channels", "chlist", &chlist);
     attr(&mut out, "compression", "compression", &[0]);
-    let win: Vec<u8> = [0i32, 0, w as i32 - 1, h as i32 - 1]
-        .iter()
-        .flat_map(|v| v.to_le_bytes())
-        .collect();
+    let win: Vec<u8> = [0i32, 0, w as i32 - 1, h as i32 - 1].iter().flat_map(|v| v.to_le_bytes()).collect();
     attr(&mut out, "dataWindow", "box2i", &win);
     attr(&mut out, "displayWindow", "box2i", &win);
     attr(&mut out, "lineOrder", "lineOrder", &[0]);
     attr(&mut out, "pixelAspectRatio", "float", &1.0f32.to_le_bytes());
-    attr(
-        &mut out,
-        "screenWindowCenter",
-        "v2f",
-        &[0.0f32.to_le_bytes(), 0.0f32.to_le_bytes()].concat(),
-    );
-    attr(
-        &mut out,
-        "screenWindowWidth",
-        "float",
-        &1.0f32.to_le_bytes(),
-    );
+    attr(&mut out, "screenWindowCenter", "v2f", &[0.0f32.to_le_bytes(), 0.0f32.to_le_bytes()].concat());
+    attr(&mut out, "screenWindowWidth", "float", &1.0f32.to_le_bytes());
     out.push(0); // end of header
     let line_bytes = w as usize * 4 * bps;
     let table_at = out.len();
@@ -226,11 +197,7 @@ pub fn encode_exr_half(w: u32, h: u32, rgba: &[u8]) -> Result<Vec<u8>, String> {
 }
 
 fn check_buf(w: u32, h: u32, buf: &[f32]) -> Result<(), String> {
-    if w == 0
-        || h == 0
-        || buf.len() != (w as usize) * (h as usize) * 4
-        || (w as u64) * (h as u64) > 64_000_000
-    {
+    if w == 0 || h == 0 || buf.len() != (w as usize) * (h as usize) * 4 || (w as u64) * (h as u64) > 64_000_000 {
         return Err("bad image size".into());
     }
     Ok(())
@@ -238,12 +205,7 @@ fn check_buf(w: u32, h: u32, buf: &[f32]) -> Result<(), String> {
 
 /// OpenEXR from the float renderer's buffer (premultiplied, sRGB-encoded RGBA f32): colour is
 /// un-premultiplied, converted to linear light and premultiplied again (alpha untouched).
-pub fn encode_exr_buf(
-    w: u32,
-    h: u32,
-    premul_encoded: &[f32],
-    prec: Precision,
-) -> Result<Vec<u8>, String> {
+pub fn encode_exr_buf(w: u32, h: u32, premul_encoded: &[f32], prec: Precision) -> Result<Vec<u8>, String> {
     check_buf(w, h, premul_encoded)?;
     let mut lin = Vec::with_capacity(premul_encoded.len());
     for p in premul_encoded.chunks_exact(4) {
@@ -262,12 +224,7 @@ pub fn encode_exr_buf(
 /// 16-bit RGBA PNG from the float buffer. Straight alpha, plain round-to-nearest quantisation to
 /// 65535 levels — deliberately *no dither*, so output is deterministic and loss-free enough
 /// (1/65535 steps) that no banding survives. With `linear` colour is converted to linear light.
-pub fn encode_png16_buf(
-    w: u32,
-    h: u32,
-    premul_encoded: &[f32],
-    linear: bool,
-) -> Result<Vec<u8>, String> {
+pub fn encode_png16_buf(w: u32, h: u32, premul_encoded: &[f32], linear: bool) -> Result<Vec<u8>, String> {
     check_buf(w, h, premul_encoded)?;
     let mut data = Vec::with_capacity(premul_encoded.len() * 2);
     for p in premul_encoded.chunks_exact(4) {
@@ -275,14 +232,8 @@ pub fn encode_png16_buf(
         let d = if a > 0.0 { 1.0 / a } else { 0.0 };
         for (i, &c) in p.iter().enumerate() {
             let v = if i == 3 { a } else { (c * d).clamp(0.0, 1.0) };
-            let v = if i < 3 && linear {
-                srgb_to_linear(v)
-            } else {
-                v
-            };
-            data.extend_from_slice(
-                &((v * 65535.0).round().clamp(0.0, 65535.0) as u16).to_be_bytes(),
-            );
+            let v = if i < 3 && linear { srgb_to_linear(v) } else { v };
+            data.extend_from_slice(&((v * 65535.0).round().clamp(0.0, 65535.0) as u16).to_be_bytes());
         }
     }
     let mut out = Vec::new();
@@ -313,14 +264,7 @@ mod tests {
 
     #[test]
     fn half_float_conversion() {
-        for (v, h) in [
-            (0.0f32, 0x0000u16),
-            (1.0, 0x3c00),
-            (-2.0, 0xc000),
-            (0.5, 0x3800),
-            (65504.0, 0x7bff),
-            (f32::INFINITY, 0x7c00),
-        ] {
+        for (v, h) in [(0.0f32, 0x0000u16), (1.0, 0x3c00), (-2.0, 0xc000), (0.5, 0x3800), (65504.0, 0x7bff), (f32::INFINITY, 0x7c00)] {
             assert_eq!(f32_to_f16(v), h, "{v}");
             if v.is_finite() {
                 assert_eq!(f16_to_f32(h), v);
@@ -336,9 +280,7 @@ mod tests {
     }
 
     fn sample() -> Vec<u8> {
-        vec![
-            255, 128, 0, 255, 10, 20, 30, 128, 0, 0, 0, 0, 255, 255, 255, 255,
-        ]
+        vec![255, 128, 0, 255, 10, 20, 30, 128, 0, 0, 0, 0, 255, 255, 255, 255]
     }
 
     #[test]
@@ -372,8 +314,7 @@ mod tests {
         assert_eq!(b[4], 2);
         let find = |needle: &[u8]| b.windows(needle.len()).position(|w| w == needle).unwrap();
         assert!(find(b"channels\0chlist\0") < 40);
-        let hdr_end =
-            find(b"screenWindowWidth\0float\0") + b"screenWindowWidth\0float\0".len() + 4 + 4;
+        let hdr_end = find(b"screenWindowWidth\0float\0") + b"screenWindowWidth\0float\0".len() + 4 + 4;
         assert_eq!(b[hdr_end], 0, "header terminator");
         let table = hdr_end + 1;
         let off1 = u64::from_le_bytes(b[table..table + 8].try_into().unwrap()) as usize;
@@ -381,10 +322,7 @@ mod tests {
         assert_eq!(off1, table + 16);
         assert_eq!(off2, off1 + 8 + 16, "each line: y + size + 2px x 4ch x 2B");
         assert_eq!(i32::from_le_bytes(b[off1..off1 + 4].try_into().unwrap()), 0);
-        assert_eq!(
-            i32::from_le_bytes(b[off1 + 4..off1 + 8].try_into().unwrap()),
-            16
-        );
+        assert_eq!(i32::from_le_bytes(b[off1 + 4..off1 + 8].try_into().unwrap()), 16);
         assert_eq!(b.len(), off2 + 8 + 16);
         // line 0, channel A first: pixel 0 alpha = 1.0, pixel 1 alpha = 128/255
         let a0 = u16::from_le_bytes([b[off1 + 8], b[off1 + 9]]);

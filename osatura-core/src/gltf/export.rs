@@ -9,21 +9,14 @@ use super::*;
 
 pub(super) enum PaintSrc {
     Paint(Paint),
-    Image {
-        png: Vec<u8>,
-        key: String,
-        has_alpha: bool,
-    },
+    Image { png: Vec<u8>, key: String, has_alpha: bool },
 }
 
 pub(super) enum UvSrc {
     /// computed from the paint (gradients) or absent (solid)
     Paint,
     /// affine over a rectangle in layer space
-    Quad {
-        origin: Vec2,
-        size: Vec2,
-    },
+    Quad { origin: Vec2, size: Vec2 },
     Explicit(Vec<[f32; 2]>),
 }
 
@@ -70,29 +63,17 @@ impl Out {
         }
         let bytes = png();
         let bv = self.bin.view(&bytes);
-        self.images
-            .push(json!({"bufferView": bv, "mimeType": "image/png"}));
-        self.textures
-            .push(json!({"sampler": 0, "source": self.images.len() - 1}));
+        self.images.push(json!({"bufferView": bv, "mimeType": "image/png"}));
+        self.textures.push(json!({"sampler": 0, "source": self.images.len() - 1}));
         self.tex_cache.insert(key, self.textures.len() - 1);
         self.textures.len() - 1
     }
 
     /// Write one primitive as a mesh node. `place` maps layer space to the node's space.
-    pub(super) fn emit(
-        &mut self,
-        pr: Prim,
-        to_stage: Affine2,
-        to_host: Affine2,
-        host: Option<usize>,
-    ) -> Option<usize> {
+    pub(super) fn emit(&mut self, pr: Prim, to_stage: Affine2, to_host: Affine2, host: Option<usize>) -> Option<usize> {
         let skinned = pr.skin.is_some();
         let place = if skinned { to_stage } else { to_host };
-        let z = if skinned {
-            self.shape_count as f32 * 0.01
-        } else {
-            0.0
-        };
+        let z = if skinned { self.shape_count as f32 * 0.01 } else { 0.0 };
         let gp = |q: Vec2| {
             let p = place.apply(q);
             [p.x, -p.y, z]
@@ -100,19 +81,14 @@ impl Out {
         let flat: Vec<f32> = pr.pos.iter().flat_map(|q| gp(*q)).collect();
         let bounds = bounds3(&flat);
         let nv = pr.pos.len();
-        let pos = self
-            .bin
-            .add(&f32s(&flat), 5126, nv, "VEC3", Some(bounds), Some(34962));
+        let pos = self.bin.add(&f32s(&flat), 5126, nv, "VEC3", Some(bounds), Some(34962));
         let mut attrs = json!({"POSITION": pos});
         if let Some(sk) = &pr.skin {
             self.skinned_any = true;
             let joints: Vec<u8> = sk.iter().flat_map(|m| m.0).collect();
             let wts: Vec<f32> = sk.iter().flat_map(|m| m.1).collect();
             attrs["JOINTS_0"] = json!(self.bin.add(&joints, 5121, nv, "VEC4", None, Some(34962)));
-            attrs["WEIGHTS_0"] =
-                json!(self
-                    .bin
-                    .add(&f32s(&wts), 5126, nv, "VEC4", None, Some(34962)));
+            attrs["WEIGHTS_0"] = json!(self.bin.add(&f32s(&wts), 5126, nv, "VEC4", None, Some(34962)));
         }
         // material + texture coordinates
         let (mut gmap, mut tex): (Option<GradMap>, Option<usize>) = (None, None);
@@ -122,36 +98,22 @@ impl Out {
             PaintSrc::Paint(p) => {
                 gmap = grad_map(p);
                 if gmap.is_some() {
-                    tex = Some(self.texture(
-                        format!("grad:{}", serde_json::to_string(p).unwrap_or_default()),
-                        || gradient_png(p),
-                    ));
+                    tex = Some(self.texture(format!("grad:{}", serde_json::to_string(p).unwrap_or_default()), || gradient_png(p)));
                     translucent |= stops_translucent(p);
                 } else {
                     let c = p.degenerate_color().unwrap_or_else(|| p.base_color());
-                    factor = [
-                        srgb_to_linear(c.r),
-                        srgb_to_linear(c.g),
-                        srgb_to_linear(c.b),
-                        c.a * pr.opacity,
-                    ];
+                    factor = [srgb_to_linear(c.r), srgb_to_linear(c.g), srgb_to_linear(c.b), c.a * pr.opacity];
                     translucent = factor[3] < 0.999;
                 }
             }
-            PaintSrc::Image {
-                png,
-                key,
-                has_alpha,
-            } => {
+            PaintSrc::Image { png, key, has_alpha } => {
                 tex = Some(self.texture(key.clone(), || png.clone()));
                 translucent |= *has_alpha;
             }
         }
         let uv_of = |q: Vec2| -> [f32; 2] {
             match (&pr.uv, &gmap) {
-                (UvSrc::Quad { origin, size }, _) => {
-                    [(q.x - origin.x) / size.x, (q.y - origin.y) / size.y]
-                }
+                (UvSrc::Quad { origin, size }, _) => [(q.x - origin.x) / size.x, (q.y - origin.y) / size.y],
                 (_, Some(m)) => grad_uv(m, q),
                 _ => [0.0, 0.0],
             }
@@ -162,25 +124,10 @@ impl Out {
                 UvSrc::Explicit(v) => v.iter().flatten().copied().collect(),
                 _ => pr.pos.iter().flat_map(|q| uv_of(*q)).collect(),
             };
-            attrs["TEXCOORD_0"] =
-                json!(self
-                    .bin
-                    .add(&f32s(&uvs), 5126, nv, "VEC2", None, Some(34962)));
+            attrs["TEXCOORD_0"] = json!(self.bin.add(&f32s(&uvs), 5126, nv, "VEC2", None, Some(34962)));
         }
-        let idx_bytes: Vec<u8> = pr
-            .tris
-            .iter()
-            .flat_map(|t| t.iter().rev())
-            .flat_map(|&i| i.to_le_bytes())
-            .collect(); // reverse: y flip flips winding
-        let ind = self.bin.add(
-            &idx_bytes,
-            5125,
-            pr.tris.len() * 3,
-            "SCALAR",
-            None,
-            Some(34963),
-        );
+        let idx_bytes: Vec<u8> = pr.tris.iter().flat_map(|t| t.iter().rev()).flat_map(|&i| i.to_le_bytes()).collect(); // reverse: y flip flips winding
+        let ind = self.bin.add(&idx_bytes, 5125, pr.tris.len() * 3, "SCALAR", None, Some(34963));
         let mut mat = json!({"pbrMetallicRoughness": {"baseColorFactor": factor, "metallicFactor": 0.0, "roughnessFactor": 1.0}, "doubleSided": true});
         if let Some(t) = tex {
             mat["pbrMetallicRoughness"]["baseColorTexture"] = json!({"index": t, "texCoord": 0});
@@ -189,37 +136,23 @@ impl Out {
             mat["alphaMode"] = json!("BLEND");
         }
         self.materials.push(mat);
-        let mut prim =
-            json!({"attributes": attrs, "indices": ind, "material": self.materials.len() - 1});
+        let mut prim = json!({"attributes": attrs, "indices": ind, "material": self.materials.len() - 1});
         let mut mesh = json!({"name": pr.name});
         let nt = pr.morph.as_ref().map_or(0, |m| m.names.len());
         if let Some(md) = &pr.morph {
             let mut targets = Vec::new();
             for d in &md.deltas {
-                let dflat: Vec<f32> = pr
-                    .pos
-                    .iter()
-                    .zip(d)
-                    .flat_map(|(b, dd)| {
-                        let (a, c) = (gp(*b), gp(*b + *dd));
-                        [c[0] - a[0], c[1] - a[1], 0.0]
-                    })
-                    .collect();
+                let dflat: Vec<f32> = pr.pos.iter().zip(d).flat_map(|(b, dd)| {
+                    let (a, c) = (gp(*b), gp(*b + *dd));
+                    [c[0] - a[0], c[1] - a[1], 0.0]
+                }).collect();
                 let mut t = json!({"POSITION": self.bin.add(&f32s(&dflat), 5126, nv, "VEC3", Some(bounds3(&dflat)), Some(34962))});
                 if has_uv && gmap.is_some() {
-                    let duv: Vec<f32> = pr
-                        .pos
-                        .iter()
-                        .zip(d)
-                        .flat_map(|(b, dd)| {
-                            let (a, c) = (uv_of(*b), uv_of(*b + *dd));
-                            [c[0] - a[0], c[1] - a[1]]
-                        })
-                        .collect();
-                    t["TEXCOORD_0"] =
-                        json!(self
-                            .bin
-                            .add(&f32s(&duv), 5126, nv, "VEC2", None, Some(34962)));
+                    let duv: Vec<f32> = pr.pos.iter().zip(d).flat_map(|(b, dd)| {
+                        let (a, c) = (uv_of(*b), uv_of(*b + *dd));
+                        [c[0] - a[0], c[1] - a[1]]
+                    }).collect();
+                    t["TEXCOORD_0"] = json!(self.bin.add(&f32s(&duv), 5126, nv, "VEC2", None, Some(34962)));
                 }
                 targets.push(t);
             }
@@ -231,8 +164,7 @@ impl Out {
         self.meshes.push(mesh);
         let mi = self.meshes.len() - 1;
         if skinned {
-            self.nodes
-                .push(json!({"name": format!("skinned {}", pr.name), "mesh": mi, "skin": 0}));
+            self.nodes.push(json!({"name": format!("skinned {}", pr.name), "mesh": mi, "skin": 0}));
             self.shape_count += 1;
             self.scene_nodes.push(self.nodes.len() - 1);
             return None;
@@ -244,10 +176,7 @@ impl Out {
             self.morph_anims.push((ni, md.frames, nt));
         }
         match host {
-            Some(h) => match self.nodes[h]
-                .get_mut("children")
-                .and_then(Value::as_array_mut)
-            {
+            Some(h) => match self.nodes[h].get_mut("children").and_then(Value::as_array_mut) {
                 Some(a) => a.push(json!(ni)),
                 None => self.nodes[h]["children"] = json!([ni]),
             },
@@ -264,19 +193,11 @@ pub(super) fn note(notes: &mut Vec<String>, s: String) {
 }
 
 /// Things glTF cannot carry (or this exporter does not write) that the project uses: reported so a silent loss never looks like success.
-pub(super) fn dropped_features(
-    p: &crate::project::Project,
-    notes: &mut Vec<String>,
-    layer_animation: bool,
-) {
+pub(super) fn dropped_features(p: &crate::project::Project, notes: &mut Vec<String>, layer_animation: bool) {
     use crate::project::Prop;
     fn walk(ls: &[Layer], prefix: &str, notes: &mut Vec<String>) {
         for l in ls {
-            let path = if prefix.is_empty() {
-                l.name.clone()
-            } else {
-                format!("{prefix}/{}", l.name)
-            };
+            let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
             if l.blend != crate::style::Blend::Normal {
                 note(notes, format!("blend mode {:?} of '{path}' is not exported (glTF materials only alpha-blend); it is drawn as normal", l.blend));
             }
@@ -307,10 +228,7 @@ pub(super) fn dropped_features(
     }
 }
 
-pub(super) fn dedup_flat(
-    mut tp: Vec<(Vec2, usize, f32)>,
-    closed_hint: bool,
-) -> Vec<(Vec2, usize, f32)> {
+pub(super) fn dedup_flat(mut tp: Vec<(Vec2, usize, f32)>, closed_hint: bool) -> Vec<(Vec2, usize, f32)> {
     tp.dedup_by(|a, b| a.0.distance(b.0) < 1e-4);
     if tp.len() >= 2 && tp[0].0.distance(tp.last().unwrap().0) < 1e-4 && closed_hint {
         tp.pop();
@@ -319,9 +237,7 @@ pub(super) fn dedup_flat(
 }
 
 pub(super) fn to_u32(t: Vec<[usize; 3]>) -> Vec<[u32; 3]> {
-    t.into_iter()
-        .map(|t| [t[0] as u32, t[1] as u32, t[2] as u32])
-        .collect()
+    t.into_iter().map(|t| [t[0] as u32, t[1] as u32, t[2] as u32]).collect()
 }
 
 /// Build the .glb bytes.
@@ -345,10 +261,7 @@ pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), Stri
 }
 
 /// Like [`export_glb_report`], with options.
-pub fn export_glb_with(
-    engine: &Engine,
-    opts: &GlbOptions,
-) -> Result<(Vec<u8>, Vec<String>), String> {
+pub fn export_glb_with(engine: &Engine, opts: &GlbOptions) -> Result<(Vec<u8>, Vec<String>), String> {
     let p = &engine.project;
     let nb = p.bones.len();
     if nb == 0 {
@@ -359,28 +272,11 @@ pub fn export_glb_with(
     }
     let mut notes: Vec<String> = Vec::new();
     dropped_features(p, &mut notes, opts.layer_animation);
-    let parent: Vec<Option<usize>> = p
-        .bones
-        .iter()
-        .map(|b| {
-            b.parent
-                .as_ref()
-                .and_then(|n| p.bones.iter().position(|x| &x.name == n))
-        })
-        .collect();
-    let bone_ix: HashMap<&str, usize> = p
-        .bones
-        .iter()
-        .enumerate()
-        .map(|(i, b)| (b.name.as_str(), i))
-        .collect();
+    let parent: Vec<Option<usize>> = p.bones.iter().map(|b| b.parent.as_ref().and_then(|n| p.bones.iter().position(|x| &x.name == n))).collect();
+    let bone_ix: HashMap<&str, usize> = p.bones.iter().enumerate().map(|(i, b)| (b.name.as_str(), i)).collect();
     let f0 = engine.evaluate(0.0);
     let mut out = Out {
-        bin: Bin {
-            data: Vec::new(),
-            views: vec![],
-            accessors: vec![],
-        },
+        bin: Bin { data: Vec::new(), views: vec![], accessors: vec![] },
         nodes: Vec::new(),
         scene_nodes: Vec::new(),
         meshes: Vec::new(),
@@ -413,16 +309,13 @@ pub fn export_glb_with(
     // shapes (frame 0)
     let mut shapes = Vec::new();
     collect_shapes(&p.layers, "", &mut shapes);
-    let node_by_name: HashMap<&str, usize> =
-        f0.nodes.iter().map(|n| (n.name.as_str(), n.id)).collect();
+    let node_by_name: HashMap<&str, usize> = f0.nodes.iter().map(|n| (n.name.as_str(), n.id)).collect();
     let cam_inv = f0.camera.inverse().unwrap_or(Affine2::IDENTITY);
     let mut morph_cache: MorphCache = None;
     // rigid shape nodes per layer node: (node id of the layer, host bone, frame-0 placement, glTF node indices)
     let mut rigid: Vec<RigidLayer> = Vec::new();
     for (layer, lpath) in shapes {
-        let Some(&nid) = node_by_name.get(lpath.as_str()) else {
-            continue;
-        };
+        let Some(&nid) = node_by_name.get(lpath.as_str()) else { continue };
         let node = &f0.nodes[nid];
         if node.kind == NodeKind::Switch || node.kind == NodeKind::Group {
             continue;
@@ -454,10 +347,7 @@ pub fn export_glb_with(
             continue;
         }
         let to_stage = cam_inv.mul(node.world);
-        let host = layer
-            .bone
-            .as_ref()
-            .and_then(|b| bone_ix.get(b.as_str()).copied());
+        let host = layer.bone.as_ref().and_then(|b| bone_ix.get(b.as_str()).copied());
         let to_host = match host.and_then(|h| f0.world[h].inverse()) {
             Some(inv) => inv.mul(to_stage),
             None => to_stage,
@@ -477,15 +367,9 @@ pub fn export_glb_with(
             }
             let opaque = |pt: &Paint| match pt {
                 Paint::Solid(c) => c.a >= 0.999,
-                Paint::Linear { stops, .. } | Paint::Radial { stops, .. } => {
-                    stops.iter().all(|s| s.color.a >= 0.999)
-                }
+                Paint::Linear { stops, .. } | Paint::Radial { stops, .. } => stops.iter().all(|s| s.color.a >= 0.999),
             };
-            let eligible = m.kind == NodeKind::Vector
-                && mop >= 0.999
-                && m.paths
-                    .iter()
-                    .all(|pa| pa.stroke.is_none() && pa.fill.as_ref().is_none_or(opaque));
+            let eligible = m.kind == NodeKind::Vector && mop >= 0.999 && m.paths.iter().all(|pa| pa.stroke.is_none() && pa.fill.as_ref().is_none_or(opaque));
             let Some(inv) = node.world.inverse().filter(|_| eligible) else {
                 note(&mut notes, format!("mask '{}' on '{}' was not baked (mask source must be a vector layer with opaque fills, no strokes and full opacity); the layer is exported unmasked", m.name, lpath));
                 continue;
@@ -493,10 +377,7 @@ pub fn export_glb_with(
             let mm = inv.mul(m.world);
             let mut tris = Vec::new();
             for pa in m.paths.iter().filter(|pa| pa.fill.is_some()) {
-                let pts: Vec<Vec2> = dedup_flat(pa.flatten_t(0.25), true)
-                    .iter()
-                    .map(|x| mm.apply(x.0))
-                    .collect();
+                let pts: Vec<Vec2> = dedup_flat(pa.flatten_t(0.25), true).iter().map(|x| mm.apply(x.0)).collect();
                 for t in triangulate(&pts) {
                     let mut tr = [pts[t[0]], pts[t[1]], pts[t[2]]];
                     if cr(tr[1] - tr[0], tr[2] - tr[0]) < 0.0 {
@@ -514,51 +395,27 @@ pub fn export_glb_with(
         match &layer.kind {
             LayerKind::Image { mesh: spec, .. } => {
                 let Some(img) = &node.image else { continue };
-                let (pw, ph) = (
-                    img.data.pixmap.width() as f32,
-                    img.data.pixmap.height() as f32,
-                );
+                let (pw, ph) = (img.data.pixmap.width() as f32, img.data.pixmap.height() as f32);
                 let (mut pos, mut tris, mut uv, mut skin) = match &img.mesh {
                     Some(m) => {
-                        let uv: Vec<[f32; 2]> =
-                            m.uvs.iter().map(|u| [u.x / pw, u.y / ph]).collect();
-                        let skin = spec
-                            .as_ref()
-                            .filter(|s| {
-                                nb <= 255
-                                    && s.weights.len() == m.positions.len()
-                                    && s.weights.iter().all(|w| !w.is_empty())
-                            })
-                            .map(|s| {
-                                s.weights
-                                    .iter()
-                                    .map(|ws| {
-                                        let mut mix = Vec::new();
-                                        for bw in ws {
-                                            if let Some(&bi) = bone_ix.get(bw.bone.as_str()) {
-                                                add_mix(&mut mix, bi, bw.weight);
-                                            }
-                                        }
-                                        pack_mix(mix)
-                                    })
-                                    .collect::<Vec<Mix>>()
-                            });
-                        (
-                            m.positions.clone(),
-                            m.tris.clone(),
-                            UvSrc::Explicit(uv),
-                            skin,
-                        )
+                        let uv: Vec<[f32; 2]> = m.uvs.iter().map(|u| [u.x / pw, u.y / ph]).collect();
+                        let skin = spec.as_ref().filter(|s| nb <= 255 && s.weights.len() == m.positions.len() && s.weights.iter().all(|w| !w.is_empty())).map(|s| {
+                            s.weights.iter().map(|ws| {
+                                let mut mix = Vec::new();
+                                for bw in ws {
+                                    if let Some(&bi) = bone_ix.get(bw.bone.as_str()) {
+                                        add_mix(&mut mix, bi, bw.weight);
+                                    }
+                                }
+                                pack_mix(mix)
+                            }).collect::<Vec<Mix>>()
+                        });
+                        (m.positions.clone(), m.tris.clone(), UvSrc::Explicit(uv), skin)
                     }
                     None => {
                         let (o, s) = (img.origin, img.size);
                         let pos = vec![o, o + Vec2::new(s.x, 0.0), o + s, o + Vec2::new(0.0, s.y)];
-                        (
-                            pos,
-                            vec![[0, 1, 2], [0, 2, 3]],
-                            UvSrc::Quad { origin: o, size: s },
-                            None,
-                        )
+                        (pos, vec![[0, 1, 2], [0, 2, 3]], UvSrc::Quad { origin: o, size: s }, None)
                     }
                 };
                 if !masks.is_empty() {
@@ -569,20 +426,10 @@ pub fn export_glb_with(
                                 tris = t2;
                                 skin = None;
                             }
-                            None => note(
-                                &mut notes,
-                                format!(
-                                    "mask on '{lpath}' produced too many pieces; exported unmasked"
-                                ),
-                            ),
+                            None => note(&mut notes, format!("mask on '{lpath}' produced too many pieces; exported unmasked")),
                         }
                     } else {
-                        note(
-                            &mut notes,
-                            format!(
-                                "mask on meshed image '{lpath}' was not baked; exported unmasked"
-                            ),
-                        );
+                        note(&mut notes, format!("mask on meshed image '{lpath}' was not baked; exported unmasked"));
                     }
                 }
                 if tris.is_empty() {
@@ -605,30 +452,9 @@ pub fn export_glb_with(
                 };
                 let has_alpha = img.data.pixmap.data().chunks_exact(4).any(|px| px[3] < 255);
                 if let UvSrc::Quad { .. } = uv {
-                    uv = UvSrc::Quad {
-                        origin: img.origin,
-                        size: img.size,
-                    };
+                    uv = UvSrc::Quad { origin: img.origin, size: img.size };
                 }
-                let made = out.emit(
-                    Prim {
-                        name: node.name.clone(),
-                        pos,
-                        tris,
-                        skin,
-                        paint: PaintSrc::Image {
-                            png: img.data.png.clone(),
-                            key,
-                            has_alpha,
-                        },
-                        uv,
-                        opacity,
-                        morph: None,
-                    },
-                    to_stage,
-                    to_host,
-                    host,
-                );
+                let made = out.emit(Prim { name: node.name.clone(), pos, tris, skin, paint: PaintSrc::Image { png: img.data.png.clone(), key, has_alpha }, uv, opacity, morph: None }, to_stage, to_host, host);
                 track_rigid(&mut rigid, made, nid, host, to_host);
             }
             _ => {
@@ -637,18 +463,9 @@ pub fn export_glb_with(
                     _ => &[],
                 };
                 for (pi, path) in node.paths.iter().enumerate() {
-                    let wpath = src_paths
-                        .get(pi)
-                        .filter(|s| s.anchors.len() == path.anchors.len());
-                    let skinned_ok = masks.is_empty()
-                        && nb <= 255
-                        && !path.anchors.is_empty()
-                        && wpath.is_some_and(|s| s.anchors.iter().all(|a| !a.weights.is_empty()));
-                    let pname = if path.name.is_empty() {
-                        format!("path{pi}")
-                    } else {
-                        path.name.clone()
-                    };
+                    let wpath = src_paths.get(pi).filter(|s| s.anchors.len() == path.anchors.len());
+                    let skinned_ok = masks.is_empty() && nb <= 255 && !path.anchors.is_empty() && wpath.is_some_and(|s| s.anchors.iter().all(|a| !a.weights.is_empty()));
+                    let pname = if path.name.is_empty() { format!("path{pi}") } else { path.name.clone() };
                     // ---- fill
                     if let Some(fill) = &path.fill {
                         let mut tp = dedup_flat(path.flatten_t(1.0), true);
@@ -658,15 +475,9 @@ pub fn export_glb_with(
                         let mut morph = None;
                         if !tris.is_empty() {
                             if skinned_ok {
-                                skin = Some(skin_table(
-                                    wpath.expect("skinned implies weights"),
-                                    &tp,
-                                    &bone_ix,
-                                ));
+                                skin = Some(skin_table(wpath.expect("skinned implies weights"), &tp, &bone_ix));
                             } else if masks.is_empty() {
-                                if let Some(sp) =
-                                    wpath.filter(|s| !s.morphs.is_empty() && s.fill.is_some())
-                                {
+                                if let Some(sp) = wpath.filter(|s| !s.morphs.is_empty() && s.fill.is_some()) {
                                     match try_morph(engine, &mut morph_cache, nid, pi, sp) {
                                         Ok((base, t, md)) => {
                                             pts = base;
@@ -688,21 +499,7 @@ pub fn export_glb_with(
                             }
                             tp.clear();
                             if !tris.is_empty() {
-                                let made = out.emit(
-                                    Prim {
-                                        name: format!("{}:{}", node.name, pname),
-                                        pos: pts,
-                                        tris,
-                                        skin,
-                                        paint: PaintSrc::Paint(fill.clone()),
-                                        uv: UvSrc::Paint,
-                                        opacity,
-                                        morph,
-                                    },
-                                    to_stage,
-                                    to_host,
-                                    host,
-                                );
+                                let made = out.emit(Prim { name: format!("{}:{}", node.name, pname), pos: pts, tris, skin, paint: PaintSrc::Paint(fill.clone()), uv: UvSrc::Paint, opacity, morph }, to_stage, to_host, host);
                                 track_rigid(&mut rigid, made, nid, host, to_host);
                             }
                         }
@@ -711,9 +508,7 @@ pub fn export_glb_with(
                     if let Some(st) = &path.stroke {
                         let tp = dedup_flat(path.flatten_t(0.25), path.closed);
                         let pts: Vec<Vec2> = tp.iter().map(|x| x.0).collect();
-                        let Some(mut soup) = build_stroke(&pts, path.closed, st) else {
-                            continue;
-                        };
+                        let Some(mut soup) = build_stroke(&pts, path.closed, st) else { continue };
                         if let Some(n) = soup.note {
                             note(&mut notes, format!("'{lpath}': {n}"));
                         }
@@ -722,14 +517,8 @@ pub fn export_glb_with(
                         }
                         let mut skin: Option<Vec<Mix>> = None;
                         if skinned_ok {
-                            let table =
-                                skin_table(wpath.expect("skinned implies weights"), &tp, &bone_ix);
-                            skin = Some(
-                                soup.src
-                                    .iter()
-                                    .map(|&s| table[s.min(table.len() - 1)])
-                                    .collect(),
-                            );
+                            let table = skin_table(wpath.expect("skinned implies weights"), &tp, &bone_ix);
+                            skin = Some(soup.src.iter().map(|&s| table[s.min(table.len() - 1)]).collect());
                         }
                         if !masks.is_empty() {
                             match clip_mesh(&soup.pos, &soup.tris, &masks, 400_000) {
@@ -743,21 +532,7 @@ pub fn export_glb_with(
                         if soup.tris.is_empty() {
                             continue;
                         }
-                        let made = out.emit(
-                            Prim {
-                                name: format!("{}:{}:stroke", node.name, pname),
-                                pos: soup.pos,
-                                tris: soup.tris,
-                                skin,
-                                paint: PaintSrc::Paint(st.paint.clone()),
-                                uv: UvSrc::Paint,
-                                opacity,
-                                morph: None,
-                            },
-                            to_stage,
-                            to_host,
-                            host,
-                        );
+                        let made = out.emit(Prim { name: format!("{}:{}:stroke", node.name, pname), pos: soup.pos, tris: soup.tris, skin, paint: PaintSrc::Paint(st.paint.clone()), uv: UvSrc::Paint, opacity, morph: None }, to_stage, to_host, host);
                         track_rigid(&mut rigid, made, nid, host, to_host);
                     }
                 }
@@ -772,14 +547,9 @@ pub fn export_glb_with(
     let mut sc = vec![Vec::new(); nb];
     let animate_layers = opts.layer_animation && !rigid.is_empty();
     if animate_layers && (nb + rigid.len()) * p.frames as usize * 10 > MAX_ANIM_VALUES {
-        note(
-            &mut notes,
-            "layer transform animation was not exported: animation too large for glTF export"
-                .into(),
-        );
+        note(&mut notes, "layer transform animation was not exported: animation too large for glTF export".into());
     }
-    let animate_layers =
-        animate_layers && (nb + rigid.len()) * p.frames as usize * 10 <= MAX_ANIM_VALUES;
+    let animate_layers = animate_layers && (nb + rigid.len()) * p.frames as usize * 10 <= MAX_ANIM_VALUES;
     for f in 0..p.frames {
         let fr = engine.evaluate(f as f32);
         if animate_layers {
@@ -793,25 +563,13 @@ pub fn export_glb_with(
         }
     }
     let tmax = times.last().copied().unwrap_or(0.0);
-    let t_acc = out.bin.add(
-        &f32s(&times),
-        5126,
-        times.len(),
-        "SCALAR",
-        Some((vec![0.0], vec![tmax])),
-        None,
-    );
+    let t_acc = out.bin.add(&f32s(&times), 5126, times.len(), "SCALAR", Some((vec![0.0], vec![tmax])), None);
     let (mut samplers, mut channels) = (Vec::new(), Vec::new());
     for i in 0..nb {
-        for (path, data, ty) in [
-            ("translation", &tr[i], "VEC3"),
-            ("rotation", &ro[i], "VEC4"),
-            ("scale", &sc[i], "VEC3"),
-        ] {
+        for (path, data, ty) in [("translation", &tr[i], "VEC3"), ("rotation", &ro[i], "VEC4"), ("scale", &sc[i], "VEC3")] {
             let acc = out.bin.add(&f32s(data), 5126, times.len(), ty, None, None);
             samplers.push(json!({"input": t_acc, "output": acc, "interpolation": "LINEAR"}));
-            channels
-                .push(json!({"sampler": samplers.len() - 1, "target": {"node": i, "path": path}}));
+            channels.push(json!({"sampler": samplers.len() - 1, "target": {"node": i, "path": path}}));
         }
     }
     if animate_layers {
@@ -825,13 +583,9 @@ pub fn export_glb_with(
         }
     }
     for (ni, data, nt) in std::mem::take(&mut out.morph_anims) {
-        let acc = out
-            .bin
-            .add(&f32s(&data), 5126, times.len() * nt, "SCALAR", None, None);
+        let acc = out.bin.add(&f32s(&data), 5126, times.len() * nt, "SCALAR", None, None);
         samplers.push(json!({"input": t_acc, "output": acc, "interpolation": "LINEAR"}));
-        channels.push(
-            json!({"sampler": samplers.len() - 1, "target": {"node": ni, "path": "weights"}}),
-        );
+        channels.push(json!({"sampler": samplers.len() - 1, "target": {"node": ni, "path": "weights"}}));
     }
 
     if out.skinned_any {
@@ -849,9 +603,7 @@ pub fn export_glb_with(
             let det = if det.abs() < 1e-9 { 1e-9 } else { det };
             let (i00, i01, i10, i11) = (c1.y / det, -c1.x / det, -c0.y / det, c0.x / det);
             let (tx, ty) = (-(i00 * o.x + i01 * o.y), -(i10 * o.x + i11 * o.y));
-            ibm.extend_from_slice(&[
-                i00, i10, 0.0, 0.0, i01, i11, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, tx, ty, 0.0, 1.0,
-            ]);
+            ibm.extend_from_slice(&[i00, i10, 0.0, 0.0, i01, i11, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, tx, ty, 0.0, 1.0]);
         }
         bin_ibm(&mut out.bin, &ibm, nb);
     }
@@ -859,8 +611,7 @@ pub fn export_glb_with(
     // a skin needs one common root: with several root bones, hang them under a plain node
     let mut skeleton = roots[0];
     if out.skinned_any && roots.len() > 1 {
-        out.nodes
-            .push(json!({"name": "armature", "children": roots}));
+        out.nodes.push(json!({"name": "armature", "children": roots}));
         skeleton = out.nodes.len() - 1;
         out.scene_nodes.retain(|n| !roots.contains(n));
         out.scene_nodes.insert(0, skeleton);
@@ -885,8 +636,7 @@ pub fn export_glb_with(
     if !out.textures.is_empty() {
         doc["textures"] = json!(out.textures);
         doc["images"] = json!(out.images);
-        doc["samplers"] =
-            json!([{"magFilter": 9729, "minFilter": 9729, "wrapS": 33071, "wrapT": 33071}]);
+        doc["samplers"] = json!([{"magFilter": 9729, "minFilter": 9729, "wrapS": 33071, "wrapT": 33071}]);
     }
     let mut json_bytes = serde_json::to_vec(&doc).map_err(|e| e.to_string())?;
     while json_bytes.len() % 4 != 0 {
@@ -921,23 +671,11 @@ pub(super) struct RigidLayer {
     local: Vec<Affine2>,
 }
 
-fn track_rigid(
-    rigid: &mut Vec<RigidLayer>,
-    made: Option<usize>,
-    nid: usize,
-    host: Option<usize>,
-    to_host: Affine2,
-) {
+fn track_rigid(rigid: &mut Vec<RigidLayer>, made: Option<usize>, nid: usize, host: Option<usize>, to_host: Affine2) {
     let Some(ni) = made else { return };
     match rigid.iter_mut().find(|r| r.nid == nid) {
         Some(r) => r.nodes.push(ni),
-        None => rigid.push(RigidLayer {
-            nid,
-            host,
-            inv0: to_host.inverse(),
-            nodes: vec![ni],
-            local: Vec::new(),
-        }),
+        None => rigid.push(RigidLayer { nid, host, inv0: to_host.inverse(), nodes: vec![ni], local: Vec::new() }),
     }
 }
 
@@ -948,11 +686,7 @@ fn sample_rigid(rigid: &mut [RigidLayer], fr: &Frame) {
         let m = match (r.inv0, fr.nodes.get(r.nid)) {
             (Some(inv0), Some(n)) => {
                 let to_stage = cam_inv.mul(n.world);
-                let to_host = match r
-                    .host
-                    .and_then(|h| fr.world.get(h))
-                    .and_then(|w| w.inverse())
-                {
+                let to_host = match r.host.and_then(|h| fr.world.get(h)).and_then(|w| w.inverse()) {
                     Some(inv) => inv.mul(to_stage),
                     None => to_stage,
                 };
@@ -965,37 +699,19 @@ fn sample_rigid(rigid: &mut [RigidLayer], fr: &Frame) {
 }
 
 fn is_identity(m: &Affine2) -> bool {
-    [
-        (m.a, 1.0),
-        (m.b, 0.0),
-        (m.c, 0.0),
-        (m.d, 1.0),
-        (m.tx, 0.0),
-        (m.ty, 0.0),
-    ]
-    .iter()
-    .all(|(v, w)| (v - w).abs() < 1e-4)
+    [(m.a, 1.0), (m.b, 0.0), (m.c, 0.0), (m.d, 1.0), (m.tx, 0.0), (m.ty, 0.0)].iter().all(|(v, w)| (v - w).abs() < 1e-4)
 }
 
 /// For every tracked layer that moves: a parent node (put where the shape nodes were) and its translation / rotation / scale tracks, one key
 /// per frame. Layers that do not move keep their shape nodes as they are.
-fn wrap_animated_layers(
-    out: &mut Out,
-    rigid: &[RigidLayer],
-    fps: f32,
-    notes: &mut Vec<String>,
-) -> Vec<anim::NodeTrack> {
+fn wrap_animated_layers(out: &mut Out, rigid: &[RigidLayer], fps: f32, notes: &mut Vec<String>) -> Vec<anim::NodeTrack> {
     use anim::{densify_rotation, Interp, Key, NodeTrack};
     let mut tracks = Vec::new();
     for r in rigid {
         if r.local.iter().all(is_identity) {
             continue;
         }
-        let name = out.nodes[r.nodes[0]]["name"]
-            .as_str()
-            .unwrap_or("shape")
-            .trim_start_matches("shape ")
-            .to_string();
+        let name = out.nodes[r.nodes[0]]["name"].as_str().unwrap_or("shape").trim_start_matches("shape ").to_string();
         let (mut tk, mut rk, mut sk) = (Vec::new(), Vec::new(), Vec::new());
         let mut prev = 0.0f64;
         let mut skewed = false;
@@ -1020,49 +736,25 @@ fn wrap_animated_layers(
         if skewed {
             note(notes, format!("skew of '{name}' is not exported in its animation (glTF nodes carry translation, rotation and scale only)"));
         }
-        out.nodes
-            .push(json!({"name": format!("anim {name}"), "children": r.nodes}));
+        out.nodes.push(json!({"name": format!("anim {name}"), "children": r.nodes}));
         let wrapper = out.nodes.len() - 1;
         match r.host {
             Some(h) => {
-                if let Some(a) = out.nodes[h]
-                    .get_mut("children")
-                    .and_then(Value::as_array_mut)
-                {
+                if let Some(a) = out.nodes[h].get_mut("children").and_then(Value::as_array_mut) {
                     a.retain(|c| !r.nodes.iter().any(|&n| c.as_u64() == Some(n as u64)));
                     a.push(json!(wrapper));
                 }
             }
             None => {
-                let at = out
-                    .scene_nodes
-                    .iter()
-                    .position(|n| r.nodes.contains(n))
-                    .unwrap_or(out.scene_nodes.len());
+                let at = out.scene_nodes.iter().position(|n| r.nodes.contains(n)).unwrap_or(out.scene_nodes.len());
                 out.scene_nodes.retain(|n| !r.nodes.contains(n));
-                out.scene_nodes
-                    .insert(at.min(out.scene_nodes.len()), wrapper);
+                out.scene_nodes.insert(at.min(out.scene_nodes.len()), wrapper);
             }
         }
-        let rot: Vec<Key<1>> = densify_rotation(&rk)
-            .into_iter()
-            .map(|(t, a)| Key::new(t, [a]))
-            .collect();
-        tracks.push(NodeTrack::Translation {
-            node: wrapper,
-            interp: Interp::Linear,
-            keys: tk,
-        });
-        tracks.push(NodeTrack::Rotation {
-            node: wrapper,
-            interp: Interp::Linear,
-            keys: rot,
-        });
-        tracks.push(NodeTrack::Scale {
-            node: wrapper,
-            interp: Interp::Linear,
-            keys: sk,
-        });
+        let rot: Vec<Key<1>> = densify_rotation(&rk).into_iter().map(|(t, a)| Key::new(t, [a])).collect();
+        tracks.push(NodeTrack::Translation { node: wrapper, interp: Interp::Linear, keys: tk });
+        tracks.push(NodeTrack::Rotation { node: wrapper, interp: Interp::Linear, keys: rot });
+        tracks.push(NodeTrack::Scale { node: wrapper, interp: Interp::Linear, keys: sk });
     }
     tracks
 }

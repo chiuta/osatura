@@ -49,10 +49,7 @@ mod tests {
         let hard = tip_distance(rig(58.0, 0.0, 1.0));
         let soft = tip_distance(rig(58.0, 0.3, 1.0));
         assert!((hard - 58.0).abs() < 0.5);
-        assert!(
-            soft < hard - 0.5 && soft < 60.0,
-            "soft {soft} vs hard {hard}"
-        );
+        assert!(soft < hard - 0.5 && soft < 60.0, "soft {soft} vs hard {hard}");
         // far outside reach it still ends up (almost) straight, never beyond full length
         let far = tip_distance(rig(200.0, 0.3, 1.0));
         assert!(far <= 60.01 && far > 59.0, "{far}");
@@ -83,20 +80,11 @@ mod tests {
             prev = d;
             x += 1.0;
         }
-        assert!(
-            max_step < 1.5,
-            "no pop: largest 1 px step of the target moved the tip {max_step} px"
-        );
-        assert!(
-            prev > 110.0,
-            "far targets approach the stretch limit: {prev}"
-        );
+        assert!(max_step < 1.5, "no pop: largest 1 px step of the target moved the tip {max_step} px");
+        assert!(prev > 110.0, "far targets approach the stretch limit: {prev}");
         // inside the soft zone of the stretched reach the tip is held back, below it the target is met exactly
         assert!((tip_distance(rig(40.0, 0.5, 2.0)) - 40.0).abs() < 0.5);
-        assert!(
-            tip_distance(rig(100.0, 0.5, 2.0)) < 99.0,
-            "held back near the stretch limit"
-        );
+        assert!(tip_distance(rig(100.0, 0.5, 2.0)) < 99.0, "held back near the stretch limit");
         // the same rig without soft stretches to exactly the target (unchanged behaviour)
         assert!((tip_distance(rig(100.0, 0.0, 2.0)) - 100.0).abs() < 0.8);
     }

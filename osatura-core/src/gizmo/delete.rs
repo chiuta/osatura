@@ -22,9 +22,7 @@ pub fn delete_op(ed: &Editor, sel: &Selection) -> Result<Op, String> {
         if has_selected_ancestor(p, &layers) {
             continue;
         }
-        let id = engine
-            .node_index(p)
-            .ok_or_else(|| format!("no layer '{p}'"))?;
+        let id = engine.node_index(p).ok_or_else(|| format!("no layer '{p}'"))?;
         victims.push((engine.node_idx_path(id).to_vec(), p.to_string()));
     }
     if victims.is_empty() {
@@ -37,20 +35,12 @@ pub fn delete_op(ed: &Editor, sel: &Selection) -> Result<Op, String> {
         .channels
         .iter()
         .enumerate()
-        .filter(|(_, c)| {
-            victims.iter().any(|(_, p)| {
-                c.target == *p
-                    || c.target.starts_with(&format!("{p}/"))
-                    || c.target.starts_with(&format!("{p}::"))
-            })
-        })
+        .filter(|(_, c)| victims.iter().any(|(_, p)| c.target == *p || c.target.starts_with(&format!("{p}/")) || c.target.starts_with(&format!("{p}::"))))
         .map(|(i, _)| i)
         .collect();
     chan_ix.sort_unstable_by(|a, b| b.cmp(a));
     for i in chan_ix {
-        ops.push(Op::Remove {
-            path: format!("/channels/{i}"),
-        });
+        ops.push(Op::Remove { path: format!("/channels/{i}") });
     }
     // then layers, last index first so earlier pointers stay valid
     victims.sort_by(|a, b| b.0.cmp(&a.0));
@@ -116,12 +106,7 @@ pub(super) struct Prepared {
 }
 
 pub(super) fn prepare(ed: &Editor, req: &DragRequest) -> Result<Prepared, String> {
-    if !req.frame.is_finite()
-        || !req.start.x.is_finite()
-        || !req.start.y.is_finite()
-        || !req.delta.x.is_finite()
-        || !req.delta.y.is_finite()
-    {
+    if !req.frame.is_finite() || !req.start.x.is_finite() || !req.start.y.is_finite() || !req.delta.x.is_finite() || !req.delta.y.is_finite() {
         return Err("non-finite number in request".into());
     }
     let engine = ed.engine();
@@ -133,62 +118,30 @@ pub(super) fn prepare(ed: &Editor, req: &DragRequest) -> Result<Prepared, String
     }
     let points_only = sel.items.iter().all(|t| matches!(t, Target::Point { .. }));
     let bone = match (&req.handle, sel.items.as_slice()) {
-        (Handle::BoneHead | Handle::BoneTip, [Target::Bone { name }]) => {
-            Some(bone_ends(engine, &frame, name).ok_or("bone not found")?)
-        }
-        (Handle::BoneHead | Handle::BoneTip, _) => {
-            return Err("bone handles need exactly one selected bone".into())
-        }
+        (Handle::BoneHead | Handle::BoneTip, [Target::Bone { name }]) => Some(bone_ends(engine, &frame, name).ok_or("bone not found")?),
+        (Handle::BoneHead | Handle::BoneTip, _) => return Err("bone handles need exactly one selected bone".into()),
         _ => None,
     };
-    let bx = if points_only || bone.is_some() {
-        None
-    } else {
-        box_frame(engine, &frame, &sel, MIN_EXTENT)
-    };
+    let bx = if points_only || bone.is_some() { None } else { box_frame(engine, &frame, &sel, MIN_EXTENT) };
     if points_only && !matches!(req.handle, Handle::Move) {
         return Err("control points can only be moved".into());
     }
     if bx.is_none() && bone.is_none() && !points_only {
         return Err("selection has no geometry".into());
     }
-    let targets = if req.modifiers.no_snap {
-        SnapTargets::default()
-    } else {
-        snap_targets(engine, &frame, &sel, &req.snap)
-    };
+    let targets = if req.modifiers.no_snap { SnapTargets::default() } else { snap_targets(engine, &frame, &sel, &req.snap) };
     // points move like a degenerate box around their own position
     let pt_box;
     let bx_ref = if points_only {
-        let pts: Vec<Vec2> = sel
-            .items
-            .iter()
-            .flat_map(|t| pick::target_points(engine, &frame, t))
-            .collect();
-        let lo = Vec2::new(
-            pts.iter().map(|q| q.x).fold(f32::INFINITY, f32::min),
-            pts.iter().map(|q| q.y).fold(f32::INFINITY, f32::min),
-        );
-        let hi = Vec2::new(
-            pts.iter().map(|q| q.x).fold(f32::NEG_INFINITY, f32::max),
-            pts.iter().map(|q| q.y).fold(f32::NEG_INFINITY, f32::max),
-        );
+        let pts: Vec<Vec2> = sel.items.iter().flat_map(|t| pick::target_points(engine, &frame, t)).collect();
+        let lo = Vec2::new(pts.iter().map(|q| q.x).fold(f32::INFINITY, f32::min), pts.iter().map(|q| q.y).fold(f32::INFINITY, f32::min));
+        let hi = Vec2::new(pts.iter().map(|q| q.x).fold(f32::NEG_INFINITY, f32::max), pts.iter().map(|q| q.y).fold(f32::NEG_INFINITY, f32::max));
         pt_box = BoxFrame::from_aabb(lo, hi);
         Some(&pt_box)
     } else {
         bx.as_ref()
     };
-    let d = drag_matrix(
-        bx_ref,
-        bone,
-        req.handle,
-        req.start,
-        req.delta,
-        &req.modifiers,
-        &req.snap,
-        &targets,
-        req.pivot,
-    )?;
+    let d = drag_matrix(bx_ref, bone, req.handle, req.start, req.delta, &req.modifiers, &req.snap, &targets, req.pivot)?;
     let plan = plan(ed, req.frame, &sel, &d.matrix, req.auto_key, &req.locked)?;
 
     let mut outline = Vec::new();
@@ -199,20 +152,14 @@ pub(super) fn prepare(ed: &Editor, req: &DragRequest) -> Result<Prepared, String
                 for (id, n) in frame.nodes.iter().enumerate() {
                     if &n.name == path || n.name.starts_with(&prefix) {
                         for s in pick::node_shapes(&frame, id) {
-                            outline.push(Outline {
-                                pts: s.pts.iter().map(|q| d.matrix.apply(*q)).collect(),
-                                closed: s.closed,
-                            });
+                            outline.push(Outline { pts: s.pts.iter().map(|q| d.matrix.apply(*q)).collect(), closed: s.closed });
                         }
                     }
                 }
             }
             Target::Bone { name } => {
                 if let Some((h, t)) = bone_ends(engine, &frame, name) {
-                    outline.push(Outline {
-                        pts: vec![d.matrix.apply(h), d.matrix.apply(t)],
-                        closed: false,
-                    });
+                    outline.push(Outline { pts: vec![d.matrix.apply(h), d.matrix.apply(t)], closed: false });
                 }
             }
             Target::Point { .. } => {}
@@ -220,20 +167,9 @@ pub(super) fn prepare(ed: &Editor, req: &DragRequest) -> Result<Prepared, String
     }
     let box_after = bx.map(|b| {
         let c = b.corners();
-        [
-            d.matrix.apply(c[0]),
-            d.matrix.apply(c[1]),
-            d.matrix.apply(c[2]),
-            d.matrix.apply(c[3]),
-        ]
+        [d.matrix.apply(c[0]), d.matrix.apply(c[1]), d.matrix.apply(c[2]), d.matrix.apply(c[3])]
     });
-    Ok(Prepared {
-        d,
-        plan,
-        sel,
-        outline,
-        box_after,
-    })
+    Ok(Prepared { d, plan, sel, outline, box_after })
 }
 
 pub(super) fn preview_of(p: &Prepared) -> DragPreview {
@@ -266,14 +202,7 @@ pub fn commit(ed: &mut Editor, req: &DragRequest) -> Result<DragPreview, Vec<Str
 }
 
 /// Nudge the selection by `(dx, dy)` canvas units as one undoable step (no snapping).
-pub fn nudge(
-    ed: &mut Editor,
-    frame: f32,
-    selection: &[Target],
-    delta: Vec2,
-    auto_key: bool,
-    locked: &[String],
-) -> Result<DragPreview, Vec<String>> {
+pub fn nudge(ed: &mut Editor, frame: f32, selection: &[Target], delta: Vec2, auto_key: bool, locked: &[String]) -> Result<DragPreview, Vec<String>> {
     let engine = ed.engine();
     let mut sel = Selection::from_items(selection.to_vec());
     sel.prune(engine);

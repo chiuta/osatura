@@ -24,9 +24,7 @@ pub fn clip(channels: &[Channel], offset: f32, scale: f32) -> Vec<Channel> {
         .map(|c| {
             let mut c = c.clone();
             if let Source::Keys { track } = &c.source {
-                c.source = Source::Keys {
-                    track: retime_track(track, offset, scale.max(1e-4)),
-                };
+                c.source = Source::Keys { track: retime_track(track, offset, scale.max(1e-4)) };
             }
             c
         })
@@ -51,16 +49,8 @@ pub fn retarget(channels: &[Channel], map: &HashMap<String, String>) -> Vec<Chan
 /// Swap left/right in a name: `L_`/`R_` prefixes, `_L`/`_R`, `_l`/`_r` suffixes and
 /// the words `left`/`right` (case preserved for the common forms).
 pub fn mirror_name(name: &str) -> String {
-    const PAIRS: [(&str, &str); 8] = [
-        ("L_", "R_"),
-        ("l_", "r_"),
-        ("_L", "_R"),
-        ("_l", "_r"),
-        ("Left", "Right"),
-        ("left", "right"),
-        ("LEFT", "RIGHT"),
-        ("L.", "R."),
-    ];
+    const PAIRS: [(&str, &str); 8] =
+        [("L_", "R_"), ("l_", "r_"), ("_L", "_R"), ("_l", "_r"), ("Left", "Right"), ("left", "right"), ("LEFT", "RIGHT"), ("L.", "R.")];
     for (a, b) in PAIRS {
         for (x, y) in [(a, b), (b, a)] {
             if x.starts_with('_') || x.ends_with('.') || x.ends_with('_') {
@@ -87,14 +77,7 @@ pub fn mirror(channels: &[Channel]) -> Vec<Channel> {
         .map(|c| {
             let mut c = c.clone();
             c.target = mirror_name(&c.target);
-            let flip = matches!(
-                c.prop,
-                Prop::BoneAngle
-                    | Prop::BoneOffsetX
-                    | Prop::LayerRotation
-                    | Prop::LayerX
-                    | Prop::LayerSkew
-            );
+            let flip = matches!(c.prop, Prop::BoneAngle | Prop::BoneOffsetX | Prop::LayerRotation | Prop::LayerX | Prop::LayerSkew);
             if flip {
                 match &mut c.source {
                     Source::Keys { track } => {
@@ -166,13 +149,7 @@ pub struct WalkStyle {
 
 impl Default for WalkStyle {
     fn default() -> Self {
-        WalkStyle {
-            period: 24.0,
-            stride: 28.0,
-            knee: 40.0,
-            bob: 4.0,
-            arm_swing: 22.0,
-        }
+        WalkStyle { period: 24.0, stride: 28.0, knee: 40.0, bob: 4.0, arm_swing: 22.0 }
     }
 }
 
@@ -205,11 +182,7 @@ pub fn walk_cycle(rig: &WalkRig, style: &WalkStyle) -> Vec<Channel> {
     // arms swing opposite to the same-side leg
     add(&rig.arm_l, Prop::BoneAngle, make(&arm(PI)));
     add(&rig.arm_r, Prop::BoneAngle, make(&arm(0.0)));
-    add(
-        &rig.hips,
-        Prop::BoneOffsetY,
-        make(&|th: f32| style.bob * (2.0 * th).cos()),
-    );
+    add(&rig.hips, Prop::BoneOffsetY, make(&|th: f32| style.bob * (2.0 * th).cos()));
     out
 }
 
@@ -218,16 +191,7 @@ mod tests {
     use super::*;
 
     fn kc(target: &str, prop: Prop, keys: &[(f32, f32)]) -> Channel {
-        Channel::keys(
-            target,
-            prop,
-            Track::with_keys(
-                &keys
-                    .iter()
-                    .map(|&(f, v)| (f, v, Ease::Linear))
-                    .collect::<Vec<_>>(),
-            ),
-        )
+        Channel::keys(target, prop, Track::with_keys(&keys.iter().map(|&(f, v)| (f, v, Ease::Linear)).collect::<Vec<_>>()))
     }
     fn track(c: &Channel) -> &Track {
         match &c.source {
@@ -238,11 +202,7 @@ mod tests {
 
     #[test]
     fn clip_shifts_and_scales() {
-        let c = clip(
-            &[kc("a", Prop::BoneAngle, &[(0.0, 0.0), (10.0, 90.0)])],
-            5.0,
-            2.0,
-        );
+        let c = clip(&[kc("a", Prop::BoneAngle, &[(0.0, 0.0), (10.0, 90.0)])], 5.0, 2.0);
         let t = track(&c[0]);
         assert_eq!((t.keys[0].frame, t.keys[1].frame), (5.0, 25.0));
         assert!((t.eval(15.0).unwrap() - 45.0).abs() < 1e-3);
@@ -278,13 +238,7 @@ mod tests {
     #[test]
     fn retarget_renames() {
         let map: HashMap<String, String> = [("a".to_string(), "spine".to_string())].into();
-        let c = retarget(
-            &[
-                kc("a", Prop::BoneAngle, &[(0.0, 1.0)]),
-                kc("z", Prop::BoneAngle, &[(0.0, 1.0)]),
-            ],
-            &map,
-        );
+        let c = retarget(&[kc("a", Prop::BoneAngle, &[(0.0, 1.0)]), kc("z", Prop::BoneAngle, &[(0.0, 1.0)])], &map);
         assert_eq!((c[0].target.as_str(), c[1].target.as_str()), ("spine", "z"));
     }
 
@@ -313,35 +267,19 @@ mod tests {
         assert_eq!(ch.len(), 7);
         let (l, r) = (track(&ch[0]), track(&ch[1]));
         for f in [0.0, 3.0, 7.5, 12.0] {
-            assert!(
-                (l.eval(f).unwrap() + r.eval(f).unwrap()).abs() < 1.0,
-                "legs are in opposition at {f}"
-            );
-            assert!(
-                (l.eval(f).unwrap() - l.eval(f + 24.0).unwrap()).abs() < 1e-3,
-                "periodic"
-            );
+            assert!((l.eval(f).unwrap() + r.eval(f).unwrap()).abs() < 1.0, "legs are in opposition at {f}");
+            assert!((l.eval(f).unwrap() - l.eval(f + 24.0).unwrap()).abs() < 1e-3, "periodic");
         }
-        let peak = (0..24)
-            .map(|f| l.eval(f as f32).unwrap())
-            .fold(0.0f32, f32::max);
+        let peak = (0..24).map(|f| l.eval(f as f32).unwrap()).fold(0.0f32, f32::max);
         assert!(peak > 25.0 && peak < 30.0, "{peak}");
         let knee = track(&ch[2]);
-        let kmin = (0..24)
-            .map(|f| knee.eval(f as f32).unwrap())
-            .fold(f32::MAX, f32::min);
+        let kmin = (0..24).map(|f| knee.eval(f as f32).unwrap()).fold(f32::MAX, f32::min);
         assert!(kmin >= -1e-3, "knees only bend one way: {kmin}");
     }
 
     #[test]
     fn walk_cycle_skips_missing_bones() {
-        let ch = walk_cycle(
-            &WalkRig {
-                thigh_l: Some("t".into()),
-                ..Default::default()
-            },
-            &WalkStyle::default(),
-        );
+        let ch = walk_cycle(&WalkRig { thigh_l: Some("t".into()), ..Default::default() }, &WalkStyle::default());
         assert_eq!(ch.len(), 1);
     }
 }

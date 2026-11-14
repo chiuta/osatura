@@ -123,17 +123,12 @@ impl Clip {
     }
 
     fn target_of(&self, take_target: &str) -> String {
-        self.rename
-            .iter()
-            .find(|(f, _)| f == take_target)
-            .map_or(take_target, |(_, t)| t.as_str())
-            .to_string()
+        self.rename.iter().find(|(f, _)| f == take_target).map_or(take_target, |(_, t)| t.as_str()).to_string()
     }
 
     /// Whether the mask lets `target` (project name) through.
     pub fn passes_mask(&self, target: &str) -> bool {
-        (self.include.is_empty() || self.include.iter().any(|g| glob(g, target)))
-            && !self.exclude.iter().any(|g| glob(g, target))
+        (self.include.is_empty() || self.include.iter().any(|g| glob(g, target))) && !self.exclude.iter().any(|g| glob(g, target))
     }
 
     /// Effective weight of the clip for one channel at a project frame: base (constant or keyed)
@@ -143,17 +138,9 @@ impl Clip {
         if frame < self.start || frame > end {
             return 0.0;
         }
-        let mut w = if self.weight_keys.keys.is_empty() {
-            self.weight
-        } else {
-            self.weight_keys.eval(frame).unwrap_or(self.weight)
-        };
+        let mut w = if self.weight_keys.keys.is_empty() { self.weight } else { self.weight_keys.eval(frame).unwrap_or(self.weight) };
         w = w.clamp(0.0, 1.0);
-        if let Some(r) = self
-            .track_weights
-            .iter()
-            .find(|r| glob(&r.pattern, target) && r.prop.is_none_or(|p| p == prop))
-        {
+        if let Some(r) = self.track_weights.iter().find(|r| glob(&r.pattern, target) && r.prop.is_none_or(|p| p == prop)) {
             w *= r.weight;
         }
         if self.fade_in > 0.0 {
@@ -182,13 +169,7 @@ impl Clip {
         if self.name.trim().is_empty() {
             return Err("clip needs a name".into());
         }
-        let fin = |v: f32, what: &str| {
-            if v.is_finite() {
-                Ok(())
-            } else {
-                Err(format!("clip '{n}': {what} must be a finite number"))
-            }
-        };
+        let fin = |v: f32, what: &str| if v.is_finite() { Ok(()) } else { Err(format!("clip '{n}': {what} must be a finite number")) };
         fin(self.start, "start")?;
         fin(self.speed, "speed")?;
         fin(self.weight, "weight")?;
@@ -206,47 +187,26 @@ impl Clip {
         if self.fade_in < 0.0 || self.fade_out < 0.0 {
             return Err(format!("clip '{n}': fades must be >= 0"));
         }
-        if !self.take.length.is_finite()
-            || (self.take.length.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        {
+        if !self.take.length.is_finite() || (self.take.length.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) {
             return Err(format!("clip '{n}': take length must be positive"));
         }
         if !self.end().is_finite() {
             return Err(format!("clip '{n}': duration is not finite"));
         }
         for t in &self.take.tracks {
-            if t.keys
-                .iter()
-                .any(|k| !k.frame.is_finite() || !k.value.is_finite())
-            {
-                return Err(format!(
-                    "clip '{n}': take track {} has a non-finite key",
-                    t.target
-                ));
+            if t.keys.iter().any(|k| !k.frame.is_finite() || !k.value.is_finite()) {
+                return Err(format!("clip '{n}': take track {} has a non-finite key", t.target));
             }
         }
-        if self
-            .weight_keys
-            .keys
-            .iter()
-            .any(|k| !k.frame.is_finite() || !k.value.is_finite())
-        {
+        if self.weight_keys.keys.iter().any(|k| !k.frame.is_finite() || !k.value.is_finite()) {
             return Err(format!("clip '{n}': weight keys must be finite"));
         }
         for r in &self.track_weights {
             if r.pattern.is_empty() || !r.weight.is_finite() || !(0.0..=1.0).contains(&r.weight) {
-                return Err(format!(
-                    "clip '{n}': track weight '{}' needs a pattern and a weight within 0..1",
-                    r.pattern
-                ));
+                return Err(format!("clip '{n}': track weight '{}' needs a pattern and a weight within 0..1", r.pattern));
             }
         }
-        if self
-            .include
-            .iter()
-            .chain(&self.exclude)
-            .any(|g| g.is_empty())
-        {
+        if self.include.iter().chain(&self.exclude).any(|g| g.is_empty()) {
             return Err(format!("clip '{n}': empty mask pattern"));
         }
         Ok(())
@@ -285,9 +245,7 @@ pub fn validate(p: &Project) -> Result<(), String> {
 
 /// Add a clip on top of the stack, embedding a copy of library take `take_name`.
 pub fn add(p: &mut Project, lib: &Library, take_name: &str, mut clip: Clip) -> Result<(), String> {
-    let take = lib
-        .find(take_name)
-        .ok_or_else(|| format!("no take '{take_name}' in the library"))?;
+    let take = lib.find(take_name).ok_or_else(|| format!("no take '{take_name}' in the library"))?;
     clip.take = take.clone();
     add_clip(p, clip)
 }
@@ -303,20 +261,13 @@ pub fn add_clip(p: &mut Project, clip: Clip) -> Result<(), String> {
 }
 
 pub fn remove(p: &mut Project, name: &str) -> Result<(), String> {
-    let i = p
-        .clips
-        .iter()
-        .position(|c| c.name == name)
-        .ok_or_else(|| format!("no clip '{name}'"))?;
+    let i = p.clips.iter().position(|c| c.name == name).ok_or_else(|| format!("no clip '{name}'"))?;
     p.clips.remove(i);
     Ok(())
 }
 
 fn find_mut<'a>(p: &'a mut Project, name: &str) -> Result<&'a mut Clip, String> {
-    p.clips
-        .iter_mut()
-        .find(|c| c.name == name)
-        .ok_or_else(|| format!("no clip '{name}'"))
+    p.clips.iter_mut().find(|c| c.name == name).ok_or_else(|| format!("no clip '{name}'"))
 }
 
 /// Constant clip weight (clears keyed weight).
@@ -332,43 +283,20 @@ pub fn set_weight(p: &mut Project, name: &str, w: f32) -> Result<(), String> {
 
 /// Key the clip weight over project frames (`(frame, weight)` pairs, linear).
 pub fn set_weight_keys(p: &mut Project, name: &str, keys: &[(f32, f32)]) -> Result<(), String> {
-    if keys.is_empty()
-        || keys
-            .iter()
-            .any(|(f, v)| !f.is_finite() || !v.is_finite() || !(0.0..=1.0).contains(v))
-    {
+    if keys.is_empty() || keys.iter().any(|(f, v)| !f.is_finite() || !v.is_finite() || !(0.0..=1.0).contains(v)) {
         return Err("weight keys need finite frames and weights within 0..1".into());
     }
     let c = find_mut(p, name)?;
-    c.weight_keys = Track::with_keys(
-        &keys
-            .iter()
-            .map(|&(f, v)| (f, v, Ease::Linear))
-            .collect::<Vec<_>>(),
-    );
+    c.weight_keys = Track::with_keys(&keys.iter().map(|&(f, v)| (f, v, Ease::Linear)).collect::<Vec<_>>());
     Ok(())
 }
 
 /// Set (or replace) the per-track weight rule with the same pattern and property.
-pub fn set_track_weight(
-    p: &mut Project,
-    name: &str,
-    pattern: &str,
-    prop: Option<Prop>,
-    w: f32,
-) -> Result<(), String> {
-    let rule = TrackWeight {
-        pattern: pattern.into(),
-        prop,
-        weight: w,
-    };
+pub fn set_track_weight(p: &mut Project, name: &str, pattern: &str, prop: Option<Prop>, w: f32) -> Result<(), String> {
+    let rule = TrackWeight { pattern: pattern.into(), prop, weight: w };
     let c = find_mut(p, name)?;
     let mut n = c.clone();
-    match n
-        .track_weights
-        .iter_mut()
-        .find(|r| r.pattern == pattern && r.prop == prop)
-    {
+    match n.track_weights.iter_mut().find(|r| r.pattern == pattern && r.prop == prop) {
         Some(r) => *r = rule,
         None => n.track_weights.push(rule),
     }
@@ -393,13 +321,7 @@ fn simplify(keys: Vec<(f32, f32)>) -> Vec<(f32, f32)> {
     out
 }
 
-fn neutral_track(
-    samples: &[(f32, f32)],
-    neutral: f32,
-    lo: i64,
-    hi: i64,
-    frames: u32,
-) -> Option<Track> {
+fn neutral_track(samples: &[(f32, f32)], neutral: f32, lo: i64, hi: i64, frames: u32) -> Option<Track> {
     if samples.iter().all(|&(_, v)| (v - neutral).abs() < 1e-7) {
         return None;
     }
@@ -412,12 +334,7 @@ fn neutral_track(
         keys.push(((hi + 1) as f32, neutral));
     }
     let keys = simplify(keys);
-    Some(Track::with_keys(
-        &keys
-            .iter()
-            .map(|&(f, v)| (f, v, Ease::Linear))
-            .collect::<Vec<_>>(),
-    ))
+    Some(Track::with_keys(&keys.iter().map(|&(f, v)| (f, v, Ease::Linear)).collect::<Vec<_>>()))
 }
 
 /// Channels the stack generates, in clip order. Pure: depends only on `p.clips` and the frame count.
@@ -436,12 +353,7 @@ pub fn generate(p: &Project) -> Result<Vec<Channel>, String> {
             if !clip.passes_mask(&target) || tt.keys.is_empty() {
                 continue;
             }
-            let track = Track::with_keys(
-                &tt.keys
-                    .iter()
-                    .map(|k| (k.frame, k.value, k.ease))
-                    .collect::<Vec<_>>(),
-            );
+            let track = Track::with_keys(&tt.keys.iter().map(|k| (k.frame, k.value, k.ease)).collect::<Vec<_>>());
             let base = track.keys.first().map_or(0.0, |k| k.value);
             let (mut mul, mut add) = (Vec::new(), Vec::new());
             for f in lo..=hi {
@@ -482,8 +394,7 @@ pub struct BakeReport {
 pub fn bake(p: &mut Project) -> Result<BakeReport, String> {
     let fresh = generate(p)?;
     for c in &fresh {
-        crate::chanmeta::assert_unlocked(p, &c.target, c.prop)
-            .map_err(|e| format!("{e}; exclude it in the clip mask"))?;
+        crate::chanmeta::assert_unlocked(p, &c.target, c.prop).map_err(|e| format!("{e}; exclude it in the clip mask"))?;
     }
     let mut q = p.clone();
     let mut replaced = 0;
@@ -497,15 +408,10 @@ pub fn bake(p: &mut Project) -> Result<BakeReport, String> {
     let n = fresh.len();
     q.channels.extend(fresh.iter().cloned());
     q.clip_baked = fresh;
-    crate::Engine::new(q.clone())
-        .map_err(|e| format!("bake produces an invalid project: {}", e.join("; ")))?;
+    crate::Engine::new(q.clone()).map_err(|e| format!("bake produces an invalid project: {}", e.join("; ")))?;
     let clips = q.clips.len();
     *p = q;
-    Ok(BakeReport {
-        clips,
-        channels: n,
-        replaced,
-    })
+    Ok(BakeReport { clips, channels: n, replaced })
 }
 
 #[cfg(test)]
@@ -518,11 +424,7 @@ mod tests {
     use crate::Engine;
 
     fn k(f: f32, v: f32) -> Key {
-        Key {
-            frame: f,
-            value: v,
-            ease: Ease::Linear,
-        }
+        Key { frame: f, value: v, ease: Ease::Linear }
     }
 
     /// Take of length 10: arm_up angle 10 -> 30, leg angle 0 -> 20.
@@ -531,34 +433,18 @@ mod tests {
             name: "wave".into(),
             length: 10.0,
             tracks: vec![
-                TakeTrack {
-                    target: "arm_up".into(),
-                    prop: Prop::BoneAngle,
-                    keys: vec![k(0.0, 10.0), k(10.0, 30.0)],
-                },
-                TakeTrack {
-                    target: "leg".into(),
-                    prop: Prop::BoneAngle,
-                    keys: vec![k(0.0, 0.0), k(10.0, 20.0)],
-                },
+                TakeTrack { target: "arm_up".into(), prop: Prop::BoneAngle, keys: vec![k(0.0, 10.0), k(10.0, 30.0)] },
+                TakeTrack { target: "leg".into(), prop: Prop::BoneAngle, keys: vec![k(0.0, 0.0), k(10.0, 20.0)] },
             ],
         }
     }
 
     fn proj() -> Project {
         let mut p = Project::new("c", 100.0, 100.0, 24.0, 60);
-        p.bones = ["arm_up", "leg", "arm_low"]
-            .iter()
-            .enumerate()
-            .map(|(i, n)| Bone::new(n, None, 10.0, Vec2::new(10.0 * i as f32, 0.0), 0.0))
-            .collect();
+        p.bones = ["arm_up", "leg", "arm_low"].iter().enumerate().map(|(i, n)| Bone::new(n, None, 10.0, Vec2::new(10.0 * i as f32, 0.0), 0.0)).collect();
         // hand-made: everything at 100 degrees
         for b in ["arm_up", "leg", "arm_low"] {
-            p.channels.push(Channel::keys(
-                b,
-                Prop::BoneAngle,
-                Track::with_keys(&[(0.0, 100.0, Ease::Linear)]),
-            ));
+            p.channels.push(Channel::keys(b, Prop::BoneAngle, Track::with_keys(&[(0.0, 100.0, Ease::Linear)])));
         }
         p
     }
@@ -588,11 +474,7 @@ mod tests {
             c.start = 5.0;
             let p = with(c);
             // frame 10 = take frame 5 -> arm_up 20
-            assert!(
-                (angle(&p, "arm_up", 10.0) - expect).abs() < 1e-3,
-                "w={w}: {}",
-                angle(&p, "arm_up", 10.0)
-            );
+            assert!((angle(&p, "arm_up", 10.0) - expect).abs() < 1e-3, "w={w}: {}", angle(&p, "arm_up", 10.0));
         }
     }
 
@@ -612,14 +494,8 @@ mod tests {
         let p = with(c);
         // arm_up at frame 5: 100 + (20 - 10)
         assert!((angle(&p, "arm_up", 5.0) - 110.0).abs() < 1e-3);
-        assert!(
-            (angle(&p, "arm_up", 0.0) - 100.0).abs() < 1e-3,
-            "no delta at the first frame"
-        );
-        assert!(
-            (angle(&p, "arm_up", 40.0) - 100.0).abs() < 1e-3,
-            "neutral after the clip"
-        );
+        assert!((angle(&p, "arm_up", 0.0) - 100.0).abs() < 1e-3, "no delta at the first frame");
+        assert!((angle(&p, "arm_up", 40.0) - 100.0).abs() < 1e-3, "neutral after the clip");
         let mut r = clip();
         r.mode = ClipMode::Replace;
         let q = with(r);
@@ -630,11 +506,7 @@ mod tests {
     #[test]
     fn multiply_mode_scales_with_weight() {
         let mut t = take();
-        t.tracks = vec![TakeTrack {
-            target: "arm_up".into(),
-            prop: Prop::BoneAngle,
-            keys: vec![k(0.0, 0.5), k(10.0, 0.5)],
-        }];
+        t.tracks = vec![TakeTrack { target: "arm_up".into(), prop: Prop::BoneAngle, keys: vec![k(0.0, 0.5), k(10.0, 0.5)] }];
         let mut c = Clip::new("m", t);
         c.mode = ClipMode::Multiply;
         c.weight = 0.5;
@@ -648,10 +520,7 @@ mod tests {
         c.include = vec!["arm_*".into()];
         let p = with(c);
         assert!((angle(&p, "arm_up", 5.0) - 20.0).abs() < 1e-3);
-        assert!(
-            (angle(&p, "leg", 5.0) - 100.0).abs() < 1e-3,
-            "leg not in the mask"
-        );
+        assert!((angle(&p, "leg", 5.0) - 100.0).abs() < 1e-3, "leg not in the mask");
         let mut c = clip();
         c.exclude = vec!["arm_up".into()];
         let p = with(c);
@@ -663,18 +532,7 @@ mod tests {
     #[test]
     fn per_track_weights_upper_body_over_walk() {
         let mut c = clip();
-        c.track_weights = vec![
-            TrackWeight {
-                pattern: "arm_*".into(),
-                prop: None,
-                weight: 1.0,
-            },
-            TrackWeight {
-                pattern: "leg".into(),
-                prop: None,
-                weight: 0.25,
-            },
-        ];
+        c.track_weights = vec![TrackWeight { pattern: "arm_*".into(), prop: None, weight: 1.0 }, TrackWeight { pattern: "leg".into(), prop: None, weight: 0.25 }];
         c.weight = 0.5;
         let p = with(c);
         assert!((angle(&p, "arm_up", 5.0) - (0.5 * 100.0 + 0.5 * 20.0)).abs() < 1e-3);
@@ -690,27 +548,11 @@ mod tests {
         c.start = 10.0;
         let p = with(c.clone());
         assert!((angle(&p, "arm_up", 10.0) - 10.0).abs() < 1e-3, "start");
-        assert!(
-            (angle(&p, "arm_up", 12.0) - 18.0).abs() < 1e-3,
-            "speed 2: take frame 4"
-        );
-        assert!(
-            (angle(&p, "arm_up", 15.0) - 30.0).abs() < 1e-3
-                || (angle(&p, "arm_up", 15.0) - 10.0).abs() < 1e-3,
-            "loop boundary"
-        );
-        assert!(
-            (angle(&p, "arm_up", 16.0) - 14.0).abs() < 1e-3,
-            "second loop, take frame 2"
-        );
-        assert!(
-            (angle(&p, "arm_up", 20.0) - 30.0).abs() < 1e-3,
-            "final pose at the end"
-        );
-        assert!(
-            (angle(&p, "arm_up", 25.0) - 100.0).abs() < 1e-3,
-            "released after the end"
-        );
+        assert!((angle(&p, "arm_up", 12.0) - 18.0).abs() < 1e-3, "speed 2: take frame 4");
+        assert!((angle(&p, "arm_up", 15.0) - 30.0).abs() < 1e-3 || (angle(&p, "arm_up", 15.0) - 10.0).abs() < 1e-3, "loop boundary");
+        assert!((angle(&p, "arm_up", 16.0) - 14.0).abs() < 1e-3, "second loop, take frame 2");
+        assert!((angle(&p, "arm_up", 20.0) - 30.0).abs() < 1e-3, "final pose at the end");
+        assert!((angle(&p, "arm_up", 25.0) - 100.0).abs() < 1e-3, "released after the end");
         assert_eq!(c.end(), 20.0);
     }
 
@@ -726,10 +568,7 @@ mod tests {
         bake(&mut p).unwrap();
         assert!((angle(&p, "arm_up", 0.0) - 100.0).abs() < 1e-3);
         assert!((angle(&p, "arm_up", 10.0) - 60.0).abs() < 1e-3);
-        assert!(
-            (angle(&p, "arm_up", 30.0) - 20.0).abs() < 1e-3,
-            "held at 1 after the last weight key"
-        );
+        assert!((angle(&p, "arm_up", 30.0) - 20.0).abs() < 1e-3, "held at 1 after the last weight key");
         let mut c = clip();
         c.take.length = 40.0;
         c.take.tracks[0].keys = vec![k(0.0, 20.0), k(40.0, 20.0)];
@@ -737,10 +576,7 @@ mod tests {
         c.fade_out = 10.0;
         let p = with(c);
         assert!((angle(&p, "arm_up", 0.0) - 100.0).abs() < 1e-3);
-        assert!(
-            (angle(&p, "arm_up", 5.0) - 60.0).abs() < 1e-3,
-            "smoothstep half at the middle of the fade"
-        );
+        assert!((angle(&p, "arm_up", 5.0) - 60.0).abs() < 1e-3, "smoothstep half at the middle of the fade");
         assert!((angle(&p, "arm_up", 20.0) - 20.0).abs() < 1e-3);
         assert!((angle(&p, "arm_up", 35.0) - 60.0).abs() < 1e-3);
     }
@@ -750,11 +586,7 @@ mod tests {
         let mut a = clip();
         a.name = "a".into();
         let mut t = take();
-        t.tracks = vec![TakeTrack {
-            target: "arm_up".into(),
-            prop: Prop::BoneAngle,
-            keys: vec![k(0.0, 50.0), k(10.0, 50.0)],
-        }];
+        t.tracks = vec![TakeTrack { target: "arm_up".into(), prop: Prop::BoneAngle, keys: vec![k(0.0, 50.0), k(10.0, 50.0)] }];
         let mut b = Clip::new("b", t);
         b.weight = 0.5;
         let mut p = proj();
@@ -775,20 +607,10 @@ mod tests {
         assert_eq!(p, once, "idempotent");
         assert_eq!(r.replaced, once.clip_baked.len());
         // hand-made channel added after the first bake survives; editing the stack replaces the owned ones
-        p.channels.push(Channel::keys(
-            "arm_low",
-            Prop::BoneScale,
-            Track::with_keys(&[(0.0, 2.0, Ease::Linear)]),
-        ));
+        p.channels.push(Channel::keys("arm_low", Prop::BoneScale, Track::with_keys(&[(0.0, 2.0, Ease::Linear)])));
         set_weight(&mut p, "c1", 0.5).unwrap();
         bake(&mut p).unwrap();
-        assert_eq!(
-            p.channels
-                .iter()
-                .filter(|c| c.prop == Prop::BoneScale)
-                .count(),
-            1
-        );
+        assert_eq!(p.channels.iter().filter(|c| c.prop == Prop::BoneScale).count(), 1);
         assert_eq!(p.channels[..3], once.channels[..3], "hand-made untouched");
         assert!((angle(&p, "arm_up", 5.0) - 60.0).abs() < 1e-3);
         // removing the clip and baking clears the owned channels only
@@ -811,32 +633,14 @@ mod tests {
     fn locks_are_respected() {
         let mut p = proj();
         add_clip(&mut p, clip()).unwrap();
-        crate::chanmeta::set_meta(
-            &mut p,
-            "leg",
-            Some(Prop::BoneAngle),
-            &crate::chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        crate::chanmeta::set_meta(&mut p, "leg", Some(Prop::BoneAngle), &crate::chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
         let before = p.clone();
         assert!(bake(&mut p).unwrap_err().contains("locked"));
         assert_eq!(p, before, "nothing changed");
         p.clips[0].exclude = vec!["leg".into()];
         bake(&mut p).unwrap();
         // locking a target that owns baked channels blocks the next rebake too
-        crate::chanmeta::set_meta(
-            &mut p,
-            "arm_up",
-            Some(Prop::BoneAngle),
-            &crate::chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        crate::chanmeta::set_meta(&mut p, "arm_up", Some(Prop::BoneAngle), &crate::chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
         let before = p.clone();
         assert!(bake(&mut p).is_err());
         assert_eq!(p, before);
@@ -847,11 +651,7 @@ mod tests {
         let mut c = clip();
         c.mode = ClipMode::Additive;
         c.include = vec!["arm_*".into()];
-        c.track_weights = vec![TrackWeight {
-            pattern: "arm_up".into(),
-            prop: Some(Prop::BoneAngle),
-            weight: 0.3,
-        }];
+        c.track_weights = vec![TrackWeight { pattern: "arm_up".into(), prop: Some(Prop::BoneAngle), weight: 0.3 }];
         c.weight_keys = Track::with_keys(&[(0.0, 0.0, Ease::Linear), (10.0, 1.0, Ease::Linear)]);
         c.rename = vec![("leg".into(), "arm_low".into())];
         let mut p = proj();
@@ -859,13 +659,8 @@ mod tests {
         bake(&mut p).unwrap();
         let q = Project::from_json(&p.to_json_pretty()).unwrap();
         assert_eq!(q, p);
-        let minimal: Clip =
-            serde_json::from_str(r#"{"name":"x","take":{"name":"t","length":4,"tracks":[]}}"#)
-                .unwrap();
-        assert_eq!(
-            (minimal.speed, minimal.loops, minimal.weight, minimal.mode),
-            (1.0, 1, 1.0, ClipMode::Replace)
-        );
+        let minimal: Clip = serde_json::from_str(r#"{"name":"x","take":{"name":"t","length":4,"tracks":[]}}"#).unwrap();
+        assert_eq!((minimal.speed, minimal.loops, minimal.weight, minimal.mode), (1.0, 1, 1.0, ClipMode::Replace));
         let plain = Project::new("e", 1.0, 1.0, 24.0, 2).to_json_pretty();
         assert!(!plain.contains("clips") && !plain.contains("clip_baked"));
     }
@@ -883,12 +678,8 @@ mod tests {
     #[test]
     fn validation_errors() {
         let mut p = proj();
-        let lib = Library {
-            takes: vec![take()],
-        };
-        assert!(add(&mut p, &lib, "nope", clip())
-            .unwrap_err()
-            .contains("no take"));
+        let lib = Library { takes: vec![take()] };
+        assert!(add(&mut p, &lib, "nope", clip()).unwrap_err().contains("no take"));
         let bad = |f: &dyn Fn(&mut Clip)| {
             let mut c = clip();
             f(&mut c);
@@ -904,16 +695,9 @@ mod tests {
         assert!(bad(&|c| c.fade_in = -1.0).contains("fades"));
         assert!(bad(&|c| c.name = " ".into()).contains("name"));
         assert!(bad(&|c| c.take.tracks[0].keys[0].value = f32::NAN).contains("non-finite"));
-        assert!(bad(&|c| c.track_weights = vec![TrackWeight {
-            pattern: "a".into(),
-            prop: None,
-            weight: f32::NAN
-        }])
-        .contains("track weight"));
+        assert!(bad(&|c| c.track_weights = vec![TrackWeight { pattern: "a".into(), prop: None, weight: f32::NAN }]).contains("track weight"));
         add(&mut p, &lib, "wave", clip()).unwrap();
-        assert!(add(&mut p, &lib, "wave", clip())
-            .unwrap_err()
-            .contains("already exists"));
+        assert!(add(&mut p, &lib, "wave", clip()).unwrap_err().contains("already exists"));
         assert!(remove(&mut p, "zzz").is_err());
         assert!(set_weight(&mut p, "c1", 2.0).is_err());
         assert!(set_weight(&mut p, "zzz", 0.5).is_err());
@@ -932,9 +716,7 @@ mod tests {
 
     #[test]
     fn glob_matching() {
-        assert!(
-            glob("arm_*", "arm_up") && glob("*", "") && glob("a?c", "abc") && glob("*_l", "hand_l")
-        );
+        assert!(glob("arm_*", "arm_up") && glob("*", "") && glob("a?c", "abc") && glob("*_l", "hand_l"));
         assert!(!glob("arm_*", "leg") && !glob("a?c", "ac") && !glob("arm", "arm_up"));
     }
 

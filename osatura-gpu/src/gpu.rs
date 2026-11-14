@@ -87,12 +87,7 @@ pub struct GpuOptions {
 
 impl Default for GpuOptions {
     fn default() -> Self {
-        GpuOptions {
-            scale: 1.0,
-            supersample: 4,
-            transparent: false,
-            show_bones: false,
-        }
+        GpuOptions { scale: 1.0, supersample: 4, transparent: false, show_bones: false }
     }
 }
 
@@ -121,10 +116,7 @@ impl GpuImage {
         tiny_skia::Pixmap::from_vec(self.premul_rgba.clone(), size)
     }
     pub fn encode_png(&self) -> Result<Vec<u8>, String> {
-        self.to_pixmap()
-            .ok_or("bad image size")?
-            .encode_png()
-            .map_err(|e| e.to_string())
+        self.to_pixmap().ok_or("bad image size")?.encode_png().map_err(|e| e.to_string())
     }
 }
 
@@ -156,9 +148,7 @@ pub struct GpuContext {
 
 fn summarize(info: &wgpu::AdapterInfo) -> AdapterSummary {
     let is_software = info.device_type == wgpu::DeviceType::Cpu
-        || ["llvmpipe", "lavapipe", "swiftshader", "software"]
-            .iter()
-            .any(|k| info.name.to_ascii_lowercase().contains(k));
+        || ["llvmpipe", "lavapipe", "swiftshader", "software"].iter().any(|k| info.name.to_ascii_lowercase().contains(k));
     AdapterSummary {
         name: info.name.clone(),
         backend: format!("{:?}", info.backend),
@@ -179,37 +169,23 @@ impl GpuContext {
         desc.backends = backends;
         let instance = wgpu::Instance::new(desc);
         let adapter = match choice {
-            AdapterChoice::Auto => {
-                pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-                    power_preference: wgpu::PowerPreference::HighPerformance,
-                    ..Default::default()
-                }))
-                .map_err(|e| GpuError::NoAdapter(e.to_string()))?
-            }
+            AdapterChoice::Auto => pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                ..Default::default()
+            }))
+            .map_err(|e| GpuError::NoAdapter(e.to_string()))?,
             AdapterChoice::Software => {
                 let all = pollster::block_on(instance.enumerate_adapters(backends));
-                let cpu: Vec<_> = all
-                    .into_iter()
-                    .filter(|a| summarize(&a.get_info()).is_software)
-                    .collect();
+                let cpu: Vec<_> = all.into_iter().filter(|a| summarize(&a.get_info()).is_software).collect();
                 // Prefer Vulkan (lavapipe) over GL (llvmpipe) when both exist.
-                let pick = cpu
-                    .iter()
-                    .position(|a| a.get_info().backend == wgpu::Backend::Vulkan)
-                    .or(if cpu.is_empty() { None } else { Some(0) });
+                let pick = cpu.iter().position(|a| a.get_info().backend == wgpu::Backend::Vulkan).or(if cpu.is_empty() { None } else { Some(0) });
                 match pick {
                     Some(i) => cpu.into_iter().nth(i).unwrap(),
-                    None => pollster::block_on(instance.request_adapter(
-                        &wgpu::RequestAdapterOptions {
-                            force_fallback_adapter: true,
-                            ..Default::default()
-                        },
-                    ))
-                    .map_err(|e| {
-                        GpuError::NoAdapter(format!(
-                            "no software adapter (install mesa-vulkan-drivers for lavapipe): {e}"
-                        ))
-                    })?,
+                    None => pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+                        force_fallback_adapter: true,
+                        ..Default::default()
+                    }))
+                    .map_err(|e| GpuError::NoAdapter(format!("no software adapter (install mesa-vulkan-drivers for lavapipe): {e}")))?,
                 }
             }
         };
@@ -224,11 +200,7 @@ impl GpuContext {
         let dummy = device
             .create_texture(&wgpu::TextureDescriptor {
                 label: Some("dummy"),
-                size: wgpu::Extent3d {
-                    width: 1,
-                    height: 1,
-                    depth_or_array_layers: 1,
-                },
+                size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
@@ -237,14 +209,7 @@ impl GpuContext {
                 view_formats: &[],
             })
             .create_view(&wgpu::TextureViewDescriptor::default());
-        Ok(GpuContext {
-            device,
-            queue,
-            adapter: summary,
-            pipes,
-            dummy,
-            uniform_align,
-        })
+        Ok(GpuContext { device, queue, adapter: summary, pipes, dummy, uniform_align })
     }
 
     pub fn max_texture_dim(&self) -> u32 {
@@ -265,17 +230,15 @@ fn build_pipes(device: &wgpu::Device) -> Pipes {
         label: Some("downsample"),
         source: wgpu::ShaderSource::Wgsl(include_str!("wgsl/downsample.wgsl").into()),
     });
-    let ubo = |binding: u32, dynamic: bool, size: usize, vis: wgpu::ShaderStages| {
-        wgpu::BindGroupLayoutEntry {
-            binding,
-            visibility: vis,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: dynamic,
-                min_binding_size: wgpu::BufferSize::new(size as u64),
-            },
-            count: None,
-        }
+    let ubo = |binding: u32, dynamic: bool, size: usize, vis: wgpu::ShaderStages| wgpu::BindGroupLayoutEntry {
+        binding,
+        visibility: vis,
+        ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Uniform,
+            has_dynamic_offset: dynamic,
+            min_binding_size: wgpu::BufferSize::new(size as u64),
+        },
+        count: None,
     };
     let tex = |binding: u32| wgpu::BindGroupLayoutEntry {
         binding,
@@ -294,12 +257,7 @@ fn build_pipes(device: &wgpu::Device) -> Pipes {
     });
     let bgl_comp = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("bgl_comp"),
-        entries: &[
-            ubo(0, false, 32, wgpu::ShaderStages::FRAGMENT),
-            tex(1),
-            tex(2),
-            tex(3),
-        ],
+        entries: &[ubo(0, false, 32, wgpu::ShaderStages::FRAGMENT), tex(1), tex(2), tex(3)],
     });
     let bgl_down = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("bgl_down"),
@@ -315,11 +273,7 @@ fn build_pipes(device: &wgpu::Device) -> Pipes {
     let vbuf = wgpu::VertexBufferLayout {
         array_stride: 8,
         step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &[wgpu::VertexAttribute {
-            format: wgpu::VertexFormat::Float32x2,
-            offset: 0,
-            shader_location: 0,
-        }],
+        attributes: &[wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x2, offset: 0, shader_location: 0 }],
     };
     let face = |compare, pass_op| wgpu::StencilFaceState {
         compare,
@@ -327,25 +281,15 @@ fn build_pipes(device: &wgpu::Device) -> Pipes {
         depth_fail_op: wgpu::StencilOperation::Keep,
         pass_op,
     };
-    let ds =
-        |front: wgpu::StencilFaceState, back: wgpu::StencilFaceState| wgpu::DepthStencilState {
-            format: STENCIL,
-            depth_write_enabled: Some(false),
-            depth_compare: Some(wgpu::CompareFunction::Always),
-            stencil: wgpu::StencilState {
-                front,
-                back,
-                read_mask: 0xff,
-                write_mask: 0xff,
-            },
-            bias: wgpu::DepthBiasState::default(),
-        };
+    let ds = |front: wgpu::StencilFaceState, back: wgpu::StencilFaceState| wgpu::DepthStencilState {
+        format: STENCIL,
+        depth_write_enabled: Some(false),
+        depth_compare: Some(wgpu::CompareFunction::Always),
+        stencil: wgpu::StencilState { front, back, read_mask: 0xff, write_mask: 0xff },
+        bias: wgpu::DepthBiasState::default(),
+    };
     let draw_layout = layout(&bgl_draw);
-    let make_draw = |label: &str,
-                     frag: &str,
-                     ds: wgpu::DepthStencilState,
-                     write: wgpu::ColorWrites,
-                     blend: Option<wgpu::BlendState>| {
+    let make_draw = |label: &str, frag: &str, ds: wgpu::DepthStencilState, write: wgpu::ColorWrites, blend: Option<wgpu::BlendState>| {
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(label),
             layout: Some(&draw_layout),
@@ -355,31 +299,21 @@ fn build_pipes(device: &wgpu::Device) -> Pipes {
                 compilation_options: Default::default(),
                 buffers: &[Some(vbuf.clone())],
             },
-            primitive: wgpu::PrimitiveState {
-                cull_mode: None,
-                ..Default::default()
-            },
+            primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
             depth_stencil: Some(ds),
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState {
                 module: &draw_mod,
                 entry_point: Some(frag),
                 compilation_options: Default::default(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: COLOR,
-                    blend,
-                    write_mask: write,
-                })],
+                targets: &[Some(wgpu::ColorTargetState { format: COLOR, blend, write_mask: write })],
             }),
             multiview_mask: None,
             cache: None,
         })
     };
     use wgpu::{CompareFunction as C, StencilOperation as Op};
-    let nz = ds(
-        face(C::Always, Op::IncrementWrap),
-        face(C::Always, Op::DecrementWrap),
-    );
+    let nz = ds(face(C::Always, Op::IncrementWrap), face(C::Always, Op::DecrementWrap));
     let eo = ds(face(C::Always, Op::Invert), face(C::Always, Op::Invert));
     let any = ds(face(C::Always, Op::Replace), face(C::Always, Op::Replace));
     let cover_ds = ds(face(C::NotEqual, Op::Zero), face(C::NotEqual, Op::Zero));
@@ -401,52 +335,28 @@ fn build_pipes(device: &wgpu::Device) -> Pipes {
             operation: wgpu::BlendOperation::Add,
         },
     };
-    let cover = make_draw(
-        "cover",
-        "fs_cover",
-        cover_ds,
-        wgpu::ColorWrites::ALL,
-        Some(premul_over),
-    );
-    let full =
-        |label: &str, module: &wgpu::ShaderModule, frag: &str, bgl: &wgpu::BindGroupLayout| {
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some(label),
-                layout: Some(&layout(bgl)),
-                vertex: wgpu::VertexState {
-                    module,
-                    entry_point: Some("vs_full"),
-                    compilation_options: Default::default(),
-                    buffers: &[],
-                },
-                primitive: wgpu::PrimitiveState::default(),
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
-                fragment: Some(wgpu::FragmentState {
-                    module,
-                    entry_point: Some(frag),
-                    compilation_options: Default::default(),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: COLOR,
-                        blend: None,
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                multiview_mask: None,
-                cache: None,
-            })
-        };
+    let cover = make_draw("cover", "fs_cover", cover_ds, wgpu::ColorWrites::ALL, Some(premul_over));
+    let full = |label: &str, module: &wgpu::ShaderModule, frag: &str, bgl: &wgpu::BindGroupLayout| {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some(label),
+            layout: Some(&layout(bgl)),
+            vertex: wgpu::VertexState { module, entry_point: Some("vs_full"), compilation_options: Default::default(), buffers: &[] },
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState {
+                module,
+                entry_point: Some(frag),
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState { format: COLOR, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+            }),
+            multiview_mask: None,
+            cache: None,
+        })
+    };
     let comp = full("composite", &comp_mod, "fs_comp", &bgl_comp);
     let down = full("downsample", &down_mod, "fs_down", &bgl_down);
-    Pipes {
-        bgl_draw,
-        bgl_comp,
-        bgl_down,
-        stencil,
-        cover,
-        comp,
-        down,
-    }
+    Pipes { bgl_draw, bgl_comp, bgl_down, stencil, cover, comp, down }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -454,11 +364,7 @@ fn build_pipes(device: &wgpu::Device) -> Pipes {
 // ---------------------------------------------------------------------------------------------
 
 fn fin(v: f32) -> f32 {
-    if v.is_finite() {
-        v
-    } else {
-        0.0
-    }
+    if v.is_finite() { v } else { 0.0 }
 }
 
 fn push_f32(out: &mut Vec<u8>, vals: &[f32]) {
@@ -475,26 +381,14 @@ fn push_u32(out: &mut Vec<u8>, vals: &[u32]) {
 
 /// Layout must match `struct Draw` in draw.wgsl: size(8) kind(4) nstops(4) | inv_abcd(16) | inv_t(16) | geom(16) | stops_c | stops_o.
 fn encode_draw(target: (f32, f32), paint: &Paint, inv: &Affine2) -> Result<Vec<u8>, GpuError> {
-    let col = |c: osatura_core::style::Rgba| {
-        [
-            fin(c.r).clamp(0.0, 1.0),
-            fin(c.g).clamp(0.0, 1.0),
-            fin(c.b).clamp(0.0, 1.0),
-            fin(c.a).clamp(0.0, 1.0),
-        ]
-    };
+    let col = |c: osatura_core::style::Rgba| [fin(c.r).clamp(0.0, 1.0), fin(c.g).clamp(0.0, 1.0), fin(c.b).clamp(0.0, 1.0), fin(c.a).clamp(0.0, 1.0)];
     let mut stops_c = [[0.0f32; 4]; MAX_STOPS];
     let mut stops_o = [[0.0f32; 4]; MAX_STOPS];
     let (mut kind, mut nstops) = (0u32, 1u32);
     let mut geom = [0.0f32; 4];
-    let mut load = |stops: &[osatura_core::style::Stop],
-                    base: osatura_core::style::Rgba|
-     -> Result<u32, GpuError> {
+    let mut load = |stops: &[osatura_core::style::Stop], base: osatura_core::style::Rgba| -> Result<u32, GpuError> {
         if stops.len() > MAX_STOPS {
-            return Err(GpuError::Unsupported(format!(
-                "gradient with {} stops (limit {MAX_STOPS})",
-                stops.len()
-            )));
+            return Err(GpuError::Unsupported(format!("gradient with {} stops (limit {MAX_STOPS})", stops.len())));
         }
         if stops.is_empty() {
             stops_c[0] = col(base);
@@ -509,9 +403,7 @@ fn encode_draw(target: (f32, f32), paint: &Paint, inv: &Affine2) -> Result<Vec<u
         Ok(s.len() as u32)
     };
     match paint {
-        _ if paint.degenerate_color().is_some() => {
-            stops_c[0] = col(paint.degenerate_color().unwrap())
-        }
+        _ if paint.degenerate_color().is_some() => stops_c[0] = col(paint.degenerate_color().unwrap()),
         Paint::Solid(c) => stops_c[0] = col(*c),
         Paint::Linear { from, to, stops } => {
             // Degenerate axis or no stops: the CPU rasteriser falls back to the first stop colour.
@@ -523,11 +415,7 @@ fn encode_draw(target: (f32, f32), paint: &Paint, inv: &Affine2) -> Result<Vec<u
                 geom = [from.x, from.y, to.x, to.y];
             }
         }
-        Paint::Radial {
-            center,
-            radius,
-            stops,
-        } => {
+        Paint::Radial { center, radius, stops } => {
             if stops.is_empty() {
                 stops_c[0] = col(paint.base_color());
             } else {
@@ -540,10 +428,7 @@ fn encode_draw(target: (f32, f32), paint: &Paint, inv: &Affine2) -> Result<Vec<u
     let mut out = Vec::with_capacity(DRAW_BYTES);
     push_f32(&mut out, &[target.0, target.1]);
     push_u32(&mut out, &[kind, nstops]);
-    push_f32(
-        &mut out,
-        &[inv.a, inv.b, inv.c, inv.d, inv.tx, inv.ty, 0.0, 0.0],
-    );
+    push_f32(&mut out, &[inv.a, inv.b, inv.c, inv.d, inv.tx, inv.ty, 0.0, 0.0]);
     push_f32(&mut out, &geom);
     for c in &stops_c {
         push_f32(&mut out, c);
@@ -609,11 +494,7 @@ impl Rec<'_> {
         self.layers += 1;
         let tex = self.ctx.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("layer"),
-            size: wgpu::Extent3d {
-                width: self.w,
-                height: self.h,
-                depth_or_array_layers: 1,
-            },
+            size: wgpu::Extent3d { width: self.w, height: self.h, depth_or_array_layers: 1 },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -636,10 +517,7 @@ impl Rec<'_> {
                 view: &l.view,
                 depth_slice: None,
                 resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(c),
-                    store: wgpu::StoreOp::Store,
-                },
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(c), store: wgpu::StoreOp::Store },
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -658,20 +536,13 @@ impl Rec<'_> {
         self.pool.push(l);
     }
 
-    fn draw_node(
-        &mut self,
-        target: &Layer,
-        id: usize,
-        force_visible: bool,
-        simple: bool,
-    ) -> Result<(), GpuError> {
+    fn draw_node(&mut self, target: &Layer, id: usize, force_visible: bool, simple: bool) -> Result<(), GpuError> {
         let frame = self.frame;
         let node = &frame.nodes[id];
         if !node.visible && !force_visible {
             return Ok(());
         }
-        let need_layer = node.opacity < 0.999
-            || (!simple && (node.blend != Blend::Normal || node.mask.is_some()));
+        let need_layer = node.opacity < 0.999 || (!simple && (node.blend != Blend::Normal || node.mask.is_some()));
         if !need_layer {
             return self.draw_content(target, id, force_visible, simple);
         }
@@ -686,13 +557,7 @@ impl Rec<'_> {
             _ => None,
         };
         let mode = if simple { 0 } else { blend_index(node.blend) };
-        self.composite(
-            target,
-            &tmp,
-            mask.as_ref().map(|(m, i)| (m, *i)),
-            node.opacity.clamp(0.0, 1.0),
-            mode,
-        );
+        self.composite(target, &tmp, mask.as_ref().map(|(m, i)| (m, *i)), node.opacity.clamp(0.0, 1.0), mode);
         self.release(tmp);
         if let Some((mp, _)) = mask {
             self.release(mp);
@@ -700,13 +565,7 @@ impl Rec<'_> {
         Ok(())
     }
 
-    fn draw_content(
-        &mut self,
-        target: &Layer,
-        id: usize,
-        force_visible: bool,
-        simple: bool,
-    ) -> Result<(), GpuError> {
+    fn draw_content(&mut self, target: &Layer, id: usize, force_visible: bool, simple: bool) -> Result<(), GpuError> {
         let frame = self.frame;
         let node = &frame.nodes[id];
         match node.kind {
@@ -717,77 +576,33 @@ impl Rec<'_> {
                 }
                 Ok(())
             }
-            NodeKind::Image => Err(GpuError::Unsupported(format!(
-                "image layer '{}' (bitmaps and image meshes are CPU-only)",
-                node.name
-            ))),
+            NodeKind::Image => Err(GpuError::Unsupported(format!("image layer '{}' (bitmaps and image meshes are CPU-only)", node.name))),
         }
     }
 
-    fn composite(
-        &mut self,
-        target: &Layer,
-        src: &Layer,
-        mask: Option<(&Layer, bool)>,
-        opacity: f32,
-        mode: u32,
-    ) {
+    fn composite(&mut self, target: &Layer, src: &Layer, mask: Option<(&Layer, bool)>, opacity: f32, mode: u32) {
         let scratch = self.pool.pop().unwrap_or_else(|| self.new_layer());
-        let size = wgpu::Extent3d {
-            width: self.w,
-            height: self.h,
-            depth_or_array_layers: 1,
-        };
-        self.enc.copy_texture_to_texture(
-            target.tex.as_image_copy(),
-            scratch.tex.as_image_copy(),
-            size,
-        );
+        let size = wgpu::Extent3d { width: self.w, height: self.h, depth_or_array_layers: 1 };
+        self.enc.copy_texture_to_texture(target.tex.as_image_copy(), scratch.tex.as_image_copy(), size);
         let mut u = Vec::new();
-        push_u32(
-            &mut u,
-            &[
-                mode,
-                mask.is_some() as u32,
-                mask.map_or(0, |m| m.1 as u32),
-                0,
-            ],
-        );
+        push_u32(&mut u, &[mode, mask.is_some() as u32, mask.map_or(0, |m| m.1 as u32), 0]);
         push_f32(&mut u, &[opacity, 0.0, 0.0, 0.0]);
-        let ubuf = self
-            .ctx
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("comp_u"),
-                contents: &u,
-                usage: wgpu::BufferUsages::UNIFORM,
-            });
+        let ubuf = self.ctx.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("comp_u"),
+            contents: &u,
+            usage: wgpu::BufferUsages::UNIFORM,
+        });
         let mask_view = mask.map_or(&self.ctx.dummy, |m| &m.0.view);
-        let bg = self
-            .ctx
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("comp_bg"),
-                layout: &self.ctx.pipes.bgl_comp,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: ubuf.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&scratch.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::TextureView(&src.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: wgpu::BindingResource::TextureView(mask_view),
-                    },
-                ],
-            });
+        let bg = self.ctx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("comp_bg"),
+            layout: &self.ctx.pipes.bgl_comp,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: ubuf.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&scratch.view) },
+                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&src.view) },
+                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(mask_view) },
+            ],
+        });
         self.passes += 1;
         {
             let mut pass = self.enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -796,10 +611,7 @@ impl Rec<'_> {
                     view: &target.view,
                     depth_slice: None,
                     resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -816,16 +628,8 @@ impl Rec<'_> {
     fn draw_paths(&mut self, target: &Layer, node: &RenderNode) -> Result<(), GpuError> {
         let k = self.scale * self.ss as f32;
         let m = Affine2::scale(k).mul(node.world);
-        let Some(inv) = m.inverse() else {
-            return Ok(());
-        };
-        if !(m.a.is_finite()
-            && m.b.is_finite()
-            && m.c.is_finite()
-            && m.d.is_finite()
-            && m.tx.is_finite()
-            && m.ty.is_finite())
-        {
+        let Some(inv) = m.inverse() else { return Ok(()) };
+        if !(m.a.is_finite() && m.b.is_finite() && m.c.is_finite() && m.d.is_finite() && m.tx.is_finite() && m.ty.is_finite()) {
             return Ok(());
         }
         let tol = 0.1 / m.a.hypot(m.b).max(m.c.hypot(m.d)).max(0.01);
@@ -848,12 +652,7 @@ impl Rec<'_> {
                 x1 = x1.max(p[0]);
                 y1 = y1.max(p[1]);
             }
-            let (x0, y0, x1, y1) = (
-                x0.max(0.0) - 1.0,
-                y0.max(0.0) - 1.0,
-                x1.min(tw) + 1.0,
-                y1.min(th) + 1.0,
-            );
+            let (x0, y0, x1, y1) = (x0.max(0.0) - 1.0, y0.max(0.0) - 1.0, x1.min(tw) + 1.0, y1.min(th) + 1.0);
             if x1 <= x0 || y1 <= y0 {
                 return Ok(());
             }
@@ -867,13 +666,7 @@ impl Rec<'_> {
             }
             let c0 = (verts.len() / 2) as u32;
             verts.extend_from_slice(&[x0, y0, x1, y0, x1, y1, x0, y0, x1, y1, x0, y1]);
-            jobs.push(Job {
-                mode,
-                v0,
-                vn: tris.len() as u32,
-                c0,
-                uoff: uoff as u32,
-            });
+            jobs.push(Job { mode, v0, vn: tris.len() as u32, c0, uoff: uoff as u32 });
             Ok(())
         };
         for path in &node.paths {
@@ -889,18 +682,11 @@ impl Rec<'_> {
                     if st.width <= 0.0 {
                         continue; // zero width: the CPU rasteriser would draw a hairline, which is not implemented here
                     }
-                    let spec = StrokeSpec {
-                        width: st.width,
-                        cap: st.cap,
-                        join: st.join,
-                        miter_limit: MITER_LIMIT,
-                    };
+                    let spec = StrokeSpec { width: st.width, cap: st.cap, join: st.join, miter_limit: MITER_LIMIT };
                     let pts = path.flatten(tol);
                     let mut tris = tess::Tris::new();
                     if tess::dash_valid(&st.dash) {
-                        for piece in tess::dash(&pts, path.closed, &st.dash, st.dash_offset)
-                            .map_err(GpuError::Unsupported)?
-                        {
+                        for piece in tess::dash(&pts, path.closed, &st.dash, st.dash_offset).map_err(GpuError::Unsupported)? {
                             tris.extend(tess::stroke_tris(&piece, false, &spec, &m));
                         }
                     } else {
@@ -909,11 +695,7 @@ impl Rec<'_> {
                     add(tris, Mode::Any, &st.paint)?;
                 } else if let Some(out) = width_outline(&path.polyline(tol), st) {
                     let mut tris = tess::Tris::new();
-                    let mode = if out.even_odd {
-                        Mode::EvenOdd
-                    } else {
-                        Mode::NonZero
-                    };
+                    let mode = if out.even_odd { Mode::EvenOdd } else { Mode::NonZero };
                     for poly in &out.polys {
                         tris.extend(tess::fill_fan(&tess::map_poly(poly, &m)));
                     }
@@ -928,10 +710,7 @@ impl Rec<'_> {
         let dev = &self.ctx.device;
         let vb = dev.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("verts"),
-            contents: &verts
-                .iter()
-                .flat_map(|v| v.to_ne_bytes())
-                .collect::<Vec<u8>>(),
+            contents: &verts.iter().flat_map(|v| v.to_ne_bytes()).collect::<Vec<u8>>(),
             usage: wgpu::BufferUsages::VERTEX,
         });
         let ub = dev.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -944,11 +723,7 @@ impl Rec<'_> {
             layout: &self.ctx.pipes.bgl_draw,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                    buffer: &ub,
-                    offset: 0,
-                    size: wgpu::BufferSize::new(DRAW_BYTES as u64),
-                }),
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &ub, offset: 0, size: wgpu::BufferSize::new(DRAW_BYTES as u64) }),
             }],
         });
         self.passes += 1;
@@ -958,18 +733,12 @@ impl Rec<'_> {
                 view: &target.view,
                 depth_slice: None,
                 resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: wgpu::StoreOp::Store,
-                },
+                ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &self.stencil,
                 depth_ops: None,
-                stencil_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(0),
-                    store: wgpu::StoreOp::Discard,
-                }),
+                stencil_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(0), store: wgpu::StoreOp::Discard }),
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
@@ -990,33 +759,19 @@ impl Rec<'_> {
 }
 
 /// Render one already evaluated frame.
-pub fn render_frame(
-    ctx: &GpuContext,
-    engine: &Engine,
-    f: &Frame,
-    opts: &GpuOptions,
-) -> Result<GpuImage, GpuError> {
+pub fn render_frame(ctx: &GpuContext, engine: &Engine, f: &Frame, opts: &GpuOptions) -> Result<GpuImage, GpuError> {
     let guard = ctx.device.push_error_scope(wgpu::ErrorFilter::Validation);
     let r = render_inner(ctx, engine, f, opts);
     let err = pollster::block_on(guard.pop());
     match (r, err) {
-        (Ok(_), Some(e)) | (Err(GpuError::Device(_)), Some(e)) => {
-            Err(GpuError::Device(e.to_string()))
-        }
+        (Ok(_), Some(e)) | (Err(GpuError::Device(_)), Some(e)) => Err(GpuError::Device(e.to_string())),
         (r, _) => r,
     }
 }
 
-fn render_inner(
-    ctx: &GpuContext,
-    engine: &Engine,
-    f: &Frame,
-    opts: &GpuOptions,
-) -> Result<GpuImage, GpuError> {
+fn render_inner(ctx: &GpuContext, engine: &Engine, f: &Frame, opts: &GpuOptions) -> Result<GpuImage, GpuError> {
     if opts.show_bones {
-        return Err(GpuError::Unsupported(
-            "bone overlay (--bones) is CPU-only".into(),
-        ));
+        return Err(GpuError::Unsupported("bone overlay (--bones) is CPU-only".into()));
     }
     if !(opts.scale.is_finite() && opts.scale > 0.0) {
         return Err(GpuError::Unsupported("scale must be positive".into()));
@@ -1026,9 +781,7 @@ fn render_inner(
     let h = ((p.height * opts.scale).round() as u32).max(1);
     let maxd = ctx.max_texture_dim();
     if w.max(h) > maxd {
-        return Err(GpuError::Unsupported(format!(
-            "output {w}x{h} exceeds the adapter texture limit {maxd}"
-        )));
+        return Err(GpuError::Unsupported(format!("output {w}x{h} exceeds the adapter texture limit {maxd}")));
     }
     let ss = opts.supersample.clamp(1, 8).min(maxd / w.max(h)).max(1);
     let (sw, sh) = (w * ss, h * ss);
@@ -1037,11 +790,7 @@ fn render_inner(
     let stencil = dev
         .create_texture(&wgpu::TextureDescriptor {
             label: Some("stencil"),
-            size: wgpu::Extent3d {
-                width: sw,
-                height: sh,
-                depth_or_array_layers: 1,
-            },
+            size: wgpu::Extent3d { width: sw, height: sh, depth_or_array_layers: 1 },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -1053,9 +802,7 @@ fn render_inner(
     let mut rec = Rec {
         ctx,
         frame: f,
-        enc: dev.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("osatura"),
-        }),
+        enc: dev.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("osatura") }),
         w: sw,
         h: sh,
         ss,
@@ -1070,12 +817,7 @@ fn render_inner(
         (Some(c), false) => {
             let cl = |v: f32| fin(v).clamp(0.0, 1.0) as f64;
             let a = cl(c.a);
-            wgpu::Color {
-                r: cl(c.r) * a,
-                g: cl(c.g) * a,
-                b: cl(c.b) * a,
-                a,
-            }
+            wgpu::Color { r: cl(c.r) * a, g: cl(c.g) * a, b: cl(c.b) * a, a }
         }
         _ => wgpu::Color::TRANSPARENT,
     };
@@ -1086,11 +828,7 @@ fn render_inner(
     // Resolve (box filter) into the final texture and read it back.
     let out_tex = dev.create_texture(&wgpu::TextureDescriptor {
         label: Some("out"),
-        size: wgpu::Extent3d {
-            width: w,
-            height: h,
-            depth_or_array_layers: 1,
-        },
+        size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
@@ -1101,23 +839,13 @@ fn render_inner(
     let out_view = out_tex.create_view(&wgpu::TextureViewDescriptor::default());
     let mut du = Vec::new();
     push_u32(&mut du, &[ss, 0, 0, 0]);
-    let dbuf = dev.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("down_u"),
-        contents: &du,
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
+    let dbuf = dev.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("down_u"), contents: &du, usage: wgpu::BufferUsages::UNIFORM });
     let dbg = dev.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("down_bg"),
         layout: &ctx.pipes.bgl_down,
         entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: dbuf.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: wgpu::BindingResource::TextureView(&canvas.view),
-            },
+            wgpu::BindGroupEntry { binding: 0, resource: dbuf.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&canvas.view) },
         ],
     });
     {
@@ -1127,10 +855,7 @@ fn render_inner(
                 view: &out_view,
                 depth_slice: None,
                 resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                    store: wgpu::StoreOp::Store,
-                },
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -1152,17 +877,9 @@ fn render_inner(
         out_tex.as_image_copy(),
         wgpu::TexelCopyBufferInfo {
             buffer: &rb,
-            layout: wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(row as u32),
-                rows_per_image: Some(h),
-            },
+            layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(row as u32), rows_per_image: Some(h) },
         },
-        wgpu::Extent3d {
-            width: w,
-            height: h,
-            depth_or_array_layers: 1,
-        },
+        wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
     );
     let (passes, layers) = (rec.passes, rec.layers);
     let cmd = rec.enc.finish();
@@ -1173,18 +890,12 @@ fn render_inner(
     rb.slice(..).map_async(wgpu::MapMode::Read, move |r| {
         let _ = tx.send(r);
     });
-    dev.poll(wgpu::PollType::wait_indefinitely())
-        .map_err(|e| GpuError::Device(e.to_string()))?;
-    rx.recv()
-        .map_err(|e| GpuError::Device(e.to_string()))?
-        .map_err(|e| GpuError::Device(e.to_string()))?;
+    dev.poll(wgpu::PollType::wait_indefinitely()).map_err(|e| GpuError::Device(e.to_string()))?;
+    rx.recv().map_err(|e| GpuError::Device(e.to_string()))?.map_err(|e| GpuError::Device(e.to_string()))?;
     let gpu_ms = t1.elapsed().as_secs_f64() * 1e3;
     let mut data = Vec::with_capacity(w as usize * h as usize * 4);
     {
-        let view = rb
-            .slice(..)
-            .get_mapped_range()
-            .map_err(|e| GpuError::Device(e.to_string()))?;
+        let view = rb.slice(..).get_mapped_range().map_err(|e| GpuError::Device(e.to_string()))?;
         for y in 0..h as usize {
             data.extend_from_slice(&view[y * row..y * row + w as usize * 4]);
         }
@@ -1197,30 +908,15 @@ fn render_inner(
             *c = (*c).min(a);
         }
     }
-    Ok(GpuImage {
-        width: w,
-        height: h,
-        premul_rgba: data,
-        timing: Timing {
-            record_ms,
-            gpu_ms,
-            supersample: ss,
-            passes,
-            layers,
-        },
-    })
+    Ok(GpuImage { width: w, height: h, premul_rgba: data, timing: Timing { record_ms, gpu_ms, supersample: ss, passes, layers } })
 }
 
 /// Evaluate `frame` and render it.
-pub fn render(
-    ctx: &GpuContext,
-    engine: &Engine,
-    frame: f32,
-    opts: &GpuOptions,
-) -> Result<GpuImage, GpuError> {
+pub fn render(ctx: &GpuContext, engine: &Engine, frame: f32, opts: &GpuOptions) -> Result<GpuImage, GpuError> {
     let f = engine.evaluate(frame);
     render_frame(ctx, engine, &f, opts)
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -1229,23 +925,14 @@ mod tests {
     #[test]
     fn adapter_choice_parses_and_rejects() {
         assert_eq!("auto".parse::<AdapterChoice>(), Ok(AdapterChoice::Auto));
-        assert_eq!(
-            "software".parse::<AdapterChoice>(),
-            Ok(AdapterChoice::Software)
-        );
-        assert!("cuda"
-            .parse::<AdapterChoice>()
-            .unwrap_err()
-            .contains("unknown adapter"));
+        assert_eq!("software".parse::<AdapterChoice>(), Ok(AdapterChoice::Software));
+        assert!("cuda".parse::<AdapterChoice>().unwrap_err().contains("unknown adapter"));
     }
 
     #[test]
     fn blend_indices_match_the_wgsl_table() {
         use Blend::*;
-        let all = [
-            Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, HardLight,
-            SoftLight, Difference, Exclusion, Add,
-        ];
+        let all = [Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, HardLight, SoftLight, Difference, Exclusion, Add];
         for (i, b) in all.iter().enumerate() {
             assert_eq!(blend_index(*b), i as u32);
         }
@@ -1256,29 +943,14 @@ mod tests {
         let inv = Affine2::IDENTITY;
         let solid = encode_draw((10.0, 10.0), &Paint::solid("#ff0000"), &inv).unwrap();
         assert_eq!(solid.len(), DRAW_BYTES);
-        let many: Vec<_> = (0..17)
-            .map(|i| osatura_core::style::Stop {
-                offset: i as f32 / 16.0,
-                color: osatura_core::style::Rgba::BLACK,
-            })
-            .collect();
-        let g = Paint::Linear {
-            from: osatura_core::math::Vec2::new(0.0, 0.0),
-            to: osatura_core::math::Vec2::new(1.0, 0.0),
-            stops: many,
-        };
-        assert!(matches!(
-            encode_draw((1.0, 1.0), &g, &inv),
-            Err(GpuError::Unsupported(_))
-        ));
+        let many: Vec<_> = (0..17).map(|i| osatura_core::style::Stop { offset: i as f32 / 16.0, color: osatura_core::style::Rgba::BLACK }).collect();
+        let g = Paint::Linear { from: osatura_core::math::Vec2::new(0.0, 0.0), to: osatura_core::math::Vec2::new(1.0, 0.0), stops: many };
+        assert!(matches!(encode_draw((1.0, 1.0), &g, &inv), Err(GpuError::Unsupported(_))));
         // A degenerate axis falls back to the first stop colour (kind 0), like the CPU rasteriser.
         let flat = Paint::Linear {
             from: osatura_core::math::Vec2::new(2.0, 2.0),
             to: osatura_core::math::Vec2::new(2.0, 2.0),
-            stops: vec![osatura_core::style::Stop {
-                offset: 0.0,
-                color: osatura_core::style::Rgba::WHITE,
-            }],
+            stops: vec![osatura_core::style::Stop { offset: 0.0, color: osatura_core::style::Rgba::WHITE }],
         };
         let b = encode_draw((1.0, 1.0), &flat, &inv).unwrap();
         assert_eq!(u32::from_ne_bytes(b[8..12].try_into().unwrap()), 0);

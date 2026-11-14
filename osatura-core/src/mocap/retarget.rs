@@ -40,21 +40,7 @@ pub struct RetargetOptions {
 
 impl Default for RetargetOptions {
     fn default() -> Self {
-        RetargetOptions {
-            view: View::Front,
-            scale: Scale::Auto,
-            fps: None,
-            smooth: 0,
-            start: None,
-            end: None,
-            rest_frame: None,
-            mirror: false,
-            root_motion: true,
-            in_place: false,
-            weight: 1.0,
-            min_confidence: 0.4,
-            foot_lock: None,
-        }
+        RetargetOptions { view: View::Front, scale: Scale::Auto, fps: None, smooth: 0, start: None, end: None, rest_frame: None, mirror: false, root_motion: true, in_place: false, weight: 1.0, min_confidence: 0.4, foot_lock: None }
     }
 }
 
@@ -104,12 +90,7 @@ pub(super) fn smooth_series(v: &mut [f64], radius: usize) {
     }
 }
 
-pub fn retarget(
-    p: &Project,
-    bvh: &Bvh,
-    mr: &MatchResult,
-    o: &RetargetOptions,
-) -> Result<RetargetResult, String> {
+pub fn retarget(p: &Project, bvh: &Bvh, mr: &MatchResult, o: &RetargetOptions) -> Result<RetargetResult, String> {
     if bvh.frames == 0 {
         return Err("BVH has no frames".into());
     }
@@ -131,39 +112,21 @@ pub fn retarget(
     let s0 = o.start.unwrap_or(0);
     let e0 = o.end.unwrap_or(bvh.frames - 1);
     if s0 > e0 || e0 >= bvh.frames {
-        return Err(format!(
-            "frame range {s0}..{e0} does not fit the {} BVH frames",
-            bvh.frames
-        ));
+        return Err(format!("frame range {s0}..{e0} does not fit the {} BVH frames", bvh.frames));
     }
     if let Some(rf) = o.rest_frame {
         if rf >= bvh.frames {
-            return Err(format!(
-                "rest frame {rf} is outside the {} BVH frames",
-                bvh.frames
-            ));
+            return Err(format!("rest frame {rf} is outside the {} BVH frames", bvh.frames));
         }
     }
-    let used: Vec<&BoneMatch> = mr
-        .matches
-        .iter()
-        .filter(|m| {
-            m.confidence >= o.min_confidence && m.rig < p.bones.len() && m.bvh < bvh.joints.len()
-        })
-        .collect();
+    let used: Vec<&BoneMatch> = mr.matches.iter().filter(|m| m.confidence >= o.min_confidence && m.rig < p.bones.len() && m.bvh < bvh.joints.len()).collect();
     if used.is_empty() {
         return Err("no bone matches to retarget (all below the confidence threshold?)".into());
     }
     let mut notes = Vec::new();
     let nsel = e0 - s0 + 1;
     let rest_pose = bvh.pose(o.rest_frame);
-    let rest_ang: Vec<Option<f64>> = used
-        .iter()
-        .map(|m| {
-            bvh.tip_point(&rest_pose, m.tip)
-                .and_then(|t| angle_2d(rest_pose.pos[m.bvh], t, o.view, o.mirror))
-        })
-        .collect();
+    let rest_ang: Vec<Option<f64>> = used.iter().map(|m| bvh.tip_point(&rest_pose, m.tip).and_then(|t| angle_2d(rest_pose.pos[m.bvh], t, o.view, o.mirror))).collect();
     for (m, r) in used.iter().zip(&rest_ang) {
         if r.is_none() {
             notes.push(format!("{}: the rest pose bone points along the view axis; this bone stays at its rest angle", m.rig_name));
@@ -185,9 +148,7 @@ pub fn retarget(
     for f in s0..=e0 {
         let pose = bvh.pose(Some(f));
         for (i, m) in used.iter().enumerate() {
-            let ang = bvh
-                .tip_point(&pose, m.tip)
-                .and_then(|t| angle_2d(pose.pos[m.bvh], t, o.view, o.mirror));
+            let ang = bvh.tip_point(&pose, m.tip).and_then(|t| angle_2d(pose.pos[m.bvh], t, o.view, o.mirror));
             let d = match (ang, rest_ang[i]) {
                 (Some(a), Some(r)) => {
                     let mut d = norm360(a - r);
@@ -231,13 +192,9 @@ pub fn retarget(
             for (a, b) in [("thigh", "shin"), ("upperarm", "forearm")] {
                 for side in ["l", "r"] {
                     let (ka, kb) = (format!("{a}.{side}"), format!("{b}.{side}"));
-                    if let (Some(ma), Some(mb)) = (
-                        used.iter().find(|m| m.slot == ka),
-                        used.iter().find(|m| m.slot == kb),
-                    ) {
+                    if let (Some(ma), Some(mb)) = (used.iter().find(|m| m.slot == ka), used.iter().find(|m| m.slot == kb)) {
                         let tip_b = bvh.tip_point(&rest_pose, mb.tip);
-                        let bl = dist3(rest_pose.pos[ma.bvh], rest_pose.pos[mb.bvh])
-                            + tip_b.map_or(0.0, |t| dist3(rest_pose.pos[mb.bvh], t));
+                        let bl = dist3(rest_pose.pos[ma.bvh], rest_pose.pos[mb.bvh]) + tip_b.map_or(0.0, |t| dist3(rest_pose.pos[mb.bvh], t));
                         let rl = (p.bones[ma.rig].length + p.bones[mb.rig].length) as f64;
                         if bl > 1e-9 && rl > 1e-9 {
                             ratios.push(rl / bl);
@@ -260,20 +217,13 @@ pub fn retarget(
 
     // resample to output frames
     let span = (e0 - s0) as f64;
-    let out_n = if e0 == s0 {
-        1
-    } else {
-        (span * bvh.frame_time * fps + 1e-6).floor() as usize + 1
-    };
+    let out_n = if e0 == s0 { 1 } else { (span * bvh.frame_time * fps + 1e-6).floor() as usize + 1 };
     if out_n > 1_000_000 {
         return Err("resulting animation would be longer than 1,000,000 frames".into());
     }
     let step = 1.0 / (fps * bvh.frame_time);
     let pos_of = |k: usize| (k as f64 * step).min(span);
-    let mut dl: Vec<Vec<f64>> = series
-        .iter()
-        .map(|s| (0..out_n).map(|k| lerp_at(s, pos_of(k))).collect())
-        .collect();
+    let mut dl: Vec<Vec<f64>> = series.iter().map(|s| (0..out_n).map(|k| lerp_at(s, pos_of(k))).collect()).collect();
     for d in dl.iter_mut() {
         smooth_series(d, o.smooth);
     }
@@ -295,15 +245,7 @@ pub fn retarget(
     // rig-space angles
     let rw = crate::rigedit::rest_world(p)?;
     let nbn = p.bones.len();
-    let parent: Vec<Option<usize>> = p
-        .bones
-        .iter()
-        .map(|b| {
-            b.parent
-                .as_deref()
-                .and_then(|n| p.bones.iter().position(|x| x.name == n))
-        })
-        .collect();
+    let parent: Vec<Option<usize>> = p.bones.iter().map(|b| b.parent.as_deref().and_then(|n| p.bones.iter().position(|x| x.name == n))).collect();
     let mut mi_of: Vec<Option<usize>> = vec![None; nbn];
     for (i, m) in used.iter().enumerate() {
         mi_of[m.rig] = Some(i);
@@ -348,31 +290,20 @@ pub fn retarget(
 
     // channels
     let key = |vals: &[f32]| -> Track {
-        let ks: Vec<(f32, f32, Ease)> = vals
-            .iter()
-            .enumerate()
-            .map(|(k, &v)| (k as f32, v, Ease::Linear))
-            .collect();
+        let ks: Vec<(f32, f32, Ease)> = vals.iter().enumerate().map(|(k, &v)| (k as f32, v, Ease::Linear)).collect();
         Track::with_keys(&ks)
     };
     let mut chans: Vec<Channel> = Vec::new();
     for b in 0..nbn {
         if mi_of[b].is_some() {
-            chans.push(
-                Channel::keys(&p.bones[b].name, Prop::BoneAngle, key(&local[b]))
-                    .with_weight(o.weight),
-            );
+            chans.push(Channel::keys(&p.bones[b].name, Prop::BoneAngle, key(&local[b])).with_weight(o.weight));
         }
     }
     if let (true, Some(hb)) = (o.root_motion, hips_rig) {
         let xs: Vec<f32> = root_off.iter().map(|v| v[0]).collect();
         let ys: Vec<f32> = root_off.iter().map(|v| v[1]).collect();
-        chans.push(
-            Channel::keys(&p.bones[hb].name, Prop::BoneOffsetX, key(&xs)).with_weight(o.weight),
-        );
-        chans.push(
-            Channel::keys(&p.bones[hb].name, Prop::BoneOffsetY, key(&ys)).with_weight(o.weight),
-        );
+        chans.push(Channel::keys(&p.bones[hb].name, Prop::BoneOffsetX, key(&xs)).with_weight(o.weight));
+        chans.push(Channel::keys(&p.bones[hb].name, Prop::BoneOffsetY, key(&ys)).with_weight(o.weight));
     } else if o.root_motion && hips_rig.is_none() {
         notes.push("no hips match: root travel not transferred".into());
     }
@@ -383,38 +314,20 @@ pub fn retarget(
     }
     let project_frames = p.frames.max(out_n as u32);
     if project_frames > p.frames {
-        notes.push(format!(
-            "project length extended from {} to {} frames",
-            p.frames, project_frames
-        ));
+        notes.push(format!("project length extended from {} to {} frames", p.frames, project_frames));
     }
     if let Some((bone, ground)) = &o.foot_lock {
         let mut tmp = p.clone();
         let base = tmp.channels.len();
         tmp.channels.extend(chans.iter().cloned());
         tmp.frames = project_frames;
-        let lo = crate::footlock::LockOptions {
-            ground_y: *ground,
-            ..Default::default()
-        };
+        let lo = crate::footlock::LockOptions { ground_y: *ground, ..Default::default() };
         let contacts = crate::footlock::lock_feet(&mut tmp, bone, &lo)?;
         let extra: Vec<Channel> = tmp.channels[base + chans.len()..].to_vec();
-        notes.push(format!(
-            "foot lock on '{bone}': {} contact(s) pinned",
-            contacts.len()
-        ));
+        notes.push(format!("foot lock on '{bone}': {} contact(s) pinned", contacts.len()));
         chans.extend(extra);
     }
-    Ok(RetargetResult {
-        channels: chans,
-        blocked,
-        out_frames: out_n,
-        project_frames,
-        scale,
-        bones_used,
-        degenerate,
-        notes,
-    })
+    Ok(RetargetResult { channels: chans, blocked, out_frames: out_n, project_frames, scale, bones_used, degenerate, notes })
 }
 
 /// Append the retargeted channels (and extend the project length if the clip is longer).
@@ -427,16 +340,10 @@ pub fn bake(p: &mut Project, r: &RetargetResult) {
 pub fn bake_op(p: &Project, r: &RetargetResult) -> Result<Op, String> {
     let mut ops = Vec::new();
     if r.project_frames > p.frames {
-        ops.push(Op::Set {
-            path: "/frames".into(),
-            value: serde_json::json!(r.project_frames),
-        });
+        ops.push(Op::Set { path: "/frames".into(), value: serde_json::json!(r.project_frames) });
     }
     for c in &r.channels {
-        ops.push(Op::Insert {
-            path: "/channels/-".into(),
-            value: serde_json::to_value(c).map_err(|e| e.to_string())?,
-        });
+        ops.push(Op::Insert { path: "/channels/-".into(), value: serde_json::to_value(c).map_err(|e| e.to_string())? });
     }
     Ok(Op::Batch { ops })
 }

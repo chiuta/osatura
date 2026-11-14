@@ -46,10 +46,7 @@ pub fn median_cut(frames: &[&[u8]], max: usize) -> Vec<[u8; 3]> {
     let mut items: Vec<(u32, u32)> = hist.into_iter().collect();
     items.sort_unstable();
     if items.len() <= max {
-        return items
-            .iter()
-            .map(|&(c, _)| [(c >> 16) as u8, (c >> 8) as u8, c as u8])
-            .collect();
+        return items.iter().map(|&(c, _)| [(c >> 16) as u8, (c >> 8) as u8, c as u8]).collect();
     }
     let ch = |c: u32, a: usize| ((c >> (16 - 8 * a)) & 255) as f64;
     // boxes are ranges of `items`
@@ -71,25 +68,11 @@ pub fn median_cut(frames: &[&[u8]], max: usize) -> Vec<[u8; 3]> {
             return 0.0;
         }
         let mean = [m[0] / w, m[1] / w, m[2] / w];
-        items
-            .iter()
-            .map(|&(c, n)| (0..3).map(|a| (ch(c, a) - mean[a]).powi(2)).sum::<f64>() * n as f64)
-            .sum()
+        items.iter().map(|&(c, n)| (0..3).map(|a| (ch(c, a) - mean[a]).powi(2)).sum::<f64>() * n as f64).sum()
     };
-    let mut boxes = vec![B {
-        lo: 0,
-        hi: items.len(),
-        sse: sse_of(&items),
-    }];
+    let mut boxes = vec![B { lo: 0, hi: items.len(), sse: sse_of(&items) }];
     while boxes.len() < max {
-        let Some((bi, _)) = boxes
-            .iter()
-            .enumerate()
-            .filter(|(_, b)| b.hi - b.lo > 1)
-            .max_by(|a, b| a.1.sse.total_cmp(&b.1.sse).then(b.0.cmp(&a.0)))
-        else {
-            break;
-        };
+        let Some((bi, _)) = boxes.iter().enumerate().filter(|(_, b)| b.hi - b.lo > 1).max_by(|a, b| a.1.sse.total_cmp(&b.1.sse).then(b.0.cmp(&a.0))) else { break };
         let (lo, hi) = (boxes[bi].lo, boxes[bi].hi);
         // longest axis
         let mut mn = [255.0f64; 3];
@@ -100,9 +83,7 @@ pub fn median_cut(frames: &[&[u8]], max: usize) -> Vec<[u8; 3]> {
                 mx[a] = mx[a].max(ch(c, a));
             }
         }
-        let axis = (0..3)
-            .max_by(|&a, &b| (mx[a] - mn[a]).total_cmp(&(mx[b] - mn[b])).then(b.cmp(&a)))
-            .unwrap();
+        let axis = (0..3).max_by(|&a, &b| (mx[a] - mn[a]).total_cmp(&(mx[b] - mn[b])).then(b.cmp(&a))).unwrap();
         items[lo..hi].sort_by(|x, y| ch(x.0, axis).total_cmp(&ch(y.0, axis)).then(x.0.cmp(&y.0)));
         let pop: u64 = items[lo..hi].iter().map(|x| x.1 as u64).sum();
         let mut acc = 0u64;
@@ -116,16 +97,8 @@ pub fn median_cut(frames: &[&[u8]], max: usize) -> Vec<[u8; 3]> {
         }
         let cut = cut.clamp(lo + 1, hi - 1);
         let (s1, s2) = (sse_of(&items[lo..cut]), sse_of(&items[cut..hi]));
-        boxes[bi] = B {
-            lo,
-            hi: cut,
-            sse: s1,
-        };
-        boxes.push(B {
-            lo: cut,
-            hi,
-            sse: s2,
-        });
+        boxes[bi] = B { lo, hi: cut, sse: s1 };
+        boxes.push(B { lo: cut, hi, sse: s2 });
     }
     boxes.sort_by_key(|b| b.lo);
     boxes
@@ -139,11 +112,7 @@ pub fn median_cut(frames: &[&[u8]], max: usize) -> Vec<[u8; 3]> {
                     *ma += ch(c, a) * n as f64;
                 }
             }
-            [
-                (m[0] / w).round() as u8,
-                (m[1] / w).round() as u8,
-                (m[2] / w).round() as u8,
-            ]
+            [(m[0] / w).round() as u8, (m[1] / w).round() as u8, (m[2] / w).round() as u8]
         })
         .collect()
 }
@@ -156,11 +125,7 @@ pub(super) struct Mapper<'a> {
 
 impl<'a> Mapper<'a> {
     pub(super) fn new(pal: &'a [[u8; 3]], base: u8) -> Self {
-        Mapper {
-            pal,
-            base,
-            cache: FastMap::default(),
-        }
+        Mapper { pal, base, cache: FastMap::default() }
     }
     pub(super) fn nearest(&mut self, r: u8, g: u8, b: u8) -> u8 {
         let key = pack(r, g, b);
@@ -169,9 +134,7 @@ impl<'a> Mapper<'a> {
         }
         let mut best = (u32::MAX, 0usize);
         for (i, c) in self.pal.iter().enumerate() {
-            let d = (c[0] as i32 - r as i32).pow(2) as u32 * 3
-                + (c[1] as i32 - g as i32).pow(2) as u32 * 4
-                + (c[2] as i32 - b as i32).pow(2) as u32 * 2;
+            let d = (c[0] as i32 - r as i32).pow(2) as u32 * 3 + (c[1] as i32 - g as i32).pow(2) as u32 * 4 + (c[2] as i32 - b as i32).pow(2) as u32 * 2;
             if d < best.0 {
                 best = (d, i);
             }
@@ -195,14 +158,7 @@ pub struct Indexed {
 
 /// Quantise `frames` (straight RGBA, all `w x h`) to at most `colors` palette entries in total.
 /// Pixels with alpha < 128 map to the reserved index 0 (so `reserve` must be true if any exist).
-pub fn quantize<F: AsRef<[u8]>>(
-    frames: &[F],
-    w: usize,
-    h: usize,
-    colors: usize,
-    dither: bool,
-    reserve: bool,
-) -> Indexed {
+pub fn quantize<F: AsRef<[u8]>>(frames: &[F], w: usize, h: usize, colors: usize, dither: bool, reserve: bool) -> Indexed {
     let colors = colors.clamp(2, 256);
     let ncol = colors - reserve as usize;
     let refs: Vec<&[u8]> = frames.iter().map(|f| f.as_ref()).collect();
@@ -254,22 +210,12 @@ pub fn quantize<F: AsRef<[u8]>>(
         } else {
             for (p, slot) in idx.iter_mut().enumerate().take(w * h) {
                 let o = p * 4;
-                *slot = if fr[o + 3] < 128 {
-                    0
-                } else {
-                    mapper.nearest(fr[o], fr[o + 1], fr[o + 2])
-                };
+                *slot = if fr[o + 3] < 128 { 0 } else { mapper.nearest(fr[o], fr[o + 1], fr[o + 2]) };
             }
         }
         out.push(idx);
     }
-    Indexed {
-        w,
-        h,
-        palette: full,
-        transparent: reserve,
-        frames: out,
-    }
+    Indexed { w, h, palette: full, transparent: reserve, frames: out }
 }
 
 /// One output frame: a rectangle of indices.
@@ -291,13 +237,7 @@ pub fn delta_rects(q: &Indexed, tol: u8) -> Vec<Rect> {
     let mut shown: Vec<u8> = Vec::new();
     for (k, fr) in q.frames.iter().enumerate() {
         if k == 0 {
-            out.push(Rect {
-                left: 0,
-                top: 0,
-                w,
-                h,
-                idx: fr.clone(),
-            });
+            out.push(Rect { left: 0, top: 0, w, h, idx: fr.clone() });
             shown = fr.clone();
             continue;
         }
@@ -323,13 +263,7 @@ pub fn delta_rects(q: &Indexed, tol: u8) -> Vec<Rect> {
             }
         }
         if x1 <= x0 {
-            out.push(Rect {
-                left: 0,
-                top: 0,
-                w: 1,
-                h: 1,
-                idx: vec![0],
-            });
+            out.push(Rect { left: 0, top: 0, w: 1, h: 1, idx: vec![0] });
             continue;
         }
         let (rw, rh) = (x1 - x0, y1 - y0);
@@ -343,13 +277,7 @@ pub fn delta_rects(q: &Indexed, tol: u8) -> Vec<Rect> {
                 }
             }
         }
-        out.push(Rect {
-            left: x0,
-            top: y0,
-            w: rw,
-            h: rh,
-            idx,
-        });
+        out.push(Rect { left: x0, top: y0, w: rw, h: rh, idx });
     }
     out
 }
@@ -360,13 +288,7 @@ pub(super) fn delay_cs(fps: f32, step: u32) -> u16 {
 
 /// Looping GIF with a global palette, optional deltas. `alpha` = frames contain transparent pixels
 /// (then no deltas are used and every frame is redrawn on a cleared canvas).
-pub fn gif_encode(
-    q: &Indexed,
-    fps: f32,
-    step: u32,
-    delta: bool,
-    delta_tol: u8,
-) -> Result<Vec<u8>, String> {
+pub fn gif_encode(q: &Indexed, fps: f32, step: u32, delta: bool, delta_tol: u8) -> Result<Vec<u8>, String> {
     if q.w > u16::MAX as usize || q.h > u16::MAX as usize {
         return Err("image too large for GIF".into());
     }
@@ -378,24 +300,13 @@ pub fn gif_encode(
     }
     let mut out = Vec::new();
     {
-        let mut e =
-            gif::Encoder::new(&mut out, q.w as u16, q.h as u16, &pal).map_err(|e| e.to_string())?;
-        e.set_repeat(gif::Repeat::Infinite)
-            .map_err(|e| e.to_string())?;
+        let mut e = gif::Encoder::new(&mut out, q.w as u16, q.h as u16, &pal).map_err(|e| e.to_string())?;
+        e.set_repeat(gif::Repeat::Infinite).map_err(|e| e.to_string())?;
         let delay = delay_cs(fps, step);
         let rects: Vec<Rect> = if delta && q.transparent && q.frames.len() > 1 {
             delta_rects(q, delta_tol)
         } else {
-            q.frames
-                .iter()
-                .map(|f| Rect {
-                    left: 0,
-                    top: 0,
-                    w: q.w,
-                    h: q.h,
-                    idx: f.clone(),
-                })
-                .collect()
+            q.frames.iter().map(|f| Rect { left: 0, top: 0, w: q.w, h: q.h, idx: f.clone() }).collect()
         };
         for (k, r) in rects.into_iter().enumerate() {
             let mut fr = gif::Frame {
@@ -410,11 +321,7 @@ pub fn gif_encode(
             if q.transparent {
                 fr.transparent = Some(0);
                 // with deltas the canvas is kept; with real transparency each frame clears the previous one
-                fr.dispose = if delta && q.frames.len() > 1 {
-                    gif::DisposalMethod::Keep
-                } else {
-                    gif::DisposalMethod::Background
-                };
+                fr.dispose = if delta && q.frames.len() > 1 { gif::DisposalMethod::Keep } else { gif::DisposalMethod::Background };
             }
             let _ = k;
             e.write_frame(&fr).map_err(|e| e.to_string())?;
@@ -440,12 +347,7 @@ pub fn gif_decode(bytes: &[u8]) -> Result<(usize, usize, Vec<Vec<u8>>), String> 
                 }
             }
         }
-        let (l, t, rw, rh) = (
-            fr.left as usize,
-            fr.top as usize,
-            fr.width as usize,
-            fr.height as usize,
-        );
+        let (l, t, rw, rh) = (fr.left as usize, fr.top as usize, fr.width as usize, fr.height as usize);
         for y in 0..rh {
             for x in 0..rw {
                 let (cx, cy) = (l + x, t + y);
@@ -496,13 +398,7 @@ pub(super) fn pack_rows(idx: &[u8], w: usize, h: usize, bits: usize) -> Vec<u8> 
 }
 
 /// Looping APNG from an indexed sequence (palette + tRNS entry 0, bit depth by palette size, optional deltas).
-pub fn apng_encode_indexed(
-    q: &Indexed,
-    fps: f32,
-    step: u32,
-    delta: bool,
-    delta_tol: u8,
-) -> Result<Vec<u8>, String> {
+pub fn apng_encode_indexed(q: &Indexed, fps: f32, step: u32, delta: bool, delta_tol: u8) -> Result<Vec<u8>, String> {
     let n = q.frames.len() as u32;
     if n == 0 {
         return Err("no frames".into());
@@ -515,56 +411,29 @@ pub fn apng_encode_indexed(
         enc.set_depth(depth);
         enc.set_compression(png::Compression::High);
         enc.set_filter(png::Filter::Adaptive);
-        enc.set_palette(
-            q.palette
-                .iter()
-                .flat_map(|c| c.iter().copied())
-                .collect::<Vec<u8>>(),
-        );
+        enc.set_palette(q.palette.iter().flat_map(|c| c.iter().copied()).collect::<Vec<u8>>());
         if q.transparent {
             enc.set_trns(vec![0u8]);
         }
         enc.set_animated(n, 0).map_err(|e| e.to_string())?;
         // not `clamp`: a NaN `fps` must land on the lower bound as `max` does, `clamp` would pass NaN through
         #[allow(clippy::manual_clamp)]
-        enc.set_frame_delay(
-            (100 * step).min(65535) as u16,
-            (fps * 100.0).round().max(1.0).min(65535.0) as u16,
-        )
-        .map_err(|e| e.to_string())?;
+        enc.set_frame_delay((100 * step).min(65535) as u16, (fps * 100.0).round().max(1.0).min(65535.0) as u16).map_err(|e| e.to_string())?;
         let mut wr = enc.write_header().map_err(|e| e.to_string())?;
         let rects: Vec<Rect> = if delta && q.transparent && q.frames.len() > 1 {
             delta_rects(q, delta_tol)
         } else {
-            q.frames
-                .iter()
-                .map(|f| Rect {
-                    left: 0,
-                    top: 0,
-                    w: q.w,
-                    h: q.h,
-                    idx: f.clone(),
-                })
-                .collect()
+            q.frames.iter().map(|f| Rect { left: 0, top: 0, w: q.w, h: q.h, idx: f.clone() }).collect()
         };
         for (k, r) in rects.iter().enumerate() {
             if k > 0 {
-                wr.set_frame_dimension(r.w as u32, r.h as u32)
-                    .map_err(|e| e.to_string())?;
-                wr.set_frame_position(r.left as u32, r.top as u32)
-                    .map_err(|e| e.to_string())?;
+                wr.set_frame_dimension(r.w as u32, r.h as u32).map_err(|e| e.to_string())?;
+                wr.set_frame_position(r.left as u32, r.top as u32).map_err(|e| e.to_string())?;
                 let over = delta && q.transparent;
-                wr.set_blend_op(if over {
-                    png::BlendOp::Over
-                } else {
-                    png::BlendOp::Source
-                })
-                .map_err(|e| e.to_string())?;
-                wr.set_dispose_op(png::DisposeOp::None)
-                    .map_err(|e| e.to_string())?;
+                wr.set_blend_op(if over { png::BlendOp::Over } else { png::BlendOp::Source }).map_err(|e| e.to_string())?;
+                wr.set_dispose_op(png::DisposeOp::None).map_err(|e| e.to_string())?;
             }
-            wr.write_image_data(&pack_rows(&r.idx, r.w, r.h, bits))
-                .map_err(|e| e.to_string())?;
+            wr.write_image_data(&pack_rows(&r.idx, r.w, r.h, bits)).map_err(|e| e.to_string())?;
         }
         wr.finish().map_err(|e| e.to_string())?;
     }
@@ -572,13 +441,7 @@ pub fn apng_encode_indexed(
 }
 
 /// Truecolour looping APNG at maximum deflate effort with adaptive filtering.
-pub fn apng_encode_rgba<F: AsRef<[u8]>>(
-    w: usize,
-    h: usize,
-    frames: &[F],
-    fps: f32,
-    step: u32,
-) -> Result<Vec<u8>, String> {
+pub fn apng_encode_rgba<F: AsRef<[u8]>>(w: usize, h: usize, frames: &[F], fps: f32, step: u32) -> Result<Vec<u8>, String> {
     if frames.is_empty() {
         return Err("no frames".into());
     }
@@ -589,15 +452,10 @@ pub fn apng_encode_rgba<F: AsRef<[u8]>>(
         enc.set_depth(png::BitDepth::Eight);
         enc.set_compression(png::Compression::High);
         enc.set_filter(png::Filter::Adaptive);
-        enc.set_animated(frames.len() as u32, 0)
-            .map_err(|e| e.to_string())?;
+        enc.set_animated(frames.len() as u32, 0).map_err(|e| e.to_string())?;
         // not `clamp`: a NaN `fps` must land on the lower bound as `max` does, `clamp` would pass NaN through
         #[allow(clippy::manual_clamp)]
-        enc.set_frame_delay(
-            (100 * step).min(65535) as u16,
-            (fps * 100.0).round().max(1.0).min(65535.0) as u16,
-        )
-        .map_err(|e| e.to_string())?;
+        enc.set_frame_delay((100 * step).min(65535) as u16, (fps * 100.0).round().max(1.0).min(65535.0) as u16).map_err(|e| e.to_string())?;
         let mut wr = enc.write_header().map_err(|e| e.to_string())?;
         for f in frames {
             wr.write_image_data(f.as_ref()).map_err(|e| e.to_string())?;
@@ -615,10 +473,7 @@ pub fn apng_decode(bytes: &[u8]) -> Result<(usize, usize, Vec<Vec<u8>>), String>
     dec.set_transformations(png::Transformations::EXPAND);
     let mut r = dec.read_info().map_err(|e| e.to_string())?;
     let (w, h) = (r.info().width as usize, r.info().height as usize);
-    let n = r
-        .info()
-        .animation_control
-        .map_or(1, |a| a.num_frames as usize);
+    let n = r.info().animation_control.map_or(1, |a| a.num_frames as usize);
     let mut canvas = vec![0u8; w * h * 4];
     let mut frames = Vec::new();
     for _ in 0..n {
@@ -626,30 +481,14 @@ pub fn apng_decode(bytes: &[u8]) -> Result<(usize, usize, Vec<Vec<u8>>), String>
         let oi = r.next_frame(&mut buf).map_err(|e| e.to_string())?;
         let fc = r.info().frame_control;
         let (fx, fy, fw, fh, blend, dispose) = match fc {
-            Some(c) => (
-                c.x_offset as usize,
-                c.y_offset as usize,
-                c.width as usize,
-                c.height as usize,
-                c.blend_op,
-                c.dispose_op,
-            ),
+            Some(c) => (c.x_offset as usize, c.y_offset as usize, c.width as usize, c.height as usize, c.blend_op, c.dispose_op),
             None => (0, 0, w, h, png::BlendOp::Source, png::DisposeOp::None),
         };
         let px: Vec<u8> = match oi.color_type {
             png::ColorType::Rgba => buf[..fw * fh * 4].to_vec(),
-            png::ColorType::Rgb => buf[..fw * fh * 3]
-                .chunks_exact(3)
-                .flat_map(|c| [c[0], c[1], c[2], 255])
-                .collect(),
-            png::ColorType::GrayscaleAlpha => buf[..fw * fh * 2]
-                .chunks_exact(2)
-                .flat_map(|c| [c[0], c[0], c[0], c[1]])
-                .collect(),
-            png::ColorType::Grayscale => buf[..fw * fh]
-                .iter()
-                .flat_map(|&c| [c, c, c, 255])
-                .collect(),
+            png::ColorType::Rgb => buf[..fw * fh * 3].chunks_exact(3).flat_map(|c| [c[0], c[1], c[2], 255]).collect(),
+            png::ColorType::GrayscaleAlpha => buf[..fw * fh * 2].chunks_exact(2).flat_map(|c| [c[0], c[0], c[0], c[1]]).collect(),
+            png::ColorType::Grayscale => buf[..fw * fh].iter().flat_map(|&c| [c, c, c, 255]).collect(),
             png::ColorType::Indexed => return Err("indexed output after expand".into()),
         };
         let before = canvas.clone();
@@ -671,10 +510,7 @@ pub fn apng_decode(bytes: &[u8]) -> Result<(usize, usize, Vec<Vec<u8>>), String>
                             let da = canvas[o + 3] as u32;
                             let oa = a + da * (255 - a) / 255;
                             for c in 0..3 {
-                                canvas[o + c] = ((px[s + c] as u32 * a
-                                    + canvas[o + c] as u32 * da * (255 - a) / 255)
-                                    / oa.max(1))
-                                    as u8;
+                                canvas[o + c] = ((px[s + c] as u32 * a + canvas[o + c] as u32 * da * (255 - a) / 255) / oa.max(1)) as u8;
                             }
                             canvas[o + 3] = oa as u8;
                         }

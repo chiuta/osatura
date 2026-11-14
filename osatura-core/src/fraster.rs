@@ -19,7 +19,7 @@
 
 use crate::engine::{Engine, Frame, NodeKind, RenderNode};
 use crate::path::{width_outline, VPath};
-use crate::raster::{Raster, RasterOptions};
+use crate::raster::{RasterOptions, Raster};
 use crate::style::{Blend, Cap, Join, Paint, Rgba, Stop};
 use tiny_skia as sk;
 
@@ -55,11 +55,7 @@ struct Buf {
 
 impl Buf {
     fn new(w: usize, h: usize) -> Buf {
-        Buf {
-            w,
-            h,
-            d: vec![[0.0; 4]; w * h],
-        }
+        Buf { w, h, d: vec![[0.0; 4]; w * h] }
     }
 }
 
@@ -68,12 +64,7 @@ impl Buf {
 // ----------------------------------------------------------------------------------------------
 
 fn hard_light(cb: f32, cs: f32) -> f32 {
-    if cs <= 0.5 {
-        cb * 2.0 * cs
-    } else {
-        let s = 2.0 * cs - 1.0;
-        cb + s - cb * s
-    }
+    if cs <= 0.5 { cb * 2.0 * cs } else { let s = 2.0 * cs - 1.0; cb + s - cb * s }
 }
 
 fn sep(mode: Blend, cb: f32, cs: f32) -> f32 {
@@ -86,32 +77,16 @@ fn sep(mode: Blend, cb: f32, cs: f32) -> f32 {
         Blend::Darken => cb.min(cs),
         Blend::Lighten => cb.max(cs),
         Blend::ColorDodge => {
-            if cb == 0.0 {
-                0.0
-            } else if cs >= 1.0 {
-                1.0
-            } else {
-                (cb / (1.0 - cs)).min(1.0)
-            }
+            if cb == 0.0 { 0.0 } else if cs >= 1.0 { 1.0 } else { (cb / (1.0 - cs)).min(1.0) }
         }
         Blend::ColorBurn => {
-            if cb >= 1.0 {
-                1.0
-            } else if cs <= 0.0 {
-                0.0
-            } else {
-                1.0 - ((1.0 - cb) / cs).min(1.0)
-            }
+            if cb >= 1.0 { 1.0 } else if cs <= 0.0 { 0.0 } else { 1.0 - ((1.0 - cb) / cs).min(1.0) }
         }
         Blend::SoftLight => {
             if cs <= 0.5 {
                 cb - (1.0 - 2.0 * cs) * cb * (1.0 - cb)
             } else {
-                let d = if cb <= 0.25 {
-                    ((16.0 * cb - 12.0) * cb + 4.0) * cb
-                } else {
-                    cb.sqrt()
-                };
+                let d = if cb <= 0.25 { ((16.0 * cb - 12.0) * cb + 4.0) * cb } else { cb.sqrt() };
                 cb + (2.0 * cs - 1.0) * (d - cb)
             }
         }
@@ -133,11 +108,7 @@ fn blend_px(d: Px, s: Px, mode: Blend) -> Px {
             let mut o = [0.0; 4];
             for i in 0..3 {
                 let cs = (s[i] / sa).clamp(0.0, 1.0);
-                let cb = if da > 0.0 {
-                    (d[i] / da).clamp(0.0, 1.0)
-                } else {
-                    0.0
-                };
+                let cb = if da > 0.0 { (d[i] / da).clamp(0.0, 1.0) } else { 0.0 };
                 o[i] = s[i] * (1.0 - da) + d[i] * (1.0 - sa) + sa * da * sep(mode, cb, cs);
             }
             o[3] = sa + da - sa * da;
@@ -187,32 +158,22 @@ fn flatten(path: &sk::Path, t: sk::Transform) -> Vec<Vec<(f32, f32)>> {
             }
             sk::PathSegment::QuadTo(c, p) => {
                 let (c, p) = (mp(c), mp(p));
-                let n = ((dist(last, c) + dist(c, p)).sqrt() * 3.0)
-                    .ceil()
-                    .clamp(4.0, 128.0) as usize;
+                let n = ((dist(last, c) + dist(c, p)).sqrt() * 3.0).ceil().clamp(4.0, 128.0) as usize;
                 for i in 1..=n {
                     let u = i as f32 / n as f32;
                     let v = 1.0 - u;
-                    cur.push((
-                        v * v * last.0 + 2.0 * v * u * c.0 + u * u * p.0,
-                        v * v * last.1 + 2.0 * v * u * c.1 + u * u * p.1,
-                    ));
+                    cur.push((v * v * last.0 + 2.0 * v * u * c.0 + u * u * p.0, v * v * last.1 + 2.0 * v * u * c.1 + u * u * p.1));
                 }
                 last = p;
             }
             sk::PathSegment::CubicTo(c1, c2, p) => {
                 let (c1, c2, p) = (mp(c1), mp(c2), mp(p));
-                let n = ((dist(last, c1) + dist(c1, c2) + dist(c2, p)).sqrt() * 3.0)
-                    .ceil()
-                    .clamp(4.0, 128.0) as usize;
+                let n = ((dist(last, c1) + dist(c1, c2) + dist(c2, p)).sqrt() * 3.0).ceil().clamp(4.0, 128.0) as usize;
                 for i in 1..=n {
                     let u = i as f32 / n as f32;
                     let v = 1.0 - u;
                     let (b0, b1, b2, b3) = (v * v * v, 3.0 * v * v * u, 3.0 * v * u * u, u * u * u);
-                    cur.push((
-                        b0 * last.0 + b1 * c1.0 + b2 * c2.0 + b3 * p.0,
-                        b0 * last.1 + b1 * c1.1 + b2 * c2.1 + b3 * p.1,
-                    ));
+                    cur.push((b0 * last.0 + b1 * c1.0 + b2 * c2.0 + b3 * p.0, b0 * last.1 + b1 * c1.1 + b2 * c2.1 + b3 * p.1));
                 }
                 last = p;
             }
@@ -232,10 +193,7 @@ fn add_span(row: &mut [f32], cx0: usize, xa: f32, xb: f32) {
         return;
     }
     let k = 1.0 / SUB as f32;
-    let (i0, i1) = (
-        (xa.floor() as usize).min(cx0 + row.len() - 1),
-        (xb.floor() as usize).min(cx0 + row.len() - 1),
-    );
+    let (i0, i1) = ((xa.floor() as usize).min(cx0 + row.len() - 1), (xb.floor() as usize).min(cx0 + row.len() - 1));
     if i0 == i1 {
         row[i0 - cx0] += (xb - xa) * k;
         return;
@@ -309,13 +267,7 @@ fn coverage(polys: &[Vec<(f32, f32)>], even_odd: bool, w: usize, h: usize) -> Op
     for v in &mut d {
         *v = v.min(1.0);
     }
-    Some(Cov {
-        x0: cx0,
-        y0: cy0,
-        w: cw,
-        h: ch,
-        d,
-    })
+    Some(Cov { x0: cx0, y0: cy0, w: cw, h: ch, d })
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -323,53 +275,27 @@ fn coverage(polys: &[Vec<(f32, f32)>], even_odd: bool, w: usize, h: usize) -> Op
 // ----------------------------------------------------------------------------------------------
 
 fn clamp_c(c: Rgba) -> [f32; 4] {
-    [
-        c.r.clamp(0.0, 1.0),
-        c.g.clamp(0.0, 1.0),
-        c.b.clamp(0.0, 1.0),
-        c.a.clamp(0.0, 1.0),
-    ]
+    [c.r.clamp(0.0, 1.0), c.g.clamp(0.0, 1.0), c.b.clamp(0.0, 1.0), c.a.clamp(0.0, 1.0)]
 }
 
 enum Shader {
     Solid(Px),
-    Linear {
-        from: (f32, f32),
-        d: (f32, f32),
-        inv_len2: f32,
-        stops: Vec<(f32, [f32; 4])>,
-    },
-    Radial {
-        c: (f32, f32),
-        inv_r: f32,
-        stops: Vec<(f32, [f32; 4])>,
-    },
+    Linear { from: (f32, f32), d: (f32, f32), inv_len2: f32, stops: Vec<(f32, [f32; 4])> },
+    Radial { c: (f32, f32), inv_r: f32, stops: Vec<(f32, [f32; 4])> },
 }
 
 /// Straight RGBA with the colour channels converted from sRGB-encoded to linear light (alpha untouched).
 fn to_linear_c(c: [f32; 4]) -> [f32; 4] {
-    [
-        crate::hdr::srgb_to_linear(c[0]),
-        crate::hdr::srgb_to_linear(c[1]),
-        crate::hdr::srgb_to_linear(c[2]),
-        c[3],
-    ]
+    [crate::hdr::srgb_to_linear(c[0]), crate::hdr::srgb_to_linear(c[1]), crate::hdr::srgb_to_linear(c[2]), c[3]]
 }
 
 /// The colour as the compositor works with it: encoded as stored, or in linear light.
 fn work_c(c: Rgba, linear: bool) -> [f32; 4] {
-    if linear {
-        to_linear_c(clamp_c(c))
-    } else {
-        clamp_c(c)
-    }
+    if linear { to_linear_c(clamp_c(c)) } else { clamp_c(c) }
 }
 
 fn sorted_stops(s: &[Stop], linear: bool) -> Vec<(f32, [f32; 4])> {
-    let mut v: Vec<_> = s
-        .iter()
-        .map(|st| (st.offset.clamp(0.0, 1.0), work_c(st.color, linear)))
-        .collect();
+    let mut v: Vec<_> = s.iter().map(|st| (st.offset.clamp(0.0, 1.0), work_c(st.color, linear))).collect();
     v.sort_by(|a, b| a.0.total_cmp(&b.0));
     v
 }
@@ -394,26 +320,13 @@ fn make_shader(p: &Paint, linear: bool) -> Shader {
             if stops.is_empty() || (l2.partial_cmp(&(1e-12)) != Some(std::cmp::Ordering::Greater)) {
                 return solid(p.base_color(), linear);
             }
-            Shader::Linear {
-                from: (from.x, from.y),
-                d,
-                inv_len2: 1.0 / l2,
-                stops: sorted_stops(stops, linear),
-            }
+            Shader::Linear { from: (from.x, from.y), d, inv_len2: 1.0 / l2, stops: sorted_stops(stops, linear) }
         }
-        Paint::Radial {
-            center,
-            radius,
-            stops,
-        } => {
+        Paint::Radial { center, radius, stops } => {
             if stops.is_empty() {
                 return solid(p.base_color(), linear);
             }
-            Shader::Radial {
-                c: (center.x, center.y),
-                inv_r: 1.0 / radius.max(0.001),
-                stops: sorted_stops(stops, linear),
-            }
+            Shader::Radial { c: (center.x, center.y), inv_r: 1.0 / radius.max(0.001), stops: sorted_stops(stops, linear) }
         }
     }
 }
@@ -439,16 +352,10 @@ impl Shader {
     fn at(&self, x: f32, y: f32) -> Px {
         match self {
             Shader::Solid(c) => *c,
-            Shader::Linear {
-                from,
-                d,
-                inv_len2,
-                stops,
-            } => ramp(stops, ((x - from.0) * d.0 + (y - from.1) * d.1) * inv_len2),
-            Shader::Radial { c, inv_r, stops } => ramp(
-                stops,
-                ((x - c.0).powi(2) + (y - c.1).powi(2)).sqrt() * inv_r,
-            ),
+            Shader::Linear { from, d, inv_len2, stops } => {
+                ramp(stops, ((x - from.0) * d.0 + (y - from.1) * d.1) * inv_len2)
+            }
+            Shader::Radial { c, inv_r, stops } => ramp(stops, ((x - c.0).powi(2) + (y - c.1).powi(2)).sqrt() * inv_r),
         }
     }
 }
@@ -483,23 +390,14 @@ fn paint_cov(canvas: &mut Buf, cov: &Cov, shader: &Shader, inv: sk::Transform) {
 }
 
 impl FRaster<'_> {
-    fn fill_geom(
-        &self,
-        canvas: &mut Buf,
-        polys: &[Vec<(f32, f32)>],
-        even_odd: bool,
-        paint: &Paint,
-        inv: sk::Transform,
-    ) {
+    fn fill_geom(&self, canvas: &mut Buf, polys: &[Vec<(f32, f32)>], even_odd: bool, paint: &Paint, inv: sk::Transform) {
         if let Some(cov) = coverage(polys, even_odd, canvas.w, canvas.h) {
             paint_cov(canvas, &cov, &make_shader(paint, self.linear), inv);
         }
     }
 
     fn draw_path(&self, canvas: &mut Buf, world: &crate::math::Affine2, path: &VPath) {
-        let Some(geom) = crate::raster::sk_path(path) else {
-            return;
-        };
+        let Some(geom) = crate::raster::sk_path(path) else { return };
         let t = crate::raster::ts(world).post_concat(self.base);
         let Some(inv) = t.invert() else { return };
         if let Some(fill) = &path.fill {
@@ -507,10 +405,7 @@ impl FRaster<'_> {
         }
         let Some(st) = &path.stroke else { return };
         if st.width_profile.is_empty() {
-            let mut stroke = sk::Stroke {
-                width: st.width.max(0.0),
-                ..Default::default()
-            };
+            let mut stroke = sk::Stroke { width: st.width.max(0.0), ..Default::default() };
             stroke.line_cap = match st.cap {
                 Cap::Butt => sk::LineCap::Butt,
                 Cap::Round => sk::LineCap::Round,
@@ -548,28 +443,17 @@ impl FRaster<'_> {
             return;
         }
         let effects = !simple && !node.effects.is_empty();
-        let need_layer = node.opacity < 0.999
-            || effects
-            || (!simple && (node.blend != Blend::Normal || node.mask.is_some()));
+        let need_layer = node.opacity < 0.999 || effects || (!simple && (node.blend != Blend::Normal || node.mask.is_some()));
         if !need_layer {
             self.draw_content(canvas, id, force_visible, simple);
             return;
         }
         let mut tmp = Buf::new(canvas.w, canvas.h);
-        let pad = if effects {
-            crate::layerfx::effect_pad(&node.effects, self.base.sx)
-        } else {
-            0
-        };
+        let pad = if effects { crate::layerfx::effect_pad(&node.effects, self.base.sx) } else { 0 };
         if pad > 0 {
             // see raster.rs: filter on a canvas enlarged by the blur reach, then crop
             let mut big = Buf::new(canvas.w + 2 * pad, canvas.h + 2 * pad);
-            let inner = FRaster {
-                frame: self.frame,
-                base: self.base.post_translate(pad as f32, pad as f32),
-                scale: self.scale,
-                linear: self.linear,
-            };
+            let inner = FRaster { frame: self.frame, base: self.base.post_translate(pad as f32, pad as f32), scale: self.scale, linear: self.linear };
             inner.draw_content(&mut big, id, force_visible, simple);
             let mut flat: Vec<f32> = big.d.iter().flatten().copied().collect();
             crate::layerfx::apply_premul(&mut flat, big.w, big.h, &node.effects, self.base.sx);
@@ -621,30 +505,16 @@ impl FRaster<'_> {
             }
             NodeKind::Image => {
                 // 8-bit fallback (bitmap data is 8-bit; mesh deformation uses tiny-skia sampling).
-                let Some(mut pm) = sk::Pixmap::new(canvas.w as u32, canvas.h as u32) else {
-                    return;
-                };
-                let r = Raster {
-                    frame: self.frame,
-                    base: self.base,
-                    blur: None,
-                };
+                let Some(mut pm) = sk::Pixmap::new(canvas.w as u32, canvas.h as u32) else { return };
+                let r = Raster { frame: self.frame, base: self.base, blur: None };
                 r.draw_image(&mut pm, node);
                 for (d, s) in canvas.d.iter_mut().zip(pm.pixels()) {
                     if s.alpha() > 0 {
-                        let mut s = [
-                            s.red() as f32,
-                            s.green() as f32,
-                            s.blue() as f32,
-                            s.alpha() as f32,
-                        ]
-                        .map(|v| v / 255.0);
+                        let mut s = [s.red() as f32, s.green() as f32, s.blue() as f32, s.alpha() as f32].map(|v| v / 255.0);
                         if self.linear {
                             // the 8-bit layer is sRGB-encoded premultiplied: straight, linearise, premultiply again
                             let a = s[3];
-                            s = premul(to_linear_c(
-                                [s[0] / a, s[1] / a, s[2] / a, a].map(|v| v.clamp(0.0, 1.0)),
-                            ));
+                            s = premul(to_linear_c([s[0] / a, s[1] / a, s[2] / a, a].map(|v| v.clamp(0.0, 1.0))));
                         }
                         *d = blend_px(*d, s, Blend::Normal);
                     }
@@ -663,21 +533,11 @@ pub fn render_float(engine: &Engine, frame: f32, opts: &RasterOptions) -> FloatI
 
 /// [`render_float`] for an already evaluated frame.
 pub fn render_float_frame(engine: &Engine, f: &Frame, opts: &RasterOptions) -> FloatImage {
-    render_float_in(
-        engine,
-        f,
-        opts,
-        engine.project.color_space == crate::project::ColorSpace::Linear,
-    )
+    render_float_in(engine, f, opts, engine.project.color_space == crate::project::ColorSpace::Linear)
 }
 
 /// [`render_float_frame`] with the compositing space chosen by the caller (`linear = false`: sRGB-encoded values).
-pub fn render_float_in(
-    engine: &Engine,
-    f: &Frame,
-    opts: &RasterOptions,
-    linear: bool,
-) -> FloatImage {
+pub fn render_float_in(engine: &Engine, f: &Frame, opts: &RasterOptions, linear: bool) -> FloatImage {
     let p = &engine.project;
     // beyond the output limits the picture is drawn at the largest scale that fits (callers that can report an error refuse first)
     let mut opts = opts.clone();
@@ -690,12 +550,7 @@ pub fn render_float_in(
         let c = premul(work_c(bg, linear));
         buf.d.iter_mut().for_each(|d| *d = c);
     }
-    let r = FRaster {
-        frame: f,
-        base: sk::Transform::from_scale(opts.scale, opts.scale),
-        scale: opts.scale,
-        linear,
-    };
+    let r = FRaster { frame: f, base: sk::Transform::from_scale(opts.scale, opts.scale), scale: opts.scale, linear };
     let _ = r.scale;
     for &root in &f.roots {
         r.draw_node(&mut buf, root, false, false);
@@ -710,11 +565,7 @@ pub fn render_float_in(
             }
         }
     }
-    FloatImage {
-        width: w,
-        height: h,
-        rgba: buf.d.iter().flatten().copied().collect(),
-    }
+    FloatImage { width: w, height: h, rgba: buf.d.iter().flatten().copied().collect() }
 }
 
 #[cfg(test)]
@@ -752,11 +603,7 @@ mod tests {
     }
 
     fn opts() -> RasterOptions {
-        RasterOptions {
-            scale: 1.0,
-            show_bones: false,
-            transparent: true,
-        }
+        RasterOptions { scale: 1.0, show_bones: false, transparent: true }
     }
 
     #[test]
@@ -772,11 +619,7 @@ mod tests {
             let f = render_float(&e, frame, &opts());
             assert_eq!((w, h), (f.width, f.height));
             let pre = |v: &[u8]| -> Vec<[i32; 4]> {
-                v.chunks_exact(4)
-                    .map(|p| [0, 1, 2].map(|k| p[k] as i32 * p[3] as i32 / 255))
-                    .zip(v.chunks_exact(4))
-                    .map(|(c, p)| [c[0], c[1], c[2], p[3] as i32])
-                    .collect()
+                v.chunks_exact(4).map(|p| [0, 1, 2].map(|k| p[k] as i32 * p[3] as i32 / 255)).zip(v.chunks_exact(4)).map(|(c, p)| [c[0], c[1], c[2], p[3] as i32]).collect()
             };
             let (a, b) = (pre(&a8), pre(&f.to_straight_u8()));
             let (w, h) = (w as usize, h as usize);
@@ -788,16 +631,8 @@ mod tests {
                     sum += d as u64;
                     let mut nb = 0;
                     for (dx, dy) in [(-1i32, 0i32), (1, 0), (0, -1), (0, 1)] {
-                        let (nx, ny) = (
-                            (x as i32 + dx).clamp(0, w as i32 - 1) as usize,
-                            (y as i32 + dy).clamp(0, h as i32 - 1) as usize,
-                        );
-                        nb = nb.max(
-                            (0..4)
-                                .map(|k| (a[i][k] - a[ny * w + nx][k]).abs())
-                                .max()
-                                .unwrap(),
-                        );
+                        let (nx, ny) = ((x as i32 + dx).clamp(0, w as i32 - 1) as usize, (y as i32 + dy).clamp(0, h as i32 - 1) as usize);
+                        nb = nb.max((0..4).map(|k| (a[i][k] - a[ny * w + nx][k]).abs()).max().unwrap());
                     }
                     if nb <= 4 {
                         flat_max = flat_max.max(d);
@@ -810,19 +645,9 @@ mod tests {
                 }
             }
             let n = (w * h) as f64;
-            assert!(
-                flat_max <= 2,
-                "frame {frame}: smooth-area difference {flat_max}/255"
-            );
-            assert!(
-                sum as f64 / (n * 255.0) < 0.002,
-                "frame {frame}: mean abs diff {}",
-                sum as f64 / (n * 255.0)
-            );
-            assert!(
-                (big as f64) < n * 0.015 && big <= edge_px,
-                "frame {frame}: {big} px beyond 2/255 ({edge_px} edge px)"
-            );
+            assert!(flat_max <= 2, "frame {frame}: smooth-area difference {flat_max}/255");
+            assert!(sum as f64 / (n * 255.0) < 0.002, "frame {frame}: mean abs diff {}", sum as f64 / (n * 255.0));
+            assert!((big as f64) < n * 0.015 && big <= edge_px, "frame {frame}: {big} px beyond 2/255 ({edge_px} edge px)");
         }
     }
 
@@ -831,23 +656,11 @@ mod tests {
         use crate::math::Vec2;
         use crate::path::VPath;
         use crate::style::Paint;
-        let g = Paint::linear(
-            Vec2::new(0.0, 0.0),
-            Vec2::new(1024.0, 0.0),
-            &[(0.0, "#000000"), (1.0, "#ffffff")],
-        );
-        let e = eng(
-            vec![Layer::vector(
-                "v",
-                vec![VPath::rect("r", 0.0, 0.0, 1024.0, 4.0).with_paint(g)],
-            )],
-            1024.0,
-            4.0,
-        );
+        let g = Paint::linear(Vec2::new(0.0, 0.0), Vec2::new(1024.0, 0.0), &[(0.0, "#000000"), (1.0, "#ffffff")]);
+        let e = eng(vec![Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 1024.0, 4.0).with_paint(g)])], 1024.0, 4.0);
         let f = render_float(&e, 0.0, &opts());
         let row = &f.rgba[(2 * 1024) * 4..(3 * 1024) * 4];
-        let eight: std::collections::BTreeSet<u8> =
-            f.to_straight_u8().chunks_exact(4).map(|p| p[0]).collect();
+        let eight: std::collections::BTreeSet<u8> = f.to_straight_u8().chunks_exact(4).map(|p| p[0]).collect();
         assert!(eight.len() <= 256);
         let png = crate::hdr::encode_png16_buf(f.width, f.height, &f.rgba, false).unwrap();
         let mut dec = png::Decoder::new(std::io::Cursor::new(png));
@@ -855,12 +668,8 @@ mod tests {
         let mut r = dec.read_info().unwrap();
         let mut buf = vec![0; r.output_buffer_size().unwrap()];
         r.next_frame(&mut buf).unwrap();
-        let levels: std::collections::BTreeSet<u16> = (0..1024)
-            .map(|x| {
-                let i = (2 * 1024 + x) * 8;
-                u16::from_be_bytes([buf[i], buf[i + 1]])
-            })
-            .collect();
+        let levels: std::collections::BTreeSet<u16> =
+            (0..1024).map(|x| { let i = (2 * 1024 + x) * 8; u16::from_be_bytes([buf[i], buf[i + 1]]) }).collect();
         assert!(levels.len() > 900, "16-bit PNG has {} levels", levels.len());
         // exact ramp value at a pixel centre
         let x = 300usize;
@@ -872,38 +681,22 @@ mod tests {
         use crate::math::Vec2;
         use crate::path::VPath;
         use crate::style::Paint;
-        let g = Paint::linear(
-            Vec2::new(0.0, 0.0),
-            Vec2::new(1024.0, 0.0),
-            &[(0.0, "#000000"), (1.0, "#ffffff")],
-        );
-        let mut l = Layer::vector(
-            "v",
-            vec![VPath::rect("r", 0.0, 0.0, 1024.0, 4.0).with_paint(g)],
-        );
+        let g = Paint::linear(Vec2::new(0.0, 0.0), Vec2::new(1024.0, 0.0), &[(0.0, "#000000"), (1.0, "#ffffff")]);
+        let mut l = Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 1024.0, 4.0).with_paint(g)]);
         l.opacity = 0.5;
-        let mut top = Layer::vector(
-            "t",
-            vec![VPath::rect("r", 0.0, 0.0, 1024.0, 4.0).with_fill("#808080")],
-        );
+        let mut top = Layer::vector("t", vec![VPath::rect("r", 0.0, 0.0, 1024.0, 4.0).with_fill("#808080")]);
         top.blend = Blend::Multiply;
         let mut p = Project::new("t", 1024.0, 4.0, 24.0, 1);
         p.background = Rgba::parse("#ffffff");
         p.layers = vec![l, top];
         let e = Engine::new(p).unwrap();
         let f = render_float(&e, 0.0, &RasterOptions::default());
-        let distinct: std::collections::BTreeSet<u32> = (0..1024)
-            .map(|x| f.rgba[(1024 * 2 + x) * 4].to_bits())
-            .collect();
+        let distinct: std::collections::BTreeSet<u32> = (0..1024).map(|x| f.rgba[(1024 * 2 + x) * 4].to_bits()).collect();
         assert!(distinct.len() > 900, "{}", distinct.len());
         // x=511: gradient 0.5-ish * 0.5 opacity over white = 1-0.5*(1-g); multiply by 128/255
         let g511 = 511.5 / 1024.0;
         let want = (1.0 - 0.5 * (1.0 - g511)) * (128.0 / 255.0);
-        assert!(
-            (f.rgba[(1024 * 2 + 511) * 4] - want).abs() < 1e-4,
-            "{} vs {want}",
-            f.rgba[(1024 * 2 + 511) * 4]
-        );
+        assert!((f.rgba[(1024 * 2 + 511) * 4] - want).abs() < 1e-4, "{} vs {want}", f.rgba[(1024 * 2 + 511) * 4]);
     }
 
     #[test]
@@ -912,11 +705,7 @@ mod tests {
         let buf = vec![0.25f32, 0.5, 0.75, 1.0, 0.0, 0.0, 0.0, 0.0];
         let b = crate::hdr::encode_exr_buf(2, 1, &buf, crate::hdr::Precision::Float).unwrap();
         let h = crate::hdr::encode_exr_buf(2, 1, &buf, crate::hdr::Precision::Half).unwrap();
-        assert_eq!(
-            b.len() - h.len(),
-            2 * 4 * 2,
-            "FLOAT is 2 bytes/sample larger than HALF"
-        );
+        assert_eq!(b.len() - h.len(), 2 * 4 * 2, "FLOAT is 2 bytes/sample larger than HALF");
         assert!(b.windows(8).any(|w| w == b"channels"));
         let pos = b.len() - 2 * 4 * 4; // last 32 bytes = A,B,G,R planes of 2 px
         let a0 = f32::from_le_bytes(b[pos..pos + 4].try_into().unwrap());
@@ -924,10 +713,7 @@ mod tests {
         let r0 = f32::from_le_bytes(b[pos + 24..pos + 28].try_into().unwrap());
         assert_eq!(r0, crate::hdr::srgb_to_linear(0.25));
         assert!(crate::hdr::Precision::parse("double").is_err());
-        assert_eq!(
-            crate::hdr::Precision::parse("Float").unwrap(),
-            crate::hdr::Precision::Float
-        );
+        assert_eq!(crate::hdr::Precision::parse("Float").unwrap(), crate::hdr::Precision::Float);
         assert!(crate::hdr::encode_exr_buf(2, 2, &buf, crate::hdr::Precision::Float).is_err());
     }
 
@@ -935,73 +721,34 @@ mod tests {
     fn masks_group_opacity_and_dash_match_8bit_semantics() {
         use crate::project::MaskRef;
         use crate::style::StrokeStyle;
-        let px = |f: &FloatImage, x: usize, y: usize| -> [f32; 4] {
-            let i = (y * f.width as usize + x) * 4;
-            [f.rgba[i], f.rgba[i + 1], f.rgba[i + 2], f.rgba[i + 3]]
-        };
+        let px = |f: &FloatImage, x: usize, y: usize| -> [f32; 4] { let i = (y * f.width as usize + x) * 4; [f.rgba[i], f.rgba[i + 1], f.rgba[i + 2], f.rgba[i + 3]] };
         // mask + invert
-        let mut hole = Layer::vector(
-            "hole",
-            vec![crate::path::VPath::rect("r", 10.0, 10.0, 20.0, 20.0).with_fill("#ffffff")],
-        );
+        let mut hole = Layer::vector("hole", vec![crate::path::VPath::rect("r", 10.0, 10.0, 20.0, 20.0).with_fill("#ffffff")]);
         hole.visible = false;
-        let mut cut = Layer::vector(
-            "cut",
-            vec![crate::path::VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ff0000")],
-        );
-        cut.mask = Some(MaskRef {
-            layer: "hole".into(),
-            invert: false,
-        });
-        let f = render_float(
-            &eng(vec![hole.clone(), cut.clone()], 40.0, 40.0),
-            0.0,
-            &opts(),
-        );
+        let mut cut = Layer::vector("cut", vec![crate::path::VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ff0000")]);
+        cut.mask = Some(MaskRef { layer: "hole".into(), invert: false });
+        let f = render_float(&eng(vec![hole.clone(), cut.clone()], 40.0, 40.0), 0.0, &opts());
         assert_eq!(px(&f, 20, 20), [1.0, 0.0, 0.0, 1.0]);
         assert_eq!(px(&f, 3, 3)[3], 0.0);
-        cut.mask = Some(MaskRef {
-            layer: "hole".into(),
-            invert: true,
-        });
+        cut.mask = Some(MaskRef { layer: "hole".into(), invert: true });
         let f = render_float(&eng(vec![hole, cut], 40.0, 40.0), 0.0, &opts());
         assert_eq!(px(&f, 20, 20)[3], 0.0);
         assert_eq!(px(&f, 3, 3), [1.0, 0.0, 0.0, 1.0]);
         // group opacity flattens the group: overlap not darker, and exactly 0.5
-        let a = Layer::vector(
-            "a",
-            vec![crate::path::VPath::rect("r", 0.0, 0.0, 30.0, 40.0).with_fill("#000000")],
-        );
-        let b = Layer::vector(
-            "b",
-            vec![crate::path::VPath::rect("r", 10.0, 0.0, 30.0, 40.0).with_fill("#000000")],
-        );
+        let a = Layer::vector("a", vec![crate::path::VPath::rect("r", 0.0, 0.0, 30.0, 40.0).with_fill("#000000")]);
+        let b = Layer::vector("b", vec![crate::path::VPath::rect("r", 10.0, 0.0, 30.0, 40.0).with_fill("#000000")]);
         let mut g = Layer::group("g", vec![a, b]);
         g.opacity = 0.5;
         let f = render_float(&eng(vec![g], 40.0, 40.0), 0.0, &opts());
         assert!((px(&f, 5, 20)[3] - 0.5).abs() < 1e-6 && (px(&f, 20, 20)[3] - 0.5).abs() < 1e-6);
         // dashed butt stroke leaves gaps
-        let mut path = crate::path::VPath::new(
-            "l",
-            false,
-            vec![
-                crate::path::Anchor::corner(crate::math::Vec2::new(0.0, 20.0)),
-                crate::path::Anchor::corner(crate::math::Vec2::new(40.0, 20.0)),
-            ],
-        );
+        let mut path = crate::path::VPath::new("l", false, vec![crate::path::Anchor::corner(crate::math::Vec2::new(0.0, 20.0)), crate::path::Anchor::corner(crate::math::Vec2::new(40.0, 20.0))]);
         let mut st = StrokeStyle::solid("#000000", 4.0);
         st.cap = Cap::Butt;
         st.dash = vec![10.0, 10.0];
         path.stroke = Some(st);
-        let f = render_float(
-            &eng(vec![Layer::vector("v", vec![path])], 40.0, 40.0),
-            0.0,
-            &opts(),
-        );
-        assert_eq!(
-            (px(&f, 5, 20)[3], px(&f, 15, 20)[3], px(&f, 25, 20)[3]),
-            (1.0, 0.0, 1.0)
-        );
+        let f = render_float(&eng(vec![Layer::vector("v", vec![path])], 40.0, 40.0), 0.0, &opts());
+        assert_eq!((px(&f, 5, 20)[3], px(&f, 15, 20)[3], px(&f, 25, 20)[3]), (1.0, 0.0, 1.0));
     }
 
     /// L-22 (wave 7): `color_space: "linear"` composites in linear light. 50 % black over white is 0.5 in linear
@@ -1009,10 +756,7 @@ mod tests {
     #[test]
     fn linear_light_blend_of_half_black_over_white() {
         use crate::project::ColorSpace;
-        let mut top = Layer::vector(
-            "t",
-            vec![crate::path::VPath::rect("r", 0.0, 0.0, 8.0, 8.0).with_fill("#000000")],
-        );
+        let mut top = Layer::vector("t", vec![crate::path::VPath::rect("r", 0.0, 0.0, 8.0, 8.0).with_fill("#000000")]);
         top.opacity = 0.5;
         let build = |cs: ColorSpace| {
             let mut p = Project::new("t", 8.0, 8.0, 24.0, 1);
@@ -1026,31 +770,17 @@ mod tests {
         let f = render_float(&build(ColorSpace::Linear), 0.0, &RasterOptions::default());
         let i = (4 * 8 + 4) * 4;
         for k in 0..3 {
-            assert!(
-                (f.rgba[i + k] - want).abs() < 1e-4,
-                "channel {k}: {} vs {want}",
-                f.rgba[i + k]
-            );
+            assert!((f.rgba[i + k] - want).abs() < 1e-4, "channel {k}: {} vs {want}", f.rgba[i + k]);
         }
         assert_eq!(f.rgba[i + 3], 1.0);
         // default (sRGB-encoded) compositing is the historical 0.5
         let f = render_float(&build(ColorSpace::Srgb), 0.0, &RasterOptions::default());
         assert!((f.rgba[i] - 0.5).abs() < 1e-6);
         // the 8-bit renderer follows the project's colour space too (float compositing, one conversion to 8 bit)
-        let (_, _, px) =
-            crate::raster::render_rgba(&build(ColorSpace::Linear), 0.0, &RasterOptions::default());
-        assert!(
-            (px[i] as i32 - 188).abs() <= 1 && px[i + 3] == 255,
-            "8-bit linear result {}",
-            px[i]
-        );
-        let (_, _, px) =
-            crate::raster::render_rgba(&build(ColorSpace::Srgb), 0.0, &RasterOptions::default());
-        assert!(
-            (px[i] as i32 - 128).abs() <= 1,
-            "8-bit sRGB result {}",
-            px[i]
-        );
+        let (_, _, px) = crate::raster::render_rgba(&build(ColorSpace::Linear), 0.0, &RasterOptions::default());
+        assert!((px[i] as i32 - 188).abs() <= 1 && px[i + 3] == 255, "8-bit linear result {}", px[i]);
+        let (_, _, px) = crate::raster::render_rgba(&build(ColorSpace::Srgb), 0.0, &RasterOptions::default());
+        assert!((px[i] as i32 - 128).abs() <= 1, "8-bit sRGB result {}", px[i]);
     }
 
     /// Opaque colours are unchanged by the linear round trip, gradients interpolate in linear light, and transparent
@@ -1060,44 +790,24 @@ mod tests {
         use crate::math::Vec2;
         use crate::project::ColorSpace;
         use crate::style::Paint;
-        let g = Paint::linear(
-            Vec2::new(0.0, 0.0),
-            Vec2::new(100.0, 0.0),
-            &[(0.0, "#000000"), (1.0, "#ffffff")],
-        );
+        let g = Paint::linear(Vec2::new(0.0, 0.0), Vec2::new(100.0, 0.0), &[(0.0, "#000000"), (1.0, "#ffffff")]);
         let mut p = Project::new("t", 100.0, 4.0, 24.0, 1);
         p.layers = vec![
-            Layer::vector(
-                "g",
-                vec![crate::path::VPath::rect("r", 0.0, 0.0, 100.0, 2.0).with_paint(g)],
-            ),
-            Layer::vector(
-                "flat",
-                vec![crate::path::VPath::rect("r", 0.0, 2.0, 100.0, 2.0).with_fill("#3366cc80")],
-            ),
+            Layer::vector("g", vec![crate::path::VPath::rect("r", 0.0, 0.0, 100.0, 2.0).with_paint(g)]),
+            Layer::vector("flat", vec![crate::path::VPath::rect("r", 0.0, 2.0, 100.0, 2.0).with_fill("#3366cc80")]),
         ];
         p.color_space = ColorSpace::Linear;
         let f = render_float(&Engine::new(p).unwrap(), 0.0, &opts());
-        let px = |x: usize, y: usize| -> [f32; 4] {
-            let i = (y * 100 + x) * 4;
-            [f.rgba[i], f.rgba[i + 1], f.rgba[i + 2], f.rgba[i + 3]]
-        };
+        let px = |x: usize, y: usize| -> [f32; 4] { let i = (y * 100 + x) * 4; [f.rgba[i], f.rgba[i + 1], f.rgba[i + 2], f.rgba[i + 3]] };
         // gradient mid-point: linear 0.505 (x = 50.5 / 100), encoded 0.7367
         let mid = px(50, 0)[0];
-        assert!(
-            (mid - crate::hdr::linear_to_srgb(0.505)).abs() < 1e-3,
-            "{mid}"
-        );
+        assert!((mid - crate::hdr::linear_to_srgb(0.505)).abs() < 1e-3, "{mid}");
         // straight colour of the translucent fill is unchanged after the round trip
         let c = px(10, 3);
         let a = c[3];
         assert!((a - 128.0 / 255.0).abs() < 1e-3);
         for (k, want) in [0x33, 0x66, 0xcc].iter().enumerate() {
-            assert!(
-                (c[k] / a - *want as f32 / 255.0).abs() < 1e-3,
-                "channel {k}: {}",
-                c[k] / a
-            );
+            assert!((c[k] / a - *want as f32 / 255.0).abs() < 1e-3, "channel {k}: {}", c[k] / a);
         }
     }
 
@@ -1105,10 +815,7 @@ mod tests {
     fn colour_space_serialises_only_when_not_default_and_rejects_bad_values() {
         use crate::project::ColorSpace;
         let mut p = Project::new("t", 8.0, 8.0, 24.0, 1);
-        assert!(
-            !p.to_json_pretty().contains("color_space"),
-            "the default is not written, so old goldens and files are unchanged"
-        );
+        assert!(!p.to_json_pretty().contains("color_space"), "the default is not written, so old goldens and files are unchanged");
         p.color_space = ColorSpace::Linear;
         let text = p.to_json_pretty();
         assert!(text.contains("\"color_space\": \"linear\""));
@@ -1116,9 +823,7 @@ mod tests {
         assert_eq!(back.color_space, ColorSpace::Linear);
         assert!(serde_json::from_str::<Project>(&text.replace("linear", "p3")).is_err());
         assert_eq!(ColorSpace::parse(" Linear ").unwrap(), ColorSpace::Linear);
-        assert!(ColorSpace::parse("rec2020")
-            .unwrap_err()
-            .contains("srgb or linear"));
+        assert!(ColorSpace::parse("rec2020").unwrap_err().contains("srgb or linear"));
     }
 
     #[test]

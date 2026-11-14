@@ -43,11 +43,7 @@ pub fn first_primes(n: usize) -> Vec<u32> {
     let mut out: Vec<u32> = Vec::with_capacity(n);
     let mut c = 2u32;
     while out.len() < n {
-        if out
-            .iter()
-            .take_while(|p| *p * *p <= c)
-            .all(|p| !c.is_multiple_of(*p))
-        {
+        if out.iter().take_while(|p| *p * *p <= c).all(|p| !c.is_multiple_of(*p)) {
             out.push(c);
         }
         c += 1;
@@ -69,10 +65,7 @@ pub fn radical_inverse(mut i: u64, base: u32) -> f64 {
 
 /// Halton point `index` (starting at 1) in `dim` dimensions: coordinate `k` is the radical inverse in the `k`-th prime.
 pub fn halton_point(index: u64, dim: usize) -> Vec<f32> {
-    first_primes(dim)
-        .iter()
-        .map(|&p| radical_inverse(index, p) as f32)
-        .collect()
+    first_primes(dim).iter().map(|&p| radical_inverse(index, p) as f32).collect()
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -139,27 +132,15 @@ impl Default for ParamOptions {
 /// All parameters of a project, in a stable order.
 pub fn enumerate_params(p: &Project, o: &ParamOptions) -> Vec<Param> {
     // outputs of driven keys are derived values: not probed (the driver stays alive)
-    let driven_out: Vec<(&str, Prop)> = p
-        .channels
-        .iter()
-        .filter(|c| matches!(c.source, Source::Driven { .. }))
-        .map(|c| (c.target.as_str(), c.prop))
-        .collect();
+    let driven_out: Vec<(&str, Prop)> =
+        p.channels.iter().filter(|c| matches!(c.source, Source::Driven { .. })).map(|c| (c.target.as_str(), c.prop)).collect();
     // key range of curves that read a bone property: the natural range of a driver input
-    let mut input_range: std::collections::HashMap<(String, Prop), (f32, f32)> =
-        std::collections::HashMap::new();
+    let mut input_range: std::collections::HashMap<(String, Prop), (f32, f32)> = std::collections::HashMap::new();
     for c in &p.channels {
-        if let Source::Driven {
-            input,
-            input_prop,
-            curve,
-        } = &c.source
-        {
+        if let Source::Driven { input, input_prop, curve } = &c.source {
             if let (Some(a), Some(b)) = (curve.first_frame(), curve.last_frame()) {
                 let m = 0.1 * (b - a).abs();
-                let e = input_range
-                    .entry((input.clone(), *input_prop))
-                    .or_insert((a - m, b + m));
+                let e = input_range.entry((input.clone(), *input_prop)).or_insert((a - m, b + m));
                 e.0 = e.0.min(a - m);
                 e.1 = e.1.max(b + m);
             }
@@ -172,73 +153,28 @@ pub fn enumerate_params(p: &Project, o: &ParamOptions) -> Vec<Param> {
         if !o.only_bones.is_empty() && !o.only_bones.contains(&b.name) {
             continue;
         }
-        let mut push =
-            |suffix: &str, prop: Prop, lo: f32, hi: f32, rest: f32, limit: Option<[f32; 2]>| {
-                if skip(&b.name, prop)
-                    || !(o.bone_props.is_empty() || o.bone_props.iter().any(|x| x == suffix))
-                    || (lo.partial_cmp(&hi) != Some(std::cmp::Ordering::Less))
-                    || !lo.is_finite()
-                    || !hi.is_finite()
-                {
-                    return;
-                }
-                let (lo, hi) = match input_range.get(&(b.name.clone(), prop)) {
-                    Some(&(a, c)) if limit.is_none() => (a, c),
-                    _ => (lo, hi),
-                };
-                out.push(Param {
-                    id: format!("bone:{}:{}", b.name, suffix),
-                    target: b.name.clone(),
-                    prop,
-                    lo,
-                    hi,
-                    rest,
-                    limit,
-                });
+        let mut push = |suffix: &str, prop: Prop, lo: f32, hi: f32, rest: f32, limit: Option<[f32; 2]>| {
+            if skip(&b.name, prop) || !(o.bone_props.is_empty() || o.bone_props.iter().any(|x| x == suffix)) || (lo.partial_cmp(&hi) != Some(std::cmp::Ordering::Less)) || !lo.is_finite() || !hi.is_finite() {
+                return;
+            }
+            let (lo, hi) = match input_range.get(&(b.name.clone(), prop)) {
+                Some(&(a, c)) if limit.is_none() => (a, c),
+                _ => (lo, hi),
             };
+            out.push(Param { id: format!("bone:{}:{}", b.name, suffix), target: b.name.clone(), prop, lo, hi, rest, limit });
+        };
         match b.angle_limits {
-            Some([a, c]) => push(
-                "angle",
-                Prop::BoneAngle,
-                a - o.limit_margin,
-                c + o.limit_margin,
-                0.0f32.clamp(a, c),
-                Some([a, c]),
-            ),
-            None => push(
-                "angle",
-                Prop::BoneAngle,
-                -o.angle_range,
-                o.angle_range,
-                0.0,
-                None,
-            ),
+            Some([a, c]) => push("angle", Prop::BoneAngle, a - o.limit_margin, c + o.limit_margin, 0.0f32.clamp(a, c), Some([a, c])),
+            None => push("angle", Prop::BoneAngle, -o.angle_range, o.angle_range, 0.0, None),
         }
         match b.scale_limits {
             Some([a, c]) => {
                 let m = o.limit_margin / 180.0;
-                push(
-                    "scale",
-                    Prop::BoneScale,
-                    (a - m).max(0.01),
-                    c + m,
-                    1.0f32.clamp(a, c),
-                    Some([a, c]),
-                )
+                push("scale", Prop::BoneScale, (a - m).max(0.01), c + m, 1.0f32.clamp(a, c), Some([a, c]))
             }
-            None => push(
-                "scale",
-                Prop::BoneScale,
-                o.scale_range[0],
-                o.scale_range[1],
-                1.0,
-                None,
-            ),
+            None => push("scale", Prop::BoneScale, o.scale_range[0], o.scale_range[1], 1.0, None),
         }
-        let r = o
-            .offset_range
-            .unwrap_or_else(|| (0.5 * b.length).max(0.1 * side))
-            .abs();
+        let r = o.offset_range.unwrap_or_else(|| (0.5 * b.length).max(0.1 * side)).abs();
         push("offx", Prop::BoneOffsetX, -r, r, 0.0, None);
         push("offy", Prop::BoneOffsetY, -r, r, 0.0, None);
     }
@@ -248,19 +184,8 @@ pub fn enumerate_params(p: &Project, o: &ParamOptions) -> Vec<Param> {
     let restrict_props = !o.bone_props.is_empty();
     let in_only = |n: &str| o.only_bones.is_empty() || o.only_bones.iter().any(|b| b == n);
     if o.ik_mix && !restrict_props {
-        for c in
-            p.ik.iter()
-                .filter(|c| in_only(&c.target) || c.bones.iter().any(|b| in_only(b)))
-        {
-            out.push(Param {
-                id: format!("ik:{}:mix", c.name),
-                target: c.name.clone(),
-                prop: Prop::IkMix,
-                lo: 0.0,
-                hi: 1.0,
-                rest: c.mix,
-                limit: None,
-            });
+        for c in p.ik.iter().filter(|c| in_only(&c.target) || c.bones.iter().any(|b| in_only(b))) {
+            out.push(Param { id: format!("ik:{}:mix", c.name), target: c.name.clone(), prop: Prop::IkMix, lo: 0.0, hi: 1.0, rest: c.mix, limit: None });
         }
     }
     if o.constraint_weight && !restrict_props {
@@ -278,87 +203,27 @@ pub fn enumerate_params(p: &Project, o: &ParamOptions) -> Vec<Param> {
     }
     if o.deformers && o.only_bones.is_empty() && !restrict_props {
         let mut dp: Vec<Param> = Vec::new();
-        fn walk(
-            layers: &[crate::project::Layer],
-            prefix: &str,
-            o: &ParamOptions,
-            dp: &mut Vec<Param>,
-        ) {
+        fn walk(layers: &[crate::project::Layer], prefix: &str, o: &ParamOptions, dp: &mut Vec<Param>) {
             for l in layers {
-                let path = if prefix.is_empty() {
-                    l.name.clone()
-                } else {
-                    format!("{prefix}/{}", l.name)
-                };
+                let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
                 for d in &l.deformers {
                     let (n, ctl, props, offs): (usize, bool, (Prop, Prop), &Vec<Vec2>) = match d {
-                        Deformer::Lattice {
-                            cols,
-                            rows,
-                            offsets,
-                            ..
-                        } => (
-                            (cols + 1) * (rows + 1),
-                            true,
-                            (Prop::LatticeDx, Prop::LatticeDy),
-                            offsets,
-                        ),
-                        Deformer::Cloth {
-                            cols,
-                            rows,
-                            offsets,
-                            ..
-                        } => (
-                            (cols + 1) * (rows + 1),
-                            true,
-                            (Prop::LatticeDx, Prop::LatticeDy),
-                            offsets,
-                        ),
-                        Deformer::Spine { rest, offsets, .. } => {
-                            (rest.len(), false, (Prop::SpineDx, Prop::SpineDy), offsets)
-                        }
-                        Deformer::Pin { pins, offsets, .. } => {
-                            (pins.len(), false, (Prop::PinDx, Prop::PinDy), offsets)
-                        }
-                        Deformer::Cage { rest, offsets, .. } => {
-                            (rest.len(), false, (Prop::CageDx, Prop::CageDy), offsets)
-                        }
+                        Deformer::Lattice { cols, rows, offsets, .. } => ((cols + 1) * (rows + 1), true, (Prop::LatticeDx, Prop::LatticeDy), offsets),
+                        Deformer::Cloth { cols, rows, offsets, .. } => ((cols + 1) * (rows + 1), true, (Prop::LatticeDx, Prop::LatticeDy), offsets),
+                        Deformer::Spine { rest, offsets, .. } => (rest.len(), false, (Prop::SpineDx, Prop::SpineDy), offsets),
+                        Deformer::Pin { pins, offsets, .. } => (pins.len(), false, (Prop::PinDx, Prop::PinDy), offsets),
+                        Deformer::Cage { rest, offsets, .. } => (rest.len(), false, (Prop::CageDx, Prop::CageDy), offsets),
                     };
                     let cols = match d {
                         Deformer::Lattice { cols, .. } | Deformer::Cloth { cols, .. } => *cols,
                         _ => 0,
                     };
                     for i in 0..n {
-                        let key = if ctl {
-                            format!(
-                                "{path}::{}::{},{}",
-                                d.name(),
-                                i % (cols + 1),
-                                i / (cols + 1)
-                            )
-                        } else {
-                            format!("{path}::{}::{i}", d.name())
-                        };
+                        let key = if ctl { format!("{path}::{}::{},{}", d.name(), i % (cols + 1), i / (cols + 1)) } else { format!("{path}::{}::{i}", d.name()) };
                         let off = offs.get(i).copied().unwrap_or(Vec2::ZERO);
                         let r = o.deformer_range;
-                        dp.push(Param {
-                            id: format!("deform:{key}:dx"),
-                            target: key.clone(),
-                            prop: props.0,
-                            lo: off.x - r,
-                            hi: off.x + r,
-                            rest: off.x,
-                            limit: None,
-                        });
-                        dp.push(Param {
-                            id: format!("deform:{key}:dy"),
-                            target: key,
-                            prop: props.1,
-                            lo: off.y - r,
-                            hi: off.y + r,
-                            rest: off.y,
-                            limit: None,
-                        });
+                        dp.push(Param { id: format!("deform:{key}:dx"), target: key.clone(), prop: props.0, lo: off.x - r, hi: off.x + r, rest: off.x, limit: None });
+                        dp.push(Param { id: format!("deform:{key}:dy"), target: key, prop: props.1, lo: off.y - r, hi: off.y + r, rest: off.y, limit: None });
                     }
                 }
                 walk(l.children(), &path, o, dp);

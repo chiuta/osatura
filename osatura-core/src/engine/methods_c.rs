@@ -4,20 +4,9 @@
 use super::*;
 
 impl Engine {
-    pub(super) fn image_draw(
-        &self,
-        id: usize,
-        st: &State,
-        skin_mats: &[Affine2],
-        tick: f32,
-    ) -> Option<ImageDraw> {
+    pub(super) fn image_draw(&self, id: usize, st: &State, skin_mats: &[Affine2], tick: f32) -> Option<ImageDraw> {
         let data = self.images[id].clone()?;
-        let LayerKind::Image {
-            origin, size, mesh, ..
-        } = &self.layer_ref(id).kind
-        else {
-            return None;
-        };
+        let LayerKind::Image { origin, size, mesh, .. } = &self.layer_ref(id).kind else { return None };
         let (pw, ph) = (data.pixmap.width() as f32, data.pixmap.height() as f32);
         let size = size.unwrap_or(Vec2::new(pw, ph));
         let has_deform = !self.geo[id].deformers.is_empty() || st.layers[id].wobble != 0.0;
@@ -33,15 +22,7 @@ impl Engine {
             };
             let uvs: Vec<Vec2> = match free {
                 Some(f) if f.uvs.len() == f.vertices.len() => f.uvs.clone(),
-                _ => rest
-                    .iter()
-                    .map(|v| {
-                        Vec2::new(
-                            (v.x - origin.x) / size.x * pw,
-                            (v.y - origin.y) / size.y * ph,
-                        )
-                    })
-                    .collect(),
+                _ => rest.iter().map(|v| Vec2::new((v.x - origin.x) / size.x * pw, (v.y - origin.y) / size.y * ph)).collect(),
             };
             let positions: Vec<Vec2> = rest
                 .iter()
@@ -75,20 +56,11 @@ impl Engine {
                     tris
                 }
             };
-            Some(MeshOut {
-                positions,
-                uvs,
-                tris,
-            })
+            Some(MeshOut { positions, uvs, tris })
         } else {
             None
         };
-        Some(ImageDraw {
-            data,
-            origin: *origin,
-            size,
-            mesh: mesh_out,
-        })
+        Some(ImageDraw { data, origin: *origin, size, mesh: mesh_out })
     }
 
     /// Pose, solve IK, skin and return everything drawable at `frame`.
@@ -103,15 +75,7 @@ impl Engine {
     /// (empty for layers that are not vector layers). Used by exporters that keep morphs as targets.
     pub fn morph_weights(&self, frame: f32) -> Vec<Vec<Vec<f32>>> {
         let (st, _) = self.pose_pipeline(frame);
-        self.geo
-            .iter()
-            .map(|g| {
-                g.morph_slots
-                    .iter()
-                    .map(|ms| ms.iter().map(|&s| st.pvals[s]).collect())
-                    .collect()
-            })
-            .collect()
+        self.geo.iter().map(|g| g.morph_slots.iter().map(|ms| ms.iter().map(|&s| st.pvals[s]).collect()).collect()).collect()
     }
 
     pub fn evaluate(&self, frame: f32) -> Frame {
@@ -133,17 +97,10 @@ impl Engine {
             }
             world = fk(&p.bones, &self.parent, &st.bones);
         }
-        let skin_mats: Vec<Affine2> = world
-            .iter()
-            .zip(&self.inv_rest)
-            .map(|(w, inv)| w.mul(*inv))
-            .collect();
+        let skin_mats: Vec<Affine2> = world.iter().zip(&self.inv_rest).map(|(w, inv)| w.mul(*inv)).collect();
 
-        let cams: HashMap<usize, Affine2> = self
-            .roots
-            .iter()
-            .map(|&r| (r, self.camera_matrix(&st.cam, self.layer_ref(r).parallax)))
-            .collect();
+        let cams: HashMap<usize, Affine2> =
+            self.roots.iter().map(|&r| (r, self.camera_matrix(&st.cam, self.layer_ref(r).parallax))).collect();
 
         let mut stage: Vec<Affine2> = Vec::with_capacity(self.nodes.len());
         let mut eff_attach: Vec<Affine2> = Vec::with_capacity(self.nodes.len());
@@ -152,23 +109,14 @@ impl Engine {
         for (id, info) in self.nodes.iter().enumerate() {
             let layer = self.layer_ref(id);
             let lp = &st.layers[id];
-            let local = compose_transform(
-                Vec2::new(lp.x, lp.y),
-                lp.rot,
-                Vec2::new(lp.sx, lp.sy),
-                lp.skew,
-                layer.transform.anchor,
-            );
+            let local =
+                compose_transform(Vec2::new(lp.x, lp.y), lp.rot, Vec2::new(lp.sx, lp.sy), lp.skew, layer.transform.anchor);
             // The skin matrix of a bone is a STAGE-space motion (bone world * inverse rest), so it is applied after the
             // layer's whole parent chain: `world = skin * chain * local`. Applying it inside a scaled parent group (the
             // old `parent_stage * skin * local`) scaled the posed travel by the group's scale (L-71). A layer without a
             // bone of its own follows the bone of its nearest bone-attached ancestor; its own bone replaces that of an
             // ancestor (the two motions are not stacked).
-            let eff = info
-                .bone
-                .map(|b| skin_mats[b])
-                .or_else(|| info.parent.map(|pa| eff_attach[pa]))
-                .unwrap_or(Affine2::IDENTITY);
+            let eff = info.bone.map(|b| skin_mats[b]).or_else(|| info.parent.map(|pa| eff_attach[pa])).unwrap_or(Affine2::IDENTITY);
             let chain = match info.parent {
                 Some(pa) => chain_no_bone[pa].mul(local),
                 None => local,
@@ -185,58 +133,32 @@ impl Engine {
 
             let mut image = None;
             let (kind, paths, children) = match &layer.kind {
-                LayerKind::Vector { .. } => (
-                    NodeKind::Vector,
-                    self.vector_geometry(id, &st, &skin_mats, layer_tick),
-                    Vec::new(),
-                ),
+                LayerKind::Vector { .. } => {
+                    (NodeKind::Vector, self.vector_geometry(id, &st, &skin_mats, layer_tick), Vec::new())
+                }
                 LayerKind::Group { .. } => (NodeKind::Group, Vec::new(), info.children.clone()),
                 LayerKind::Selector { .. } => {
                     let n = info.children.len();
-                    let sel = if n == 0 {
-                        None
-                    } else {
-                        Some((lp.switch.round().max(0.0) as usize).min(n - 1))
-                    };
-                    (
-                        NodeKind::Switch,
-                        Vec::new(),
-                        sel.map(|s| vec![info.children[s]]).unwrap_or_default(),
-                    )
+                    let sel = if n == 0 { None } else { Some((lp.switch.round().max(0.0) as usize).min(n - 1)) };
+                    (NodeKind::Switch, Vec::new(), sel.map(|s| vec![info.children[s]]).unwrap_or_default())
                 }
                 LayerKind::Image { .. } => {
                     image = self.image_draw(id, &st, &skin_mats, layer_tick);
                     (NodeKind::Image, Vec::new(), Vec::new())
                 }
-                LayerKind::Metaball {
-                    blobs,
-                    threshold,
-                    cell,
-                    fill,
-                    stroke,
-                } => {
+                LayerKind::Metaball { blobs, threshold, cell, fill, stroke } => {
                     let pts: Vec<(Vec2, f32)> = blobs
                         .iter()
-                        .map(
-                            |b| match b.bone.as_ref().and_then(|n| self.bone_ix.get(n)) {
-                                Some(&bi) => {
-                                    (world[bi].apply(b.pos), b.radius * world[bi].x_scale().abs())
-                                }
-                                None => (b.pos, b.radius),
-                            },
-                        )
+                        .map(|b| match b.bone.as_ref().and_then(|n| self.bone_ix.get(n)) {
+                            Some(&bi) => (world[bi].apply(b.pos), b.radius * world[bi].x_scale().abs()),
+                            None => (b.pos, b.radius),
+                        })
                         .collect();
-                    (
-                        NodeKind::Vector,
-                        crate::fx::liquid_paths(&pts, *threshold, *cell, fill, stroke),
-                        Vec::new(),
-                    )
+                    (NodeKind::Vector, crate::fx::liquid_paths(&pts, *threshold, *cell, fill, stroke), Vec::new())
                 }
-                LayerKind::Boolean { op, paths } => (
-                    NodeKind::Vector,
-                    crate::fx::boolean_paths(paths, *op, 0.25),
-                    Vec::new(),
-                ),
+                LayerKind::Boolean { op, paths } => {
+                    (NodeKind::Vector, crate::fx::boolean_paths(paths, *op, 0.25), Vec::new())
+                }
                 LayerKind::Emitter { spec } => {
                     let origin = match spec.bone.as_ref().and_then(|n| self.bone_ix.get(n)) {
                         Some(&bi) => world[bi].apply(spec.pos),
@@ -267,13 +189,7 @@ impl Engine {
             l.apply(&mut out, &stage);
         }
         let camera = self.camera_matrix(&st.cam, 1.0);
-        let mut f = Frame {
-            world,
-            camera,
-            nodes: out,
-            roots: self.roots.clone(),
-            nonfinite: None,
-        };
+        let mut f = Frame { world, camera, nodes: out, roots: self.roots.clone(), nonfinite: None };
         self.repair_nonfinite(&mut f);
         f
     }
@@ -283,16 +199,7 @@ impl Engine {
         let mut first: Option<String> = None;
         for (i, w) in f.world.iter_mut().enumerate() {
             if !aff_finite(w) {
-                first.get_or_insert_with(|| {
-                    format!(
-                        "bone '{}' (transform)",
-                        self.project
-                            .bones
-                            .get(i)
-                            .map(|b| b.name.as_str())
-                            .unwrap_or("?")
-                    )
-                });
+                first.get_or_insert_with(|| format!("bone '{}' (transform)", self.project.bones.get(i).map(|b| b.name.as_str()).unwrap_or("?")));
                 *w = Affine2::IDENTITY;
             }
         }
@@ -301,11 +208,7 @@ impl Engine {
             f.camera = Affine2::IDENTITY;
         }
         for n in f.nodes.iter_mut() {
-            let bad_geometry = n.paths.iter().any(|p| {
-                p.anchors
-                    .iter()
-                    .any(|a| !(a.pos.x.is_finite() && a.pos.y.is_finite()))
-            });
+            let bad_geometry = n.paths.iter().any(|p| p.anchors.iter().any(|a| !(a.pos.x.is_finite() && a.pos.y.is_finite())));
             let what = if !aff_finite(&n.world) {
                 Some("transform")
             } else if !n.opacity.is_finite() {
@@ -330,8 +233,7 @@ impl Engine {
     /// Evaluate the frame and refuse it if a number overflowed (see [`Frame::nonfinite`]).
     pub fn evaluate_checked(&self, frame: f32) -> Result<Frame, String> {
         let f = self.evaluate(frame);
-        f.check_finite()
-            .map_err(|e| format!("{e} at frame {frame}"))?;
+        f.check_finite().map_err(|e| format!("{e} at frame {frame}"))?;
         Ok(f)
     }
 

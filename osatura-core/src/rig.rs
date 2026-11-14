@@ -17,11 +17,7 @@ pub struct BonePose {
 
 impl Default for BonePose {
     fn default() -> Self {
-        BonePose {
-            angle: 0.0,
-            scale: 1.0,
-            offset: Vec2::ZERO,
-        }
+        BonePose { angle: 0.0, scale: 1.0, offset: Vec2::ZERO }
     }
 }
 
@@ -88,26 +84,14 @@ pub const FABRIK_TOLERANCE: f32 = 0.01;
 /// FABRIK (forward-and-backward reaching IK) for a chain of joints.
 /// `joints` has `n + 1` points (heads, then the tip), `lengths` has `n`.
 /// The first joint stays fixed. Unreachable targets straighten the chain toward them.
-pub fn solve_fabrik(
-    joints: &mut [Vec2],
-    lengths: &[f32],
-    target: Vec2,
-    iterations: usize,
-    tolerance: f32,
-) {
+pub fn solve_fabrik(joints: &mut [Vec2], lengths: &[f32], target: Vec2, iterations: usize, tolerance: f32) {
     let n = lengths.len();
     if n == 0 || joints.len() != n + 1 {
         return;
     }
     let root = joints[0];
     let total: f32 = lengths.iter().sum();
-    let dir_or = |d: Vec2| {
-        if d.length() < 1e-9 {
-            Vec2::new(1.0, 0.0)
-        } else {
-            d.normalized()
-        }
-    };
+    let dir_or = |d: Vec2| if d.length() < 1e-9 { Vec2::new(1.0, 0.0) } else { d.normalized() };
     if root.distance(target) >= total {
         let dir = dir_or(target - root);
         for i in 0..n {
@@ -143,14 +127,7 @@ impl SpringState {
     }
 
     /// Advance by `dt` seconds toward `target` (semi-implicit Euler, `substeps` per call).
-    pub fn step(
-        &mut self,
-        target: f32,
-        frequency_hz: f32,
-        damping_ratio: f32,
-        dt: f32,
-        substeps: u32,
-    ) {
+    pub fn step(&mut self, target: f32, frequency_hz: f32, damping_ratio: f32, dt: f32, substeps: u32) {
         let w = std::f32::consts::TAU * frequency_hz;
         let h = dt / substeps.max(1) as f32;
         for _ in 0..substeps.max(1) {
@@ -258,19 +235,12 @@ mod tests {
         let b = soft_distance(95.0, 100.0, 0.2);
         let c = soft_distance(200.0, 100.0, 0.2);
         assert!(a < 85.0 + 1e-3 && a > 80.0 - 1e-3, "{a}");
-        assert!(
-            b > a && b < 100.0 && c < 100.0 && c > b,
-            "monotone and bounded: {a} {b} {c}"
-        );
+        assert!(b > a && b < 100.0 && c < 100.0 && c > b, "monotone and bounded: {a} {b} {c}");
         // continuity at the start of the zone
         assert!((soft_distance(80.0 + 1e-3, 100.0, 0.2) - 80.0).abs() < 1e-2);
         // slope near the start of the soft zone is 1 (C1 join)
         let eps = 0.01;
-        assert!(
-            ((soft_distance(80.0 + eps, 100.0, 0.2) - soft_distance(80.0, 100.0, 0.2)) / eps - 1.0)
-                .abs()
-                < 0.02
-        );
+        assert!(((soft_distance(80.0 + eps, 100.0, 0.2) - soft_distance(80.0, 100.0, 0.2)) / eps - 1.0).abs() < 0.02);
     }
 
     #[test]
@@ -286,12 +256,7 @@ mod tests {
 
     #[test]
     fn fabrik_reaches_and_preserves_lengths() {
-        let mut j = vec![
-            Vec2::new(0.0, 0.0),
-            Vec2::new(50.0, 0.0),
-            Vec2::new(100.0, 0.0),
-            Vec2::new(150.0, 0.0),
-        ];
+        let mut j = vec![Vec2::new(0.0, 0.0), Vec2::new(50.0, 0.0), Vec2::new(100.0, 0.0), Vec2::new(150.0, 0.0)];
         let lens = [50.0, 50.0, 50.0];
         let target = Vec2::new(60.0, 70.0);
         solve_fabrik(&mut j, &lens, target, 32, 0.01);
@@ -304,11 +269,7 @@ mod tests {
 
     #[test]
     fn fabrik_unreachable_straightens() {
-        let mut j = vec![
-            Vec2::new(0.0, 0.0),
-            Vec2::new(10.0, 0.0),
-            Vec2::new(20.0, 0.0),
-        ];
+        let mut j = vec![Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0), Vec2::new(20.0, 0.0)];
         solve_fabrik(&mut j, &[10.0, 10.0], Vec2::new(0.0, 100.0), 8, 0.01);
         assert!(j[2].distance(Vec2::new(0.0, 20.0)) < 1e-4);
     }
@@ -325,15 +286,9 @@ mod tests {
             (s.x, peak)
         };
         let (end, peak) = run(0.2);
-        assert!(
-            (end - 1.0).abs() < 0.01 && peak > 1.2,
-            "underdamped overshoots: end {end} peak {peak}"
-        );
+        assert!((end - 1.0).abs() < 0.01 && peak > 1.2, "underdamped overshoots: end {end} peak {peak}");
         let (end, peak) = run(1.2);
-        assert!(
-            (end - 1.0).abs() < 0.01 && peak < 1.01,
-            "overdamped never overshoots: peak {peak}"
-        );
+        assert!((end - 1.0).abs() < 0.01 && peak < 1.01, "overdamped never overshoots: peak {peak}");
         assert_eq!(run(0.5), run(0.5));
     }
 
@@ -341,10 +296,6 @@ mod tests {
     fn spring_takes_the_short_way_around() {
         let mut s = SpringState::at_rest(3.0);
         s.step(-3.0, 4.0, 0.7, 1.0 / 24.0, 8); // target is 0.28 rad away across ±π, not 6 rad
-        assert!(
-            s.x > 3.0 || s.x < -3.0,
-            "moves across the wrap, got {}",
-            s.x
-        );
+        assert!(s.x > 3.0 || s.x < -3.0, "moves across the wrap, got {}", s.x);
     }
 }

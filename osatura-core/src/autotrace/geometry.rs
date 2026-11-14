@@ -112,11 +112,7 @@ pub(super) fn generate_bezier(d: &[P], u: &[f64], t1: P, t2: P) -> [P; 4] {
         x1 += a2.dot(tmp);
     }
     let det = c00 * c11 - c01 * c01;
-    let (al, ar) = if det.abs() > 1e-12 {
-        ((x0 * c11 - x1 * c01) / det, (c00 * x1 - c01 * x0) / det)
-    } else {
-        (0.0, 0.0)
-    };
+    let (al, ar) = if det.abs() > 1e-12 { ((x0 * c11 - x1 * c01) / det, (c00 * x1 - c01 * x0) / det) } else { (0.0, 0.0) };
     let seg = (d3 - d0).len();
     let eps = 1e-6 * seg;
     if al < eps || ar < eps || !al.is_finite() || !ar.is_finite() {
@@ -160,20 +156,14 @@ pub(super) fn fit_cubic(d: &[P], t1: P, t2: P, err2: f64, out: &mut Vec<Bez>) {
     let n = d.len();
     if n == 2 {
         let dist = (d[1] - d[0]).len() / 3.0;
-        out.push(Bez {
-            p: [d[0], d[0] + t1 * dist, d[1] + t2 * dist, d[1]],
-            straight: false,
-        });
+        out.push(Bez { p: [d[0], d[0] + t1 * dist, d[1] + t2 * dist, d[1]], straight: false });
         return;
     }
     let mut u = chord_params(d);
     let mut b = generate_bezier(d, &u, t1, t2);
     let (mut e, mut split) = max_err(&b, d, &u);
     if e < err2 {
-        out.push(Bez {
-            p: b,
-            straight: false,
-        });
+        out.push(Bez { p: b, straight: false });
         return;
     }
     // Newton-Raphson re-parameterisation (Schneider tries it when the error is within a small factor of the
@@ -187,10 +177,7 @@ pub(super) fn fit_cubic(d: &[P], t1: P, t2: P, err2: f64, out: &mut Vec<Bez>) {
             e = r.0;
             split = r.1;
             if e < err2 {
-                out.push(Bez {
-                    p: b,
-                    straight: false,
-                });
+                out.push(Bez { p: b, straight: false });
                 return;
             }
             if e > prev * 0.99 {
@@ -200,11 +187,7 @@ pub(super) fn fit_cubic(d: &[P], t1: P, t2: P, err2: f64, out: &mut Vec<Bez>) {
     }
     let split = split.clamp(1, n - 2);
     let centre = (d[split - 1] - d[split + 1]).norm();
-    let centre = if centre.len() < 0.5 {
-        (d[n - 1] - d[0]).norm() * -1.0
-    } else {
-        centre
-    };
+    let centre = if centre.len() < 0.5 { (d[n - 1] - d[0]).norm() * -1.0 } else { centre };
     fit_cubic(&d[..=split], t1, centre, err2, out);
     fit_cubic(&d[split..], centre * -1.0, t2, err2, out);
 }
@@ -234,11 +217,7 @@ pub fn douglas_peucker(pts: &[Vec2], tol: f32) -> Vec<Vec2> {
     while let Some((a, b)) = stack.pop() {
         let mut worst = (0.0f64, a);
         for i in a + 1..b {
-            let d = dist_to_chord(
-                p(pts[a].x as f64, pts[a].y as f64),
-                p(pts[b].x as f64, pts[b].y as f64),
-                p(pts[i].x as f64, pts[i].y as f64),
-            );
+            let d = dist_to_chord(p(pts[a].x as f64, pts[a].y as f64), p(pts[b].x as f64, pts[b].y as f64), p(pts[i].x as f64, pts[i].y as f64));
             if d > worst.0 {
                 worst = (d, i);
             }
@@ -249,11 +228,7 @@ pub fn douglas_peucker(pts: &[Vec2], tol: f32) -> Vec<Vec2> {
             stack.push((worst.1, b));
         }
     }
-    pts.iter()
-        .zip(&keep)
-        .filter(|(_, k)| **k)
-        .map(|(q, _)| *q)
-        .collect()
+    pts.iter().zip(&keep).filter(|(_, k)| **k).map(|(q, _)| *q).collect()
 }
 
 /// Closed-polygon Douglas-Peucker: split at the two points that are farthest apart.
@@ -284,9 +259,7 @@ pub fn douglas_peucker_closed(pts: &[Vec2], tol: f32) -> Vec<Vec2> {
 /// neighbours has the smallest area until every remaining triangle has area >= `min_area`.
 pub fn visvalingam_closed(pts: &[Vec2], min_area: f32) -> Vec<Vec2> {
     let mut v: Vec<Vec2> = pts.to_vec();
-    let tri = |a: Vec2, b: Vec2, c: Vec2| {
-        ((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y)).abs() * 0.5
-    };
+    let tri = |a: Vec2, b: Vec2, c: Vec2| ((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y)).abs() * 0.5;
     while v.len() > 3 {
         let n = v.len();
         let mut best = (f32::MAX, 0);

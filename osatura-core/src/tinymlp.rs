@@ -116,10 +116,7 @@ fn one() -> u32 {
 impl Mlp {
     pub fn validate(&self) -> Result<(), String> {
         if self.format != "osatura-mlp" || self.version != 1 {
-            return Err(format!(
-                "not an osatura-mlp version 1 file (format '{}', version {})",
-                self.format, self.version
-            ));
+            return Err(format!("not an osatura-mlp version 1 file (format '{}', version {})", self.format, self.version));
         }
         if self.layers.is_empty() || self.layers.len() > 8 {
             return Err("an MLP needs 1 to 8 layers".into());
@@ -128,9 +125,7 @@ impl Mlp {
             return Err("at most 64 bones".into());
         }
         let d = self.bones.len();
-        if !self.mean.is_empty() && self.mean.len() != d
-            || !self.scale.is_empty() && self.scale.len() != d
-        {
+        if !self.mean.is_empty() && self.mean.len() != d || !self.scale.is_empty() && self.scale.len() != d {
             return Err("mean and scale must be empty or have one value per bone".into());
         }
         let mut total = 0usize;
@@ -139,18 +134,10 @@ impl Mlp {
                 return Err(format!("layer {i}: sizes must be 1..4096"));
             }
             if l.w.len() != l.n_in * l.n_out || l.b.len() != l.n_out {
-                return Err(format!(
-                    "layer {i}: expected {} weights and {} biases",
-                    l.n_in * l.n_out,
-                    l.n_out
-                ));
+                return Err(format!("layer {i}: expected {} weights and {} biases", l.n_in * l.n_out, l.n_out));
             }
             if i > 0 && self.layers[i - 1].n_out != l.n_in {
-                return Err(format!(
-                    "layer {i}: n_in {} does not match the previous layer's n_out {}",
-                    l.n_in,
-                    self.layers[i - 1].n_out
-                ));
+                return Err(format!("layer {i}: n_in {} does not match the previous layer's n_out {}", l.n_in, self.layers[i - 1].n_out));
             }
             total += l.w.len() + l.b.len();
             if l.w.iter().chain(&l.b).any(|v| !v.is_finite()) {
@@ -160,8 +147,7 @@ impl Mlp {
         if total > 4_000_000 {
             return Err("more than 4 million weights".into());
         }
-        if self.mean.iter().chain(&self.scale).any(|v| !v.is_finite()) || self.scale.contains(&0.0)
-        {
+        if self.mean.iter().chain(&self.scale).any(|v| !v.is_finite()) || self.scale.contains(&0.0) {
             return Err("mean/scale must be finite and scale non-zero".into());
         }
         Ok(())
@@ -208,10 +194,7 @@ impl Mlp {
             o.extend((b.len() as u16).to_le_bytes());
             o.extend(b.as_bytes());
         }
-        for v in (0..d)
-            .map(|i| self.mean.get(i).copied().unwrap_or(0.0))
-            .chain((0..d).map(|i| self.scale.get(i).copied().unwrap_or(1.0)))
-        {
+        for v in (0..d).map(|i| self.mean.get(i).copied().unwrap_or(0.0)).chain((0..d).map(|i| self.scale.get(i).copied().unwrap_or(1.0))) {
             o.extend(v.to_le_bytes());
         }
         o.extend((self.layers.len() as u32).to_le_bytes());
@@ -255,10 +238,7 @@ impl Mlp {
         let mut bones = Vec::new();
         for _ in 0..d {
             let n = u16::from_le_bytes(r.take(2)?.try_into().unwrap()) as usize;
-            bones.push(
-                String::from_utf8(r.take(n)?.to_vec())
-                    .map_err(|_| "bone name is not UTF-8".to_string())?,
-            );
+            bones.push(String::from_utf8(r.take(n)?.to_vec()).map_err(|_| "bone name is not UTF-8".to_string())?);
         }
         let mean = (0..d).map(|_| r.f32()).collect::<Result<Vec<_>, _>>()?;
         let scale = (0..d).map(|_| r.f32()).collect::<Result<Vec<_>, _>>()?;
@@ -278,29 +258,14 @@ impl Mlp {
             if total > 4_000_000 {
                 return Err("more than 4 million weights".into());
             }
-            let w = (0..n_in * n_out)
-                .map(|_| r.f32())
-                .collect::<Result<Vec<_>, _>>()?;
+            let w = (0..n_in * n_out).map(|_| r.f32()).collect::<Result<Vec<_>, _>>()?;
             let bi = (0..n_out).map(|_| r.f32()).collect::<Result<Vec<_>, _>>()?;
-            layers.push(Dense {
-                act,
-                n_in,
-                n_out,
-                w,
-                b: bi,
-            });
+            layers.push(Dense { act, n_in, n_out, w, b: bi });
         }
         if r.1 != b.len() {
             return Err("trailing bytes after the last layer".into());
         }
-        let m = Mlp {
-            format: fmt_name(),
-            version: 1,
-            bones,
-            mean,
-            scale,
-            layers,
-        };
+        let m = Mlp { format: fmt_name(), version: 1, bones, mean, scale, layers };
         m.validate()?;
         Ok(m)
     }
@@ -313,9 +278,7 @@ impl Mlp {
         if bytes.starts_with(MAGIC) {
             Mlp::from_bytes(bytes)
         } else {
-            Mlp::from_json(
-                std::str::from_utf8(bytes).map_err(|_| "not an osatura-mlp file".to_string())?,
-            )
+            Mlp::from_json(std::str::from_utf8(bytes).map_err(|_| "not an osatura-mlp file".to_string())?)
         }
     }
 }
@@ -360,14 +323,7 @@ pub struct TrainOpts {
 
 impl Default for TrainOpts {
     fn default() -> Self {
-        TrainOpts {
-            hidden: vec![48],
-            epochs: 200,
-            lr: 0.05,
-            momentum: 0.9,
-            batch: 16,
-            seed: 1,
-        }
+        TrainOpts { hidden: vec![48], epochs: 200, lr: 0.05, momentum: 0.9, batch: 16, seed: 1 }
     }
 }
 
@@ -384,12 +340,7 @@ pub fn train(
     samples_per_epoch: usize,
     sample: &mut dyn FnMut(&mut Rng) -> Sample,
 ) -> Result<(Vec<Dense>, Vec<f32>), String> {
-    if o.epochs == 0
-        || o.batch == 0
-        || (o.lr.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        || !o.lr.is_finite()
-        || !(0.0..1.0).contains(&o.momentum)
-    {
+    if o.epochs == 0 || o.batch == 0 || (o.lr.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !o.lr.is_finite() || !(0.0..1.0).contains(&o.momentum) {
         return Err("training needs epochs >= 1, batch >= 1, lr > 0 and 0 <= momentum < 1".into());
     }
     if o.hidden.iter().any(|&h| h == 0 || h > 1024) || o.hidden.len() > 4 {
@@ -404,17 +355,7 @@ pub fn train(
             let (a, b) = (sizes[i], sizes[i + 1]);
             // Glorot / Xavier uniform initialisation
             let lim = (6.0 / (a + b) as f32).sqrt();
-            Dense {
-                act: if i + 2 == sizes.len() {
-                    Act::Linear
-                } else {
-                    Act::Tanh
-                },
-                n_in: a,
-                n_out: b,
-                w: (0..a * b).map(|_| (rng.unit() * 2.0 - 1.0) * lim).collect(),
-                b: vec![0.0; b],
-            }
+            Dense { act: if i + 2 == sizes.len() { Act::Linear } else { Act::Tanh }, n_in: a, n_out: b, w: (0..a * b).map(|_| (rng.unit() * 2.0 - 1.0) * lim).collect(), b: vec![0.0; b] }
         })
         .collect();
     let mut vel_w: Vec<Vec<f32>> = layers.iter().map(|l| vec![0.0; l.w.len()]).collect();
@@ -438,25 +379,15 @@ pub fn train(
                     // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
                     #[allow(clippy::needless_range_loop)]
                     for j in 0..l.n_out {
-                        let s: f32 = l.w[j * l.n_in..(j + 1) * l.n_in]
-                            .iter()
-                            .zip(a)
-                            .map(|(w, x)| w * x)
-                            .sum::<f32>()
-                            + l.b[j];
+                        let s: f32 = l.w[j * l.n_in..(j + 1) * l.n_in].iter().zip(a).map(|(w, x)| w * x).sum::<f32>() + l.b[j];
                         out[j] = l.act.f(s);
                     }
                     acts.push(out);
                 }
                 let y = acts.last().unwrap();
                 let wsum: f32 = wt.iter().sum::<f32>().max(1e-9);
-                let mut delta: Vec<f32> = (0..n_out)
-                    .map(|j| 2.0 * wt[j] * (y[j] - t[j]) / wsum)
-                    .collect();
-                epoch_loss += (0..n_out)
-                    .map(|j| (wt[j] * (y[j] - t[j]).powi(2)) as f64)
-                    .sum::<f64>()
-                    / wsum as f64;
+                let mut delta: Vec<f32> = (0..n_out).map(|j| 2.0 * wt[j] * (y[j] - t[j]) / wsum).collect();
+                epoch_loss += (0..n_out).map(|j| (wt[j] * (y[j] - t[j]).powi(2)) as f64).sum::<f64>() / wsum as f64;
                 for li in (0..layers.len()).rev() {
                     let l = &layers[li];
                     for j in 0..l.n_out {
@@ -488,10 +419,7 @@ pub fn train(
         }
         history.push((epoch_loss / samples_per_epoch.max(1) as f64) as f32);
     }
-    if layers
-        .iter()
-        .any(|l| l.w.iter().chain(&l.b).any(|v| !v.is_finite()))
-    {
+    if layers.iter().any(|l| l.w.iter().chain(&l.b).any(|v| !v.is_finite())) {
         return Err("training diverged (non-finite weights); lower the learning rate".into());
     }
     Ok((layers, history))
@@ -509,55 +437,22 @@ mod tests {
             mean: vec![1.0, -1.0],
             scale: vec![2.0, 4.0],
             layers: vec![
-                Dense {
-                    act: Act::Tanh,
-                    n_in: 4,
-                    n_out: 3,
-                    w: (0..12).map(|i| i as f32 * 0.1 - 0.5).collect(),
-                    b: vec![0.1, -0.1, 0.0],
-                },
-                Dense {
-                    act: Act::Linear,
-                    n_in: 3,
-                    n_out: 2,
-                    w: vec![0.5, -0.5, 0.25, 1.0, 0.0, -1.0],
-                    b: vec![0.0, 0.2],
-                },
+                Dense { act: Act::Tanh, n_in: 4, n_out: 3, w: (0..12).map(|i| i as f32 * 0.1 - 0.5).collect(), b: vec![0.1, -0.1, 0.0] },
+                Dense { act: Act::Linear, n_in: 3, n_out: 2, w: vec![0.5, -0.5, 0.25, 1.0, 0.0, -1.0], b: vec![0.0, 0.2] },
             ],
         }
     }
 
     #[test]
     fn forward_matches_a_hand_computation() {
-        let m = Dense {
-            act: Act::Relu,
-            n_in: 2,
-            n_out: 2,
-            w: vec![1.0, 2.0, -1.0, 0.5],
-            b: vec![0.5, 0.0],
-        };
-        let net = Mlp {
-            format: fmt_name(),
-            version: 1,
-            bones: vec![],
-            mean: vec![],
-            scale: vec![],
-            layers: vec![m],
-        };
+        let m = Dense { act: Act::Relu, n_in: 2, n_out: 2, w: vec![1.0, 2.0, -1.0, 0.5], b: vec![0.5, 0.0] };
+        let net = Mlp { format: fmt_name(), version: 1, bones: vec![], mean: vec![], scale: vec![], layers: vec![m] };
         // row0: 1*3 + 2*(-1) + 0.5 = 1.5; row1: -3 - 0.5 = -3.5 -> relu 0
         assert_eq!(net.forward(&[3.0, -1.0]), vec![1.5, 0.0]);
         assert_eq!((net.n_in(), net.n_out()), (2, 2));
         let t = tiny();
         let y = t.forward(&[0.3, -0.2, 1.0, 0.0]);
-        let h: Vec<f32> = (0..3)
-            .map(|j| {
-                ((0..4)
-                    .map(|i| t.layers[0].w[j * 4 + i] * [0.3f32, -0.2, 1.0, 0.0][i])
-                    .sum::<f32>()
-                    + t.layers[0].b[j])
-                    .tanh()
-            })
-            .collect();
+        let h: Vec<f32> = (0..3).map(|j| ((0..4).map(|i| t.layers[0].w[j * 4 + i] * [0.3f32, -0.2, 1.0, 0.0][i]).sum::<f32>() + t.layers[0].b[j]).tanh()).collect();
         let want0 = 0.5 * h[0] - 0.5 * h[1] + 0.25 * h[2];
         assert!((y[0] - want0).abs() < 1e-6);
     }
@@ -605,20 +500,8 @@ mod tests {
 
     #[test]
     fn sgd_learns_xor_and_a_linear_map_deterministically() {
-        let data = [
-            ([0.0f32, 0.0], 0.0f32),
-            ([0.0, 1.0], 1.0),
-            ([1.0, 0.0], 1.0),
-            ([1.0, 1.0], 0.0),
-        ];
-        let o = TrainOpts {
-            hidden: vec![8],
-            epochs: 1500,
-            lr: 0.05,
-            momentum: 0.9,
-            batch: 4,
-            seed: 3,
-        };
+        let data = [([0.0f32, 0.0], 0.0f32), ([0.0, 1.0], 1.0), ([1.0, 0.0], 1.0), ([1.0, 1.0], 0.0)];
+        let o = TrainOpts { hidden: vec![8], epochs: 1500, lr: 0.05, momentum: 0.9, batch: 4, seed: 3 };
         let run = |o: &TrainOpts| {
             let mut s = |r: &mut Rng| {
                 let (x, y) = data[r.below(4)];
@@ -627,28 +510,14 @@ mod tests {
             train(2, 1, o, 16, &mut s).unwrap()
         };
         let (layers, hist) = run(&o);
-        assert!(
-            hist.last().unwrap() < &0.01,
-            "final loss {}",
-            hist.last().unwrap()
-        );
+        assert!(hist.last().unwrap() < &0.01, "final loss {}", hist.last().unwrap());
         assert!(hist[0] > hist[hist.len() - 1] * 5.0);
-        let net = Mlp {
-            format: fmt_name(),
-            version: 1,
-            bones: vec![],
-            mean: vec![],
-            scale: vec![],
-            layers: layers.clone(),
-        };
+        let net = Mlp { format: fmt_name(), version: 1, bones: vec![], mean: vec![], scale: vec![], layers: layers.clone() };
         for (x, y) in data {
             assert!((net.forward(&x)[0] - y).abs() < 0.2, "{x:?}");
         }
         assert_eq!(run(&o).0, layers, "same seed, same weights");
-        let (l2, _) = run(&TrainOpts {
-            seed: 4,
-            ..o.clone()
-        });
+        let (l2, _) = run(&TrainOpts { seed: 4, ..o.clone() });
         assert_ne!(l2, layers, "other seed, other weights");
     }
 
@@ -656,34 +525,13 @@ mod tests {
     fn training_validates_its_options() {
         let mut s = |_: &mut Rng| (vec![0.0], vec![0.0], vec![1.0]);
         for o in [
-            TrainOpts {
-                epochs: 0,
-                ..Default::default()
-            },
-            TrainOpts {
-                lr: 0.0,
-                ..Default::default()
-            },
-            TrainOpts {
-                lr: f32::NAN,
-                ..Default::default()
-            },
-            TrainOpts {
-                momentum: 1.0,
-                ..Default::default()
-            },
-            TrainOpts {
-                batch: 0,
-                ..Default::default()
-            },
-            TrainOpts {
-                hidden: vec![0],
-                ..Default::default()
-            },
-            TrainOpts {
-                hidden: vec![2000],
-                ..Default::default()
-            },
+            TrainOpts { epochs: 0, ..Default::default() },
+            TrainOpts { lr: 0.0, ..Default::default() },
+            TrainOpts { lr: f32::NAN, ..Default::default() },
+            TrainOpts { momentum: 1.0, ..Default::default() },
+            TrainOpts { batch: 0, ..Default::default() },
+            TrainOpts { hidden: vec![0], ..Default::default() },
+            TrainOpts { hidden: vec![2000], ..Default::default() },
         ] {
             assert!(train(1, 1, &o, 4, &mut s).is_err());
         }

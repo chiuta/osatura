@@ -53,21 +53,13 @@ fn sub(a: [f64; 2], b: [f64; 2]) -> [f64; 2] {
 fn segments_touch(a: [f64; 2], b: [f64; 2], c: [f64; 2], d: [f64; 2]) -> bool {
     let o = |p: [f64; 2], q: [f64; 2], r: [f64; 2]| cross(sub(q, p), sub(r, p));
     let on = |p: [f64; 2], q: [f64; 2], r: [f64; 2]| {
-        r[0] >= p[0].min(q[0])
-            && r[0] <= p[0].max(q[0])
-            && r[1] >= p[1].min(q[1])
-            && r[1] <= p[1].max(q[1])
+        r[0] >= p[0].min(q[0]) && r[0] <= p[0].max(q[0]) && r[1] >= p[1].min(q[1]) && r[1] <= p[1].max(q[1])
     };
     let (o1, o2, o3, o4) = (o(a, b, c), o(a, b, d), o(c, d, a), o(c, d, b));
-    if ((o1 > 0.0 && o2 < 0.0) || (o1 < 0.0 && o2 > 0.0))
-        && ((o3 > 0.0 && o4 < 0.0) || (o3 < 0.0 && o4 > 0.0))
-    {
+    if ((o1 > 0.0 && o2 < 0.0) || (o1 < 0.0 && o2 > 0.0)) && ((o3 > 0.0 && o4 < 0.0) || (o3 < 0.0 && o4 > 0.0)) {
         return true;
     }
-    (o1 == 0.0 && on(a, b, c))
-        || (o2 == 0.0 && on(a, b, d))
-        || (o3 == 0.0 && on(c, d, a))
-        || (o4 == 0.0 && on(c, d, b))
+    (o1 == 0.0 && on(a, b, c)) || (o2 == 0.0 && on(a, b, d)) || (o3 == 0.0 && on(c, d, a)) || (o4 == 0.0 && on(c, d, b))
 }
 
 impl CageSolver {
@@ -113,15 +105,11 @@ impl CageSolver {
                     // a spike: the two edges fold back on each other
                     let (shared, p, q) = if j == i + 1 { (b, a, d) } else { (a, b, c) };
                     let (u, v) = (sub(p, shared), sub(q, shared));
-                    if cross(u, v).abs() <= 1e-12 * u[0].hypot(u[1]) * v[0].hypot(v[1])
-                        && dot(u, v) > 0.0
-                    {
+                    if cross(u, v).abs() <= 1e-12 * u[0].hypot(u[1]) * v[0].hypot(v[1]) && dot(u, v) > 0.0 {
                         return Err(format!("cage edges {i} and {j} fold back on each other"));
                     }
                 } else if segments_touch(a, b, c, d) {
-                    return Err(format!(
-                        "cage edges {i} and {j} cross or touch; the cage must be a simple polygon"
-                    ));
+                    return Err(format!("cage edges {i} and {j} cross or touch; the cage must be a simple polygon"));
                 }
             }
         }
@@ -252,13 +240,7 @@ pub struct CageOptions {
 
 impl Default for CageOptions {
     fn default() -> Self {
-        CageOptions {
-            name: "cage".into(),
-            rect: None,
-            hull: false,
-            verts: 2,
-            pad: 4.0,
-        }
+        CageOptions { name: "cage".into(), rect: None, hull: false, verts: 2, pad: 4.0 }
     }
 }
 
@@ -286,14 +268,9 @@ fn layer_points(p: &Project, layer: &str, kind: &LayerKind) -> Result<Vec<Vec2>,
         }
         LayerKind::Image { .. } => {
             let e = Engine::new(p.clone()).map_err(|v| v.join("; "))?;
-            let id = e
-                .node_index(layer)
-                .ok_or_else(|| format!("no layer at '{layer}'"))?;
+            let id = e.node_index(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
             let fr = e.evaluate(0.0);
-            let im = fr.nodes[id]
-                .image
-                .as_ref()
-                .ok_or("the image layer has no pixels")?;
+            let im = fr.nodes[id].image.as_ref().ok_or("the image layer has no pixels")?;
             Ok(vec![im.origin, im.origin + im.size])
         }
         _ => Err("cages apply to vector and image layers".into()),
@@ -329,9 +306,7 @@ fn convex_hull(pts: &[Vec2]) -> Vec<Vec2> {
 /// Push every vertex of a convex CCW (in y-up maths) or CW polygon outward by `pad`.
 fn pad_polygon(poly: &[Vec2], pad: f32) -> Vec<Vec2> {
     let n = poly.len();
-    let area2: f32 = (0..n)
-        .map(|i| poly[i].x * poly[(i + 1) % n].y - poly[(i + 1) % n].x * poly[i].y)
-        .sum();
+    let area2: f32 = (0..n).map(|i| poly[i].x * poly[(i + 1) % n].y - poly[(i + 1) % n].x * poly[i].y).sum();
     let s = if area2 > 0.0 { 1.0 } else { -1.0 };
     (0..n)
         .map(|i| {
@@ -365,17 +340,12 @@ pub fn add_cage(p: &Project, layer: &str, o: &CageOptions) -> Result<Project, St
     if !(1..=32).contains(&o.verts) {
         return Err("verts must be 1..32 segments per side".into());
     }
-    let lay = p
-        .find_layer(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?;
+    let lay = p.find_layer(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
     if !matches!(lay.kind, LayerKind::Vector { .. } | LayerKind::Image { .. }) {
         return Err(format!("layer '{layer}' must be a vector or image layer"));
     }
     if lay.deformers.iter().any(|d| d.name() == o.name) {
-        return Err(format!(
-            "layer '{layer}' already has a deformer named '{}'",
-            o.name
-        ));
+        return Err(format!("layer '{layer}' already has a deformer named '{}'", o.name));
     }
     let rest: Vec<Vec2> = if let Some(r) = o.rect {
         box_outline(r, o.verts, o.pad)?
@@ -398,14 +368,11 @@ pub fn add_cage(p: &Project, layer: &str, o: &CageOptions) -> Result<Project, St
     };
     CageSolver::new(&rest)?;
     let mut q = p.clone();
-    q.find_layer_mut(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?
-        .deformers
-        .push(Deformer::Cage {
-            name: o.name.clone(),
-            rest,
-            offsets: vec![],
-        });
+    q.find_layer_mut(layer).ok_or_else(|| format!("no layer at '{layer}'"))?.deformers.push(Deformer::Cage {
+        name: o.name.clone(),
+        rest,
+        offsets: vec![],
+    });
     Engine::new(q.clone()).map_err(|v| v.join("; "))?;
     Ok(q)
 }
@@ -438,21 +405,11 @@ fn box_outline(r: [f32; 4], seg: usize, pad: f32) -> Result<Vec<Vec2>, String> {
 /// One pose edit: key the offsets of cage vertices at `frame`.
 /// `moves` is `(vertex, dx, dy)`; `all` is added to every vertex (a rigid translation).
 /// Missing channels are created with a key of the current value at frame 0 (or `frame` itself if 0).
-pub fn pose_cage(
-    p: &Project,
-    layer: &str,
-    name: &str,
-    frame: f32,
-    moves: &[(usize, f32, f32)],
-    all: Option<(f32, f32)>,
-    ease: Ease,
-) -> Result<Project, String> {
+pub fn pose_cage(p: &Project, layer: &str, name: &str, frame: f32, moves: &[(usize, f32, f32)], all: Option<(f32, f32)>, ease: Ease) -> Result<Project, String> {
     if !frame.is_finite() || frame < 0.0 {
         return Err("frame must be a number >= 0".into());
     }
-    let lay = p
-        .find_layer(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?;
+    let lay = p.find_layer(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
     let (n, base) = match lay.deformers.iter().find(|d| d.name() == name) {
         Some(Deformer::Cage { rest, offsets, .. }) => (rest.len(), offsets.clone()),
         Some(_) => return Err(format!("deformer '{name}' on '{layer}' is not a cage")),
@@ -469,17 +426,9 @@ pub fn pose_cage(
             return Err(format!("cage vertex {i} does not exist (0..{})", n - 1));
         }
         let cur = want[i].unwrap_or((0.0, 0.0));
-        want[i] = Some(if all.is_some() {
-            (cur.0 + dx, cur.1 + dy)
-        } else {
-            (dx, dy)
-        });
+        want[i] = Some(if all.is_some() { (cur.0 + dx, cur.1 + dy) } else { (dx, dy) });
     }
-    if !want
-        .iter()
-        .flatten()
-        .all(|v| v.0.is_finite() && v.1.is_finite())
-    {
+    if !want.iter().flatten().all(|v| v.0.is_finite() && v.1.is_finite()) {
         return Err("offsets must be finite".into());
     }
     let tgt = |i: usize| format!("{layer}::{name}::{i}");
@@ -494,19 +443,11 @@ pub fn pose_cage(
         let Some((dx, dy)) = *w else { continue };
         for (prop, v) in [(Prop::CageDx, dx), (Prop::CageDy, dy)] {
             let t = tgt(i);
-            let existing = q.channels.iter_mut().find(|c| {
-                c.target == t && c.prop == prop && matches!(c.source, Source::Keys { .. })
-            });
+            let existing = q.channels.iter_mut().find(|c| c.target == t && c.prop == prop && matches!(c.source, Source::Keys { .. }));
             match existing {
-                Some(Channel {
-                    source: Source::Keys { track },
-                    ..
-                }) => track.set_key(frame, v, ease),
+                Some(Channel { source: Source::Keys { track }, .. }) => track.set_key(frame, v, ease),
                 _ => {
-                    let rest0 = base
-                        .get(i)
-                        .map(|o| if prop == Prop::CageDx { o.x } else { o.y })
-                        .unwrap_or(0.0);
+                    let rest0 = base.get(i).map(|o| if prop == Prop::CageDx { o.x } else { o.y }).unwrap_or(0.0);
                     let mut tr = Track::new();
                     if frame > 0.0 {
                         tr.set_key(0.0, rest0, Ease::Linear);
@@ -525,24 +466,10 @@ pub fn pose_cage(
 pub fn parse_moves(s: &str) -> Result<Vec<(usize, f32, f32)>, String> {
     let mut v = Vec::new();
     for part in s.split(';').filter(|x| !x.trim().is_empty()) {
-        let (i, d) = part
-            .split_once(':')
-            .ok_or_else(|| format!("bad vertex move '{part}' (use i:dx,dy)"))?;
-        let (dx, dy) = d
-            .split_once(',')
-            .ok_or_else(|| format!("bad vertex move '{part}' (use i:dx,dy)"))?;
-        let f = |t: &str| {
-            t.trim()
-                .parse::<f32>()
-                .map_err(|_| format!("bad number '{t}'"))
-        };
-        v.push((
-            i.trim()
-                .parse::<usize>()
-                .map_err(|_| format!("bad vertex index '{i}'"))?,
-            f(dx)?,
-            f(dy)?,
-        ));
+        let (i, d) = part.split_once(':').ok_or_else(|| format!("bad vertex move '{part}' (use i:dx,dy)"))?;
+        let (dx, dy) = d.split_once(',').ok_or_else(|| format!("bad vertex move '{part}' (use i:dx,dy)"))?;
+        let f = |t: &str| t.trim().parse::<f32>().map_err(|_| format!("bad number '{t}'"));
+        v.push((i.trim().parse::<usize>().map_err(|_| format!("bad vertex index '{i}'"))?, f(dx)?, f(dy)?));
     }
     Ok(v)
 }
@@ -550,8 +477,8 @@ pub fn parse_moves(s: &str) -> Result<Vec<(usize, f32, f32)>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::math::Vec2;
     use crate::project::Layer;
+    use crate::math::Vec2;
 
     fn v(x: f32, y: f32) -> Vec2 {
         Vec2::new(x, y)
@@ -561,35 +488,16 @@ mod tests {
     }
     /// L-shaped concave cage.
     fn ell() -> Vec<Vec2> {
-        vec![
-            v(0.0, 0.0),
-            v(100.0, 0.0),
-            v(100.0, 40.0),
-            v(40.0, 40.0),
-            v(40.0, 100.0),
-            v(0.0, 100.0),
-        ]
+        vec![v(0.0, 0.0), v(100.0, 0.0), v(100.0, 40.0), v(40.0, 40.0), v(40.0, 100.0), v(0.0, 100.0)]
     }
     fn lcg(s: &mut u64) -> f32 {
-        *s = s
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
+        *s = s.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
         ((*s >> 33) as f32) / (1u64 << 31) as f32
     }
 
     #[test]
     fn partition_of_unity_and_linear_reproduction_convex_and_concave() {
-        for cage in [
-            square(),
-            ell(),
-            vec![
-                v(0.0, 0.0),
-                v(80.0, 10.0),
-                v(100.0, 70.0),
-                v(40.0, 110.0),
-                v(-10.0, 60.0),
-            ],
-        ] {
+        for cage in [square(), ell(), vec![v(0.0, 0.0), v(80.0, 10.0), v(100.0, 70.0), v(40.0, 110.0), v(-10.0, 60.0)]] {
             let s = CageSolver::new(&cage).unwrap();
             let mut seed = 7u64;
             let mut w = Vec::new();
@@ -607,10 +515,7 @@ mod tests {
                     x += l * q.x as f64;
                     y += l * q.y as f64;
                 }
-                assert!(
-                    (x - p.x as f64).abs() < 1e-3 && (y - p.y as f64).abs() < 1e-3,
-                    "({x},{y}) vs {p:?}"
-                );
+                assert!((x - p.x as f64).abs() < 1e-3 && (y - p.y as f64).abs() < 1e-3, "({x},{y}) vs {p:?}");
             }
             assert!(tested > 100);
         }
@@ -652,13 +557,7 @@ mod tests {
     fn points_outside_are_unchanged() {
         let s = CageSolver::new(&square()).unwrap();
         let offs = vec![v(5.0, 5.0); 4];
-        for p in [
-            v(-1.0, 50.0),
-            v(101.0, 50.0),
-            v(50.0, 200.0),
-            v(-500.0, -500.0),
-            v(f32::NAN, 0.0),
-        ] {
+        for p in [v(-1.0, 50.0), v(101.0, 50.0), v(50.0, 200.0), v(-500.0, -500.0), v(f32::NAN, 0.0)] {
             assert_eq!(s.displacement(&offs, p), Vec2::ZERO);
         }
         // inside the notch of the L is outside the cage
@@ -678,18 +577,9 @@ mod tests {
         }
         // mid-edge: halfway between vertices 1 and 2
         assert!(s.weights(v(100.0, 20.0), &mut w));
-        assert!(
-            (w[1] - 0.5).abs() < 1e-9 && (w[2] - 0.5).abs() < 1e-9 && w.iter().sum::<f64>() == 1.0
-        );
+        assert!((w[1] - 0.5).abs() < 1e-9 && (w[2] - 0.5).abs() < 1e-9 && w.iter().sum::<f64>() == 1.0);
         // edge points follow the edge linearly; many edge samples never give NaN
-        let offs = vec![
-            v(0.0, 0.0),
-            v(10.0, 0.0),
-            v(30.0, 0.0),
-            v(0.0, 0.0),
-            v(0.0, 0.0),
-            v(0.0, 0.0),
-        ];
+        let offs = vec![v(0.0, 0.0), v(10.0, 0.0), v(30.0, 0.0), v(0.0, 0.0), v(0.0, 0.0), v(0.0, 0.0)];
         for k in 0..=40 {
             let p = v(100.0, k as f32);
             let d = s.displacement(&offs, p);
@@ -707,12 +597,8 @@ mod tests {
     fn deterministic() {
         let s = CageSolver::new(&ell()).unwrap();
         let offs: Vec<Vec2> = (0..6).map(|i| v(i as f32, -(i as f32))).collect();
-        let a: Vec<Vec2> = (0..50)
-            .map(|i| s.displacement(&offs, v(i as f32, 20.0)))
-            .collect();
-        let b: Vec<Vec2> = (0..50)
-            .map(|i| s.displacement(&offs, v(i as f32, 20.0)))
-            .collect();
+        let a: Vec<Vec2> = (0..50).map(|i| s.displacement(&offs, v(i as f32, 20.0))).collect();
+        let b: Vec<Vec2> = (0..50).map(|i| s.displacement(&offs, v(i as f32, 20.0))).collect();
         assert_eq!(a, b);
     }
 
@@ -735,30 +621,15 @@ mod tests {
 
     #[test]
     fn validation_errors() {
-        assert!(CageSolver::new(&[v(0.0, 0.0), v(1.0, 1.0)])
-            .unwrap_err()
-            .contains("at least 3"));
+        assert!(CageSolver::new(&[v(0.0, 0.0), v(1.0, 1.0)]).unwrap_err().contains("at least 3"));
         assert!(CageSolver::new(&[v(0.0, 0.0), v(10.0, 0.0), v(20.0, 0.0)]).is_err());
-        assert!(
-            CageSolver::new(&[v(0.0, 0.0), v(0.0, 0.0), v(10.0, 10.0), v(0.0, 10.0)])
-                .unwrap_err()
-                .contains("coincide")
-        );
+        assert!(CageSolver::new(&[v(0.0, 0.0), v(0.0, 0.0), v(10.0, 10.0), v(0.0, 10.0)]).unwrap_err().contains("coincide"));
         // bow tie
-        assert!(
-            CageSolver::new(&[v(0.0, 0.0), v(10.0, 10.0), v(10.0, 0.0), v(0.0, 10.0)])
-                .unwrap_err()
-                .contains("simple")
-        );
+        assert!(CageSolver::new(&[v(0.0, 0.0), v(10.0, 10.0), v(10.0, 0.0), v(0.0, 10.0)]).unwrap_err().contains("simple"));
         assert!(CageSolver::new(&[v(0.0, 0.0), v(f32::NAN, 1.0), v(1.0, 5.0)]).is_err());
         // spike
         assert!(CageSolver::new(&[v(0.0, 0.0), v(10.0, 0.0), v(5.0, 0.0), v(5.0, 10.0)]).is_err());
-        let big: Vec<Vec2> = (0..300)
-            .map(|i| {
-                let a = i as f32 / 300.0 * std::f32::consts::TAU;
-                v(a.cos() * 50.0, a.sin() * 50.0)
-            })
-            .collect();
+        let big: Vec<Vec2> = (0..300).map(|i| { let a = i as f32 / 300.0 * std::f32::consts::TAU; v(a.cos() * 50.0, a.sin() * 50.0) }).collect();
         assert!(CageSolver::new(&big).unwrap_err().contains("at most"));
     }
 
@@ -766,20 +637,8 @@ mod tests {
 
     fn proj() -> Project {
         let mut p = Project::new("t", 200.0, 200.0, 12.0, 24);
-        let mut l = Layer::vector(
-            "sq",
-            vec![crate::path::VPath::rect("r", 40.0, 40.0, 100.0, 100.0).with_fill("#ff0000")],
-        );
-        l.deformers = vec![Deformer::Cage {
-            name: "c".into(),
-            rest: vec![
-                v(20.0, 20.0),
-                v(160.0, 20.0),
-                v(160.0, 160.0),
-                v(20.0, 160.0),
-            ],
-            offsets: vec![],
-        }];
+        let mut l = Layer::vector("sq", vec![crate::path::VPath::rect("r", 40.0, 40.0, 100.0, 100.0).with_fill("#ff0000")]);
+        l.deformers = vec![Deformer::Cage { name: "c".into(), rest: vec![v(20.0, 20.0), v(160.0, 20.0), v(160.0, 160.0), v(20.0, 160.0)], offsets: vec![] }];
         p.layers = vec![l];
         p
     }
@@ -788,25 +647,14 @@ mod tests {
         let e = Engine::new(p.clone()).unwrap();
         let fr = e.evaluate(f);
         let n = &fr.nodes[e.node_index("sq").unwrap()];
-        n.paths
-            .iter()
-            .flat_map(|vp| vp.anchors.iter().map(|a| a.pos))
-            .collect()
+        n.paths.iter().flat_map(|vp| vp.anchors.iter().map(|a| a.pos)).collect()
     }
 
     #[test]
     fn engine_moves_content_and_identity_at_rest() {
         let p = proj();
         let a0 = anchors(&p, 0.0);
-        assert_eq!(
-            a0,
-            vec![
-                v(40.0, 40.0),
-                v(140.0, 40.0),
-                v(140.0, 140.0),
-                v(40.0, 140.0)
-            ]
-        );
+        assert_eq!(a0, vec![v(40.0, 40.0), v(140.0, 40.0), v(140.0, 140.0), v(40.0, 140.0)]);
         let q = pose_cage(&p, "sq", "c", 12.0, &[], Some((10.0, -5.0)), Ease::Linear).unwrap();
         let a = anchors(&q, 12.0);
         for (x, y) in a.iter().zip(&a0) {
@@ -852,13 +700,7 @@ mod tests {
         let q = pose_cage(&p, "img", "c", 0.0, &[], Some((12.0, 0.0)), Ease::Linear).unwrap();
         let e = Engine::new(q).unwrap();
         let fr = e.evaluate(0.0);
-        let m = fr.nodes[e.node_index("img").unwrap()]
-            .image
-            .as_ref()
-            .unwrap()
-            .mesh
-            .as_ref()
-            .unwrap();
+        let m = fr.nodes[e.node_index("img").unwrap()].image.as_ref().unwrap().mesh.as_ref().unwrap();
         let rest = crate::project::mesh_vertices(v(40.0, 40.0), v(100.0, 100.0), 16, 16);
         for (a, b) in m.positions.iter().zip(&rest) {
             assert!((a.x - b.x - 12.0).abs() < 1e-3 && (a.y - b.y).abs() < 1e-3);
@@ -870,35 +712,12 @@ mod tests {
         let p = proj();
         assert!(pose_cage(&p, "sq", "nope", 0.0, &[], Some((1.0, 1.0)), Ease::Linear).is_err());
         assert!(pose_cage(&p, "zz", "c", 0.0, &[], None, Ease::Linear).is_err());
-        assert!(
-            pose_cage(&p, "sq", "c", 0.0, &[(9, 1.0, 1.0)], None, Ease::Linear)
-                .unwrap_err()
-                .contains("does not exist")
-        );
+        assert!(pose_cage(&p, "sq", "c", 0.0, &[(9, 1.0, 1.0)], None, Ease::Linear).unwrap_err().contains("does not exist"));
         assert!(pose_cage(&p, "sq", "c", -1.0, &[], None, Ease::Linear).is_err());
         let q = pose_cage(&p, "sq", "c", 5.0, &[(1, 3.0, 3.0)], None, Ease::Linear).unwrap();
         let mut locked = q.clone();
-        chanmeta::set_meta(
-            &mut locked,
-            "sq::c::1",
-            Some(Prop::CageDx),
-            &chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
-        assert!(pose_cage(
-            &locked,
-            "sq",
-            "c",
-            8.0,
-            &[(1, 4.0, 4.0)],
-            None,
-            Ease::Linear
-        )
-        .unwrap_err()
-        .contains("locked"));
+        chanmeta::set_meta(&mut locked, "sq::c::1", Some(Prop::CageDx), &chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
+        assert!(pose_cage(&locked, "sq", "c", 8.0, &[(1, 4.0, 4.0)], None, Ease::Linear).unwrap_err().contains("locked"));
         // re-keying updates the existing channel instead of adding another
         let r = pose_cage(&q, "sq", "c", 8.0, &[(1, 4.0, 4.0)], None, Ease::Linear).unwrap();
         assert_eq!(r.channels.len(), q.channels.len());
@@ -907,22 +726,10 @@ mod tests {
     #[test]
     fn engine_rejects_bad_cages() {
         let mut p = proj();
-        p.layers[0].deformers = vec![Deformer::Cage {
-            name: "c".into(),
-            rest: vec![v(0.0, 0.0), v(1.0, 1.0)],
-            offsets: vec![],
-        }];
+        p.layers[0].deformers = vec![Deformer::Cage { name: "c".into(), rest: vec![v(0.0, 0.0), v(1.0, 1.0)], offsets: vec![] }];
         assert!(Engine::new(p.clone()).is_err());
-        p.layers[0].deformers = vec![Deformer::Cage {
-            name: "c".into(),
-            rest: square(),
-            offsets: vec![Vec2::ZERO; 3],
-        }];
-        assert!(Engine::new(p.clone())
-            .err()
-            .unwrap()
-            .join(" ")
-            .contains("offsets"));
+        p.layers[0].deformers = vec![Deformer::Cage { name: "c".into(), rest: square(), offsets: vec![Vec2::ZERO; 3] }];
+        assert!(Engine::new(p.clone()).err().unwrap().join(" ").contains("offsets"));
     }
 
     #[test]
@@ -930,95 +737,29 @@ mod tests {
         let mut p = proj();
         p.layers[0].deformers.clear();
         let q = add_cage(&p, "sq", &CageOptions::default()).unwrap();
-        let Deformer::Cage { rest, .. } = &q.layers[0].deformers[0] else {
-            panic!()
-        };
+        let Deformer::Cage { rest, .. } = &q.layers[0].deformers[0] else { panic!() };
         assert_eq!(rest.len(), 8);
-        assert!(rest
-            .iter()
-            .all(|r| r.x >= 36.0 - 1e-4 && r.x <= 144.0 + 1e-4));
-        let h = add_cage(
-            &p,
-            "sq",
-            &CageOptions {
-                hull: true,
-                pad: 0.0,
-                ..Default::default()
-            },
-        )
-        .unwrap();
-        let Deformer::Cage { rest, .. } = &h.layers[0].deformers[0] else {
-            panic!()
-        };
+        assert!(rest.iter().all(|r| r.x >= 36.0 - 1e-4 && r.x <= 144.0 + 1e-4));
+        let h = add_cage(&p, "sq", &CageOptions { hull: true, pad: 0.0, ..Default::default() }).unwrap();
+        let Deformer::Cage { rest, .. } = &h.layers[0].deformers[0] else { panic!() };
         assert_eq!(rest.len(), 4);
-        let r = add_cage(
-            &p,
-            "sq",
-            &CageOptions {
-                rect: Some([0.0, 0.0, 50.0, 50.0]),
-                verts: 1,
-                pad: 0.0,
-                ..Default::default()
-            },
-        )
-        .unwrap();
-        let Deformer::Cage { rest, .. } = &r.layers[0].deformers[0] else {
-            panic!()
-        };
+        let r = add_cage(&p, "sq", &CageOptions { rect: Some([0.0, 0.0, 50.0, 50.0]), verts: 1, pad: 0.0, ..Default::default() }).unwrap();
+        let Deformer::Cage { rest, .. } = &r.layers[0].deformers[0] else { panic!() };
         assert_eq!(rest.len(), 4);
         // errors
         assert!(add_cage(&p, "nope", &CageOptions::default()).is_err());
-        assert!(add_cage(&q, "sq", &CageOptions::default())
-            .unwrap_err()
-            .contains("already"));
-        assert!(add_cage(
-            &p,
-            "sq",
-            &CageOptions {
-                pad: -1.0,
-                ..Default::default()
-            }
-        )
-        .is_err());
-        assert!(add_cage(
-            &p,
-            "sq",
-            &CageOptions {
-                verts: 0,
-                ..Default::default()
-            }
-        )
-        .is_err());
-        assert!(add_cage(
-            &p,
-            "sq",
-            &CageOptions {
-                rect: Some([0.0, 0.0, 0.0, 5.0]),
-                pad: 0.0,
-                ..Default::default()
-            }
-        )
-        .is_err());
-        assert!(add_cage(
-            &p,
-            "sq",
-            &CageOptions {
-                name: "a::b".into(),
-                ..Default::default()
-            }
-        )
-        .is_err());
+        assert!(add_cage(&q, "sq", &CageOptions::default()).unwrap_err().contains("already"));
+        assert!(add_cage(&p, "sq", &CageOptions { pad: -1.0, ..Default::default() }).is_err());
+        assert!(add_cage(&p, "sq", &CageOptions { verts: 0, ..Default::default() }).is_err());
+        assert!(add_cage(&p, "sq", &CageOptions { rect: Some([0.0, 0.0, 0.0, 5.0]), pad: 0.0, ..Default::default() }).is_err());
+        assert!(add_cage(&p, "sq", &CageOptions { name: "a::b".into(), ..Default::default() }).is_err());
     }
 
     #[test]
     fn serde_roundtrip_and_old_projects() {
-        let d: Deformer = serde_json::from_str(
-            r#"{"type":"cage","name":"c","rest":[{"x":0,"y":0},{"x":10,"y":0},{"x":10,"y":10}]}"#,
-        )
-        .or_else(|_| {
-            serde_json::from_str(r#"{"type":"cage","name":"c","rest":[[0,0],[10,0],[10,10]]}"#)
-        })
-        .unwrap();
+        let d: Deformer = serde_json::from_str(r#"{"type":"cage","name":"c","rest":[{"x":0,"y":0},{"x":10,"y":0},{"x":10,"y":10}]}"#)
+            .or_else(|_| serde_json::from_str(r#"{"type":"cage","name":"c","rest":[[0,0],[10,0],[10,10]]}"#))
+            .unwrap();
         assert!(matches!(d, Deformer::Cage { ref offsets, .. } if offsets.is_empty()));
         let s = serde_json::to_string(&d).unwrap();
         assert_eq!(serde_json::from_str::<Deformer>(&s).unwrap(), d);
@@ -1030,10 +771,7 @@ mod tests {
 
     #[test]
     fn parse_moves_ok_and_bad() {
-        assert_eq!(
-            parse_moves("0:1,2;3:-4.5,0").unwrap(),
-            vec![(0, 1.0, 2.0), (3, -4.5, 0.0)]
-        );
+        assert_eq!(parse_moves("0:1,2;3:-4.5,0").unwrap(), vec![(0, 1.0, 2.0), (3, -4.5, 0.0)]);
         assert!(parse_moves("0-1,2").is_err());
         assert!(parse_moves("x:1,2").is_err());
         assert!(parse_moves("0:1").is_err());

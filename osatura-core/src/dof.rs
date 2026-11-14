@@ -21,12 +21,7 @@ pub struct DofOptions {
 
 impl Default for DofOptions {
     fn default() -> Self {
-        DofOptions {
-            scale: 1.0,
-            focus: 1.0,
-            strength: 12.0,
-            max_radius: 24.0,
-        }
+        DofOptions { scale: 1.0, focus: 1.0, strength: 12.0, max_radius: 24.0 }
     }
 }
 
@@ -41,26 +36,12 @@ pub fn radius_for(o: &DofOptions, parallax: f32) -> f32 {
 /// (after its effects and mask, before its own opacity and blend mode), so blend modes, group
 /// opacity and masks behave as in `render`; with `strength 0` the result equals `render`.
 pub fn render_dof(p: &Project, frame: f32, o: &DofOptions) -> Result<(u32, u32, Vec<u8>), String> {
-    if (o.scale.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        || !o.focus.is_finite()
-        || !matches!(
-            o.strength.partial_cmp(&0.0),
-            Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
-        )
-        || !matches!(
-            o.max_radius.partial_cmp(&0.0),
-            Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
-        )
-    {
+    if (o.scale.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !o.focus.is_finite() || !matches!(o.strength.partial_cmp(&0.0), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) || !matches!(o.max_radius.partial_cmp(&0.0), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) {
         return Err("invalid depth-of-field options".into());
     }
     let e = Engine::new(p.clone()).map_err(|v| v.join("; "))?;
     let f = e.evaluate(frame);
-    let ro = RasterOptions {
-        scale: o.scale,
-        show_bones: false,
-        transparent: false,
-    };
+    let ro = RasterOptions { scale: o.scale, show_bones: false, transparent: false };
     let mut blur = std::collections::HashMap::new();
     for &r in &f.roots {
         let rad = radius_for(o, e.link_root_parallax(r));
@@ -69,23 +50,13 @@ pub fn render_dof(p: &Project, frame: f32, o: &DofOptions) -> Result<(u32, u32, 
         }
     }
     let pm = crate::raster::pixmap_from_frame_blur(&e, &f, frame, &ro, Some(&blur));
-    Ok((
-        pm.width(),
-        pm.height(),
-        crate::raster::to_straight_rgba(&pm),
-    ))
+    Ok((pm.width(), pm.height(), crate::raster::to_straight_rgba(&pm)))
 }
 
 /// Options for frame `frame`: the camera's animated `focus` / `strength` (channels
 /// `camera_focus`, `camera_blur`) unless the caller pinned them (`fixed_*`); scale and max radius
 /// always come from `base`.
-pub fn options_at(
-    e: &Engine,
-    frame: f32,
-    base: &DofOptions,
-    fixed_focus: bool,
-    fixed_strength: bool,
-) -> DofOptions {
+pub fn options_at(e: &Engine, frame: f32, base: &DofOptions, fixed_focus: bool, fixed_strength: bool) -> DofOptions {
     let (f, s) = e.dof_at(frame);
     DofOptions {
         scale: base.scale,
@@ -104,11 +75,7 @@ pub fn render_dof_animated(
     fixed_strength: bool,
 ) -> Result<(u32, u32, Vec<u8>), String> {
     let e = Engine::new(p.clone()).map_err(|v| v.join("; "))?;
-    render_dof(
-        p,
-        frame,
-        &options_at(&e, frame, base, fixed_focus, fixed_strength),
-    )
+    render_dof(p, frame, &options_at(&e, frame, base, fixed_focus, fixed_strength))
 }
 
 /// Largest frame count a depth-of-field export accepts (every frame renders each layer alone).
@@ -126,10 +93,7 @@ pub fn dof_frames(
 ) -> Result<(u32, u32, Vec<Vec<u8>>), String> {
     let to = to.unwrap_or(p.frames.saturating_sub(1));
     if p.frames == 0 || to >= p.frames {
-        return Err(format!(
-            "--to {to} is outside the timeline (0..={})",
-            p.frames.saturating_sub(1)
-        ));
+        return Err(format!("--to {to} is outside the timeline (0..={})", p.frames.saturating_sub(1)));
     }
     if from > to {
         return Err(format!("--from {from} is after --to {to}"));
@@ -150,14 +114,7 @@ pub fn dof_frames(
 }
 
 /// Looping GIF of the depth-of-field frames (shared GIF encoder).
-pub fn dof_gif(
-    p: &Project,
-    from: u32,
-    to: Option<u32>,
-    base: &DofOptions,
-    ff: bool,
-    fs: bool,
-) -> Result<Vec<u8>, String> {
+pub fn dof_gif(p: &Project, from: u32, to: Option<u32>, base: &DofOptions, ff: bool, fs: bool) -> Result<Vec<u8>, String> {
     let (w, h, frames) = dof_frames(p, from, to, base, ff, fs)?;
     if w > u16::MAX as u32 || h > u16::MAX as u32 {
         return Err("image too large for GIF".into());
@@ -166,53 +123,30 @@ pub fn dof_gif(
 }
 
 /// Looping animated PNG of the depth-of-field frames (shared APNG encoder, keeps alpha).
-pub fn dof_apng(
-    p: &Project,
-    from: u32,
-    to: Option<u32>,
-    base: &DofOptions,
-    ff: bool,
-    fs: bool,
-) -> Result<Vec<u8>, String> {
+pub fn dof_apng(p: &Project, from: u32, to: Option<u32>, base: &DofOptions, ff: bool, fs: bool) -> Result<Vec<u8>, String> {
     let (w, h, frames) = dof_frames(p, from, to, base, ff, fs)?;
     crate::open_formats::apng_from_frames(w, h, &frames, p.fps)
 }
 
 /// One PNG per frame (alpha kept).
-pub fn dof_png_sequence(
-    p: &Project,
-    from: u32,
-    to: Option<u32>,
-    base: &DofOptions,
-    ff: bool,
-    fs: bool,
-) -> Result<Vec<Vec<u8>>, String> {
+pub fn dof_png_sequence(p: &Project, from: u32, to: Option<u32>, base: &DofOptions, ff: bool, fs: bool) -> Result<Vec<Vec<u8>>, String> {
     let (w, h, frames) = dof_frames(p, from, to, base, ff, fs)?;
-    frames
-        .iter()
-        .map(|f| crate::open_formats::encode_rgba_png(w, h, f))
-        .collect()
+    frames.iter().map(|f| crate::open_formats::encode_rgba_png(w, h, f)).collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::path::VPath;
-    use crate::project::Layer;
     use crate::raster::render_rgba;
+    use crate::project::Layer;
 
     fn proj() -> Project {
         let mut p = Project::new("d", 40.0, 20.0, 24.0, 1);
         p.background = None;
-        let mut far = Layer::vector(
-            "far",
-            vec![VPath::rect("r", 0.0, 0.0, 20.0, 20.0).with_fill("#00ff00")],
-        );
+        let mut far = Layer::vector("far", vec![VPath::rect("r", 0.0, 0.0, 20.0, 20.0).with_fill("#00ff00")]);
         far.parallax = 0.0;
-        let near = Layer::vector(
-            "near",
-            vec![VPath::rect("r", 20.0, 0.0, 20.0, 20.0).with_fill("#ff0000")],
-        );
+        let near = Layer::vector("near", vec![VPath::rect("r", 20.0, 0.0, 20.0, 20.0).with_fill("#ff0000")]);
         p.layers = vec![far, near];
         p
     }
@@ -222,38 +156,18 @@ mod tests {
         let o = DofOptions::default();
         assert_eq!(radius_for(&o, 1.0), 0.0);
         assert!(radius_for(&o, 0.0) > radius_for(&o, 0.5));
-        assert_eq!(
-            radius_for(
-                &DofOptions {
-                    max_radius: 3.0,
-                    ..Default::default()
-                },
-                0.0
-            ),
-            3.0
-        );
+        assert_eq!(radius_for(&DofOptions { max_radius: 3.0, ..Default::default() }, 0.0), 3.0);
     }
 
     #[test]
     fn out_of_focus_layer_is_soft_and_focused_one_is_sharp() {
         let p = proj();
         let alpha = |b: &[u8], x: usize| b[(10 * 40 + x) * 4 + 3];
-        let (_, _, sharp) = render_dof(
-            &p,
-            0.0,
-            &DofOptions {
-                strength: 0.0,
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        let (_, _, sharp) = render_dof(&p, 0.0, &DofOptions { strength: 0.0, ..Default::default() }).unwrap();
         let (_, _, soft) = render_dof(&p, 0.0, &DofOptions::default()).unwrap();
         assert_eq!(alpha(&sharp, 19), 255);
         // the far (green) layer's outer-left border fades when it is out of focus
-        assert!(
-            alpha(&soft, 0) < 255 && alpha(&sharp, 0) == 255,
-            "far layer edge fades"
-        );
+        assert!(alpha(&soft, 0) < 255 && alpha(&sharp, 0) == 255, "far layer edge fades");
         assert_eq!(alpha(&soft, 21), 255, "focused layer unchanged");
         assert_eq!(soft[(10 * 40 + 30) * 4], 255, "red stays red");
     }
@@ -270,8 +184,7 @@ mod tests {
     fn rack_focus() -> Project {
         let mut p = proj();
         p.frames = 5;
-        p.channels
-            .push(key_channel(Prop::CameraFocus, &[(0.0, 1.0), (4.0, 0.0)]));
+        p.channels.push(key_channel(Prop::CameraFocus, &[(0.0, 1.0), (4.0, 0.0)]));
         p
     }
 
@@ -298,10 +211,7 @@ mod tests {
     #[test]
     fn pinned_focus_ignores_the_animation() {
         let p = rack_focus();
-        let pinned = DofOptions {
-            focus: 1.0,
-            ..Default::default()
-        };
+        let pinned = DofOptions { focus: 1.0, ..Default::default() };
         let (_, _, f4) = render_dof_animated(&p, 4.0, &pinned, true, false).unwrap();
         assert!(alpha(&f4, 0) < 255 && alpha(&f4, 39) == 255);
     }
@@ -309,8 +219,7 @@ mod tests {
     #[test]
     fn animated_blur_strength() {
         let mut p = proj();
-        p.channels
-            .push(key_channel(Prop::CameraBlur, &[(0.0, 0.0), (4.0, 12.0)]));
+        p.channels.push(key_channel(Prop::CameraBlur, &[(0.0, 0.0), (4.0, 12.0)]));
         let base = DofOptions::default();
         let e = Engine::new(p.clone()).unwrap();
         assert_eq!(options_at(&e, 0.0, &base, false, false).strength, 0.0);
@@ -336,20 +245,11 @@ mod tests {
         let d = png::Decoder::new(std::io::Cursor::new(&apng[..]));
         let r = d.read_info().unwrap();
         assert_eq!(r.info().animation_control().unwrap().num_frames, 5);
-        assert_eq!(
-            dof_png_sequence(&p, 2, Some(3), &base, false, false)
-                .unwrap()
-                .len(),
-            2
-        );
+        assert_eq!(dof_png_sequence(&p, 2, Some(3), &base, false, false).unwrap().len(), 2);
     }
 
     fn max_diff(a: &[u8], b: &[u8]) -> i32 {
-        a.iter()
-            .zip(b)
-            .map(|(x, y)| (*x as i32 - *y as i32).abs())
-            .max()
-            .unwrap_or(0)
+        a.iter().zip(b).map(|(x, y)| (*x as i32 - *y as i32).abs()).max().unwrap_or(0)
     }
 
     #[test]
@@ -358,15 +258,7 @@ mod tests {
         let e = Engine::new(p.clone()).unwrap();
         for f in [0.0, 7.0] {
             let (w, h, want) = render_rgba(&e, f, &RasterOptions::default());
-            let (dw, dh, got) = render_dof(
-                &p,
-                f,
-                &DofOptions {
-                    strength: 0.0,
-                    ..Default::default()
-                },
-            )
-            .unwrap();
+            let (dw, dh, got) = render_dof(&p, f, &DofOptions { strength: 0.0, ..Default::default() }).unwrap();
             assert_eq!((w, h), (dw, dh));
             assert!(max_diff(&want, &got) <= 1, "frame {f}");
         }
@@ -377,47 +269,21 @@ mod tests {
         use crate::style::Blend;
         let mut p = Project::new("b", 40.0, 20.0, 24.0, 1);
         p.background = Some(crate::style::Rgba::parse("#808080").unwrap());
-        let mut a = Layer::vector(
-            "a",
-            vec![VPath::rect("r", 0.0, 0.0, 30.0, 20.0).with_fill("#ff8000")],
-        );
+        let mut a = Layer::vector("a", vec![VPath::rect("r", 0.0, 0.0, 30.0, 20.0).with_fill("#ff8000")]);
         a.blend = Blend::Screen;
-        let mut b = Layer::vector(
-            "b",
-            vec![VPath::rect("r", 10.0, 0.0, 30.0, 20.0).with_fill("#4080ff")],
-        );
+        let mut b = Layer::vector("b", vec![VPath::rect("r", 10.0, 0.0, 30.0, 20.0).with_fill("#4080ff")]);
         b.blend = Blend::Multiply;
         b.parallax = 0.0;
-        let mut c = Layer::vector(
-            "c",
-            vec![VPath::rect("r", 5.0, 5.0, 10.0, 10.0).with_fill("#ffffff")],
-        );
+        let mut c = Layer::vector("c", vec![VPath::rect("r", 5.0, 5.0, 10.0, 10.0).with_fill("#ffffff")]);
         c.opacity = 0.5;
         p.layers = vec![a, b, c];
         let e = Engine::new(p.clone()).unwrap();
         let (_, _, want) = render_rgba(&e, 0.0, &RasterOptions::default());
-        let (_, _, got) = render_dof(
-            &p,
-            0.0,
-            &DofOptions {
-                strength: 0.0,
-                ..Default::default()
-            },
-        )
-        .unwrap();
-        assert!(
-            max_diff(&want, &got) <= 1,
-            "strength 0 must equal render with screen + multiply + opacity"
-        );
+        let (_, _, got) = render_dof(&p, 0.0, &DofOptions { strength: 0.0, ..Default::default() }).unwrap();
+        assert!(max_diff(&want, &got) <= 1, "strength 0 must equal render with screen + multiply + opacity");
         // with blur the multiply layer is still multiplied (not normal-composited): deep inside it stays the product colour
         let (_, _, soft) = render_dof(&p, 0.0, &DofOptions::default()).unwrap();
-        let px = |b: &[u8], x: usize, y: usize| {
-            [
-                b[(y * 40 + x) * 4],
-                b[(y * 40 + x) * 4 + 1],
-                b[(y * 40 + x) * 4 + 2],
-            ]
-        };
+        let px = |b: &[u8], x: usize, y: usize| [b[(y * 40 + x) * 4], b[(y * 40 + x) * 4 + 1], b[(y * 40 + x) * 4 + 2]];
         let a_only = px(&want, 35, 10); // multiply layer over background only
         let blurred = px(&soft, 35, 10);
         assert_eq!(a_only[2], 128);
@@ -429,12 +295,8 @@ mod tests {
     fn export_validation_errors() {
         let p = rack_focus();
         let b = DofOptions::default();
-        assert!(dof_frames(&p, 3, Some(1), &b, false, false)
-            .unwrap_err()
-            .contains("after"));
-        assert!(dof_frames(&p, 0, Some(9), &b, false, false)
-            .unwrap_err()
-            .contains("outside"));
+        assert!(dof_frames(&p, 3, Some(1), &b, false, false).unwrap_err().contains("after"));
+        assert!(dof_frames(&p, 0, Some(9), &b, false, false).unwrap_err().contains("outside"));
         let mut bad = p.clone();
         bad.camera.focus = f32::NAN;
         assert!(Engine::new(bad).is_err());
@@ -445,14 +307,6 @@ mod tests {
 
     #[test]
     fn rejects_bad_options() {
-        assert!(render_dof(
-            &proj(),
-            0.0,
-            &DofOptions {
-                scale: 0.0,
-                ..Default::default()
-            }
-        )
-        .is_err());
+        assert!(render_dof(&proj(), 0.0, &DofOptions { scale: 0.0, ..Default::default() }).is_err());
     }
 }

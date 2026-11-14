@@ -89,30 +89,13 @@ pub fn contours(alpha: &[u8], w: usize, h: usize, threshold: u8) -> Vec<Vec<Vec2
     let point = |k: Key| -> Vec2 {
         let (i, j, o) = k;
         let (a, b, pa, pb) = if o == 0 {
-            (
-                val(i, j),
-                val(i + 1, j),
-                (i as f32, j as f32),
-                (i as f32 + 1.0, j as f32),
-            )
+            (val(i, j), val(i + 1, j), (i as f32, j as f32), (i as f32 + 1.0, j as f32))
         } else {
-            (
-                val(i, j),
-                val(i, j + 1),
-                (i as f32, j as f32),
-                (i as f32, j as f32 + 1.0),
-            )
+            (val(i, j), val(i, j + 1), (i as f32, j as f32), (i as f32, j as f32 + 1.0))
         };
-        let t = if (b - a).abs() < 1e-6 {
-            0.5
-        } else {
-            ((thr - a) / (b - a)).clamp(0.0, 1.0)
-        };
+        let t = if (b - a).abs() < 1e-6 { 0.5 } else { ((thr - a) / (b - a)).clamp(0.0, 1.0) };
         // grid node (i, j) is pixel (i-1, j-1) centre → pixel-space (i - 0.5, j - 0.5)
-        Vec2::new(
-            pa.0 + (pb.0 - pa.0) * t - 0.5,
-            pa.1 + (pb.1 - pa.1) * t - 0.5,
-        )
+        Vec2::new(pa.0 + (pb.0 - pa.0) * t - 0.5, pa.1 + (pb.1 - pa.1) * t - 0.5)
     };
     let mut keys: Vec<Key> = adj.keys().copied().collect();
     keys.sort();
@@ -127,16 +110,9 @@ pub fn contours(alpha: &[u8], w: usize, h: usize, threshold: u8) -> Vec<Vec<Vec2
         loop {
             seen.insert(cur, true);
             poly.push(point(cur));
-            let next = adj[&cur]
-                .iter()
-                .copied()
-                .find(|n| Some(*n) != prev && !seen.contains_key(n))
-                .or_else(|| {
-                    adj[&cur]
-                        .iter()
-                        .copied()
-                        .find(|n| *n == start && prev != Some(*n))
-                });
+            let next = adj[&cur].iter().copied().find(|n| Some(*n) != prev && !seen.contains_key(n)).or_else(|| {
+                adj[&cur].iter().copied().find(|n| *n == start && prev != Some(*n))
+            });
             match next {
                 Some(n) if n != start => {
                     prev = Some(cur);
@@ -201,9 +177,7 @@ pub fn simplify_closed(pts: &[Vec2], tol: f32) -> Vec<Vec2> {
         return pts.to_vec();
     }
     let a = 0;
-    let b = (0..pts.len())
-        .max_by(|&x, &y| pts[a].distance(pts[x]).total_cmp(&pts[a].distance(pts[y])))
-        .unwrap_or(0);
+    let b = (0..pts.len()).max_by(|&x, &y| pts[a].distance(pts[x]).total_cmp(&pts[a].distance(pts[y]))).unwrap_or(0);
     let (lo, hi) = (a.min(b), a.max(b));
     let first: Vec<Vec2> = pts[lo..=hi].to_vec();
     let mut second: Vec<Vec2> = pts[hi..].to_vec();
@@ -220,14 +194,7 @@ pub fn simplify_closed(pts: &[Vec2], tol: f32) -> Vec<Vec2> {
 
 /// Trace an alpha mask into classified, simplified contours (largest first). Contours with
 /// less than `min_area` pixels² are dropped.
-pub fn trace_alpha(
-    alpha: &[u8],
-    w: usize,
-    h: usize,
-    threshold: u8,
-    tolerance: f32,
-    min_area: f32,
-) -> Vec<Contour> {
+pub fn trace_alpha(alpha: &[u8], w: usize, h: usize, threshold: u8, tolerance: f32, min_area: f32) -> Vec<Contour> {
     let mut polys: Vec<Vec<Vec2>> = contours(alpha, w, h, threshold)
         .into_iter()
         .map(|c| simplify_closed(&c, tolerance))
@@ -235,33 +202,13 @@ pub fn trace_alpha(
         .collect();
     polys.sort_by(|a, b| area(b).abs().total_cmp(&area(a).abs()));
     let depth: Vec<usize> = (0..polys.len())
-        .map(|i| {
-            (0..polys.len())
-                .filter(|&j| {
-                    j != i
-                        && area(&polys[j]).abs() > area(&polys[i]).abs()
-                        && point_in(polys[i][0], &polys[j])
-                })
-                .count()
-        })
+        .map(|i| (0..polys.len()).filter(|&j| j != i && area(&polys[j]).abs() > area(&polys[i]).abs() && point_in(polys[i][0], &polys[j])).count())
         .collect();
-    polys
-        .into_iter()
-        .zip(depth)
-        .map(|(pts, d)| Contour {
-            pts,
-            hole: d % 2 == 1,
-        })
-        .collect()
+    polys.into_iter().zip(depth).map(|(pts, d)| Contour { pts, hole: d % 2 == 1 }).collect()
 }
 
 /// Decode a PNG and trace its alpha.
-pub fn trace_png(
-    png: &[u8],
-    threshold: u8,
-    tolerance: f32,
-    min_area: f32,
-) -> Result<Vec<Contour>, String> {
+pub fn trace_png(png: &[u8], threshold: u8, tolerance: f32, min_area: f32) -> Result<Vec<Contour>, String> {
     let pm = crate::assets::decode_png_checked(png)?;
     let (w, h) = (pm.width() as usize, pm.height() as usize);
     let alpha: Vec<u8> = pm.data().chunks_exact(4).map(|p| p[3]).collect();
@@ -271,15 +218,10 @@ pub fn trace_png(
 /// Build a vector layer from traced contours: each outer contour (with its holes) becomes a
 /// Boolean-difference layer so holes render correctly with a plain fill.
 pub fn contours_to_layer(name: &str, contours: &[Contour], fill: &str, offset: Vec2) -> Layer {
-    let mv = |c: &Contour, n: String| {
-        VPath::polygon(&n, &c.pts.iter().map(|&p| p + offset).collect::<Vec<_>>())
-    };
+    let mv = |c: &Contour, n: String| VPath::polygon(&n, &c.pts.iter().map(|&p| p + offset).collect::<Vec<_>>());
     let mut children = Vec::new();
     for (i, c) in contours.iter().enumerate().filter(|(_, c)| !c.hole) {
-        let holes: Vec<&Contour> = contours
-            .iter()
-            .filter(|h| h.hole && point_in(h.pts[0], &c.pts))
-            .collect();
+        let holes: Vec<&Contour> = contours.iter().filter(|h| h.hole && point_in(h.pts[0], &c.pts)).collect();
         let mut paths = vec![mv(c, format!("outer{i}"))];
         for (k, h) in holes.iter().enumerate() {
             paths.push(mv(h, format!("hole{i}_{k}")));
@@ -343,12 +285,7 @@ mod tests {
         let a = disc(60, 60, 30.0, 30.0, 25.0, None);
         let fine = trace_alpha(&a, 60, 60, 128, 0.0, 4.0);
         let coarse = trace_alpha(&a, 60, 60, 128, 1.0, 4.0);
-        assert!(
-            coarse[0].pts.len() * 3 < fine[0].pts.len(),
-            "{} vs {}",
-            coarse[0].pts.len(),
-            fine[0].pts.len()
-        );
+        assert!(coarse[0].pts.len() * 3 < fine[0].pts.len(), "{} vs {}", coarse[0].pts.len(), fine[0].pts.len());
         let (af, ac) = (area(&fine[0].pts).abs(), area(&coarse[0].pts).abs());
         assert!((af - ac).abs() / af < 0.05);
     }
@@ -361,11 +298,7 @@ mod tests {
             a[i] = a[i].max(b[i]);
         }
         assert_eq!(trace_alpha(&a, 80, 40, 128, 0.3, 1.0).len(), 2);
-        assert_eq!(
-            trace_alpha(&a, 80, 40, 128, 0.3, 100.0).len(),
-            1,
-            "small blob dropped"
-        );
+        assert_eq!(trace_alpha(&a, 80, 40, 128, 0.3, 100.0).len(), 1, "small blob dropped");
         assert!(trace_alpha(&[], 0, 0, 128, 0.3, 1.0).is_empty());
         assert!(trace_alpha(&[0u8; 100], 10, 10, 128, 0.3, 1.0).is_empty());
     }

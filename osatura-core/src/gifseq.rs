@@ -24,11 +24,7 @@ pub struct Limits {
 
 impl Default for Limits {
     fn default() -> Limits {
-        Limits {
-            max_frames: 4096,
-            max_frame_pixels: 16 * 1024 * 1024,
-            max_total_pixels: 128 * 1024 * 1024,
-        }
+        Limits { max_frames: 4096, max_frame_pixels: 16 * 1024 * 1024, max_total_pixels: 128 * 1024 * 1024 }
     }
 }
 
@@ -55,11 +51,7 @@ struct Reader<'a> {
 
 impl<'a> Reader<'a> {
     fn take(&mut self, n: usize) -> Result<&'a [u8], String> {
-        let end = self
-            .at
-            .checked_add(n)
-            .filter(|e| *e <= self.d.len())
-            .ok_or("truncated data")?;
+        let end = self.at.checked_add(n).filter(|e| *e <= self.d.len()).ok_or("truncated data")?;
         let s = &self.d[self.at..end];
         self.at = end;
         Ok(s)
@@ -137,12 +129,7 @@ fn lzw_decode(data: &[u8], min_bits: u8, want: usize) -> Result<Vec<u8>, String>
                     nbits += 8;
                     pos += 1;
                 }
-                None => {
-                    return Err(
-                        "truncated data (LZW stream ended before the end-of-information code)"
-                            .into(),
-                    )
-                }
+                None => return Err("truncated data (LZW stream ended before the end-of-information code)".into()),
             }
         }
         let code = (acc & ((1 << size) - 1)) as u16;
@@ -166,16 +153,10 @@ fn lzw_decode(data: &[u8], min_bits: u8, want: usize) -> Result<Vec<u8>, String>
             }
             Some(p) => {
                 if code > next || (code == next && next >= 4096) {
-                    return Err(format!(
-                        "invalid LZW code {code} (first free entry is {next})"
-                    ));
+                    return Err(format!("invalid LZW code {code} (first free entry is {next})"));
                 }
                 // string of `code` (or, for the not-yet-defined code, string of prev + its first byte)
-                let (start, extra) = if code < next {
-                    (code, None)
-                } else {
-                    (p, Some(first[p as usize]))
-                };
+                let (start, extra) = if code < next { (code, None) } else { (p, Some(first[p as usize])) };
                 stack.clear();
                 let mut c = start;
                 loop {
@@ -229,9 +210,7 @@ fn deinterlace(rows_stored: &[u8], w: usize, h: usize) -> Vec<u8> {
 /// Decodes a GIF file. Any error returns no frames.
 pub fn decode(bytes: &[u8], limits: &Limits) -> Result<Sequence, String> {
     let mut r = Reader { d: bytes, at: 0 };
-    let sig = r
-        .take(6)
-        .map_err(|_| "not a GIF file (too short)".to_string())?;
+    let sig = r.take(6).map_err(|_| "not a GIF file (too short)".to_string())?;
     if sig != b"GIF87a" && sig != b"GIF89a" {
         return Err("not a GIF file (signature must be GIF87a or GIF89a)".into());
     }
@@ -244,16 +223,9 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<Sequence, String> {
     }
     let canvas_px = u64::from(sw) * u64::from(sh);
     if canvas_px > limits.max_frame_pixels {
-        return Err(format!(
-            "the logical screen ({sw}x{sh}) exceeds the limit of {} pixels",
-            limits.max_frame_pixels
-        ));
+        return Err(format!("the logical screen ({sw}x{sh}) exceeds the limit of {} pixels", limits.max_frame_pixels));
     }
-    let global = if packed & 0x80 != 0 {
-        Some(read_table(&mut r, packed)?)
-    } else {
-        None
-    };
+    let global = if packed & 0x80 != 0 { Some(read_table(&mut r, packed)?) } else { None };
     let (w, h) = (sw as usize, sh as usize);
     let mut canvas = vec![0u8; w * h * 4];
     let mut frames: Vec<Frame> = Vec::new();
@@ -271,16 +243,10 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<Sequence, String> {
                 if label == 0xF9 {
                     let n = r.u8()?;
                     if n != 4 {
-                        return Err(format!(
-                            "graphic control extension has block size {n}, expected 4"
-                        ));
+                        return Err(format!("graphic control extension has block size {n}, expected 4"));
                     }
                     let b = r.take(4)?;
-                    pending = Control {
-                        disposal: (b[0] >> 2) & 7,
-                        transparent: if b[0] & 1 != 0 { Some(b[3]) } else { None },
-                        delay_cs: u16::from_le_bytes([b[1], b[2]]),
-                    };
+                    pending = Control { disposal: (b[0] >> 2) & 7, transparent: if b[0] & 1 != 0 { Some(b[3]) } else { None }, delay_cs: u16::from_le_bytes([b[1], b[2]]) };
                     if r.u8()? != 0 {
                         return Err("graphic control extension is not terminated".into());
                     }
@@ -302,43 +268,21 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<Sequence, String> {
                     return Err(format!("more than {} frames", limits.max_frames));
                 }
                 if (frames.len() as u64 + 1) * canvas_px > limits.max_total_pixels {
-                    return Err(format!(
-                        "the decoded frames would exceed {} pixels in total",
-                        limits.max_total_pixels
-                    ));
+                    return Err(format!("the decoded frames would exceed {} pixels in total", limits.max_total_pixels));
                 }
-                let local = if ipacked & 0x80 != 0 {
-                    Some(read_table(&mut r, ipacked)?)
-                } else {
-                    None
-                };
-                let table = local
-                    .as_ref()
-                    .or(global.as_ref())
-                    .ok_or("no colour table (neither global nor local)")?;
+                let local = if ipacked & 0x80 != 0 { Some(read_table(&mut r, ipacked)?) } else { None };
+                let table = local.as_ref().or(global.as_ref()).ok_or("no colour table (neither global nor local)")?;
                 let min_bits = r.u8()?;
                 let data = r.sub_blocks()?;
                 let idx = lzw_decode(&data, min_bits, iw * ih)?;
                 if idx.len() < iw * ih {
-                    return Err(format!(
-                        "the image holds {} pixel indices, {} expected",
-                        idx.len(),
-                        iw * ih
-                    ));
+                    return Err(format!("the image holds {} pixel indices, {} expected", idx.len(), iw * ih));
                 }
-                let idx = if ipacked & 0x40 != 0 {
-                    deinterlace(&idx, iw, ih)
-                } else {
-                    idx
-                };
+                let idx = if ipacked & 0x40 != 0 { deinterlace(&idx, iw, ih) } else { idx };
                 if idx.iter().any(|&i| usize::from(i) >= table.len()) {
                     return Err("a colour index is beyond the colour table".into());
                 }
-                let before = if pending.disposal == 3 {
-                    Some(canvas.clone())
-                } else {
-                    None
-                };
+                let before = if pending.disposal == 3 { Some(canvas.clone()) } else { None };
                 for y in 0..ih {
                     let cy = top + y;
                     if cy >= h {
@@ -358,10 +302,7 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<Sequence, String> {
                         canvas[o..o + 4].copy_from_slice(&[c[0], c[1], c[2], 255]);
                     }
                 }
-                frames.push(Frame {
-                    rgba: canvas.clone(),
-                    duration_ms: u32::from(pending.delay_cs) * 10,
-                });
+                frames.push(Frame { rgba: canvas.clone(), duration_ms: u32::from(pending.delay_cs) * 10 });
                 // disposal happens after display, before the next image
                 let region = |f: &mut dyn FnMut(usize)| {
                     for y in top..(top + ih).min(h) {
@@ -386,12 +327,7 @@ pub fn decode(bytes: &[u8], limits: &Limits) -> Result<Sequence, String> {
         }
         warnings.push("the file has no 0x3B trailer".to_string());
     }
-    Ok(Sequence {
-        width: sw,
-        height: sh,
-        frames,
-        warnings,
-    })
+    Ok(Sequence { width: sw, height: sh, frames, warnings })
 }
 
 #[cfg(test)]
@@ -400,14 +336,10 @@ mod tests {
 
     fn hex(s: &str) -> Vec<u8> {
         let s: String = s.split_whitespace().collect();
-        (0..s.len())
-            .step_by(2)
-            .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
-            .collect()
+        (0..s.len()).step_by(2).map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap()).collect()
     }
 
-    const VEC1: &str =
-        "474946383961 0100 0100 90 00 00 000000 ffffff 2c 0000 0000 0100 0100 00 02 02 4c01 00 3b";
+    const VEC1: &str = "474946383961 0100 0100 90 00 00 000000 ffffff 2c 0000 0000 0100 0100 00 02 02 4c01 00 3b";
 
     /// Test encoder: textbook LZW with growing code widths and a Clear when the table is full.
     fn lzw_encode(indices: &[u8], min_bits: u8) -> Vec<u8> {
@@ -502,12 +434,7 @@ mod tests {
     }
 
     fn px(f: &Frame, i: usize) -> [u8; 4] {
-        [
-            f.rgba[i * 4],
-            f.rgba[i * 4 + 1],
-            f.rgba[i * 4 + 2],
-            f.rgba[i * 4 + 3],
-        ]
+        [f.rgba[i * 4], f.rgba[i * 4 + 1], f.rgba[i * 4 + 2], f.rgba[i * 4 + 3]]
     }
 
     #[test]
@@ -530,20 +457,11 @@ mod tests {
 
     #[test]
     fn interlaced_rows_are_put_back_in_order() {
-        let g = build(
-            1,
-            8,
-            &[(None, 0, 0, 1, 8, true, vec![0, 1, 2, 3, 0, 1, 2, 3])],
-        );
+        let g = build(1, 8, &[(None, 0, 0, 1, 8, true, vec![0, 1, 2, 3, 0, 1, 2, 3])]);
         // stored row k has index k only for k < 4 in this palette; use distinct colours through a longer check below
         let s = decode(&g, &Limits::default()).unwrap();
         let col: Vec<[u8; 4]> = (0..8).map(|i| px(&s.frames[0], i)).collect();
-        let pal = [
-            [255, 0, 0, 255],
-            [0, 255, 0, 255],
-            [0, 0, 255, 255],
-            [255, 255, 255, 255],
-        ];
+        let pal = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 255, 255]];
         // stored order -> output rows 0,4,2,6,1,3,5,7
         let stored = [0usize, 1, 2, 3, 0, 1, 2, 3];
         let rows = [0usize, 4, 2, 6, 1, 3, 5, 7];
@@ -558,47 +476,16 @@ mod tests {
     fn disposal_methods() {
         let red = vec![0u8, 0];
         let blue = vec![2u8];
-        let mk = |dispose: u8| {
-            build(
-                2,
-                1,
-                &[
-                    (
-                        Some([dispose << 2, 5, 0, 0]),
-                        0,
-                        0,
-                        2,
-                        1,
-                        false,
-                        red.clone(),
-                    ),
-                    (Some([0, 5, 0, 0]), 1, 0, 1, 1, false, blue.clone()),
-                ],
-            )
-        };
+        let mk = |dispose: u8| build(2, 1, &[(Some([dispose << 2, 5, 0, 0]), 0, 0, 2, 1, false, red.clone()), (Some([0, 5, 0, 0]), 1, 0, 1, 1, false, blue.clone())]);
         let s = decode(&mk(1), &Limits::default()).unwrap();
         assert_eq!(s.frames.len(), 2);
-        assert_eq!(
-            (px(&s.frames[1], 0), px(&s.frames[1], 1)),
-            ([255, 0, 0, 255], [0, 0, 255, 255])
-        );
+        assert_eq!((px(&s.frames[1], 0), px(&s.frames[1], 1)), ([255, 0, 0, 255], [0, 0, 255, 255]));
         let s = decode(&mk(3), &Limits::default()).unwrap();
-        assert_eq!(
-            (px(&s.frames[1], 0), px(&s.frames[1], 1)),
-            ([0, 0, 0, 0], [0, 0, 255, 255])
-        );
+        assert_eq!((px(&s.frames[1], 0), px(&s.frames[1], 1)), ([0, 0, 0, 0], [0, 0, 255, 255]));
         let s = decode(&mk(2), &Limits::default()).unwrap();
-        assert_eq!(
-            px(&s.frames[1], 0)[3],
-            0,
-            "method 2 clears to transparent (project decision)"
-        );
+        assert_eq!(px(&s.frames[1], 0)[3], 0, "method 2 clears to transparent (project decision)");
         let s = decode(&mk(6), &Limits::default()).unwrap();
-        assert_eq!(
-            px(&s.frames[1], 0),
-            [255, 0, 0, 255],
-            "methods 4-7 act like 0"
-        );
+        assert_eq!(px(&s.frames[1], 0), [255, 0, 0, 255], "methods 4-7 act like 0");
         assert_eq!(s.frames[0].duration_ms, 50);
     }
 
@@ -606,9 +493,7 @@ mod tests {
     fn errors() {
         let mut v = hex(VEC1);
         v[3..6].copy_from_slice(b"90a");
-        assert!(decode(&v, &Limits::default())
-            .unwrap_err()
-            .contains("signature"));
+        assert!(decode(&v, &Limits::default()).unwrap_err().contains("signature"));
         // second code 1 -> 7 (first free entry is 6): bits of 4c 01 are 100 001 | 101 ... codes 4,1,5 -> 4,7,5
         let mut v = hex(VEC1);
         let at = v.iter().position(|b| *b == 0x4c).unwrap();
@@ -624,10 +509,7 @@ mod tests {
         // too large a screen: no allocation
         let mut v = hex(VEC1);
         v[6..10].copy_from_slice(&[0xff, 0xff, 0xff, 0xff]);
-        let lim = Limits {
-            max_frame_pixels: 16 * 1024 * 1024,
-            ..Limits::default()
-        };
+        let lim = Limits { max_frame_pixels: 16 * 1024 * 1024, ..Limits::default() };
         assert!(decode(&v, &lim).unwrap_err().contains("exceeds the limit"));
         // zero dimension, bad block, no table
         let mut v = hex(VEC1);
@@ -639,51 +521,22 @@ mod tests {
         assert!(decode(&v[..13], &Limits::default()).is_err());
         let mut v = hex(VEC1);
         v[19] = 0x55;
-        assert!(decode(&v, &Limits::default())
-            .unwrap_err()
-            .contains("unknown block"));
+        assert!(decode(&v, &Limits::default()).unwrap_err().contains("unknown block"));
         assert!(decode(&[], &Limits::default()).is_err());
     }
 
     #[test]
     fn caps_on_frames_and_total_pixels() {
         let one = vec![0u8];
-        let g = build(
-            1,
-            1,
-            &[
-                (None, 0, 0, 1, 1, false, one.clone()),
-                (None, 0, 0, 1, 1, false, one.clone()),
-                (None, 0, 0, 1, 1, false, one),
-            ],
-        );
+        let g = build(1, 1, &[(None, 0, 0, 1, 1, false, one.clone()), (None, 0, 0, 1, 1, false, one.clone()), (None, 0, 0, 1, 1, false, one)]);
         assert_eq!(decode(&g, &Limits::default()).unwrap().frames.len(), 3);
-        assert!(decode(
-            &g,
-            &Limits {
-                max_frames: 2,
-                ..Limits::default()
-            }
-        )
-        .is_err());
-        assert!(decode(
-            &g,
-            &Limits {
-                max_total_pixels: 2,
-                ..Limits::default()
-            }
-        )
-        .is_err());
+        assert!(decode(&g, &Limits { max_frames: 2, ..Limits::default() }).is_err());
+        assert!(decode(&g, &Limits { max_total_pixels: 2, ..Limits::default() }).is_err());
     }
 
     #[test]
     fn long_images_exercise_code_growth_repeats_and_table_reset() {
-        let pal = [
-            [255, 0, 0, 255],
-            [0, 255, 0, 255],
-            [0, 0, 255, 255],
-            [255, 255, 255, 255],
-        ];
+        let pal = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255], [255, 255, 255, 255]];
         let check = |w: u16, h: u16, idx: Vec<u8>| {
             let g = build(w, h, &[(None, 0, 0, w, h, false, idx.clone())]);
             let s = decode(&g, &Limits::default()).unwrap();
@@ -703,11 +556,7 @@ mod tests {
             .collect();
         check(200, 150, idx);
         let enc = lzw_encode(&vec![1u8; 2000], 2);
-        assert!(
-            enc.len() < 200,
-            "the test encoder really compresses ({} bytes)",
-            enc.len()
-        );
+        assert!(enc.len() < 200, "the test encoder really compresses ({} bytes)", enc.len());
     }
 
     #[test]
@@ -722,30 +571,9 @@ mod tests {
         let files = [
             build(60, 30, &[(None, 0, 0, 60, 30, false, idx.clone())]),
             build(60, 30, &[(None, 0, 0, 60, 30, true, idx.clone())]),
-            build(
-                2,
-                1,
-                &[
-                    (Some([4, 5, 0, 0]), 0, 0, 2, 1, false, vec![0, 0]),
-                    (Some([0, 7, 0, 0]), 1, 0, 1, 1, false, vec![2]),
-                ],
-            ),
-            build(
-                2,
-                1,
-                &[
-                    (Some([12, 5, 0, 0]), 0, 0, 2, 1, false, vec![0, 1]),
-                    (Some([0, 7, 0, 0]), 1, 0, 1, 1, false, vec![2]),
-                ],
-            ),
-            build(
-                4,
-                4,
-                &[
-                    (Some([9, 3, 0, 1]), 1, 1, 2, 2, false, vec![0, 1, 2, 3]),
-                    (None, 0, 0, 4, 4, false, vec![1; 16]),
-                ],
-            ),
+            build(2, 1, &[(Some([4, 5, 0, 0]), 0, 0, 2, 1, false, vec![0, 0]), (Some([0, 7, 0, 0]), 1, 0, 1, 1, false, vec![2])]),
+            build(2, 1, &[(Some([12, 5, 0, 0]), 0, 0, 2, 1, false, vec![0, 1]), (Some([0, 7, 0, 0]), 1, 0, 1, 1, false, vec![2])]),
+            build(4, 4, &[(Some([9, 3, 0, 1]), 1, 1, 2, 2, false, vec![0, 1, 2, 3]), (None, 0, 0, 4, 4, false, vec![1; 16])]),
         ];
         for (n, g) in files.iter().enumerate() {
             let mine = decode(g, &Limits::default()).unwrap();
@@ -766,13 +594,8 @@ mod tests {
         assert_eq!(s.frames.len(), 1);
         // more indices than width x height: the surplus is ignored; fewer: error
         let more = build(1, 1, &[(None, 0, 0, 1, 1, false, vec![2, 1, 0])]);
-        assert_eq!(
-            px(&decode(&more, &Limits::default()).unwrap().frames[0], 0),
-            [0, 0, 255, 255]
-        );
+        assert_eq!(px(&decode(&more, &Limits::default()).unwrap().frames[0], 0), [0, 0, 255, 255]);
         let fewer = build(2, 1, &[(None, 0, 0, 2, 1, false, vec![2])]);
-        assert!(decode(&fewer, &Limits::default())
-            .unwrap_err()
-            .contains("expected"));
+        assert!(decode(&fewer, &Limits::default()).unwrap_err().contains("expected"));
     }
 }

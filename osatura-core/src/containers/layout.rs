@@ -109,14 +109,7 @@ pub enum RectRule {
 impl Default for RectRule {
     /// The whole canvas.
     fn default() -> Self {
-        RectRule::Pin {
-            left: None,
-            top: None,
-            right: None,
-            bottom: None,
-            width: None,
-            height: None,
-        }
+        RectRule::Pin { left: None, top: None, right: None, bottom: None, width: None, height: None }
     }
 }
 
@@ -191,23 +184,13 @@ impl Member {
         }
     }
     pub fn layer(path: &str) -> Member {
-        Member {
-            layer: Some(path.into()),
-            ..Member::blank()
-        }
+        Member { layer: Some(path.into()), ..Member::blank() }
     }
     pub fn nested(id: &str) -> Member {
-        Member {
-            container: Some(id.into()),
-            ..Member::blank()
-        }
+        Member { container: Some(id.into()), ..Member::blank() }
     }
     pub fn spacer(grow: f32) -> Member {
-        Member {
-            spacer: true,
-            grow,
-            ..Member::blank()
-        }
+        Member { spacer: true, grow, ..Member::blank() }
     }
     pub(super) fn label(&self) -> String {
         match (&self.layer, &self.container) {
@@ -217,18 +200,10 @@ impl Member {
         }
     }
     pub(super) fn fixed(&self, axis: usize) -> Option<f32> {
-        if axis == 0 {
-            self.width
-        } else {
-            self.height
-        }
+        if axis == 0 { self.width } else { self.height }
     }
     pub(super) fn limits(&self, axis: usize) -> (f32, f32) {
-        let (lo, hi) = if axis == 0 {
-            (self.min_w, self.max_w)
-        } else {
-            (self.min_h, self.max_h)
-        };
+        let (lo, hi) = if axis == 0 { (self.min_w, self.max_w) } else { (self.min_h, self.max_h) };
         (lo.unwrap_or(0.0), hi.unwrap_or(f32::INFINITY))
     }
     pub(super) fn clamp(&self, axis: usize, v: f32) -> f32 {

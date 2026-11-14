@@ -56,22 +56,8 @@ pub(super) fn check_rule(r: &RectRule, who: &str, errs: &mut Vec<String>) {
                 errs.push(format!("{who}: fixed rect needs w > 0 and h > 0"));
             }
         }
-        RectRule::Pin {
-            left,
-            top,
-            right,
-            bottom,
-            width,
-            height,
-        } => {
-            for (n, v) in [
-                ("left", left),
-                ("top", top),
-                ("right", right),
-                ("bottom", bottom),
-                ("width", width),
-                ("height", height),
-            ] {
+        RectRule::Pin { left, top, right, bottom, width, height } => {
+            for (n, v) in [("left", left), ("top", top), ("right", right), ("bottom", bottom), ("width", width), ("height", height)] {
                 if let Some(v) = v {
                     if !finite(*v) {
                         errs.push(format!("{who}: {n} must be finite"));
@@ -81,31 +67,20 @@ pub(super) fn check_rule(r: &RectRule, who: &str, errs: &mut Vec<String>) {
                 }
             }
             if left.is_some() && right.is_some() && width.is_some() {
-                errs.push(format!(
-                    "{who}: left, right and width are all set (over-constrained)"
-                ));
+                errs.push(format!("{who}: left, right and width are all set (over-constrained)"));
             }
             if top.is_some() && bottom.is_some() && height.is_some() {
-                errs.push(format!(
-                    "{who}: top, bottom and height are all set (over-constrained)"
-                ));
+                errs.push(format!("{who}: top, bottom and height are all set (over-constrained)"));
             }
         }
-        RectRule::Aspect {
-            ratio,
-            margin,
-            ax,
-            ay,
-            ..
-        } => {
+        RectRule::Aspect { ratio, margin, ax, ay, .. } => {
             if !(finite(*ratio) && *ratio > 0.0) {
                 errs.push(format!("{who}: aspect ratio must be a finite number > 0"));
             }
             if !(finite(*margin) && *margin >= 0.0) {
                 errs.push(format!("{who}: margin must be >= 0"));
             }
-            if !(finite(*ax) && finite(*ay) && (0.0..=1.0).contains(ax) && (0.0..=1.0).contains(ay))
-            {
+            if !(finite(*ax) && finite(*ay) && (0.0..=1.0).contains(ax) && (0.0..=1.0).contains(ay)) {
                 errs.push(format!("{who}: ax and ay must be within 0..1"));
             }
         }
@@ -160,16 +135,12 @@ pub fn validate(p: &Project) -> Vec<String> {
         for m in &c.members {
             let kinds = m.layer.is_some() as u8 + m.container.is_some() as u8 + m.spacer as u8;
             if kinds != 1 {
-                errs.push(format!(
-                    "{who}: a member needs exactly one of layer, container, spacer"
-                ));
+                errs.push(format!("{who}: a member needs exactly one of layer, container, spacer"));
                 continue;
             }
             let ml = m.label();
             if !(finite(m.grow) && m.grow >= 0.0) || !(finite(m.shrink) && m.shrink >= 0.0) {
-                errs.push(format!(
-                    "{who}: {ml}: grow and shrink must be finite numbers >= 0"
-                ));
+                errs.push(format!("{who}: {ml}: grow and shrink must be finite numbers >= 0"));
             }
             for (n, v) in [("width", m.width), ("height", m.height)] {
                 if let Some(v) = v {
@@ -180,9 +151,7 @@ pub fn validate(p: &Project) -> Vec<String> {
             }
             if let Some(b) = m.baseline {
                 if !(finite(b) && b >= 0.0) {
-                    errs.push(format!(
-                        "{who}: {ml}: baseline must be a finite number >= 0"
-                    ));
+                    errs.push(format!("{who}: {ml}: baseline must be a finite number >= 0"));
                 }
                 if m.spacer {
                     errs.push(format!("{who}: {ml}: a spacer has no baseline"));
@@ -211,10 +180,7 @@ pub fn validate(p: &Project) -> Vec<String> {
                     None => errs.push(format!("{who}: unknown layer '{path}'")),
                     Some(l) => {
                         if let Some(prev) = layer_owner.insert(path.as_str(), c.id.as_str()) {
-                            errs.push(format!(
-                                "layer '{path}' is a member of both container '{prev}' and '{}'",
-                                c.id
-                            ));
+                            errs.push(format!("layer '{path}' is a member of both container '{prev}' and '{}'", c.id));
                         }
                         let measurable = layer_bounds(l).is_some();
                         if !measurable && (m.width.is_none() || m.height.is_none()) {
@@ -230,23 +196,14 @@ pub fn validate(p: &Project) -> Vec<String> {
                 if !ids.contains_key(id.as_str()) {
                     errs.push(format!("{who}: unknown container '{id}'"));
                 } else if let Some(prev) = cont_owner.insert(id.as_str(), c.id.as_str()) {
-                    errs.push(format!(
-                        "container '{id}' is nested in both '{prev}' and '{}'",
-                        c.id
-                    ));
+                    errs.push(format!("container '{id}' is nested in both '{prev}' and '{}'", c.id));
                 }
             }
         }
     }
     // Cycles in nesting (including self-nesting).
     let mut state: HashMap<&str, u8> = HashMap::new();
-    fn visit<'a>(
-        p: &'a Project,
-        ids: &HashMap<&str, usize>,
-        id: &'a str,
-        state: &mut HashMap<&'a str, u8>,
-        errs: &mut Vec<String>,
-    ) {
+    fn visit<'a>(p: &'a Project, ids: &HashMap<&str, usize>, id: &'a str, state: &mut HashMap<&'a str, u8>, errs: &mut Vec<String>) {
         match state.get(id) {
             Some(2) => return,
             Some(1) => {
@@ -293,16 +250,10 @@ pub fn validate(p: &Project) -> Vec<String> {
             errs.push(format!("{who}: unknown content container '{}'", s.content));
         } else {
             if cont_owner.contains_key(s.content.as_str()) {
-                errs.push(format!(
-                    "{who}: content container '{}' is nested in another container",
-                    s.content
-                ));
+                errs.push(format!("{who}: content container '{}' is nested in another container", s.content));
             }
             if let Some(prev) = contents.insert(s.content.as_str(), s.id.as_str()) {
-                errs.push(format!(
-                    "container '{}' is the content of both scroll '{prev}' and '{}'",
-                    s.content, s.id
-                ));
+                errs.push(format!("container '{}' is the content of both scroll '{prev}' and '{}'", s.content, s.id));
             }
         }
         if !s.offset.iter().all(|v| finite(*v)) {
@@ -312,16 +263,8 @@ pub fn validate(p: &Project) -> Vec<String> {
             errs.push(format!("{who}: fling must be a finite number >= 0"));
         }
         if let Some(e) = &s.elastic {
-            if !(finite(e.limit)
-                && e.limit > 0.0
-                && finite(e.stiffness)
-                && e.stiffness > 0.0
-                && finite(e.damping_ratio)
-                && e.damping_ratio > 0.0)
-            {
-                errs.push(format!(
-                    "{who}: elastic limit, stiffness and damping_ratio must be finite numbers > 0"
-                ));
+            if !(finite(e.limit) && e.limit > 0.0 && finite(e.stiffness) && e.stiffness > 0.0 && finite(e.damping_ratio) && e.damping_ratio > 0.0) {
+                errs.push(format!("{who}: elastic limit, stiffness and damping_ratio must be finite numbers > 0"));
             }
         }
         if !s.snap_x.iter().chain(&s.snap_y).all(|v| finite(*v)) {
@@ -335,9 +278,7 @@ pub fn validate(p: &Project) -> Vec<String> {
                         errs.push(format!("{who}: clip layer '{cl}' needs measurable geometry and no rotation or skew"));
                     }
                     if layer_owner.contains_key(cl.as_str()) {
-                        errs.push(format!(
-                            "{who}: clip layer '{cl}' must not be a container member"
-                        ));
+                        errs.push(format!("{who}: clip layer '{cl}' must not be a container member"));
                     }
                 }
             }
@@ -349,23 +290,13 @@ pub fn validate(p: &Project) -> Vec<String> {
             collect_layers(p, &ids, &s.content, &mut members, 0);
             for path in members {
                 if let Some(l) = p.find_layer(path) {
-                    let already = s
-                        .clip_layer
-                        .as_ref()
-                        .map(|c| {
-                            l.mask.as_ref().map(|m| &m.layer) == Some(c)
-                                && !l.mask.as_ref().unwrap().invert
-                        })
-                        .unwrap_or(false);
+                    let already = s.clip_layer.as_ref().map(|c| l.mask.as_ref().map(|m| &m.layer) == Some(c) && !l.mask.as_ref().unwrap().invert).unwrap_or(false);
                     if s.clip_layer.is_some() && l.mask.is_some() && !already {
                         errs.push(format!("scroll '{}': layer '{path}' already has a mask, so it cannot be clipped", s.id));
                     }
                 }
                 if Some(path) == s.clip_layer.as_deref() {
-                    errs.push(format!(
-                        "scroll '{}': the clip layer is part of its own content",
-                        s.id
-                    ));
+                    errs.push(format!("scroll '{}': the clip layer is part of its own content", s.id));
                 }
             }
         }
@@ -376,13 +307,7 @@ pub fn validate(p: &Project) -> Vec<String> {
 }
 
 /// Layer paths of a container and everything nested in it.
-pub(super) fn collect_layers<'a>(
-    p: &'a Project,
-    ids: &HashMap<&str, usize>,
-    id: &str,
-    out: &mut Vec<&'a str>,
-    depth: usize,
-) {
+pub(super) fn collect_layers<'a>(p: &'a Project, ids: &HashMap<&str, usize>, id: &str, out: &mut Vec<&'a str>, depth: usize) {
     if depth > MAX_DEPTH {
         return;
     }

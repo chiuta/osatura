@@ -74,35 +74,13 @@ pub(super) struct NodeGeo {
 }
 
 pub(super) enum DefInfo {
-    Lattice {
-        cols: usize,
-        rows: usize,
-        rect: [f32; 4],
-        slots: Vec<[usize; 2]>,
-    },
-    Cloth {
-        cols: usize,
-        rows: usize,
-        rect: [f32; 4],
-        slots: Vec<[usize; 2]>,
-    },
-    Spine {
-        rest_pts: Vec<Vec2>,
-        rest_poly: Polyline,
-        slots: Vec<[usize; 2]>,
-        radius: Option<f32>,
-    },
-    Pin {
-        solver: crate::pinwarp::PinSolver,
-        slots: Vec<[usize; 2]>,
-    },
+    Lattice { cols: usize, rows: usize, rect: [f32; 4], slots: Vec<[usize; 2]> },
+    Cloth { cols: usize, rows: usize, rect: [f32; 4], slots: Vec<[usize; 2]> },
+    Spine { rest_pts: Vec<Vec2>, rest_poly: Polyline, slots: Vec<[usize; 2]>, radius: Option<f32> },
+    Pin { solver: crate::pinwarp::PinSolver, slots: Vec<[usize; 2]> },
     /// `mesh_w`: mean-value weights of every rest mesh vertex (empty list = outside the cage),
     /// cached here when the cage is the layer's first deformer on an image layer.
-    Cage {
-        solver: crate::cage::CageSolver,
-        slots: Vec<[usize; 2]>,
-        mesh_w: Vec<Vec<f64>>,
-    },
+    Cage { solver: crate::cage::CageSolver, slots: Vec<[usize; 2]>, mesh_w: Vec<Vec<f64>> },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -256,12 +234,7 @@ pub struct ImageData {
 
 impl std::fmt::Debug for ImageData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "ImageData({}×{})",
-            self.pixmap.width(),
-            self.pixmap.height()
-        )
+        write!(f, "ImageData({}×{})", self.pixmap.width(), self.pixmap.height())
     }
 }
 
@@ -339,9 +312,7 @@ impl Frame {
 }
 
 pub(super) fn aff_finite(m: &Affine2) -> bool {
-    [m.a, m.b, m.c, m.d, m.tx, m.ty]
-        .iter()
-        .all(|v| v.is_finite())
+    [m.a, m.b, m.c, m.d, m.tx, m.ty].iter().all(|v| v.is_finite())
 }
 
 /// Largest absolute value of any floating point number in a project (coordinates, scales, offsets, key values, ...).
@@ -349,15 +320,7 @@ pub const MAX_MAGNITUDE: f64 = 1.0e7;
 
 pub(super) fn find_big(v: &serde_json::Value, path: &mut String) -> bool {
     match v {
-        serde_json::Value::Number(n) => {
-            n.is_f64()
-                && n.as_f64().is_some_and(|x| {
-                    !matches!(
-                        x.abs().partial_cmp(&MAX_MAGNITUDE),
-                        Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal)
-                    )
-                })
-        }
+        serde_json::Value::Number(n) => n.is_f64() && n.as_f64().is_some_and(|x| !matches!(x.abs().partial_cmp(&MAX_MAGNITUDE), Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal))),
         serde_json::Value::Array(a) => a.iter().enumerate().any(|(i, x)| {
             let keep = path.len();
             path.push_str(&format!("/{i}"));

@@ -57,10 +57,7 @@ pub fn parse_pins(s: &str) -> Result<Vec<ClothPin>, String> {
             Some(_) => return Err(format!("pin '{g}': missing bone name after @")),
             None => (g, None),
         };
-        let num = |v: &str| {
-            v.parse::<usize>()
-                .map_err(|_| format!("pin '{g}': bad number '{v}'"))
-        };
+        let num = |v: &str| v.parse::<usize>().map_err(|_| format!("pin '{g}': bad number '{v}'"));
         let select = match sel {
             "top" => PinSel::Top,
             "bottom" => PinSel::Bottom,
@@ -183,25 +180,12 @@ struct Link {
 }
 
 /// Build the constraints of a `(cols+1)x(rows+1)` grid at rest positions `x`.
-fn build_links(
-    x: &[Vec2],
-    cols: usize,
-    rows: usize,
-    stiffness: f32,
-    shear: f32,
-    bend: f32,
-) -> Vec<Link> {
+fn build_links(x: &[Vec2], cols: usize, rows: usize, stiffness: f32, shear: f32, bend: f32) -> Vec<Link> {
     let ix = |c: usize, r: usize| r * (cols + 1) + c;
     let mut v = Vec::new();
     let mut add = |a: usize, b: usize, k: f32, structural: bool| {
         if k > 0.0 {
-            v.push(Link {
-                a,
-                b,
-                rest: x[a].distance(x[b]),
-                k,
-                structural,
-            });
+            v.push(Link { a, b, rest: x[a].distance(x[b]), k, structural });
         }
     };
     for r in 0..=rows {
@@ -229,13 +213,7 @@ fn build_links(
 
 fn check_options(o: &ClothOptions) -> Result<(), String> {
     let fin2 = |v: Vec2| v.x.is_finite() && v.y.is_finite();
-    if !fin2(o.gravity)
-        || !fin2(o.wind)
-        || !o.gust.is_finite()
-        || !o.gust_hz.is_finite()
-        || !o.gust_len.is_finite()
-        || o.gust_len < 0.0
-    {
+    if !fin2(o.gravity) || !fin2(o.wind) || !o.gust.is_finite() || !o.gust_hz.is_finite() || !o.gust_len.is_finite() || o.gust_len < 0.0 {
         return Err("gravity, wind and gust must be finite and gust_len >= 0".into());
     }
     if !(0.5..=1.0).contains(&o.damping) {
@@ -285,21 +263,13 @@ fn check_options(o: &ClothOptions) -> Result<(), String> {
 /// of the same deformer are replaced; a locked one aborts the whole bake.
 pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project, String> {
     check_options(o)?;
-    let lay = p
-        .find_layer(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?;
+    let lay = p.find_layer(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
     if !matches!(lay.kind, LayerKind::Image { .. } | LayerKind::Vector { .. }) {
         return Err(format!("layer '{layer}' must be an image or vector layer"));
     }
-    let (f_from, f_to) = (
-        o.from.unwrap_or(0),
-        o.to.unwrap_or(p.frames.saturating_sub(1)),
-    );
+    let (f_from, f_to) = (o.from.unwrap_or(0), o.to.unwrap_or(p.frames.saturating_sub(1)));
     if f_from > f_to || f_to >= p.frames {
-        return Err(format!(
-            "frame range {f_from}..{f_to} is outside the project (0..{})",
-            p.frames.saturating_sub(1)
-        ));
+        return Err(format!("frame range {f_from}..{f_to} is outside the project (0..{})", p.frames.saturating_sub(1)));
     }
     // grid size
     let mesh_dims = match &lay.kind {
@@ -328,12 +298,7 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
         match pn.select {
             PinSel::Row(n) if n > rows => return Err(format!("pin row {n} outside 0..{rows}")),
             PinSel::Col(n) if n > cols => return Err(format!("pin col {n} outside 0..{cols}")),
-            PinSel::Index(n) if n >= (cols + 1) * (rows + 1) => {
-                return Err(format!(
-                    "pin vertex {n} outside 0..{}",
-                    (cols + 1) * (rows + 1) - 1
-                ))
-            }
+            PinSel::Index(n) if n >= (cols + 1) * (rows + 1) => return Err(format!("pin vertex {n} outside 0..{}", (cols + 1) * (rows + 1) - 1)),
             _ => {}
         }
     }
@@ -342,21 +307,12 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
     // simulation world: layer -> stage without the camera
     let mut sp = p.clone();
     sp.camera = Default::default();
-    sp.channels.retain(|c| {
-        !matches!(
-            c.prop,
-            Prop::CameraX | Prop::CameraY | Prop::CameraZoom | Prop::CameraRotation
-        )
-    });
+    sp.channels.retain(|c| !matches!(c.prop, Prop::CameraX | Prop::CameraY | Prop::CameraZoom | Prop::CameraRotation));
     // do not feed back earlier cloth keys of this deformer
     let tprefix = format!("{layer}::{}::", o.name);
-    sp.channels.retain(|c| {
-        !(c.target.starts_with(&tprefix) && matches!(c.prop, Prop::LatticeDx | Prop::LatticeDy))
-    });
+    sp.channels.retain(|c| !(c.target.starts_with(&tprefix) && matches!(c.prop, Prop::LatticeDx | Prop::LatticeDy)));
     let e = Engine::new(sp).map_err(|v| v.join("; "))?;
-    let id = e
-        .node_index(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?;
+    let id = e.node_index(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
     let f0 = e.evaluate(0.0);
     let rect = match (o.rect, f0.nodes[id].image.as_ref()) {
         (Some(r), _) => r,
@@ -368,12 +324,7 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
     }
     let rest: Vec<Vec2> = (0..=rows)
         .flat_map(|r| (0..=cols).map(move |c| (c, r)))
-        .map(|(c, r)| {
-            Vec2::new(
-                rect[0] + rect[2] * c as f32 / cols as f32,
-                rect[1] + rect[3] * r as f32 / rows as f32,
-            )
-        })
+        .map(|(c, r)| Vec2::new(rect[0] + rect[2] * c as f32 / cols as f32, rect[1] + rect[3] * r as f32 / rows as f32))
         .collect();
 
     // pin table: per vertex None | Some(bone index option)
@@ -394,47 +345,19 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
     let x0: Vec<Vec2> = rest.iter().map(|&v| m0.apply(v)).collect();
     // stiffness is the fraction of the error removed per substep, whatever the iteration count
     let per_iter = |k: f32| 1.0 - (1.0 - k).powf(1.0 / o.iterations as f32);
-    let links = build_links(
-        &x0,
-        cols,
-        rows,
-        per_iter(o.stiffness),
-        per_iter(o.shear),
-        per_iter(o.bend),
-    );
+    let links = build_links(&x0, cols, rows, per_iter(o.stiffness), per_iter(o.shear), per_iter(o.bend));
     let inv_m0 = |b: usize| f0.world[b].inverse();
     for pn in &o.pins {
         if let Some(b) = pn.bone.as_deref().and_then(bone_ix) {
-            inv_m0(b)
-                .ok_or_else(|| format!("bone '{}' has a degenerate transform", p.bones[b].name))?;
+            inv_m0(b).ok_or_else(|| format!("bone '{}' has a degenerate transform", p.bones[b].name))?;
         }
     }
-    let circ_bone: Vec<Option<usize>> = o
-        .colliders
-        .iter()
-        .map(|c| {
-            c.follow
-                .as_deref()
-                .map(|n| bone_ix(n).ok_or_else(|| format!("no bone '{n}'")))
-                .transpose()
-        })
-        .collect::<Result<_, _>>()?;
-    let cap_bone: Vec<Option<usize>> = o
-        .capsules
-        .iter()
-        .map(|c| {
-            c.follow
-                .as_deref()
-                .map(|n| bone_ix(n).ok_or_else(|| format!("no bone '{n}'")))
-                .transpose()
-        })
-        .collect::<Result<_, _>>()?;
+    let circ_bone: Vec<Option<usize>> = o.colliders.iter().map(|c| c.follow.as_deref().map(|n| bone_ix(n).ok_or_else(|| format!("no bone '{n}'"))).transpose()).collect::<Result<_, _>>()?;
+    let cap_bone: Vec<Option<usize>> = o.capsules.iter().map(|c| c.follow.as_deref().map(|n| bone_ix(n).ok_or_else(|| format!("no bone '{n}'"))).transpose()).collect::<Result<_, _>>()?;
 
     type Shape = (Vec2, Vec2, f32);
     let shapes_at = |fr: &crate::engine::Frame| -> Vec<Shape> {
-        let mv = |bone: Option<usize>| -> Option<Affine2> {
-            bone.and_then(|i| f0.world[i].inverse().map(|inv| fr.world[i].mul(inv)))
-        };
+        let mv = |bone: Option<usize>| -> Option<Affine2> { bone.and_then(|i| f0.world[i].inverse().map(|inv| fr.world[i].mul(inv))) };
         let mut v: Vec<Shape> = Vec::new();
         for (c, b) in o.colliders.iter().zip(&circ_bone) {
             let q = mv(*b).map_or(c.centre, |m| m.apply(c.centre));
@@ -442,11 +365,7 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
         }
         for (c, b) in o.capsules.iter().zip(&cap_bone) {
             let m = mv(*b);
-            v.push((
-                m.map_or(c.a, |m| m.apply(c.a)),
-                m.map_or(c.b, |m| m.apply(c.b)),
-                c.radius,
-            ));
+            v.push((m.map_or(c.a, |m| m.apply(c.a)), m.map_or(c.b, |m| m.apply(c.b)), c.radius));
         }
         v
     };
@@ -457,9 +376,7 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
             .map(|i| {
                 pin[i].map(|b| match b {
                     None => m.apply(rest[i]),
-                    Some(bi) => f0.world[bi]
-                        .inverse()
-                        .map_or(x0[i], |inv| fr.world[bi].mul(inv).apply(x0[i])),
+                    Some(bi) => f0.world[bi].inverse().map_or(x0[i], |inv| fr.world[bi].mul(inv).apply(x0[i])),
                 })
             })
             .collect()
@@ -480,27 +397,13 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
     let mut prev = pos.clone();
     let mut prev_targets = tg0.clone();
     let mut prev_shapes = shapes_at(&fr_from);
-    let wind_dir = if o.wind.length() > 1e-9 {
-        o.wind.normalized()
-    } else {
-        Vec2::ZERO
-    };
+    let wind_dir = if o.wind.length() > 1e-9 { o.wind.normalized() } else { Vec2::ZERO };
 
     // one frame of simulation towards `targets` / `shapes`
-    let step = |pos: &mut Vec<Vec2>,
-                prev: &mut Vec<Vec2>,
-                prev_targets: &mut Vec<Option<Vec2>>,
-                prev_shapes: &mut Vec<Shape>,
-                targets: &[Option<Vec2>],
-                shapes: &[Shape],
-                t: f32| {
+    let step = |pos: &mut Vec<Vec2>, prev: &mut Vec<Vec2>, prev_targets: &mut Vec<Option<Vec2>>, prev_shapes: &mut Vec<Shape>, targets: &[Option<Vec2>], shapes: &[Shape], t: f32| {
         for sstep in 0..o.substeps {
             let u = (sstep + 1) as f32 / o.substeps as f32;
-            let cur: Vec<Shape> = prev_shapes
-                .iter()
-                .zip(shapes)
-                .map(|(a, b)| (a.0.lerp(b.0, u), a.1.lerp(b.1, u), b.2))
-                .collect();
+            let cur: Vec<Shape> = prev_shapes.iter().zip(shapes).map(|(a, b)| (a.0.lerp(b.0, u), a.1.lerp(b.1, u), b.2)).collect();
             for i in 0..nv {
                 if let (Some(a), Some(b)) = (prev_targets[i], targets[i]) {
                     let q = a.lerp(b, u);
@@ -510,29 +413,13 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
                 }
                 let v = sub(pos[i], prev[i]) * o.damping;
                 prev[i] = pos[i];
-                let phase = if o.gust_len > 0.0 {
-                    wind_dir.dot(x0[i]) / o.gust_len
-                } else {
-                    0.0
-                };
-                let wind = o.wind
-                    * (1.0 + o.gust * (std::f32::consts::TAU * (o.gust_hz * t - phase)).sin());
+                let phase = if o.gust_len > 0.0 { wind_dir.dot(x0[i]) / o.gust_len } else { 0.0 };
+                let wind = o.wind * (1.0 + o.gust * (std::f32::consts::TAU * (o.gust_hz * t - phase)).sin());
                 pos[i] = pos[i] + v + (o.gravity + wind) * (h * h);
             }
             for _ in 0..o.iterations {
                 for l in &links {
-                    let (wa, wb) = (
-                        if prev_targets[l.a].is_some() && targets[l.a].is_some() {
-                            0.0
-                        } else {
-                            1.0
-                        },
-                        if prev_targets[l.b].is_some() && targets[l.b].is_some() {
-                            0.0
-                        } else {
-                            1.0
-                        },
-                    );
+                    let (wa, wb) = (if prev_targets[l.a].is_some() && targets[l.a].is_some() { 0.0 } else { 1.0 }, if prev_targets[l.b].is_some() && targets[l.b].is_some() { 0.0 } else { 1.0 });
                     let w = wa + wb;
                     if w == 0.0 {
                         continue;
@@ -552,12 +439,7 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
                         let d = sub(pos[i], cp);
                         let l = d.length();
                         if l < r {
-                            pos[i] = cp
-                                + if l > 1e-6 {
-                                    d * (r / l)
-                                } else {
-                                    capsule_normal(a, b) * r
-                                };
+                            pos[i] = cp + if l > 1e-6 { d * (r / l) } else { capsule_normal(a, b) * r };
                         }
                     }
                 }
@@ -565,18 +447,7 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
             // strain limiting on the edges
             for _ in 0..4 {
                 for l in links.iter().filter(|l| l.structural) {
-                    let (wa, wb) = (
-                        if targets[l.a].is_some() && prev_targets[l.a].is_some() {
-                            0.0
-                        } else {
-                            1.0
-                        },
-                        if targets[l.b].is_some() && prev_targets[l.b].is_some() {
-                            0.0
-                        } else {
-                            1.0
-                        },
-                    );
+                    let (wa, wb) = (if targets[l.a].is_some() && prev_targets[l.a].is_some() { 0.0 } else { 1.0 }, if targets[l.b].is_some() && prev_targets[l.b].is_some() { 0.0 } else { 1.0 });
                     let w = wa + wb;
                     if w == 0.0 {
                         continue;
@@ -600,15 +471,7 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
     let shapes_from = shapes_at(&fr_from);
     for k in 0..o.preroll {
         let t = (f_from as f32 - (o.preroll - k) as f32) * dt;
-        step(
-            &mut pos,
-            &mut prev,
-            &mut prev_targets,
-            &mut prev_shapes,
-            &tg0,
-            &shapes_from,
-            t,
-        );
+        step(&mut pos, &mut prev, &mut prev_targets, &mut prev_shapes, &tg0, &shapes_from, t);
     }
 
     // frames
@@ -620,20 +483,10 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
             let tg = targets_at(&fr);
             let sh = shapes_at(&fr);
             if f > f_from {
-                step(
-                    &mut pos,
-                    &mut prev,
-                    &mut prev_targets,
-                    &mut prev_shapes,
-                    &tg,
-                    &sh,
-                    f as f32 * dt,
-                );
+                step(&mut pos, &mut prev, &mut prev_targets, &mut prev_shapes, &tg, &sh, f as f32 * dt);
             }
         }
-        let minv = node_world(&fr)
-            .inverse()
-            .ok_or_else(|| format!("layer '{layer}' has a degenerate transform at frame {f}"))?;
+        let minv = node_world(&fr).inverse().ok_or_else(|| format!("layer '{layer}' has a degenerate transform at frame {f}"))?;
         for i in 0..nv {
             if !pos[i].x.is_finite() || !pos[i].y.is_finite() {
                 return Err("cloth simulation diverged (non-finite position); lower the forces or raise iterations".into());
@@ -652,39 +505,16 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
     // apply to a copy: deformer, mesh, channels
     let mut q = p.clone();
     {
-        let l = q
-            .find_layer_mut(layer)
-            .ok_or_else(|| format!("no layer at '{layer}'"))?;
+        let l = q.find_layer_mut(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
         let same = |a: [f32; 4]| a.iter().zip(rect.iter()).all(|(x, y)| (x - y).abs() < 1e-3);
         match l.deformers.iter().find(|d| d.name() == o.name) {
-            Some(Deformer::Cloth {
-                cols: c,
-                rows: r,
-                rect: rc,
-                ..
-            }) if *c == cols && *r == rows && same(*rc) => {}
-            Some(_) => return Err(format!(
-                "layer '{layer}' already has a different deformer named '{}'; choose another name=",
-                o.name
-            )),
-            None => l.deformers.push(Deformer::Cloth {
-                name: o.name.clone(),
-                cols,
-                rows,
-                rect,
-                offsets: vec![],
-            }),
+            Some(Deformer::Cloth { cols: c, rows: r, rect: rc, .. }) if *c == cols && *r == rows && same(*rc) => {}
+            Some(_) => return Err(format!("layer '{layer}' already has a different deformer named '{}'; choose another name=", o.name)),
+            None => l.deformers.push(Deformer::Cloth { name: o.name.clone(), cols, rows, rect, offsets: vec![] }),
         }
         if let LayerKind::Image { mesh, .. } = &mut l.kind {
             match mesh {
-                None => {
-                    *mesh = Some(MeshSpec {
-                        cols,
-                        rows,
-                        weights: vec![],
-                        ..Default::default()
-                    })
-                }
+                None => *mesh = Some(MeshSpec { cols, rows, weights: vec![], ..Default::default() }),
                 Some(m) => {
                     m.cols = cols;
                     m.rows = rows;
@@ -698,31 +528,17 @@ pub fn bake_cloth(p: &Project, layer: &str, o: &ClothOptions) -> Result<Project,
         chanmeta::assert_unlocked(p, &tgt(i), Prop::LatticeDx)?;
         chanmeta::assert_unlocked(p, &tgt(i), Prop::LatticeDy)?;
     }
-    q.channels.retain(|c| {
-        !(c.target.starts_with(&tprefix)
-            && matches!(c.prop, Prop::LatticeDx | Prop::LatticeDy)
-            && matches!(c.source, Source::Keys { .. }))
-    });
+    q.channels.retain(|c| !(c.target.starts_with(&tprefix) && matches!(c.prop, Prop::LatticeDx | Prop::LatticeDy) && matches!(c.source, Source::Keys { .. })));
     // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
     #[allow(clippy::needless_range_loop)]
     for i in 0..nv {
         if keys[i].iter().all(|k| k.1.x == 0.0 && k.1.y == 0.0) {
             continue;
         }
-        let kx: Vec<(f32, f32, Ease)> =
-            keys[i].iter().map(|k| (k.0, k.1.x, Ease::Linear)).collect();
-        let ky: Vec<(f32, f32, Ease)> =
-            keys[i].iter().map(|k| (k.0, k.1.y, Ease::Linear)).collect();
-        q.channels.push(Channel::keys(
-            &tgt(i),
-            Prop::LatticeDx,
-            Track::with_keys(&kx),
-        ));
-        q.channels.push(Channel::keys(
-            &tgt(i),
-            Prop::LatticeDy,
-            Track::with_keys(&ky),
-        ));
+        let kx: Vec<(f32, f32, Ease)> = keys[i].iter().map(|k| (k.0, k.1.x, Ease::Linear)).collect();
+        let ky: Vec<(f32, f32, Ease)> = keys[i].iter().map(|k| (k.0, k.1.y, Ease::Linear)).collect();
+        q.channels.push(Channel::keys(&tgt(i), Prop::LatticeDx, Track::with_keys(&kx)));
+        q.channels.push(Channel::keys(&tgt(i), Prop::LatticeDy, Track::with_keys(&ky)));
     }
     Engine::new(q.clone()).map_err(|v| v.join("; "))?;
     Ok(q)
@@ -743,34 +559,17 @@ mod tests {
     }
     fn proj() -> Project {
         let mut p = Project::new("c", 400.0, 400.0, 24.0, 48);
-        p.layers = vec![Layer::image_from_png(
-            "flag",
-            &png(120, 120),
-            v(140.0, 40.0),
-        )];
+        p.layers = vec![Layer::image_from_png("flag", &png(120, 120), v(140.0, 40.0))];
         p
     }
     fn opts() -> ClothOptions {
-        ClothOptions {
-            cols: Some(8),
-            rows: Some(8),
-            pins: parse_pins("top").unwrap(),
-            ..Default::default()
-        }
+        ClothOptions { cols: Some(8), rows: Some(8), pins: parse_pins("top").unwrap(), ..Default::default() }
     }
     fn verts(p: &Project, f: f32) -> Vec<Vec2> {
         let e = Engine::new(p.clone()).unwrap();
         let fr = e.evaluate(f);
         let id = e.node_index("flag").unwrap();
-        fr.nodes[id]
-            .image
-            .as_ref()
-            .unwrap()
-            .mesh
-            .as_ref()
-            .unwrap()
-            .positions
-            .clone()
+        fr.nodes[id].image.as_ref().unwrap().mesh.as_ref().unwrap().positions.clone()
     }
     const W: usize = 9;
 
@@ -778,13 +577,7 @@ mod tests {
     fn parse_pin_specs() {
         let p = parse_pins("top, left@hand,row:2,v:5,none").unwrap();
         assert_eq!(p.len(), 4);
-        assert_eq!(
-            p[1],
-            ClothPin {
-                select: PinSel::Left,
-                bone: Some("hand".into())
-            }
-        );
+        assert_eq!(p[1], ClothPin { select: PinSel::Left, bone: Some("hand".into()) });
         assert_eq!(p[2].select, PinSel::Row(2));
         assert_eq!(p[3].select, PinSel::Index(5));
         assert!(parse_pins("sideways").is_err());
@@ -805,11 +598,7 @@ mod tests {
             #[allow(clippy::needless_range_loop)]
             for c in 0..W {
                 let want = v(140.0 + 15.0 * c as f32, 40.0);
-                assert!(
-                    vs[c].distance(want) < 1e-2,
-                    "top vertex {c} moved at frame {f}: {:?}",
-                    vs[c]
-                );
+                assert!(vs[c].distance(want) < 1e-2, "top vertex {c} moved at frame {f}: {:?}", vs[c]);
             }
         }
         // hanging: with 4 rows free below the pins the bottom stays within the strain limit
@@ -827,36 +616,17 @@ mod tests {
             }
         }
         // free corner released: pin only the top-left vertex, the bottom-right corner swings down
-        let q2 = bake_cloth(
-            &p,
-            "flag",
-            &ClothOptions {
-                pins: parse_pins("topleft").unwrap(),
-                ..opts()
-            },
-        )
-        .unwrap();
+        let q2 = bake_cloth(&p, "flag", &ClothOptions { pins: parse_pins("topleft").unwrap(), ..opts() }).unwrap();
         let a = verts(&q2, 0.0)[8 * W + 8];
         let b = verts(&q2, 47.0)[8 * W + 8];
         assert!(b.y > a.y + 40.0, "corner fell from {a:?} to {b:?}");
-        assert!(
-            b.distance(v(140.0, 40.0)) <= 16.0 * 15.0 * 1.15,
-            "corner within reach of the pin (grid path)"
-        );
+        assert!(b.distance(v(140.0, 40.0)) <= 16.0 * 15.0 * 1.15, "corner within reach of the pin (grid path)");
     }
 
     #[test]
     fn unpinned_cloth_falls_freely() {
         let p = proj();
-        let q = bake_cloth(
-            &p,
-            "flag",
-            &ClothOptions {
-                pins: vec![],
-                ..opts()
-            },
-        )
-        .unwrap();
+        let q = bake_cloth(&p, "flag", &ClothOptions { pins: vec![], ..opts() }).unwrap();
         let (a, b) = (verts(&q, 0.0)[4 * W + 4], verts(&q, 47.0)[4 * W + 4]);
         assert!(b.y > a.y + 500.0, "free fall {a:?} -> {b:?}");
     }
@@ -865,81 +635,30 @@ mod tests {
     fn circle_collider_stops_the_cloth() {
         let p = proj();
         // the wind leans the hanging cloth against a ball that sits beside it
-        let ball = Circle {
-            centre: v(290.0, 110.0),
-            radius: 25.0,
-            follow: None,
-        };
-        let windy = ClothOptions {
-            wind: v(1500.0, 0.0),
-            ..opts()
-        };
+        let ball = Circle { centre: v(290.0, 110.0), radius: 25.0, follow: None };
+        let windy = ClothOptions { wind: v(1500.0, 0.0), ..opts() };
         let free = bake_cloth(&p, "flag", &windy).unwrap();
-        let hit = bake_cloth(
-            &p,
-            "flag",
-            &ClothOptions {
-                colliders: vec![ball.clone()],
-                ..windy
-            },
-        )
-        .unwrap();
-        let inside = |vs: &[Vec2]| {
-            vs.iter()
-                .filter(|q| q.distance(ball.centre) < ball.radius - 0.5)
-                .count()
-        };
-        assert!(
-            (0..48).any(|f| inside(&verts(&free, f as f32)) > 0),
-            "without a collider the cloth hangs through the ball"
-        );
+        let hit = bake_cloth(&p, "flag", &ClothOptions { colliders: vec![ball.clone()], ..windy }).unwrap();
+        let inside = |vs: &[Vec2]| vs.iter().filter(|q| q.distance(ball.centre) < ball.radius - 0.5).count();
+        assert!((0..48).any(|f| inside(&verts(&free, f as f32)) > 0), "without a collider the cloth hangs through the ball");
         for f in 0..48 {
-            assert_eq!(
-                inside(&verts(&hit, f as f32)),
-                0,
-                "frame {f}: a vertex is inside the ball"
-            );
+            assert_eq!(inside(&verts(&hit, f as f32)), 0, "frame {f}: a vertex is inside the ball");
         }
     }
 
     #[test]
     fn capsule_collider_stops_the_cloth() {
         let p = proj();
-        let cap = Capsule {
-            a: v(285.0, 60.0),
-            b: v(285.0, 160.0),
-            radius: 15.0,
-            follow: None,
-        };
-        let windy = ClothOptions {
-            wind: v(1500.0, 0.0),
-            ..opts()
-        };
+        let cap = Capsule { a: v(285.0, 60.0), b: v(285.0, 160.0), radius: 15.0, follow: None };
+        let windy = ClothOptions { wind: v(1500.0, 0.0), ..opts() };
         let free = bake_cloth(&p, "flag", &windy).unwrap();
-        let near = |q: &Project| {
-            (0..48).any(|f| {
-                verts(q, f as f32).iter().any(|pt| {
-                    closest_on_segment(cap.a, cap.b, *pt).distance(*pt) < cap.radius - 0.5
-                })
-            })
-        };
+        let near = |q: &Project| (0..48).any(|f| verts(q, f as f32).iter().any(|pt| closest_on_segment(cap.a, cap.b, *pt).distance(*pt) < cap.radius - 0.5));
         assert!(near(&free), "without the capsule the cloth enters it");
-        let q = bake_cloth(
-            &p,
-            "flag",
-            &ClothOptions {
-                capsules: vec![cap.clone()],
-                ..windy
-            },
-        )
-        .unwrap();
+        let q = bake_cloth(&p, "flag", &ClothOptions { capsules: vec![cap.clone()], ..windy }).unwrap();
         for f in 0..48 {
             for pt in verts(&q, f as f32) {
                 let cp = closest_on_segment(cap.a, cap.b, pt);
-                assert!(
-                    cp.distance(pt) >= cap.radius - 0.5,
-                    "vertex {pt:?} inside capsule at {f}"
-                );
+                assert!(cp.distance(pt) >= cap.radius - 0.5, "vertex {pt:?} inside capsule at {f}");
             }
         }
     }
@@ -949,52 +668,24 @@ mod tests {
         let mut p = proj();
         p.bones = vec![Bone::new("b", None, 10.0, v(0.0, 0.0), 0.0)];
         let before = serde_json::to_string(&p).unwrap();
-        let o = ClothOptions {
-            wind: v(300.0, 0.0),
-            gust: 0.5,
-            gust_len: 80.0,
-            ..opts()
-        };
+        let o = ClothOptions { wind: v(300.0, 0.0), gust: 0.5, gust_len: 80.0, ..opts() };
         let a = bake_cloth(&p, "flag", &o).unwrap();
         let b = bake_cloth(&p, "flag", &o).unwrap();
-        assert_eq!(
-            serde_json::to_string(&a).unwrap(),
-            serde_json::to_string(&b).unwrap()
-        );
-        assert_eq!(
-            serde_json::to_string(&p).unwrap(),
-            before,
-            "input project untouched"
-        );
+        assert_eq!(serde_json::to_string(&a).unwrap(), serde_json::to_string(&b).unwrap());
+        assert_eq!(serde_json::to_string(&p).unwrap(), before, "input project untouched");
         // baking again replaces the keys instead of piling them up
         let c = bake_cloth(&a, "flag", &o).unwrap();
         assert_eq!(c.channels.len(), a.channels.len());
         assert_eq!(c.layers[0].deformers.len(), 1);
-        assert_eq!(
-            serde_json::to_string(&c).unwrap(),
-            serde_json::to_string(&a).unwrap(),
-            "re-bake does not feed back"
-        );
+        assert_eq!(serde_json::to_string(&c).unwrap(), serde_json::to_string(&a).unwrap(), "re-bake does not feed back");
     }
 
     #[test]
     fn wind_pushes_sideways() {
         let p = proj();
-        let q = bake_cloth(
-            &p,
-            "flag",
-            &ClothOptions {
-                wind: v(1500.0, 0.0),
-                ..opts()
-            },
-        )
-        .unwrap();
+        let q = bake_cloth(&p, "flag", &ClothOptions { wind: v(1500.0, 0.0), ..opts() }).unwrap();
         let last = verts(&q, 47.0);
-        assert!(
-            last[8 * W + 4].x > 200.0 + 25.0,
-            "bottom middle blown right: {:?}",
-            last[8 * W + 4]
-        );
+        assert!(last[8 * W + 4].x > 200.0 + 25.0, "bottom middle blown right: {:?}", last[8 * W + 4]);
     }
 
     #[test]
@@ -1008,10 +699,7 @@ mod tests {
         let old: Project = serde_json::from_str(&serde_json::to_string(&proj()).unwrap()).unwrap();
         assert!(old.layers[0].deformers.is_empty());
         // the new variant parses from plain JSON with defaults
-        let d: Deformer = serde_json::from_str(
-            r#"{"type":"cloth","name":"c","cols":2,"rows":2,"rect":[0,0,10,10]}"#,
-        )
-        .unwrap();
+        let d: Deformer = serde_json::from_str(r#"{"type":"cloth","name":"c","cols":2,"rows":2,"rect":[0,0,10,10]}"#).unwrap();
         assert!(matches!(d, Deformer::Cloth { ref offsets, .. } if offsets.is_empty()));
     }
 
@@ -1019,41 +707,17 @@ mod tests {
     fn pins_follow_a_bone_and_the_layer() {
         let mut p = proj();
         p.bones = vec![Bone::new("hand", None, 10.0, v(100.0, 40.0), 0.0)];
-        p.channels = vec![Channel::keys(
-            "hand",
-            Prop::BoneOffsetX,
-            Track::with_keys(&[(0.0, 0.0, Ease::Linear), (47.0, 100.0, Ease::Linear)]),
-        )];
-        let q = bake_cloth(
-            &p,
-            "flag",
-            &ClothOptions {
-                pins: parse_pins("top@hand").unwrap(),
-                ..opts()
-            },
-        )
-        .unwrap();
+        p.channels = vec![Channel::keys("hand", Prop::BoneOffsetX, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (47.0, 100.0, Ease::Linear)]))];
+        let q = bake_cloth(&p, "flag", &ClothOptions { pins: parse_pins("top@hand").unwrap(), ..opts() }).unwrap();
         let vs = verts(&q, 47.0);
-        assert!(
-            vs[0].distance(v(240.0, 40.0)) < 0.05 && vs[8].distance(v(360.0, 40.0)) < 0.05,
-            "{:?} {:?}",
-            vs[0],
-            vs[8]
-        );
+        assert!(vs[0].distance(v(240.0, 40.0)) < 0.05 && vs[8].distance(v(360.0, 40.0)) < 0.05, "{:?} {:?}", vs[0], vs[8]);
         assert!(vs[8 * W].x > 200.0, "the cloth is dragged along");
         // a layer that itself moves: the pinned row rides along, offsets stay in layer space
         let mut p2 = proj();
-        p2.channels = vec![Channel::keys(
-            "flag",
-            Prop::LayerX,
-            Track::with_keys(&[(0.0, 0.0, Ease::Linear), (47.0, 80.0, Ease::Linear)]),
-        )];
+        p2.channels = vec![Channel::keys("flag", Prop::LayerX, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (47.0, 80.0, Ease::Linear)]))];
         let q2 = bake_cloth(&p2, "flag", &opts()).unwrap();
         let top = verts(&q2, 47.0)[0];
-        assert!(
-            top.distance(v(140.0, 40.0)) < 1e-3,
-            "layer-space top row unchanged: {top:?}"
-        );
+        assert!(top.distance(v(140.0, 40.0)) < 1e-3, "layer-space top row unchanged: {top:?}");
         let e = Engine::new(q2).unwrap();
         let id = e.node_index("flag").unwrap();
         let w = e.evaluate(47.0).nodes[id].world.apply(top);
@@ -1062,16 +726,7 @@ mod tests {
 
     #[test]
     fn frame_range_limits_the_keys() {
-        let q = bake_cloth(
-            &proj(),
-            "flag",
-            &ClothOptions {
-                from: Some(10),
-                to: Some(20),
-                ..opts()
-            },
-        )
-        .unwrap();
+        let q = bake_cloth(&proj(), "flag", &ClothOptions { from: Some(10), to: Some(20), ..opts() }).unwrap();
         for c in &q.channels {
             if let Source::Keys { track } = &c.source {
                 let (a, b) = (track.eval(9.0), track.eval(10.0));
@@ -1085,179 +740,49 @@ mod tests {
     fn validation_errors() {
         let p = proj();
         let bad = |o: ClothOptions| bake_cloth(&p, "flag", &o).unwrap_err();
-        assert!(bad(ClothOptions {
-            stiffness: 0.0,
-            ..opts()
-        })
-        .contains("stiffness"));
-        assert!(bad(ClothOptions {
-            stiffness: f32::NAN,
-            ..opts()
-        })
-        .contains("stiffness"));
-        assert!(bad(ClothOptions {
-            bend: 2.0,
-            ..opts()
-        })
-        .contains("bend"));
-        assert!(bad(ClothOptions {
-            shear: -0.1,
-            ..opts()
-        })
-        .contains("shear"));
-        assert!(bad(ClothOptions {
-            damping: 0.1,
-            ..opts()
-        })
-        .contains("damping"));
-        assert!(bad(ClothOptions {
-            max_stretch: 0.5,
-            ..opts()
-        })
-        .contains("max_stretch"));
-        assert!(bad(ClothOptions {
-            gravity: v(f32::NAN, 0.0),
-            ..opts()
-        })
-        .contains("finite"));
-        assert!(bad(ClothOptions {
-            wind: v(f32::INFINITY, 0.0),
-            ..opts()
-        })
-        .contains("finite"));
-        assert!(bad(ClothOptions {
-            substeps: 0,
-            ..opts()
-        })
-        .contains("substeps"));
-        assert!(bad(ClothOptions {
-            cols: Some(0),
-            ..opts()
-        })
-        .contains("grid"));
-        assert!(bad(ClothOptions {
-            cols: Some(100),
-            ..opts()
-        })
-        .contains("grid"));
-        assert!(bad(ClothOptions {
-            from: Some(30),
-            to: Some(10),
-            ..opts()
-        })
-        .contains("frame range"));
-        assert!(bad(ClothOptions {
-            to: Some(999),
-            ..opts()
-        })
-        .contains("frame range"));
-        assert!(bad(ClothOptions {
-            pins: parse_pins("row:99").unwrap(),
-            ..opts()
-        })
-        .contains("row"));
-        assert!(bad(ClothOptions {
-            pins: parse_pins("v:999").unwrap(),
-            ..opts()
-        })
-        .contains("vertex"));
-        assert!(bad(ClothOptions {
-            pins: parse_pins("top@ghost").unwrap(),
-            ..opts()
-        })
-        .contains("ghost"));
-        assert!(bad(ClothOptions {
-            colliders: vec![Circle {
-                centre: v(0.0, 0.0),
-                radius: -1.0,
-                follow: None
-            }],
-            ..opts()
-        })
-        .contains("radius"));
-        assert!(bad(ClothOptions {
-            colliders: vec![Circle {
-                centre: v(0.0, 0.0),
-                radius: 5.0,
-                follow: Some("nobody".into())
-            }],
-            ..opts()
-        })
-        .contains("nobody"));
-        assert!(bad(ClothOptions {
-            name: "a::b".into(),
-            ..opts()
-        })
-        .contains("name"));
-        assert!(bake_cloth(&p, "nope", &opts())
-            .unwrap_err()
-            .contains("no layer"));
+        assert!(bad(ClothOptions { stiffness: 0.0, ..opts() }).contains("stiffness"));
+        assert!(bad(ClothOptions { stiffness: f32::NAN, ..opts() }).contains("stiffness"));
+        assert!(bad(ClothOptions { bend: 2.0, ..opts() }).contains("bend"));
+        assert!(bad(ClothOptions { shear: -0.1, ..opts() }).contains("shear"));
+        assert!(bad(ClothOptions { damping: 0.1, ..opts() }).contains("damping"));
+        assert!(bad(ClothOptions { max_stretch: 0.5, ..opts() }).contains("max_stretch"));
+        assert!(bad(ClothOptions { gravity: v(f32::NAN, 0.0), ..opts() }).contains("finite"));
+        assert!(bad(ClothOptions { wind: v(f32::INFINITY, 0.0), ..opts() }).contains("finite"));
+        assert!(bad(ClothOptions { substeps: 0, ..opts() }).contains("substeps"));
+        assert!(bad(ClothOptions { cols: Some(0), ..opts() }).contains("grid"));
+        assert!(bad(ClothOptions { cols: Some(100), ..opts() }).contains("grid"));
+        assert!(bad(ClothOptions { from: Some(30), to: Some(10), ..opts() }).contains("frame range"));
+        assert!(bad(ClothOptions { to: Some(999), ..opts() }).contains("frame range"));
+        assert!(bad(ClothOptions { pins: parse_pins("row:99").unwrap(), ..opts() }).contains("row"));
+        assert!(bad(ClothOptions { pins: parse_pins("v:999").unwrap(), ..opts() }).contains("vertex"));
+        assert!(bad(ClothOptions { pins: parse_pins("top@ghost").unwrap(), ..opts() }).contains("ghost"));
+        assert!(bad(ClothOptions { colliders: vec![Circle { centre: v(0.0, 0.0), radius: -1.0, follow: None }], ..opts() }).contains("radius"));
+        assert!(bad(ClothOptions { colliders: vec![Circle { centre: v(0.0, 0.0), radius: 5.0, follow: Some("nobody".into()) }], ..opts() }).contains("nobody"));
+        assert!(bad(ClothOptions { name: "a::b".into(), ..opts() }).contains("name"));
+        assert!(bake_cloth(&p, "nope", &opts()).unwrap_err().contains("no layer"));
         // vector layers need a rect
         let mut pv = proj();
         pv.layers = vec![Layer::vector("vec", vec![])];
-        assert!(bake_cloth(&pv, "vec", &opts())
-            .unwrap_err()
-            .contains("rect"));
-        assert!(bake_cloth(
-            &pv,
-            "vec",
-            &ClothOptions {
-                rect: Some([0.0, 0.0, 0.0, 10.0]),
-                ..opts()
-            }
-        )
-        .unwrap_err()
-        .contains("rect"));
+        assert!(bake_cloth(&pv, "vec", &opts()).unwrap_err().contains("rect"));
+        assert!(bake_cloth(&pv, "vec", &ClothOptions { rect: Some([0.0, 0.0, 0.0, 10.0]), ..opts() }).unwrap_err().contains("rect"));
         // a different deformer with the same name is not overwritten
         let mut pd = proj();
-        pd.layers[0].deformers = vec![Deformer::Lattice {
-            name: "cloth".into(),
-            cols: 1,
-            rows: 1,
-            rect: [0.0, 0.0, 1.0, 1.0],
-            offsets: vec![],
-        }];
-        assert!(bake_cloth(&pd, "flag", &opts())
-            .unwrap_err()
-            .contains("already has"));
+        pd.layers[0].deformers = vec![Deformer::Lattice { name: "cloth".into(), cols: 1, rows: 1, rect: [0.0, 0.0, 1.0, 1.0], offsets: vec![] }];
+        assert!(bake_cloth(&pd, "flag", &opts()).unwrap_err().contains("already has"));
         // a skinned mesh is refused
         let mut ps = proj();
         ps.bones = vec![Bone::new("b", None, 10.0, v(0.0, 0.0), 0.0)];
         if let LayerKind::Image { mesh, .. } = &mut ps.layers[0].kind {
-            *mesh = Some(MeshSpec {
-                cols: 8,
-                rows: 8,
-                weights: vec![
-                    vec![crate::path::BoneWeight {
-                        bone: "b".into(),
-                        weight: 1.0
-                    }];
-                    81
-                ],
-                ..Default::default()
-            });
+            *mesh = Some(MeshSpec { cols: 8, rows: 8, weights: vec![vec![crate::path::BoneWeight { bone: "b".into(), weight: 1.0 }]; 81], ..Default::default() });
         }
-        assert!(bake_cloth(&ps, "flag", &opts())
-            .unwrap_err()
-            .contains("skinned"));
+        assert!(bake_cloth(&ps, "flag", &opts()).unwrap_err().contains("skinned"));
     }
 
     #[test]
     fn vector_layer_with_rect_deforms() {
         let mut p = proj();
-        p.layers = vec![Layer::vector(
-            "vec",
-            vec![crate::path::VPath::rect("r", 140.0, 40.0, 120.0, 120.0)],
-        )];
-        let q = bake_cloth(
-            &p,
-            "vec",
-            &ClothOptions {
-                rect: Some([140.0, 40.0, 120.0, 120.0]),
-                ..opts()
-            },
-        )
-        .unwrap();
+        p.layers = vec![Layer::vector("vec", vec![crate::path::VPath::rect("r", 140.0, 40.0, 120.0, 120.0)])];
+        let q = bake_cloth(&p, "vec", &ClothOptions { rect: Some([140.0, 40.0, 120.0, 120.0]), ..opts() }).unwrap();
         assert!(matches!(q.layers[0].deformers[0], Deformer::Cloth { .. }));
         assert!(!q.channels.is_empty());
     }
@@ -1266,33 +791,10 @@ mod tests {
     fn locked_channel_aborts_without_changes() {
         let p = proj();
         let mut q = bake_cloth(&p, "flag", &opts()).unwrap();
-        let target = q
-            .channels
-            .iter()
-            .find(|c| c.prop == Prop::LatticeDx)
-            .unwrap()
-            .target
-            .clone();
-        chanmeta::set_meta(
-            &mut q,
-            &target,
-            Some(Prop::LatticeDx),
-            &chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        let target = q.channels.iter().find(|c| c.prop == Prop::LatticeDx).unwrap().target.clone();
+        chanmeta::set_meta(&mut q, &target, Some(Prop::LatticeDx), &chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
         let before = serde_json::to_string(&q).unwrap();
-        let err = bake_cloth(
-            &q,
-            "flag",
-            &ClothOptions {
-                gravity: v(0.0, 400.0),
-                ..opts()
-            },
-        )
-        .unwrap_err();
+        let err = bake_cloth(&q, "flag", &ClothOptions { gravity: v(0.0, 400.0), ..opts() }).unwrap_err();
         assert!(err.contains("locked"), "{err}");
         assert_eq!(serde_json::to_string(&q).unwrap(), before);
     }
@@ -1302,44 +804,18 @@ mod tests {
         let mut p = proj();
         let mut offs = vec![Vec2::ZERO; 9];
         offs[4] = v(7.0, -3.0);
-        p.layers[0].deformers = vec![Deformer::Cloth {
-            name: "k".into(),
-            cols: 2,
-            rows: 2,
-            rect: [140.0, 40.0, 120.0, 120.0],
-            offsets: offs,
-        }];
+        p.layers[0].deformers = vec![Deformer::Cloth { name: "k".into(), cols: 2, rows: 2, rect: [140.0, 40.0, 120.0, 120.0], offsets: offs }];
         if let LayerKind::Image { mesh, .. } = &mut p.layers[0].kind {
-            *mesh = Some(MeshSpec {
-                cols: 2,
-                rows: 2,
-                weights: vec![],
-                ..Default::default()
-            });
+            *mesh = Some(MeshSpec { cols: 2, rows: 2, weights: vec![], ..Default::default() });
         }
         let vs = verts(&p, 0.0);
-        assert!(
-            vs[4].distance(v(200.0 + 7.0, 100.0 - 3.0)) < 1e-4,
-            "centre vertex moved exactly"
-        );
+        assert!(vs[4].distance(v(200.0 + 7.0, 100.0 - 3.0)) < 1e-4, "centre vertex moved exactly");
         assert!(vs[0].distance(v(140.0, 40.0)) < 1e-6 && vs[8].distance(v(260.0, 160.0)) < 1e-6);
         assert!(vs[1].distance(v(200.0, 40.0 - 0.0)) < 1e-4);
         // wrong offset count and empty grid are validation errors
-        p.layers[0].deformers = vec![Deformer::Cloth {
-            name: "k".into(),
-            cols: 2,
-            rows: 2,
-            rect: [0.0, 0.0, 1.0, 1.0],
-            offsets: vec![Vec2::ZERO; 3],
-        }];
+        p.layers[0].deformers = vec![Deformer::Cloth { name: "k".into(), cols: 2, rows: 2, rect: [0.0, 0.0, 1.0, 1.0], offsets: vec![Vec2::ZERO; 3] }];
         assert!(Engine::new(p.clone()).is_err());
-        p.layers[0].deformers = vec![Deformer::Cloth {
-            name: "k".into(),
-            cols: 0,
-            rows: 2,
-            rect: [0.0, 0.0, 1.0, 1.0],
-            offsets: vec![],
-        }];
+        p.layers[0].deformers = vec![Deformer::Cloth { name: "k".into(), cols: 0, rows: 2, rect: [0.0, 0.0, 1.0, 1.0], offsets: vec![] }];
         assert!(Engine::new(p).is_err());
     }
 }

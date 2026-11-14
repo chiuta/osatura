@@ -17,9 +17,7 @@ fn write(path: &str, bytes: &[u8]) -> Result<(), String> {
 }
 
 fn parse_wh(s: &str, what: &str) -> Result<(f64, f64), String> {
-    let (w, h) = s
-        .split_once('x')
-        .ok_or_else(|| format!("{what} needs WxH, got '{s}'"))?;
+    let (w, h) = s.split_once('x').ok_or_else(|| format!("{what} needs WxH, got '{s}'"))?;
     let w: f64 = w.parse().map_err(|_| format!("{what}: bad width '{w}'"))?;
     let h: f64 = h.parse().map_err(|_| format!("{what}: bad height '{h}'"))?;
     if !(w > 0.0 && h > 0.0) {
@@ -31,18 +29,11 @@ fn parse_wh(s: &str, what: &str) -> Result<(f64, f64), String> {
 fn num(opts: &HashMap<String, String>, key: &str, default: f64) -> Result<f64, String> {
     match opts.get(key) {
         None => Ok(default),
-        Some(v) => v
-            .parse()
-            .map_err(|_| format!("{key} needs a number, got '{v}'")),
+        Some(v) => v.parse().map_err(|_| format!("{key} needs a number, got '{v}'")),
     }
 }
 
-fn options(
-    p: &Project,
-    scale: f32,
-    opts: &HashMap<String, String>,
-    default_tol: f64,
-) -> Result<LodOptions, String> {
+fn options(p: &Project, scale: f32, opts: &HashMap<String, String>, default_tol: f64) -> Result<LodOptions, String> {
     let s = match opts.get("--size") {
         Some(sz) => {
             let (w, h) = parse_wh(sz, "--size")?;
@@ -54,11 +45,7 @@ fn options(
     if levels.fract() != 0.0 || levels < 1.0 {
         return Err("--levels needs a whole number of at least 1".into());
     }
-    let mut o = LodOptions::new(
-        num(opts, "--tolerance-px", default_tol)?,
-        s,
-        levels as usize,
-    );
+    let mut o = LodOptions::new(num(opts, "--tolerance-px", default_tol)?, s, levels as usize);
     o.ratio = num(opts, "--ratio", 2.0)?;
     o.check()?;
     Ok(o)
@@ -66,12 +53,7 @@ fn options(
 
 /// `lod <project> --tolerance-px 0.5 --scale S|--size WxH --levels 4 [--ratio 2] [--out-dir D] [--report r.json] [--verify] [--frames N]`.
 /// Exit 1 if `--verify` finds a measured deviation above the declared bound.
-pub fn lod(
-    path: &str,
-    scale: f32,
-    opts: &HashMap<String, String>,
-    flags: &[String],
-) -> Result<(), String> {
+pub fn lod(path: &str, scale: f32, opts: &HashMap<String, String>, flags: &[String]) -> Result<(), String> {
     let p = load(path)?;
     osatura_core::export::check_budget(&p)?;
     let o = options(&p, scale, opts, 0.5)?;
@@ -81,11 +63,7 @@ pub fn lod(
     if flags.iter().any(|f| f == "--verify") {
         let mut vo = VerifyOptions::new(o.scale);
         if let Some(n) = opts.get("--frames") {
-            vo.frames = n
-                .parse()
-                .ok()
-                .filter(|n: &usize| (1..=1000).contains(n))
-                .ok_or("--frames needs a whole number between 1 and 1000")?;
+            vo.frames = n.parse().ok().filter(|n: &usize| (1..=1000).contains(n)).ok_or("--frames needs a whole number between 1 and 1000")?;
         }
         for l in levels.iter().skip(1) {
             let r = lod::verify(&p, l, &vo)?;
@@ -95,15 +73,8 @@ pub fn lod(
             reports.push(r);
         }
     }
-    let dir = opts
-        .get("--out-dir")
-        .cloned()
-        .unwrap_or_else(|| ".".to_string());
-    let stem = std::path::Path::new(path)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("project")
-        .to_string();
+    let dir = opts.get("--out-dir").cloned().unwrap_or_else(|| ".".to_string());
+    let stem = std::path::Path::new(path).file_stem().and_then(|s| s.to_str()).unwrap_or("project").to_string();
     for l in levels.iter().skip(1) {
         let out = format!("{dir}/{stem}_L{}.json", l.record.level);
         write(&out, l.project.to_json_pretty().as_bytes())?;
@@ -116,12 +87,7 @@ pub fn lod(
         }
     }
     if let Some(rp) = opts.get("--report") {
-        write(
-            rp,
-            serde_json::to_string_pretty(&lod::report_json(&levels, &reports))
-                .unwrap()
-                .as_bytes(),
-        )?;
+        write(rp, serde_json::to_string_pretty(&lod::report_json(&levels, &reports)).unwrap().as_bytes())?;
     }
     if violation {
         return Err("verification found a measured deviation above the declared bound (this is a bug in lod)".into());
@@ -132,16 +98,9 @@ pub fn lod(
 /// `lod-pick <project> --screen-px WxH [--max-px 0.5] [--tolerance-px 0.25] [--levels 4] [--ratio 2] [--out chosen.json]`.
 pub fn pick(path: &str, opts: &HashMap<String, String>) -> Result<(), String> {
     let p = load(path)?;
-    let (w, h) = parse_wh(
-        opts.get("--screen-px")
-            .ok_or("lod-pick needs --screen-px WxH")?,
-        "--screen-px",
-    )?;
+    let (w, h) = parse_wh(opts.get("--screen-px").ok_or("lod-pick needs --screen-px WxH")?, "--screen-px")?;
     let max_px = num(opts, "--max-px", 0.5)?;
-    if !matches!(
-        max_px.partial_cmp(&0.0),
-        Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
-    ) {
+    if !matches!(max_px.partial_cmp(&0.0), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) {
         return Err("--max-px must not be negative".into());
     }
     let screen = lod::fit_scale(&p, w, h);
@@ -177,25 +136,18 @@ mod tests {
     fn setup(tag: &str) -> (osatura_core::fsutil::ScratchDir, String) {
         let d = osatura_core::fsutil::ScratchDir::new(&format!("osatura-lod-{tag}"));
         let mut p = Project::new("lod", 200.0, 200.0, 12.0, 6);
-        let pts: Vec<Vec2> = (0..60)
-            .map(|i| {
-                let a = i as f32 / 60.0 * std::f32::consts::TAU;
-                Vec2::new(100.0 + 50.0 * a.cos(), 100.0 + 50.0 * a.sin())
-            })
-            .collect();
-        p.layers = vec![Layer::vector(
-            "blob",
-            vec![VPath::smooth_through("c", &pts, true, 1.0).with_fill("#2255cc")],
-        )];
+        let pts: Vec<Vec2> = (0..60).map(|i| {
+            let a = i as f32 / 60.0 * std::f32::consts::TAU;
+            Vec2::new(100.0 + 50.0 * a.cos(), 100.0 + 50.0 * a.sin())
+        }).collect();
+        p.layers = vec![Layer::vector("blob", vec![VPath::smooth_through("c", &pts, true, 1.0).with_fill("#2255cc")])];
         let path = d.join("p.json");
         fs::write(&path, p.to_json_pretty()).unwrap();
         (d, path.to_string_lossy().into_owned())
     }
 
     fn opts(kv: &[(&str, &str)]) -> HashMap<String, String> {
-        kv.iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect()
+        kv.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
     }
 
     #[test]
@@ -203,46 +155,19 @@ mod tests {
         let (d, path) = setup("run");
         let out = d.join("out");
         let rep = d.join("r.json");
-        lod(
-            &path,
-            1.0,
-            &opts(&[
-                ("--tolerance-px", "1"),
-                ("--levels", "3"),
-                ("--out-dir", out.to_str().unwrap()),
-                ("--report", rep.to_str().unwrap()),
-                ("--frames", "4"),
-            ]),
-            &["--verify".to_string()],
-        )
-        .unwrap();
+        lod(&path, 1.0, &opts(&[("--tolerance-px", "1"), ("--levels", "3"), ("--out-dir", out.to_str().unwrap()), ("--report", rep.to_str().unwrap()), ("--frames", "4")]), &["--verify".to_string()]).unwrap();
         for k in 1..=3 {
             let p = load(out.join(format!("p_L{k}.json")).to_str().unwrap()).unwrap();
             assert_eq!(p.lods.len(), 1);
             assert_eq!(p.lods[0].level, k);
         }
-        let r: serde_json::Value =
-            serde_json::from_str(&fs::read_to_string(&rep).unwrap()).unwrap();
+        let r: serde_json::Value = serde_json::from_str(&fs::read_to_string(&rep).unwrap()).unwrap();
         assert_eq!(r["levels"].as_array().unwrap().len(), 4);
         assert_eq!(r["verify"].as_array().unwrap().len(), 3);
-        assert!(r["verify"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .all(|v| v["holds"] == true));
+        assert!(r["verify"].as_array().unwrap().iter().all(|v| v["holds"] == true));
         // deterministic files
         let first = fs::read(out.join("p_L2.json")).unwrap();
-        lod(
-            &path,
-            1.0,
-            &opts(&[
-                ("--tolerance-px", "1"),
-                ("--levels", "3"),
-                ("--out-dir", out.to_str().unwrap()),
-            ]),
-            &[],
-        )
-        .unwrap();
+        lod(&path, 1.0, &opts(&[("--tolerance-px", "1"), ("--levels", "3"), ("--out-dir", out.to_str().unwrap())]), &[]).unwrap();
         assert_eq!(first, fs::read(out.join("p_L2.json")).unwrap());
         let _ = fs::remove_dir_all(d);
     }
@@ -261,32 +186,13 @@ mod tests {
     fn lod_pick_chooses_by_screen_size_and_writes_the_level() {
         let (d, path) = setup("pick");
         let chosen = d.join("chosen.json");
-        pick(
-            &path,
-            &opts(&[
-                ("--screen-px", "400x400"),
-                ("--max-px", "5"),
-                ("--out", chosen.to_str().unwrap()),
-            ]),
-        )
-        .unwrap();
+        pick(&path, &opts(&[("--screen-px", "400x400"), ("--max-px", "5"), ("--out", chosen.to_str().unwrap())])).unwrap();
         let p = load(chosen.to_str().unwrap()).unwrap();
         assert_eq!(p.lods.len(), 1);
-        assert!(
-            p.lods[0].level >= 1,
-            "a 5 px budget should select a reduced level"
-        );
+        assert!(p.lods[0].level >= 1, "a 5 px budget should select a reduced level");
         assert!(p.lods[0].declared_px <= 5.0 + 1e-9);
         // a zero budget keeps the original
-        pick(
-            &path,
-            &opts(&[
-                ("--screen-px", "400x400"),
-                ("--max-px", "0"),
-                ("--out", chosen.to_str().unwrap()),
-            ]),
-        )
-        .unwrap();
+        pick(&path, &opts(&[("--screen-px", "400x400"), ("--max-px", "0"), ("--out", chosen.to_str().unwrap())])).unwrap();
         assert!(load(chosen.to_str().unwrap()).unwrap().lods.is_empty());
         assert!(pick(&path, &opts(&[])).is_err());
         assert!(pick(&path, &opts(&[("--screen-px", "0x10")])).is_err());

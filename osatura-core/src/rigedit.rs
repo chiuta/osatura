@@ -17,17 +17,7 @@ pub fn rest_world(p: &Project) -> Result<Vec<(Vec2, f32)>, String> {
         let w = match &b.parent {
             None => (b.rest_offset, b.rest_angle),
             Some(pn) => {
-                let pi = p
-                    .bones
-                    .iter()
-                    .position(|x| &x.name == pn)
-                    .filter(|&i| i < out.len())
-                    .ok_or_else(|| {
-                        format!(
-                            "bone '{}' lists parent '{pn}' after itself or not at all",
-                            b.name
-                        )
-                    })?;
+                let pi = p.bones.iter().position(|x| &x.name == pn).filter(|&i| i < out.len()).ok_or_else(|| format!("bone '{}' lists parent '{pn}' after itself or not at all", b.name))?;
                 let (pp, pa) = out[pi];
                 (pp + rot(b.rest_offset, pa), pa + b.rest_angle)
             }
@@ -41,11 +31,7 @@ pub fn rest_world(p: &Project) -> Result<Vec<(Vec2, f32)>, String> {
 /// rest pose. Bones are re-ordered so parents always precede children. Animation channels
 /// keep their meaning (they are deltas from rest), but the *animated* pose follows the new parent.
 pub fn set_parent(p: &mut Project, bone: &str, new_parent: Option<&str>) -> Result<(), String> {
-    let bi = p
-        .bones
-        .iter()
-        .position(|b| b.name == bone)
-        .ok_or_else(|| format!("no bone '{bone}'"))?;
+    let bi = p.bones.iter().position(|b| b.name == bone).ok_or_else(|| format!("no bone '{bone}'"))?;
     if let Some(np) = new_parent {
         if !p.bones.iter().any(|b| b.name == np) {
             return Err(format!("no bone '{np}'"));
@@ -54,15 +40,9 @@ pub fn set_parent(p: &mut Project, bone: &str, new_parent: Option<&str>) -> Resu
         let mut cur = Some(np.to_string());
         while let Some(c) = cur {
             if c == bone {
-                return Err(format!(
-                    "'{np}' is '{bone}' or one of its descendants; that would create a cycle"
-                ));
+                return Err(format!("'{np}' is '{bone}' or one of its descendants; that would create a cycle"));
             }
-            cur = p
-                .bones
-                .iter()
-                .find(|b| b.name == c)
-                .and_then(|b| b.parent.clone());
+            cur = p.bones.iter().find(|b| b.name == c).and_then(|b| b.parent.clone());
         }
     }
     let world = rest_world(p)?;
@@ -92,11 +72,7 @@ pub fn set_parent(p: &mut Project, bone: &str, new_parent: Option<&str>) -> Resu
             }
             let ready = match &p.bones[i].parent {
                 None => true,
-                Some(pn) => p
-                    .bones
-                    .iter()
-                    .position(|b| &b.name == pn)
-                    .is_some_and(|j| done[j]),
+                Some(pn) => p.bones.iter().position(|b| &b.name == pn).is_some_and(|j| done[j]),
             };
             if ready {
                 done[i] = true;
@@ -136,25 +112,11 @@ mod tests {
         let mut q = p();
         let before = rest_world(&q).unwrap();
         set_parent(&mut q, "c", Some("b")).unwrap();
-        assert_eq!(
-            q.bones
-                .iter()
-                .find(|b| b.name == "c")
-                .unwrap()
-                .parent
-                .as_deref(),
-            Some("b")
-        );
+        assert_eq!(q.bones.iter().find(|b| b.name == "c").unwrap().parent.as_deref(), Some("b"));
         let after = rest_world(&q).unwrap();
         for (i, b) in p().bones.iter().enumerate() {
             let j = q.bones.iter().position(|x| x.name == b.name).unwrap();
-            assert!(
-                close(before[i], after[j]),
-                "{} moved: {:?} vs {:?}",
-                b.name,
-                before[i],
-                after[j]
-            );
+            assert!(close(before[i], after[j]), "{} moved: {:?} vs {:?}", b.name, before[i], after[j]);
         }
     }
 
@@ -162,20 +124,11 @@ mod tests {
     fn unparent_and_reorder() {
         let mut q = p();
         set_parent(&mut q, "b", None).unwrap();
-        assert!(q
-            .bones
-            .iter()
-            .find(|b| b.name == "b")
-            .unwrap()
-            .parent
-            .is_none());
+        assert!(q.bones.iter().find(|b| b.name == "b").unwrap().parent.is_none());
         // now make 'a' a child of 'c' (listed later) — order must be fixed
         set_parent(&mut q, "a", Some("c")).unwrap();
         let names: Vec<_> = q.bones.iter().map(|b| b.name.as_str()).collect();
-        assert!(
-            names.iter().position(|n| *n == "c") < names.iter().position(|n| *n == "a"),
-            "{names:?}"
-        );
+        assert!(names.iter().position(|n| *n == "c") < names.iter().position(|n| *n == "a"), "{names:?}");
         assert!(rest_world(&q).is_ok());
         assert!(crate::Engine::new(q).is_ok());
     }
@@ -184,10 +137,7 @@ mod tests {
     fn cycles_and_unknowns_are_rejected_without_changes() {
         let mut q = p();
         let snapshot = q.clone();
-        assert!(
-            set_parent(&mut q, "a", Some("b")).is_err(),
-            "b is a's child"
-        );
+        assert!(set_parent(&mut q, "a", Some("b")).is_err(), "b is a's child");
         assert!(set_parent(&mut q, "a", Some("a")).is_err());
         assert!(set_parent(&mut q, "zzz", None).is_err());
         assert!(set_parent(&mut q, "a", Some("zzz")).is_err());

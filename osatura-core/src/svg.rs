@@ -15,10 +15,7 @@ pub struct RenderOptions {
 }
 
 pub(crate) fn esc(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
 }
 
 fn clean(v: f32) -> f32 {
@@ -56,16 +53,10 @@ struct Out<'a> {
 fn paint_value(o: &mut Out, paint: &Paint, force: Option<&str>) -> (String, f32) {
     // a gradient without extent is its last stop everywhere (SVG says so too; written flat to be safe)
     if let Some(c) = paint.degenerate_color() {
-        return (
-            force.map_or_else(|| Rgba { a: 1.0, ..c }.to_hex(), |f| f.to_string()),
-            c.a,
-        );
+        return (force.map_or_else(|| Rgba { a: 1.0, ..c }.to_hex(), |f| f.to_string()), c.a);
     }
     match paint {
-        Paint::Solid(c) => (
-            force.map_or_else(|| Rgba { a: 1.0, ..*c }.to_hex(), |f| f.to_string()),
-            c.a,
-        ),
+        Paint::Solid(c) => (force.map_or_else(|| Rgba { a: 1.0, ..*c }.to_hex(), |f| f.to_string()), c.a),
         Paint::Linear { from, to, stops } => {
             let id = o.next_id;
             o.next_id += 1;
@@ -78,11 +69,7 @@ fn paint_value(o: &mut Out, paint: &Paint, force: Option<&str>) -> (String, f32)
             o.defs.push_str("</linearGradient>\n");
             (format!("url(#g{id})"), 1.0)
         }
-        Paint::Radial {
-            center,
-            radius,
-            stops,
-        } => {
+        Paint::Radial { center, radius, stops } => {
             let id = o.next_id;
             o.next_id += 1;
             let _ = write!(
@@ -113,13 +100,7 @@ fn poly_d(polys: &[Vec<Vec2>]) -> String {
     let mut d = String::new();
     for poly in polys {
         for (i, p) in poly.iter().enumerate() {
-            let _ = write!(
-                d,
-                "{}{} {} ",
-                if i == 0 { "M" } else { "L" },
-                crate::path::n2(p.x),
-                crate::path::n2(p.y)
-            );
+            let _ = write!(d, "{}{} {} ", if i == 0 { "M" } else { "L" }, crate::path::n2(p.x), crate::path::n2(p.y));
         }
         d.push('Z');
         d.push(' ');
@@ -130,33 +111,21 @@ fn poly_d(polys: &[Vec<Vec2>]) -> String {
 fn emit_image(o: &mut Out, node: &RenderNode, force: Option<&str>, body: &mut String) {
     let Some(img) = &node.image else { return };
     let tf = matrix(&node.world);
-    let (pw, ph) = (
-        img.data.pixmap.width() as f32,
-        img.data.pixmap.height() as f32,
-    );
-    let href = format!(
-        "data:image/png;base64,{}",
-        crate::base64::encode(&img.data.png)
-    );
+    let (pw, ph) = (img.data.pixmap.width() as f32, img.data.pixmap.height() as f32);
+    let href = format!("data:image/png;base64,{}", crate::base64::encode(&img.data.png));
     match &img.mesh {
         None => {
             if let Some(c) = force {
                 let _ = writeln!(
                     body,
                     r#"<rect x="{}" y="{}" width="{}" height="{}" transform="{tf}" fill="{c}"/>"#,
-                    n2(img.origin.x),
-                    n2(img.origin.y),
-                    n2(img.size.x),
-                    n2(img.size.y)
+                    n2(img.origin.x), n2(img.origin.y), n2(img.size.x), n2(img.size.y)
                 );
             } else {
                 let _ = writeln!(
                     body,
                     r#"<image href="{href}" x="{}" y="{}" width="{}" height="{}" preserveAspectRatio="none" transform="{tf}"/>"#,
-                    n2(img.origin.x),
-                    n2(img.origin.y),
-                    n2(img.size.x),
-                    n2(img.size.y)
+                    n2(img.origin.x), n2(img.origin.y), n2(img.size.x), n2(img.size.y)
                 );
             }
         }
@@ -165,35 +134,20 @@ fn emit_image(o: &mut Out, node: &RenderNode, force: Option<&str>, body: &mut St
             for tri in &mesh.tris {
                 let ix = [tri[0] as usize, tri[1] as usize, tri[2] as usize];
                 let uv = [mesh.uvs[ix[0]], mesh.uvs[ix[1]], mesh.uvs[ix[2]]];
-                let po = [
-                    mesh.positions[ix[0]],
-                    mesh.positions[ix[1]],
-                    mesh.positions[ix[2]],
-                ];
-                let Some(m) = crate::math::tri_affine(uv, po) else {
-                    continue;
-                };
+                let po = [mesh.positions[ix[0]], mesh.positions[ix[1]], mesh.positions[ix[2]]];
+                let Some(m) = crate::math::tri_affine(uv, po) else { continue };
                 let c = (po[0] + po[1] + po[2]) * (1.0 / 3.0);
                 let g: Vec<Vec2> = po
                     .iter()
                     .map(|&p| {
                         let d = p - c;
                         let l = d.length();
-                        if l < 1e-6 {
-                            p
-                        } else {
-                            p + d * (0.6 / l)
-                        }
+                        if l < 1e-6 { p } else { p + d * (0.6 / l) }
                     })
                     .collect();
                 let pts = format!(
                     "{},{} {},{} {},{}",
-                    n2(g[0].x),
-                    n2(g[0].y),
-                    n2(g[1].x),
-                    n2(g[1].y),
-                    n2(g[2].x),
-                    n2(g[2].y)
+                    n2(g[0].x), n2(g[0].y), n2(g[1].x), n2(g[1].y), n2(g[2].x), n2(g[2].y)
                 );
                 if let Some(col) = force {
                     let _ = writeln!(body, r#"<polygon points="{pts}" fill="{col}"/>"#);
@@ -204,9 +158,7 @@ fn emit_image(o: &mut Out, node: &RenderNode, force: Option<&str>, body: &mut St
                 let _ = writeln!(
                     body,
                     r#"<clipPath id="c{cid}"><polygon points="{pts}"/></clipPath><g clip-path="url(#c{cid})"><image href="{href}" width="{}" height="{}" transform="{}"/></g>"#,
-                    n2(pw),
-                    n2(ph),
-                    matrix(&m)
+                    n2(pw), n2(ph), matrix(&m)
                 );
             }
             body.push_str("</g>\n");
@@ -251,12 +203,7 @@ fn emit_path(o: &mut Out, node: &RenderNode, path: &VPath, force: Option<&str>, 
             }
             if !st.dash.is_empty() {
                 let dash: Vec<String> = st.dash.iter().map(|v| v.to_string()).collect();
-                let _ = write!(
-                    body,
-                    r#" stroke-dasharray="{}" stroke-dashoffset="{}""#,
-                    dash.join(" "),
-                    st.dash_offset
-                );
+                let _ = write!(body, r#" stroke-dasharray="{}" stroke-dashoffset="{}""#, dash.join(" "), st.dash_offset);
             }
             body.push_str("/>\n");
         }
@@ -291,19 +238,8 @@ fn emit_node(o: &mut Out, id: usize, force: Option<&str>, body: &mut String) {
         return;
     }
     let simple = force.is_some();
-    let filter = if simple {
-        None
-    } else {
-        crate::layerfx::svg_filter(
-            &node.effects,
-            &format!("fx{}", o.next_id),
-            o.width,
-            o.height,
-        )
-    };
-    let wrap = node.opacity < 0.999
-        || filter.is_some()
-        || (!simple && (node.blend != Blend::Normal || node.mask.is_some()));
+    let filter = if simple { None } else { crate::layerfx::svg_filter(&node.effects, &format!("fx{}", o.next_id), o.width, o.height) };
+    let wrap = node.opacity < 0.999 || filter.is_some() || (!simple && (node.blend != Blend::Normal || node.mask.is_some()));
     if wrap {
         let mut attrs = String::new();
         if let Some(f) = filter {
@@ -320,11 +256,7 @@ fn emit_node(o: &mut Out, id: usize, force: Option<&str>, body: &mut String) {
         if let (false, Some((mid, invert))) = (simple, node.mask) {
             let mask_id = o.next_id;
             o.next_id += 1;
-            let (bg, fg) = if invert {
-                ("#fff", "#000")
-            } else {
-                ("#000", "#fff")
-            };
+            let (bg, fg) = if invert { ("#fff", "#000") } else { ("#000", "#fff") };
             let mut inner = String::new();
             emit_node(o, mid, Some(fg), &mut inner);
             let _ = writeln!(
@@ -360,31 +292,12 @@ fn emit_node(o: &mut Out, id: usize, force: Option<&str>, body: &mut String) {
 /// to the listed layer paths and their descendants. Hidden layers are skipped. Masks, blend modes and per-layer
 /// opacity are ignored on purpose: a ghost is a flat reference shape. With `moving_vs = Some(f)`, shapes that are
 /// drawn identically at frame `f` are left out, so static backgrounds do not wash over the picture.
-pub fn ghost_fragment(
-    engine: &Engine,
-    frame: f32,
-    tint: &str,
-    outline: bool,
-    only: Option<&[String]>,
-    moving_vs: Option<f32>,
-) -> String {
+pub fn ghost_fragment(engine: &Engine, frame: f32, tint: &str, outline: bool, only: Option<&[String]>, moving_vs: Option<f32>) -> String {
     let f = engine.evaluate(frame);
     let cur = moving_vs.map(|m| engine.evaluate(m));
     let p = &engine.project;
-    let mut o = Out {
-        frame: &f,
-        defs: String::new(),
-        next_id: 0,
-        width: p.width,
-        height: p.height,
-    };
-    let mut oc = cur.as_ref().map(|c| Out {
-        frame: c,
-        defs: String::new(),
-        next_id: 0,
-        width: p.width,
-        height: p.height,
-    });
+    let mut o = Out { frame: &f, defs: String::new(), next_id: 0, width: p.width, height: p.height };
+    let mut oc = cur.as_ref().map(|c| Out { frame: c, defs: String::new(), next_id: 0, width: p.width, height: p.height });
     let mut body = String::new();
     fn leaf(o: &mut Out, id: usize, tint: &str, outline: bool) -> String {
         let node = &o.frame.nodes[id];
@@ -410,11 +323,7 @@ pub fn ghost_fragment(
                         let _ = writeln!(
                             body,
                             r#"<rect x="{}" y="{}" width="{}" height="{}" transform="{}" fill="none" stroke="{tint}" stroke-width="1.5" vector-effect="non-scaling-stroke"/>"#,
-                            n2(img.origin.x),
-                            n2(img.origin.y),
-                            n2(img.size.x),
-                            n2(img.size.y),
-                            matrix(&node.world)
+                            n2(img.origin.x), n2(img.origin.y), n2(img.size.x), n2(img.size.y), matrix(&node.world)
                         );
                     }
                 } else {
@@ -427,16 +336,7 @@ pub fn ghost_fragment(
     }
     // recursive walker threading its emission context; kept flat to avoid per-node struct rebuilding.
     #[allow(clippy::too_many_arguments)]
-    fn walk(
-        o: &mut Out,
-        oc: &mut Option<Out>,
-        id: usize,
-        tint: &str,
-        outline: bool,
-        only: Option<&[String]>,
-        inside: bool,
-        body: &mut String,
-    ) {
+    fn walk(o: &mut Out, oc: &mut Option<Out>, id: usize, tint: &str, outline: bool, only: Option<&[String]>, inside: bool, body: &mut String) {
         let frame = o.frame;
         let node = &frame.nodes[id];
         if !node.visible || node.opacity <= 0.001 {
@@ -446,10 +346,7 @@ pub fn ghost_fragment(
         match node.kind {
             NodeKind::Vector | NodeKind::Image if inside => {
                 let s = leaf(o, id, tint, outline);
-                let same = oc
-                    .as_mut()
-                    .map(|c| leaf(c, id, tint, outline) == s)
-                    .unwrap_or(false);
+                let same = oc.as_mut().map(|c| leaf(c, id, tint, outline) == s).unwrap_or(false);
                 if !same {
                     body.push_str(&s);
                 }
@@ -477,21 +374,13 @@ pub fn render_frame(engine: &Engine, frame: f32, opts: &RenderOptions) -> String
 /// Like [`render_frame`] for an already evaluated (and possibly simplified, see `scrub`) frame.
 pub fn render_evaluated(engine: &Engine, f: &Frame, frame: f32, opts: &RenderOptions) -> String {
     let p = &engine.project;
-    let mut o = Out {
-        frame: f,
-        defs: String::new(),
-        next_id: 0,
-        width: p.width,
-        height: p.height,
-    };
+    let mut o = Out { frame: f, defs: String::new(), next_id: 0, width: p.width, height: p.height };
     let mut body = String::new();
     for &r in &f.roots {
         emit_node(&mut o, r, None, &mut body);
     }
     if opts.show_bones {
-        body.push_str(
-            r##"<g id="bones" stroke="#d6336c" fill="#d6336c" stroke-width="2" opacity="0.9">"##,
-        );
+        body.push_str(r##"<g id="bones" stroke="#d6336c" fill="#d6336c" stroke-width="2" opacity="0.9">"##);
         body.push('\n');
         for (b, w) in p.bones.iter().zip(&f.world) {
             if !crate::bonevis::visible(p, &b.name, frame) {
@@ -543,43 +432,22 @@ mod tests {
     #[test]
     fn mask_keeps_source_alpha_and_gradient_stops_are_sorted() {
         let mut p = Project::new("m", 40.0, 40.0, 12.0, 1);
-        let mut target = Layer::vector(
-            "t",
-            vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ff0000")],
-        );
-        target.mask = Some(MaskRef {
-            layer: "h".into(),
-            invert: true,
-        });
-        let mut h = Layer::vector(
-            "h",
-            vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ffffff60")],
-        );
+        let mut target = Layer::vector("t", vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ff0000")]);
+        target.mask = Some(MaskRef { layer: "h".into(), invert: true });
+        let mut h = Layer::vector("h", vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0).with_fill("#ffffff60")]);
         h.visible = false;
         p.layers = vec![target, h];
         let e = Engine::new(p).unwrap();
         let svg = render_frame(&e, 0.0, &RenderOptions { show_bones: false });
-        assert!(
-            svg.contains(r##"fill="#000" fill-opacity="0.376""##)
-                || svg.contains("fill-opacity=\"0.376\""),
-            "{svg}"
-        );
+        assert!(svg.contains(r##"fill="#000" fill-opacity="0.376""##) || svg.contains("fill-opacity=\"0.376\""), "{svg}");
         // gradient stops are sorted by offset
         let mut q = Project::new("g", 40.0, 40.0, 12.0, 1);
         let mut l = Layer::vector("g", vec![VPath::rect("r", 0.0, 0.0, 40.0, 40.0)]);
         if let crate::project::LayerKind::Vector { paths } = &mut l.kind {
-            paths[0].fill = Some(Paint::linear(
-                Vec2::new(0.0, 0.0),
-                Vec2::new(40.0, 0.0),
-                &[(1.0, "#0000ff"), (0.0, "#ff0000")],
-            ));
+            paths[0].fill = Some(Paint::linear(Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0), &[(1.0, "#0000ff"), (0.0, "#ff0000")]));
         }
         q.layers = vec![l];
-        let svg = render_frame(
-            &Engine::new(q).unwrap(),
-            0.0,
-            &RenderOptions { show_bones: false },
-        );
+        let svg = render_frame(&Engine::new(q).unwrap(), 0.0, &RenderOptions { show_bones: false });
         let a = svg.find(r#"offset="0""#).unwrap();
         let b = svg.find(r#"offset="1""#).unwrap();
         assert!(a < b, "stop at 0 comes first: {svg}");
@@ -632,10 +500,7 @@ mod tests {
         l.blend = Blend::Multiply;
         let svg = render_frame(&one_layer(l), 0.0, &RenderOptions::default());
         assert!(svg.contains("<linearGradient"), "{svg}");
-        assert!(
-            svg.contains(r#"stop-opacity="0.50"#) || svg.contains("stop-opacity=\"0.5"),
-            "{svg}"
-        );
+        assert!(svg.contains(r#"stop-opacity="0.50"#) || svg.contains("stop-opacity=\"0.5"), "{svg}");
         assert!(svg.contains("stroke-dasharray=\"4 2\""));
         assert!(svg.contains("opacity=\"0.500\""));
         assert!(svg.contains("mix-blend-mode:multiply"));
@@ -644,27 +509,15 @@ mod tests {
     #[test]
     fn masks_become_luminance_masks_and_invert_swaps_colours() {
         let mut p = Project::new("t", 100.0, 100.0, 24.0, 1);
-        let shape = Layer::vector(
-            "shape",
-            vec![VPath::rect("r", 0.0, 0.0, 100.0, 100.0).with_fill("#f00")],
-        );
-        let mut hole = Layer::vector(
-            "hole",
-            vec![VPath::circle("c", Vec2::new(50.0, 50.0), 20.0).with_fill("#00f")],
-        );
+        let shape = Layer::vector("shape", vec![VPath::rect("r", 0.0, 0.0, 100.0, 100.0).with_fill("#f00")]);
+        let mut hole = Layer::vector("hole", vec![VPath::circle("c", Vec2::new(50.0, 50.0), 20.0).with_fill("#00f")]);
         hole.visible = false;
         let mut masked = shape.clone();
         masked.name = "masked".into();
-        masked.mask = Some(MaskRef {
-            layer: "hole".into(),
-            invert: false,
-        });
+        masked.mask = Some(MaskRef { layer: "hole".into(), invert: false });
         let mut inv = shape;
         inv.name = "inv".into();
-        inv.mask = Some(MaskRef {
-            layer: "hole".into(),
-            invert: true,
-        });
+        inv.mask = Some(MaskRef { layer: "hole".into(), invert: true });
         p.layers = vec![hole, masked, inv];
         let svg = render_frame(&Engine::new(p).unwrap(), 0.0, &RenderOptions::default());
         assert_eq!(svg.matches("<mask").count(), 2, "{svg}");
@@ -678,32 +531,19 @@ mod tests {
         let mut path = VPath::new(
             "line",
             false,
-            vec![
-                crate::path::Anchor::corner(Vec2::new(0.0, 0.0)),
-                crate::path::Anchor::corner(Vec2::new(80.0, 0.0)),
-            ],
+            vec![crate::path::Anchor::corner(Vec2::new(0.0, 0.0)), crate::path::Anchor::corner(Vec2::new(80.0, 0.0))],
         );
         let mut st = StrokeStyle::solid("#000", 10.0);
         st.width_profile = vec![[0.0, 1.0], [1.0, 0.1]];
         path.stroke = Some(st);
-        let svg = render_frame(
-            &one_layer(Layer::vector("v", vec![path])),
-            0.0,
-            &RenderOptions::default(),
-        );
+        let svg = render_frame(&one_layer(Layer::vector("v", vec![path])), 0.0, &RenderOptions::default());
         assert!(svg.contains("fill-rule=\"nonzero\""), "{svg}");
-        assert!(
-            !svg.contains("stroke-width"),
-            "variable-width strokes are outlines, not strokes"
-        );
+        assert!(!svg.contains("stroke-width"), "variable-width strokes are outlines, not strokes");
     }
 
     #[test]
     fn hidden_layers_are_skipped() {
-        let mut l = Layer::vector(
-            "v",
-            vec![VPath::rect("r", 0.0, 0.0, 5.0, 5.0).with_fill("#000")],
-        );
+        let mut l = Layer::vector("v", vec![VPath::rect("r", 0.0, 0.0, 5.0, 5.0).with_fill("#000")]);
         l.visible = false;
         let svg = render_frame(&one_layer(l), 0.0, &RenderOptions::default());
         assert_eq!(svg.matches("<path").count(), 0);

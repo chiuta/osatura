@@ -21,68 +21,45 @@ fn main() {
         };
         std::process::exit(if ok { 0 } else { 1 });
     }
-    let project = args
-        .first()
-        .filter(|a| !a.starts_with("--"))
-        .map(std::path::PathBuf::from);
+    let project = args.first().filter(|a| !a.starts_with("--")).map(std::path::PathBuf::from);
     window::run(project);
 }
 
 #[cfg(any(windows, target_os = "macos"))]
 mod window {
     use super::launch;
-    use std::cell::RefCell;
-    use std::path::PathBuf;
-    use std::rc::Rc;
     use tao::dpi::LogicalSize;
     use tao::event::{Event, WindowEvent};
     use tao::event_loop::{ControlFlow, EventLoop};
     use tao::window::WindowBuilder;
+    use std::cell::RefCell;
+    use std::path::PathBuf;
+    use std::rc::Rc;
     use wry::WebViewBuilder;
 
     fn escape(s: &str) -> String {
-        s.replace('&', "&amp;")
-            .replace('<', "&lt;")
-            .replace('>', "&gt;")
+        s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
     }
 
     pub fn run(project: Option<std::path::PathBuf>) {
         let started = launch::start(project);
         let event_loop = EventLoop::new();
         let title = match &started {
-            Ok(s) => format!(
-                "OSATURA Studio - {}",
-                s.project
-                    .file_name()
-                    .map(|n| n.to_string_lossy().into_owned())
-                    .unwrap_or_default()
-            ),
+            Ok(s) => format!("OSATURA Studio - {}", s.project.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()),
             Err(_) => "OSATURA Studio".to_string(),
         };
-        let window = WindowBuilder::new()
-            .with_title(title)
-            .with_inner_size(LogicalSize::new(1400.0, 900.0))
-            .build(&event_loop)
-            .expect("cannot create the window");
+        let window = WindowBuilder::new().with_title(title).with_inner_size(LogicalSize::new(1400.0, 900.0)).build(&event_loop).expect("cannot create the window");
         // Exports (GIF, HTML player, Lottie) are downloads of the page. Without a handler the web view would save them
         // silently into the Downloads folder; instead ask where to put them (starting in the project's folder) and tell
         // the person where the file went.
-        let export_dir = started
-            .as_ref()
-            .ok()
-            .and_then(|s| s.project.parent().map(std::path::Path::to_path_buf));
+        let export_dir = started.as_ref().ok().and_then(|s| s.project.parent().map(std::path::Path::to_path_buf));
         let chosen: Rc<RefCell<Option<PathBuf>>> = Rc::new(RefCell::new(None));
         let chosen_start = chosen.clone();
         let chosen_done = chosen.clone();
         let builder = WebViewBuilder::new()
             .with_download_started_handler(move |_url, dest: &mut PathBuf| {
-                let name = dest
-                    .file_name()
-                    .map(|n| n.to_string_lossy().into_owned())
-                    .unwrap_or_else(|| "export".to_string());
-                let mut dialog = rfd::FileDialog::new()
-                    .set_title("Save export")
-                    .set_file_name(name);
+                let name = dest.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "export".to_string());
+                let mut dialog = rfd::FileDialog::new().set_title("Save export").set_file_name(name);
                 if let Some(dir) = &export_dir {
                     dialog = dialog.set_directory(dir);
                 }
@@ -102,16 +79,8 @@ mod window {
                     (true, None) => "Saved.".to_string(),
                     (false, _) => "The export could not be saved.".to_string(),
                 };
-                let level = if success {
-                    rfd::MessageLevel::Info
-                } else {
-                    rfd::MessageLevel::Error
-                };
-                let _ = rfd::MessageDialog::new()
-                    .set_title("OSATURA Studio")
-                    .set_level(level)
-                    .set_description(text)
-                    .show();
+                let level = if success { rfd::MessageLevel::Info } else { rfd::MessageLevel::Error };
+                let _ = rfd::MessageDialog::new().set_title("OSATURA Studio").set_level(level).set_description(text).show();
             });
         let builder = match &started {
             Ok(s) => builder.with_url(&s.url),
@@ -124,11 +93,7 @@ mod window {
         let mut server = started.ok();
         event_loop.run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Wait;
-            if let Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } = event
-            {
+            if let Event::WindowEvent { event: WindowEvent::CloseRequested, .. } = event {
                 server.take(); // Drop stops the server
                 *control_flow = ControlFlow::Exit;
             }

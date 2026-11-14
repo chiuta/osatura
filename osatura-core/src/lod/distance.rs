@@ -8,11 +8,7 @@ use super::*;
 pub(super) fn dist_pt_seg(p: P, a: P, b: P) -> f64 {
     let ab = sub(b, a);
     let l2 = dot(ab, ab);
-    let t = if l2 < 1e-300 {
-        0.0
-    } else {
-        (dot(sub(p, a), ab) / l2).clamp(0.0, 1.0)
-    };
+    let t = if l2 < 1e-300 { 0.0 } else { (dot(sub(p, a), ab) / l2).clamp(0.0, 1.0) };
     dist(p, add(a, mul(ab, t)))
 }
 
@@ -20,10 +16,7 @@ pub(super) fn dist_to_poly(p: P, poly: &[P]) -> f64 {
     match poly.len() {
         0 => f64::INFINITY,
         1 => dist(p, poly[0]),
-        _ => poly
-            .windows(2)
-            .map(|w| dist_pt_seg(p, w[0], w[1]))
-            .fold(f64::INFINITY, f64::min),
+        _ => poly.windows(2).map(|w| dist_pt_seg(p, w[0], w[1])).fold(f64::INFINITY, f64::min),
     }
 }
 
@@ -112,20 +105,10 @@ impl<'a> PolyIdx<'a> {
         }
         let m = pts.len().saturating_sub(1).max(1);
         let diag = (x1 - x0).hypot(y1 - y0).max(1e-9);
-        let cell = (diag / (m as f64).sqrt().max(1.0))
-            .max(diag / 512.0)
-            .max(1e-9);
+        let cell = (diag / (m as f64).sqrt().max(1.0)).max(diag / 512.0).max(1e-9);
         let nx = (((x1 - x0) / cell).floor() as usize + 1).min(1024);
         let ny = (((y1 - y0) / cell).floor() as usize + 1).min(1024);
-        let mut idx = PolyIdx {
-            pts,
-            x0,
-            y0,
-            cell,
-            nx,
-            ny,
-            cells: vec![Vec::new(); nx * ny],
-        };
+        let mut idx = PolyIdx { pts, x0, y0, cell, nx, ny, cells: vec![Vec::new(); nx * ny] };
         for (i, w) in pts.windows(2).enumerate() {
             let (cx0, cx1) = (idx.cx(w[0][0].min(w[1][0])), idx.cx(w[0][0].max(w[1][0])));
             let (cy0, cy1) = (idx.cy(w[0][1].min(w[1][1])), idx.cy(w[0][1].max(w[1][1])));
@@ -267,10 +250,7 @@ pub fn discrete_frechet(a: &[[f64; 2]], b: &[[f64; 2]]) -> f64 {
                 (0, 0) => d,
                 (0, _) => ca[j - 1].max(d),
                 (_, 0) => ca[(i - 1) * m].max(d),
-                _ => ca[(i - 1) * m + j]
-                    .min(ca[(i - 1) * m + j - 1])
-                    .min(ca[i * m + j - 1])
-                    .max(d),
+                _ => ca[(i - 1) * m + j].min(ca[(i - 1) * m + j - 1]).min(ca[i * m + j - 1]).max(d),
             };
         }
     }

@@ -17,24 +17,9 @@ pub struct Rgba {
 }
 
 impl Rgba {
-    pub const BLACK: Rgba = Rgba {
-        r: 0.0,
-        g: 0.0,
-        b: 0.0,
-        a: 1.0,
-    };
-    pub const WHITE: Rgba = Rgba {
-        r: 1.0,
-        g: 1.0,
-        b: 1.0,
-        a: 1.0,
-    };
-    pub const TRANSPARENT: Rgba = Rgba {
-        r: 0.0,
-        g: 0.0,
-        b: 0.0,
-        a: 0.0,
-    };
+    pub const BLACK: Rgba = Rgba { r: 0.0, g: 0.0, b: 0.0, a: 1.0 };
+    pub const WHITE: Rgba = Rgba { r: 1.0, g: 1.0, b: 1.0, a: 1.0 };
+    pub const TRANSPARENT: Rgba = Rgba { r: 0.0, g: 0.0, b: 0.0, a: 0.0 };
 
     pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Rgba { r, g, b, a }
@@ -43,16 +28,8 @@ impl Rgba {
     pub fn parse(s: &str) -> Option<Rgba> {
         let s = s.trim();
         if let Some(hex) = s.strip_prefix('#') {
-            let nib = |i: usize| {
-                u8::from_str_radix(&hex[i..i + 1], 16)
-                    .ok()
-                    .map(|v| (v * 17) as f32 / 255.0)
-            };
-            let byte = |i: usize| {
-                u8::from_str_radix(&hex[i..i + 2], 16)
-                    .ok()
-                    .map(|v| v as f32 / 255.0)
-            };
+            let nib = |i: usize| u8::from_str_radix(&hex[i..i + 1], 16).ok().map(|v| (v * 17) as f32 / 255.0);
+            let byte = |i: usize| u8::from_str_radix(&hex[i..i + 2], 16).ok().map(|v| v as f32 / 255.0);
             if !hex.is_ascii() {
                 return None;
             }
@@ -96,12 +73,7 @@ impl Rgba {
 
     pub fn lerp(self, o: Rgba, t: f32) -> Rgba {
         let l = |a: f32, b: f32| a + (b - a) * t;
-        Rgba::new(
-            l(self.r, o.r),
-            l(self.g, o.g),
-            l(self.b, o.b),
-            l(self.a, o.a),
-        )
+        Rgba::new(l(self.r, o.r), l(self.g, o.g), l(self.b, o.b), l(self.a, o.a))
     }
 
     pub fn with_alpha(self, a: f32) -> Rgba {
@@ -141,16 +113,8 @@ pub fn sorted_stops(stops: &[Stop]) -> Vec<Stop> {
 #[serde(untagged)]
 pub enum Paint {
     Solid(Rgba),
-    Linear {
-        from: Vec2,
-        to: Vec2,
-        stops: Vec<Stop>,
-    },
-    Radial {
-        center: Vec2,
-        radius: f32,
-        stops: Vec<Stop>,
-    },
+    Linear { from: Vec2, to: Vec2, stops: Vec<Stop> },
+    Radial { center: Vec2, radius: f32, stops: Vec<Stop> },
 }
 
 impl Paint {
@@ -158,30 +122,10 @@ impl Paint {
         Paint::Solid(Rgba::hex(hex))
     }
     pub fn linear(from: Vec2, to: Vec2, stops: &[(f32, &str)]) -> Paint {
-        Paint::Linear {
-            from,
-            to,
-            stops: stops
-                .iter()
-                .map(|&(o, c)| Stop {
-                    offset: o,
-                    color: Rgba::hex(c),
-                })
-                .collect(),
-        }
+        Paint::Linear { from, to, stops: stops.iter().map(|&(o, c)| Stop { offset: o, color: Rgba::hex(c) }).collect() }
     }
     pub fn radial(center: Vec2, radius: f32, stops: &[(f32, &str)]) -> Paint {
-        Paint::Radial {
-            center,
-            radius,
-            stops: stops
-                .iter()
-                .map(|&(o, c)| Stop {
-                    offset: o,
-                    color: Rgba::hex(c),
-                })
-                .collect(),
-        }
+        Paint::Radial { center, radius, stops: stops.iter().map(|&(o, c)| Stop { offset: o, color: Rgba::hex(c) }).collect() }
     }
     /// A gradient that has no direction or no extent (a linear one whose end points coincide, a radial
     /// one of radius 0) paints the LAST stop everywhere, as CSS and SVG define it. `Some(colour)` for
@@ -191,16 +135,9 @@ impl Paint {
         let (flat, stops) = match self {
             Paint::Solid(_) => return None,
             Paint::Linear { from, to, stops } => (from.distance(*to) < 1e-6, stops),
-            Paint::Radial { radius, stops, .. } => (
-                ((*radius).partial_cmp(&(1e-6)) != Some(std::cmp::Ordering::Greater)),
-                stops,
-            ),
+            Paint::Radial { radius, stops, .. } => (((*radius).partial_cmp(&(1e-6)) != Some(std::cmp::Ordering::Greater)), stops),
         };
-        if flat {
-            sorted_stops(stops).last().map(|s| s.color)
-        } else {
-            None
-        }
+        if flat { sorted_stops(stops).last().map(|s| s.color) } else { None }
     }
 
     /// Flat colour of this paint, or the first stop of a gradient.

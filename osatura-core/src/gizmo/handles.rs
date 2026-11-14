@@ -26,16 +26,7 @@ pub enum ScaleHandle {
     W,
 }
 
-pub const SCALE_HANDLES: [ScaleHandle; 8] = [
-    ScaleHandle::Nw,
-    ScaleHandle::Ne,
-    ScaleHandle::Se,
-    ScaleHandle::Sw,
-    ScaleHandle::N,
-    ScaleHandle::E,
-    ScaleHandle::S,
-    ScaleHandle::W,
-];
+pub const SCALE_HANDLES: [ScaleHandle; 8] = [ScaleHandle::Nw, ScaleHandle::Ne, ScaleHandle::Se, ScaleHandle::Sw, ScaleHandle::N, ScaleHandle::E, ScaleHandle::S, ScaleHandle::W];
 
 impl ScaleHandle {
     /// Position in the box's unit square.
@@ -52,10 +43,7 @@ impl ScaleHandle {
         }
     }
     pub fn is_corner(self) -> bool {
-        matches!(
-            self,
-            ScaleHandle::Nw | ScaleHandle::Ne | ScaleHandle::Se | ScaleHandle::Sw
-        )
+        matches!(self, ScaleHandle::Nw | ScaleHandle::Ne | ScaleHandle::Se | ScaleHandle::Sw)
     }
 }
 
@@ -98,20 +86,12 @@ pub fn box_handles(bx: &BoxFrame) -> Vec<HandlePos> {
         .map(|&h| {
             let (s, t) = h.local();
             let p = bx.point(s, t);
-            HandlePos {
-                handle: Handle::Scale { at: h },
-                pos: p,
-                cursor: cursor_for_dir(p - c).into(),
-            }
+            HandlePos { handle: Handle::Scale { at: h }, pos: p, cursor: cursor_for_dir(p - c).into() }
         })
         .collect();
     let lv = bx.v.length().max(1e-6);
     let up = bx.v * (-1.0 / lv);
-    v.push(HandlePos {
-        handle: Handle::Rotate,
-        pos: bx.point(0.5, 0.0) + up * ROTATE_OFFSET,
-        cursor: "grab".into(),
-    });
+    v.push(HandlePos { handle: Handle::Rotate, pos: bx.point(0.5, 0.0) + up * ROTATE_OFFSET, cursor: "grab".into() });
     v
 }
 
@@ -130,10 +110,7 @@ pub fn hit_handle(bx: &BoxFrame, p: Vec2, radius: f32) -> Option<Handle> {
         if d <= radius {
             let better = match best {
                 None => true,
-                Some((b, bd)) => {
-                    order(&h.handle) < order(&b.handle)
-                        || (order(&h.handle) == order(&b.handle) && d < bd)
-                }
+                Some((b, bd)) => order(&h.handle) < order(&b.handle) || (order(&h.handle) == order(&b.handle) && d < bd),
             };
             if better {
                 best = Some((h, d));
@@ -160,36 +137,21 @@ pub struct GizmoView {
 }
 
 pub fn gizmo_view(engine: &Engine, frame: &Frame, sel: &Selection) -> GizmoView {
-    let mut g = GizmoView {
-        kind: "none".into(),
-        ..Default::default()
-    };
+    let mut g = GizmoView { kind: "none".into(), ..Default::default() };
     if sel.is_empty() {
         return g;
     }
     if sel.items.iter().all(|t| matches!(t, Target::Point { .. })) {
         g.kind = "points".into();
-        g.points = sel
-            .items
-            .iter()
-            .flat_map(|t| pick::target_points(engine, frame, t))
-            .collect();
+        g.points = sel.items.iter().flat_map(|t| pick::target_points(engine, frame, t)).collect();
         return g;
     }
     if let [Target::Bone { name }] = sel.items.as_slice() {
         if let Some((h, t)) = bone_ends(engine, frame, name) {
             g.kind = "bone".into();
             g.handles = vec![
-                HandlePos {
-                    handle: Handle::BoneHead,
-                    pos: h,
-                    cursor: "move".into(),
-                },
-                HandlePos {
-                    handle: Handle::BoneTip,
-                    pos: t,
-                    cursor: "crosshair".into(),
-                },
+                HandlePos { handle: Handle::BoneHead, pos: h, cursor: "move".into() },
+                HandlePos { handle: Handle::BoneTip, pos: t, cursor: "crosshair".into() },
             ];
             return g;
         }
@@ -224,12 +186,7 @@ pub struct SnapOptions {
 
 impl Default for SnapOptions {
     fn default() -> Self {
-        SnapOptions {
-            grid: None,
-            objects: true,
-            canvas: true,
-            tolerance: 6.0,
-        }
+        SnapOptions { grid: None, objects: true, canvas: true, tolerance: 6.0 }
     }
 }
 
@@ -260,77 +217,36 @@ pub struct Guide {
 }
 
 /// Snap candidates from the canvas and from every visible layer outside the selection.
-pub fn snap_targets(
-    engine: &Engine,
-    frame: &Frame,
-    sel: &Selection,
-    o: &SnapOptions,
-) -> SnapTargets {
+pub fn snap_targets(engine: &Engine, frame: &Frame, sel: &Selection, o: &SnapOptions) -> SnapTargets {
     let mut t = SnapTargets::default();
     let add = |t: &mut SnapTargets, lo: Vec2, hi: Vec2, kind: &str| {
         for x in [lo.x, (lo.x + hi.x) * 0.5, hi.x] {
-            t.xs.push(SnapLine {
-                at: x,
-                from: lo.y,
-                to: hi.y,
-                kind: kind.into(),
-            });
+            t.xs.push(SnapLine { at: x, from: lo.y, to: hi.y, kind: kind.into() });
         }
         for y in [lo.y, (lo.y + hi.y) * 0.5, hi.y] {
-            t.ys.push(SnapLine {
-                at: y,
-                from: lo.x,
-                to: hi.x,
-                kind: kind.into(),
-            });
+            t.ys.push(SnapLine { at: y, from: lo.x, to: hi.x, kind: kind.into() });
         }
     };
     if o.canvas {
         let p = &engine.project;
-        let c: Vec<Vec2> = [
-            Vec2::ZERO,
-            Vec2::new(p.width, 0.0),
-            Vec2::new(p.width, p.height),
-            Vec2::new(0.0, p.height),
-        ]
-        .iter()
-        .map(|q| frame.camera.apply(*q))
-        .collect();
-        let lo = Vec2::new(
-            c.iter().map(|q| q.x).fold(f32::INFINITY, f32::min),
-            c.iter().map(|q| q.y).fold(f32::INFINITY, f32::min),
-        );
-        let hi = Vec2::new(
-            c.iter().map(|q| q.x).fold(f32::NEG_INFINITY, f32::max),
-            c.iter().map(|q| q.y).fold(f32::NEG_INFINITY, f32::max),
-        );
+        let c: Vec<Vec2> = [Vec2::ZERO, Vec2::new(p.width, 0.0), Vec2::new(p.width, p.height), Vec2::new(0.0, p.height)].iter().map(|q| frame.camera.apply(*q)).collect();
+        let lo = Vec2::new(c.iter().map(|q| q.x).fold(f32::INFINITY, f32::min), c.iter().map(|q| q.y).fold(f32::INFINITY, f32::min));
+        let hi = Vec2::new(c.iter().map(|q| q.x).fold(f32::NEG_INFINITY, f32::max), c.iter().map(|q| q.y).fold(f32::NEG_INFINITY, f32::max));
         add(&mut t, lo, hi, "canvas");
     }
     if o.objects {
         let selected: Vec<&str> = sel.layers();
         for id in pick::draw_order(frame) {
             let name = &frame.nodes[id].name;
-            if selected
-                .iter()
-                .any(|s| name == s || name.starts_with(&format!("{s}/")))
-            {
+            if selected.iter().any(|s| name == s || name.starts_with(&format!("{s}/"))) {
                 continue;
             }
-            let pts: Vec<Vec2> = pick::node_shapes(frame, id)
-                .into_iter()
-                .flat_map(|s| s.pts)
-                .collect();
+            let pts: Vec<Vec2> = pick::node_shapes(frame, id).into_iter().flat_map(|s| s.pts).collect();
             if pts.is_empty() {
                 continue;
             }
-            let lo = Vec2::new(
-                pts.iter().map(|q| q.x).fold(f32::INFINITY, f32::min),
-                pts.iter().map(|q| q.y).fold(f32::INFINITY, f32::min),
-            );
-            let hi = Vec2::new(
-                pts.iter().map(|q| q.x).fold(f32::NEG_INFINITY, f32::max),
-                pts.iter().map(|q| q.y).fold(f32::NEG_INFINITY, f32::max),
-            );
+            let lo = Vec2::new(pts.iter().map(|q| q.x).fold(f32::INFINITY, f32::min), pts.iter().map(|q| q.y).fold(f32::INFINITY, f32::min));
+            let hi = Vec2::new(pts.iter().map(|q| q.x).fold(f32::NEG_INFINITY, f32::max), pts.iter().map(|q| q.y).fold(f32::NEG_INFINITY, f32::max));
             add(&mut t, lo, hi, "object");
         }
     }
@@ -338,14 +254,7 @@ pub fn snap_targets(
 }
 
 /// Snap a translation of the extent `(lo, hi)`. Returns the adjusted delta and the guides.
-pub fn snap_move(
-    lo: Vec2,
-    hi: Vec2,
-    delta: Vec2,
-    constrain: bool,
-    o: &SnapOptions,
-    t: &SnapTargets,
-) -> (Vec2, Vec<Guide>) {
+pub fn snap_move(lo: Vec2, hi: Vec2, delta: Vec2, constrain: bool, o: &SnapOptions, t: &SnapTargets) -> (Vec2, Vec<Guide>) {
     let mut d = delta;
     let mut locked = [false, false];
     if constrain {
@@ -362,43 +271,21 @@ pub fn snap_move(
         if locked[axis] {
             continue;
         }
-        let (l0, l1, cands) = if axis == 0 {
-            (lo.x, hi.x, &t.xs)
-        } else {
-            (lo.y, hi.y, &t.ys)
-        };
+        let (l0, l1, cands) = if axis == 0 { (lo.x, hi.x, &t.xs) } else { (lo.y, hi.y, &t.ys) };
         let off = if axis == 0 { d.x } else { d.y };
         let lines = [l0 + off, (l0 + l1) * 0.5 + off, l1 + off];
         let mut best: Option<(f32, SnapLine)> = None;
         for l in lines {
             for c in cands.iter() {
                 let diff = c.at - l;
-                if diff.abs() <= o.tolerance
-                    && best
-                        .as_ref()
-                        .map(|(b, _)| diff.abs() < b.abs())
-                        .unwrap_or(true)
-                {
+                if diff.abs() <= o.tolerance && best.as_ref().map(|(b, _)| diff.abs() < b.abs()).unwrap_or(true) {
                     best = Some((diff, c.clone()));
                 }
             }
             if let Some(g) = o.grid.filter(|g| *g > 0.0) {
                 let diff = (l / g).round() * g - l;
-                if diff.abs() <= o.tolerance
-                    && best
-                        .as_ref()
-                        .map(|(b, _)| diff.abs() < b.abs())
-                        .unwrap_or(true)
-                {
-                    best = Some((
-                        diff,
-                        SnapLine {
-                            at: l + diff,
-                            from: f32::NAN,
-                            to: f32::NAN,
-                            kind: "grid".into(),
-                        },
-                    ));
+                if diff.abs() <= o.tolerance && best.as_ref().map(|(b, _)| diff.abs() < b.abs()).unwrap_or(true) {
+                    best = Some((diff, SnapLine { at: l + diff, from: f32::NAN, to: f32::NAN, kind: "grid".into() }));
                 }
             }
         }
@@ -415,23 +302,9 @@ pub fn snap_move(
     for (axis, p) in picked.iter().enumerate() {
         let Some(l) = p else { continue };
         // extent of the moving box along the other axis, after the move
-        let (m0, m1) = if axis == 0 {
-            (lo.y + d.y, hi.y + d.y)
-        } else {
-            (lo.x + d.x, hi.x + d.x)
-        };
-        let (from, to) = if l.from.is_nan() {
-            (m0 - 20.0, m1 + 20.0)
-        } else {
-            (m0.min(l.from), m1.max(l.to))
-        };
-        guides.push(Guide {
-            axis: if axis == 0 { "x".into() } else { "y".into() },
-            at: l.at,
-            from,
-            to,
-            kind: l.kind.clone(),
-        });
+        let (m0, m1) = if axis == 0 { (lo.y + d.y, hi.y + d.y) } else { (lo.x + d.x, hi.x + d.x) };
+        let (from, to) = if l.from.is_nan() { (m0 - 20.0, m1 + 20.0) } else { (m0.min(l.from), m1.max(l.to)) };
+        guides.push(Guide { axis: if axis == 0 { "x".into() } else { "y".into() }, at: l.at, from, to, kind: l.kind.clone() });
     }
     (d, guides)
 }

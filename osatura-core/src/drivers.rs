@@ -43,17 +43,12 @@ fn curves(poses: &[PoseEntry]) -> CurveMap {
     let mut keys: CurveMap = BTreeMap::new();
     for pose in poses {
         for (t, pr, _) in &pose.values {
-            keys.entry((t.clone(), format!("{pr:?}")))
-                .or_insert((*pr, Vec::new()));
+            keys.entry((t.clone(), format!("{pr:?}"))).or_insert((*pr, Vec::new()));
         }
     }
     for ((t, pn), (pr, list)) in keys.iter_mut() {
         for pose in poses {
-            let v = pose
-                .values
-                .iter()
-                .find(|(tt, pp, _)| tt == t && format!("{pp:?}") == *pn)
-                .map_or(0.0, |x| x.2);
+            let v = pose.values.iter().find(|(tt, pp, _)| tt == t && format!("{pp:?}") == *pn).map_or(0.0, |x| x.2);
             list.push((pose.at, v));
         }
         let _ = pr;
@@ -80,16 +75,11 @@ pub fn slider_driver(p: &mut Project, name: &str, poses: &[PoseEntry]) -> Result
     let ctrl = controller_name(p, name)?;
     add_controller(p, &ctrl);
     for ((target, _), (prop, list)) in curves(&poses) {
-        let frames: Vec<(f32, f32, Ease)> =
-            list.iter().map(|&(a, v)| (a, v, Ease::Linear)).collect();
+        let frames: Vec<(f32, f32, Ease)> = list.iter().map(|&(a, v)| (a, v, Ease::Linear)).collect();
         p.channels.push(Channel {
             target,
             prop,
-            source: Source::Driven {
-                input: ctrl.clone(),
-                input_prop: Prop::BoneOffsetX,
-                curve: Track::with_keys(&frames),
-            },
+            source: Source::Driven { input: ctrl.clone(), input_prop: Prop::BoneOffsetX, curve: Track::with_keys(&frames) },
             mode: Mode::Add,
             weight: 1.0,
         });
@@ -108,46 +98,28 @@ pub struct JoystickPoses {
 /// 2-D controller: `BoneOffsetX` ∈ [−1, 1] blends left/right poses, `BoneOffsetY` up/down
 /// (up = −1 following the stage's downward y axis, down = +1). Axes are additive.
 pub fn joystick_driver(p: &mut Project, name: &str, j: &JoystickPoses) -> Result<String, String> {
-    if [&j.left, &j.right, &j.up, &j.down]
-        .iter()
-        .all(|v| v.is_empty())
-    {
+    if [&j.left, &j.right, &j.up, &j.down].iter().all(|v| v.is_empty()) {
         return Err("a joystick needs at least one axis pose".into());
     }
     let ctrl = controller_name(p, name)?;
     add_controller(p, &ctrl);
-    let mut axis =
-        |lo: &Vec<(String, Prop, f32)>, hi: &Vec<(String, Prop, f32)>, input_prop: Prop| {
-            let poses = vec![
-                PoseEntry {
-                    at: -1.0,
-                    values: lo.clone(),
-                },
-                PoseEntry {
-                    at: 0.0,
-                    values: vec![],
-                },
-                PoseEntry {
-                    at: 1.0,
-                    values: hi.clone(),
-                },
-            ];
-            for ((target, _), (prop, list)) in curves(&poses) {
-                let frames: Vec<(f32, f32, Ease)> =
-                    list.iter().map(|&(a, v)| (a, v, Ease::Linear)).collect();
-                p.channels.push(Channel {
-                    target,
-                    prop,
-                    source: Source::Driven {
-                        input: ctrl.clone(),
-                        input_prop,
-                        curve: Track::with_keys(&frames),
-                    },
-                    mode: Mode::Add,
-                    weight: 1.0,
-                });
-            }
-        };
+    let mut axis = |lo: &Vec<(String, Prop, f32)>, hi: &Vec<(String, Prop, f32)>, input_prop: Prop| {
+        let poses = vec![
+            PoseEntry { at: -1.0, values: lo.clone() },
+            PoseEntry { at: 0.0, values: vec![] },
+            PoseEntry { at: 1.0, values: hi.clone() },
+        ];
+        for ((target, _), (prop, list)) in curves(&poses) {
+            let frames: Vec<(f32, f32, Ease)> = list.iter().map(|&(a, v)| (a, v, Ease::Linear)).collect();
+            p.channels.push(Channel {
+                target,
+                prop,
+                source: Source::Driven { input: ctrl.clone(), input_prop, curve: Track::with_keys(&frames) },
+                mode: Mode::Add,
+                weight: 1.0,
+            });
+        }
+    };
     axis(&j.left, &j.right, Prop::BoneOffsetX);
     axis(&j.up, &j.down, Prop::BoneOffsetY);
     Ok(ctrl)
@@ -155,27 +127,14 @@ pub fn joystick_driver(p: &mut Project, name: &str, j: &JoystickPoses) -> Result
 
 /// Switch-layer child by driver value: `ranges` = (from_value, child_index), e.g. yaw angle
 /// `[(-180, 0), (-60, 1), (-20, 2), (20, 1), (60, 0)]`. The driver is any bone property.
-pub fn view_swap(
-    p: &mut Project,
-    switch_layer: &str,
-    driver_bone: &str,
-    driver_prop: Prop,
-    ranges: &[(f32, usize)],
-) -> Result<(), String> {
+pub fn view_swap(p: &mut Project, switch_layer: &str, driver_bone: &str, driver_prop: Prop, ranges: &[(f32, usize)]) -> Result<(), String> {
     if ranges.is_empty() {
         return Err("need at least one range".into());
     }
-    let layer = p
-        .find_layer(switch_layer)
-        .ok_or_else(|| format!("no layer '{switch_layer}'"))?;
-    let LayerKind::Selector { layers, .. } = &layer.kind else {
-        return Err(format!("'{switch_layer}' is not a switch layer"));
-    };
+    let layer = p.find_layer(switch_layer).ok_or_else(|| format!("no layer '{switch_layer}'"))?;
+    let LayerKind::Selector { layers, .. } = &layer.kind else { return Err(format!("'{switch_layer}' is not a switch layer")) };
     if let Some(&(_, c)) = ranges.iter().find(|&&(_, c)| c >= layers.len()) {
-        return Err(format!(
-            "child index {c} is out of range (the layer has {})",
-            layers.len()
-        ));
+        return Err(format!("child index {c} is out of range (the layer has {})", layers.len()));
     }
     let mut r = ranges.to_vec();
     r.sort_by(|a, b| a.0.total_cmp(&b.0));
@@ -186,11 +145,7 @@ pub fn view_swap(
     p.channels.push(Channel {
         target: switch_layer.to_string(),
         prop: Prop::LayerSwitch,
-        source: Source::Driven {
-            input: driver_bone.to_string(),
-            input_prop: driver_prop,
-            curve: Track::with_keys(&frames),
-        },
+        source: Source::Driven { input: driver_bone.to_string(), input_prop: driver_prop, curve: Track::with_keys(&frames) },
         mode: Mode::Replace,
         weight: 1.0,
     });
@@ -207,10 +162,7 @@ mod tests {
 
     fn base() -> Project {
         let mut p = Project::new("d", 200.0, 200.0, 24.0, 10);
-        p.bones = vec![
-            Bone::new("head", None, 20.0, Vec2::new(100.0, 100.0), 0.0),
-            Bone::new("jaw", Some("head"), 10.0, Vec2::new(10.0, 0.0), 0.0),
-        ];
+        p.bones = vec![Bone::new("head", None, 20.0, Vec2::new(100.0, 100.0), 0.0), Bone::new("jaw", Some("head"), 10.0, Vec2::new(10.0, 0.0), 0.0)];
         p
     }
 
@@ -222,77 +174,33 @@ mod tests {
     }
 
     fn set_slider(p: &mut Project, ctrl: &str, v: f32) {
-        p.channels.insert(
-            0,
-            Channel::keys(
-                ctrl,
-                Prop::BoneOffsetX,
-                Track::with_keys(&[(0.0, v, Ease::Linear)]),
-            ),
-        );
+        p.channels.insert(0, Channel::keys(ctrl, Prop::BoneOffsetX, Track::with_keys(&[(0.0, v, Ease::Linear)])));
     }
 
     #[test]
     fn slider_blends_between_poses() {
         let mut p = base();
         let poses = vec![
-            PoseEntry {
-                at: -1.0,
-                values: vec![("head".into(), Prop::BoneAngle, -30.0)],
-            },
-            PoseEntry {
-                at: 0.0,
-                values: vec![],
-            },
-            PoseEntry {
-                at: 1.0,
-                values: vec![
-                    ("head".into(), Prop::BoneAngle, 30.0),
-                    ("jaw".into(), Prop::BoneAngle, 20.0),
-                ],
-            },
+            PoseEntry { at: -1.0, values: vec![("head".into(), Prop::BoneAngle, -30.0)] },
+            PoseEntry { at: 0.0, values: vec![] },
+            PoseEntry { at: 1.0, values: vec![("head".into(), Prop::BoneAngle, 30.0), ("jaw".into(), Prop::BoneAngle, 20.0)] },
         ];
         let ctrl = slider_driver(&mut p, "turn", &poses).unwrap();
         assert_eq!(ctrl, "ctrl_turn");
         assert!(slider_driver(&mut p, "turn", &poses).is_err(), "name clash");
-        for (v, head, jaw) in [
-            (-1.0, -30.0, 0.0),
-            (0.0, 0.0, 0.0),
-            (0.5, 15.0, 10.0),
-            (1.0, 30.0, 20.0),
-        ] {
+        for (v, head, jaw) in [(-1.0, -30.0, 0.0), (0.0, 0.0, 0.0), (0.5, 15.0, 10.0), (1.0, 30.0, 20.0)] {
             let mut q = p.clone();
             set_slider(&mut q, &ctrl, v);
             assert!((angle(&q, "head") - head).abs() < 0.1, "v={v}");
-            assert!(
-                (angle(&q, "jaw") - (head + jaw)).abs() < 0.1,
-                "v={v}: jaw is a child of head"
-            );
+            assert!((angle(&q, "jaw") - (head + jaw)).abs() < 0.1, "v={v}: jaw is a child of head");
         }
     }
 
     #[test]
     fn slider_input_validation() {
         let mut p = base();
-        assert!(slider_driver(
-            &mut p,
-            "x",
-            &[PoseEntry {
-                at: 0.0,
-                values: vec![]
-            }]
-        )
-        .is_err());
-        let dup = vec![
-            PoseEntry {
-                at: 0.0,
-                values: vec![],
-            },
-            PoseEntry {
-                at: 0.0,
-                values: vec![],
-            },
-        ];
+        assert!(slider_driver(&mut p, "x", &[PoseEntry { at: 0.0, values: vec![] }]).is_err());
+        let dup = vec![PoseEntry { at: 0.0, values: vec![] }, PoseEntry { at: 0.0, values: vec![] }];
         assert!(slider_driver(&mut p, "x", &dup).is_err());
         assert_eq!(p.bones.len(), 2, "failed calls leave the project untouched");
     }
@@ -308,85 +216,35 @@ mod tests {
         };
         let ctrl = joystick_driver(&mut p, "look", &j).unwrap();
         let mut q = p.clone();
-        q.channels.insert(
-            0,
-            Channel::keys(
-                &ctrl,
-                Prop::BoneOffsetX,
-                Track::with_keys(&[(0.0, 1.0, Ease::Linear)]),
-            ),
-        );
-        q.channels.insert(
-            1,
-            Channel::keys(
-                &ctrl,
-                Prop::BoneOffsetY,
-                Track::with_keys(&[(0.0, -1.0, Ease::Linear)]),
-            ),
-        );
+        q.channels.insert(0, Channel::keys(&ctrl, Prop::BoneOffsetX, Track::with_keys(&[(0.0, 1.0, Ease::Linear)])));
+        q.channels.insert(1, Channel::keys(&ctrl, Prop::BoneOffsetY, Track::with_keys(&[(0.0, -1.0, Ease::Linear)])));
         assert!((angle(&q, "head") - 20.0).abs() < 0.1);
-        assert!(
-            (angle(&q, "jaw") - (20.0 - 10.0)).abs() < 0.1,
-            "diagonal = both axes"
-        );
+        assert!((angle(&q, "jaw") - (20.0 - 10.0)).abs() < 0.1, "diagonal = both axes");
         assert!(joystick_driver(&mut p, "empty", &JoystickPoses::default()).is_err());
     }
 
     #[test]
     fn view_swap_selects_children_by_angle() {
         let mut p = base();
-        let kids: Vec<Layer> = (0..3)
-            .map(|i| {
-                Layer::vector(
-                    &format!("v{i}"),
-                    vec![VPath::rect("r", 0.0, 0.0, 10.0 + i as f32, 10.0).with_fill("#336699")],
-                )
-            })
-            .collect();
+        let kids: Vec<Layer> = (0..3).map(|i| Layer::vector(&format!("v{i}"), vec![VPath::rect("r", 0.0, 0.0, 10.0 + i as f32, 10.0).with_fill("#336699")])).collect();
         p.layers = vec![Layer::switch("view", kids)];
-        view_swap(
-            &mut p,
-            "view",
-            "head",
-            Prop::BoneAngle,
-            &[(-180.0, 2), (-30.0, 1), (-10.0, 0), (10.0, 1), (30.0, 2)],
-        )
-        .unwrap();
+        view_swap(&mut p, "view", "head", Prop::BoneAngle, &[(-180.0, 2), (-30.0, 1), (-10.0, 0), (10.0, 1), (30.0, 2)]).unwrap();
         let pick = |deg: f32| {
             let mut q = p.clone();
-            q.channels.insert(
-                0,
-                Channel::keys(
-                    "head",
-                    Prop::BoneAngle,
-                    Track::with_keys(&[(0.0, deg, Ease::Linear)]),
-                ),
-            );
+            q.channels.insert(0, Channel::keys("head", Prop::BoneAngle, Track::with_keys(&[(0.0, deg, Ease::Linear)])));
             let e = Engine::new(q).unwrap();
-            e.evaluate(0.0)
-                .nodes
-                .iter()
-                .filter(|n| format!("{n:?}").contains("v0"))
-                .count()
+            e.evaluate(0.0).nodes.iter().filter(|n| format!("{n:?}").contains("v0")).count()
         };
         // only structural checks here: the engine accepts it and the channel is well-formed
         let _ = pick(0.0);
-        let Source::Driven { curve, .. } = &p.channels.last().unwrap().source else {
-            panic!()
-        };
+        let Source::Driven { curve, .. } = &p.channels.last().unwrap().source else { panic!() };
         assert_eq!(curve.eval(-5.0), Some(0.0));
         assert_eq!(curve.eval(20.0), Some(1.0));
         assert_eq!(curve.eval(45.0), Some(2.0));
         assert_eq!(curve.eval(-100.0), Some(2.0));
-        assert!(
-            view_swap(&mut p, "view", "head", Prop::BoneAngle, &[(0.0, 9)]).is_err(),
-            "child out of range"
-        );
+        assert!(view_swap(&mut p, "view", "head", Prop::BoneAngle, &[(0.0, 9)]).is_err(), "child out of range");
         assert!(view_swap(&mut p, "nope", "head", Prop::BoneAngle, &[(0.0, 0)]).is_err());
-        assert!(
-            view_swap(&mut p, "view", "ghost", Prop::BoneAngle, &[(0.0, 0)]).is_ok(),
-            "bad driver is caught at compile time instead"
-        );
+        assert!(view_swap(&mut p, "view", "ghost", Prop::BoneAngle, &[(0.0, 0)]).is_ok(), "bad driver is caught at compile time instead");
         assert!(Engine::new(p).is_err());
     }
 }

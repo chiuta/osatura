@@ -42,28 +42,15 @@ pub fn make_loop(p: &mut Project, only: &[String], props: &[Prop]) -> Result<Loo
     make_loop_mode(p, only, props, LoopMode::Exclusive)
 }
 
-pub fn make_loop_mode(
-    p: &mut Project,
-    only: &[String],
-    props: &[Prop],
-    mode: LoopMode,
-) -> Result<LoopReport, String> {
+pub fn make_loop_mode(p: &mut Project, only: &[String], props: &[Prop], mode: LoopMode) -> Result<LoopReport, String> {
     if p.frames < 2 {
         return Err("need at least 2 frames".into());
     }
     let last = (p.frames - 1) as f32;
-    let mut rep = LoopReport {
-        converted: vec![],
-        skipped_locked: vec![],
-        flattened: vec![],
-    };
+    let mut rep = LoopReport { converted: vec![], skipped_locked: vec![], flattened: vec![] };
     for i in 0..p.channels.len() {
         let (target, prop) = (p.channels[i].target.clone(), p.channels[i].prop);
-        if p.channels[i].mode != Mode::Replace
-            || prop == Prop::LayerSwitch
-            || (!only.is_empty() && !only.contains(&target))
-            || (!props.is_empty() && !props.contains(&prop))
-        {
+        if p.channels[i].mode != Mode::Replace || prop == Prop::LayerSwitch || (!only.is_empty() && !only.contains(&target)) || (!props.is_empty() && !props.contains(&prop)) {
             continue;
         }
         let track = match &p.channels[i].source {
@@ -89,19 +76,13 @@ pub fn make_loop_mode(
                 // period N: output frame f (0..=N) samples the source at f * (N-1)/N
                 let n = p.frames as f32;
                 for f in 0..=p.frames {
-                    let t = if f == p.frames {
-                        last
-                    } else {
-                        f as f32 * last / n
-                    };
+                    let t = if f == p.frames { last } else { f as f32 * last / n };
                     let v = track.eval(t).unwrap_or(0.0) - drift * (t / last);
                     keys.push((f as f32, v, Ease::Linear));
                 }
             }
         }
-        let (lo, hi) = keys.iter().fold((f32::MAX, f32::MIN), |(lo, hi), k| {
-            (lo.min(k.1), hi.max(k.1))
-        });
+        let (lo, hi) = keys.iter().fold((f32::MAX, f32::MIN), |(lo, hi), k| (lo.min(k.1), hi.max(k.1)));
         if hi - lo <= 1e-4 {
             rep.flattened.push((target.clone(), prop));
         }
@@ -124,27 +105,15 @@ mod tests {
         let mut p = Project::new("l", 200.0, 200.0, 24.0, 25);
         p.bones = vec![Bone::new("b", None, 10.0, Vec2::new(0.0, 100.0), 0.0)];
         let x: Vec<(f32, f32, Ease)> = vec![(0.0, 0.0, Ease::Linear), (24.0, 96.0, Ease::Linear)];
-        let r: Vec<(f32, f32, Ease)> = vec![
-            (0.0, 0.0, Ease::Linear),
-            (12.0, 30.0, Ease::Linear),
-            (24.0, 10.0, Ease::Linear),
-        ];
-        p.channels = vec![
-            Channel::keys("b", Prop::BoneOffsetX, Track::with_keys(&x)),
-            Channel::keys("b", Prop::BoneAngle, Track::with_keys(&r)),
-        ];
+        let r: Vec<(f32, f32, Ease)> = vec![(0.0, 0.0, Ease::Linear), (12.0, 30.0, Ease::Linear), (24.0, 10.0, Ease::Linear)];
+        p.channels = vec![Channel::keys("b", Prop::BoneOffsetX, Track::with_keys(&x)), Channel::keys("b", Prop::BoneAngle, Track::with_keys(&r))];
         p
     }
 
     /// Values of a bone's angle and x over the frames 0..N-1 as a player would show them.
     fn played(p: &Project) -> Vec<(f32, f32)> {
         let e = Engine::new(p.clone()).unwrap();
-        (0..p.frames)
-            .map(|f| {
-                let w = e.evaluate(f as f32).world[0];
-                (w.tx, w.rotation())
-            })
-            .collect()
+        (0..p.frames).map(|f| { let w = e.evaluate(f as f32).world[0]; (w.tx, w.rotation()) }).collect()
     }
 
     /// Wave 7 (was L-70): the travel of a walk is removed on purpose (a project that plays 0..N-1 repeatedly cannot
@@ -153,17 +122,10 @@ mod tests {
     fn flattened_channels_are_reported() {
         let mut p = walk();
         let r = make_loop(&mut p, &[], &[]).unwrap();
-        assert_eq!(
-            r.flattened,
-            vec![("b".to_string(), Prop::BoneOffsetX)],
-            "only the pure travel channel became constant"
-        );
+        assert_eq!(r.flattened, vec![("b".to_string(), Prop::BoneOffsetX)], "only the pure travel channel became constant");
         let mut q = walk();
         let r = make_loop(&mut q, &[], &[Prop::BoneAngle]).unwrap();
-        assert!(
-            r.flattened.is_empty() && r.converted.len() == 1,
-            "restricting the props keeps the travel"
-        );
+        assert!(r.flattened.is_empty() && r.converted.len() == 1, "restricting the props keeps the travel");
     }
 
     /// C5: by default the loop has period N: frames 0..N-1 repeated show no duplicated seam frame and
@@ -180,21 +142,12 @@ mod tests {
             let max_step = steps.iter().cloned().fold(0.0, f32::max);
             let wrap = (get(0) - get(n - 1)).abs();
             // (channel 0 is the travel, which make-loop turns into a constant: nothing to duplicate)
-            assert!(
-                ch == 0 || wrap > 1e-4,
-                "channel {ch}: frame N-1 duplicates frame 0"
-            );
-            assert!(
-                wrap <= max_step * 1.01 + 1e-4,
-                "channel {ch}: wrap {wrap} vs max step {max_step}"
-            );
+            assert!(ch == 0 || wrap > 1e-4, "channel {ch}: frame N-1 duplicates frame 0");
+            assert!(wrap <= max_step * 1.01 + 1e-4, "channel {ch}: wrap {wrap} vs max step {max_step}");
         }
         // frame N (next cycle) equals frame 0, and the track loops with period N
         let e = Engine::new(p.clone()).unwrap();
-        let (a, b) = (
-            e.evaluate(0.0).world[0],
-            e.evaluate(p.frames as f32).world[0],
-        );
+        let (a, b) = (e.evaluate(0.0).world[0], e.evaluate(p.frames as f32).world[0]);
         assert!((a.tx - b.tx).abs() < 1e-3 && (a.rotation() - b.rotation()).abs() < 1e-3);
         let c = e.evaluate(p.frames as f32 + 3.0).world[0];
         let d = e.evaluate(3.0).world[0];
@@ -217,10 +170,7 @@ mod tests {
         let e = Engine::new(p).unwrap();
         let (a, b) = (e.evaluate(0.0).world[0], e.evaluate(24.0).world[0]);
         assert!((a.tx - b.tx).abs() < 1e-3 && (a.rotation() - b.rotation()).abs() < 1e-3);
-        assert!(
-            (e.evaluate(12.0).world[0].tx - a.tx).abs() < 1e-3,
-            "in place"
-        );
+        assert!((e.evaluate(12.0).world[0].tx - a.tx).abs() < 1e-3, "in place");
     }
 
     #[test]
@@ -228,21 +178,9 @@ mod tests {
         let mut p = walk();
         make_loop(&mut p, &[], &[Prop::BoneAngle]).unwrap();
         let e = Engine::new(p.clone()).unwrap();
-        assert!(
-            e.evaluate(24.0).world[0].tx - e.evaluate(0.0).world[0].tx > 90.0,
-            "x untouched"
-        );
+        assert!(e.evaluate(24.0).world[0].tx - e.evaluate(0.0).world[0].tx > 90.0, "x untouched");
         let mut q = walk();
-        crate::chanmeta::set_meta(
-            &mut q,
-            "b",
-            Some(Prop::BoneOffsetX),
-            &crate::chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        crate::chanmeta::set_meta(&mut q, "b", Some(Prop::BoneOffsetX), &crate::chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
         let r = make_loop(&mut q, &[], &[Prop::BoneOffsetX]).unwrap();
         assert!(r.converted.is_empty() && r.skipped_locked.len() == 1);
     }

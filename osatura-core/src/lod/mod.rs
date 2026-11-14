@@ -105,26 +105,27 @@ fn p_of(v: Vec2) -> P {
     [v.x as f64, v.y as f64]
 }
 
-mod affine;
-mod build;
+
 mod distance;
+mod simplify;
+mod options;
+mod affine;
+mod structure;
+mod motion;
 mod keys;
 mod mesh;
-mod motion;
-mod options;
-mod simplify;
-mod structure;
+mod build;
 mod verify;
 
-use affine::*;
-pub use build::*;
 pub use distance::*;
+pub use simplify::*;
+pub use options::*;
+use affine::*;
+pub use structure::*;
+pub use motion::*;
 pub use keys::*;
 pub use mesh::*;
-pub use motion::*;
-pub use options::*;
-pub use simplify::*;
-pub use structure::*;
+pub use build::*;
 pub use verify::*;
 
 #[cfg(test)]

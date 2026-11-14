@@ -27,18 +27,18 @@ use crate::anim::Ease;
 use crate::edit::{Editor, Op};
 use crate::engine::{Engine, Frame};
 use crate::math::{Affine2, Vec2};
-use crate::pick::{self, bone_ends, box_frame, BoxFrame, PointKind, Selection, Target};
+use crate::pick::{self, box_frame, bone_ends, BoxFrame, PointKind, Selection, Target};
 use crate::project::{Channel, Deformer, LayerKind, Prop, Source, Transform2D};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-mod delete;
-mod drag_maths;
 mod handles;
+mod drag_maths;
+mod delete;
 
-pub use delete::*;
-pub use drag_maths::*;
 pub use handles::*;
+pub use drag_maths::*;
+pub use delete::*;
 
 #[cfg(test)]
 mod tests;

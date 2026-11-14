@@ -43,27 +43,24 @@ pub enum EffectKind {
     /// Gaussian blur, `radius` in stage units (sigma = radius / 2).
     Blur { radius: f32 },
     /// Shadow of the layer's alpha, offset by `dx`/`dy`, blurred by `blur`, drawn behind the layer.
-    DropShadow {
-        dx: f32,
-        dy: f32,
-        blur: f32,
-        color: Rgba,
-        #[serde(default = "one")]
-        opacity: f32,
-    },
+    DropShadow { dx: f32, dy: f32, blur: f32, color: Rgba, #[serde(default = "one")] opacity: f32 },
     /// Map luminance between `black` and `white`; `amount` 0..1 keeps the rest of the original.
-    Tint {
-        black: Rgba,
-        white: Rgba,
-        #[serde(default = "one")]
-        amount: f32,
-    },
+    Tint { black: Rgba, white: Rgba, #[serde(default = "one")] amount: f32 },
     /// Replace the colour; `opacity` 0..1 is the share of the new colour.
-    Fill {
-        color: Rgba,
-        #[serde(default = "one")]
-        opacity: f32,
-    },
+    Fill { color: Rgba, #[serde(default = "one")] opacity: f32 },
+    /// Replace the colour with a seamless fractal texture (a tileable preset of [`crate::fractal`], such as
+    /// `rock`, `lava` or `marble`). `tile` is the size of one repeat in stage units; `amount` 0..1 is the share of the
+    /// texture. The texture is anchored to the canvas (like paper grain), not to the layer, and only the layer's
+    /// own alpha shows it. Not drawn in SVG or Lottie output.
+    Texture { preset: String, #[serde(default = "one_seed")] seed: u32, #[serde(default = "default_tile")] tile: f32, #[serde(default = "one")] amount: f32 },
+}
+
+fn one_seed() -> u32 {
+    1
+}
+
+fn default_tile() -> f32 {
+    256.0
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -77,10 +74,7 @@ pub struct LayerEffect {
 
 impl LayerEffect {
     pub fn new(kind: EffectKind) -> LayerEffect {
-        LayerEffect {
-            enabled: true,
-            kind,
-        }
+        LayerEffect { enabled: true, kind }
     }
 
     pub fn blur(radius: f32) -> LayerEffect {
@@ -88,35 +82,27 @@ impl LayerEffect {
     }
 
     pub fn drop_shadow(dx: f32, dy: f32, blur: f32, color: Rgba, opacity: f32) -> LayerEffect {
-        LayerEffect::new(EffectKind::DropShadow {
-            dx,
-            dy,
-            blur,
-            color,
-            opacity,
-        })
+        LayerEffect::new(EffectKind::DropShadow { dx, dy, blur, color, opacity })
     }
 
     pub fn tint(black: Rgba, white: Rgba, amount: f32) -> LayerEffect {
-        LayerEffect::new(EffectKind::Tint {
-            black,
-            white,
-            amount,
-        })
+        LayerEffect::new(EffectKind::Tint { black, white, amount })
     }
 
     pub fn fill(color: Rgba, opacity: f32) -> LayerEffect {
         LayerEffect::new(EffectKind::Fill { color, opacity })
     }
 
+    pub fn texture(preset: &str, seed: u32, tile: f32, amount: f32) -> LayerEffect {
+        LayerEffect::new(EffectKind::Texture { preset: preset.to_string(), seed, tile, amount })
+    }
+
     /// The animatable numbers of this effect (channel properties).
     pub fn props(&self) -> &'static [Prop] {
         match self.kind {
             EffectKind::Blur { .. } => &[Prop::FxBlur],
-            EffectKind::DropShadow { .. } => {
-                &[Prop::FxDx, Prop::FxDy, Prop::FxSoft, Prop::FxAmount]
-            }
-            EffectKind::Tint { .. } | EffectKind::Fill { .. } => &[Prop::FxAmount],
+            EffectKind::DropShadow { .. } => &[Prop::FxDx, Prop::FxDy, Prop::FxSoft, Prop::FxAmount],
+            EffectKind::Tint { .. } | EffectKind::Fill { .. } | EffectKind::Texture { .. } => &[Prop::FxAmount],
         }
     }
 
@@ -129,6 +115,7 @@ impl LayerEffect {
             (EffectKind::DropShadow { opacity, .. }, Prop::FxAmount) => *opacity,
             (EffectKind::Tint { amount, .. }, Prop::FxAmount) => *amount,
             (EffectKind::Fill { opacity, .. }, Prop::FxAmount) => *opacity,
+            (EffectKind::Texture { amount, .. }, Prop::FxAmount) => *amount,
             _ => return None,
         })
     }
@@ -140,18 +127,13 @@ impl LayerEffect {
         }
         match (&mut self.kind, p) {
             (EffectKind::Blur { radius }, Prop::FxBlur) => *radius = v.clamp(0.0, MAX_BLUR),
-            (EffectKind::DropShadow { dx, .. }, Prop::FxDx) => {
-                *dx = v.clamp(-MAX_OFFSET, MAX_OFFSET)
-            }
-            (EffectKind::DropShadow { dy, .. }, Prop::FxDy) => {
-                *dy = v.clamp(-MAX_OFFSET, MAX_OFFSET)
-            }
+            (EffectKind::DropShadow { dx, .. }, Prop::FxDx) => *dx = v.clamp(-MAX_OFFSET, MAX_OFFSET),
+            (EffectKind::DropShadow { dy, .. }, Prop::FxDy) => *dy = v.clamp(-MAX_OFFSET, MAX_OFFSET),
             (EffectKind::DropShadow { blur, .. }, Prop::FxSoft) => *blur = v.clamp(0.0, MAX_BLUR),
-            (EffectKind::DropShadow { opacity, .. }, Prop::FxAmount) => {
-                *opacity = v.clamp(0.0, 1.0)
-            }
+            (EffectKind::DropShadow { opacity, .. }, Prop::FxAmount) => *opacity = v.clamp(0.0, 1.0),
             (EffectKind::Tint { amount, .. }, Prop::FxAmount) => *amount = v.clamp(0.0, 1.0),
             (EffectKind::Fill { opacity, .. }, Prop::FxAmount) => *opacity = v.clamp(0.0, 1.0),
+            (EffectKind::Texture { amount, .. }, Prop::FxAmount) => *amount = v.clamp(0.0, 1.0),
             _ => {}
         }
     }
@@ -161,30 +143,13 @@ impl LayerEffect {
         let col = |c: &Rgba| [c.r, c.g, c.b, c.a].iter().all(|v| v.is_finite());
         let ok = match &self.kind {
             EffectKind::Blur { radius } => fin(*radius) && (0.0..=MAX_BLUR).contains(radius),
-            EffectKind::DropShadow {
-                dx,
-                dy,
-                blur,
-                color,
-                opacity,
-            } => {
-                fin(*dx)
-                    && fin(*dy)
-                    && dx.abs() <= MAX_OFFSET
-                    && dy.abs() <= MAX_OFFSET
-                    && fin(*blur)
-                    && (0.0..=MAX_BLUR).contains(blur)
-                    && col(color)
-                    && fin(*opacity)
-                    && (0.0..=1.0).contains(opacity)
+            EffectKind::DropShadow { dx, dy, blur, color, opacity } => {
+                fin(*dx) && fin(*dy) && dx.abs() <= MAX_OFFSET && dy.abs() <= MAX_OFFSET && fin(*blur) && (0.0..=MAX_BLUR).contains(blur) && col(color) && fin(*opacity) && (0.0..=1.0).contains(opacity)
             }
-            EffectKind::Tint {
-                black,
-                white,
-                amount,
-            } => col(black) && col(white) && fin(*amount) && (0.0..=1.0).contains(amount),
-            EffectKind::Fill { color, opacity } => {
-                col(color) && fin(*opacity) && (0.0..=1.0).contains(opacity)
+            EffectKind::Tint { black, white, amount } => col(black) && col(white) && fin(*amount) && (0.0..=1.0).contains(amount),
+            EffectKind::Fill { color, opacity } => col(color) && fin(*opacity) && (0.0..=1.0).contains(opacity),
+            EffectKind::Texture { preset, tile, amount, .. } => {
+                crate::fractal::preset(preset).is_some_and(|p| !p.kind.is_escape()) && fin(*tile) && (4.0..=8192.0).contains(tile) && fin(*amount) && (0.0..=1.0).contains(amount)
             }
         };
         if ok {
@@ -217,21 +182,13 @@ pub fn target(layer_path: &str, index: usize) -> String {
 const LUMA: [f32; 3] = [0.2126, 0.7152, 0.0722];
 
 fn rgb(c: &Rgba) -> [f32; 3] {
-    [
-        c.r.clamp(0.0, 1.0),
-        c.g.clamp(0.0, 1.0),
-        c.b.clamp(0.0, 1.0),
-    ]
+    [c.r.clamp(0.0, 1.0), c.g.clamp(0.0, 1.0), c.b.clamp(0.0, 1.0)]
 }
 
 /// The 4x5 colour matrix (row major, acting on straight RGBA) of a colour effect; `None` for the others.
 fn color_matrix(k: &EffectKind) -> Option<[f32; 20]> {
     match k {
-        EffectKind::Tint {
-            black,
-            white,
-            amount,
-        } => {
+        EffectKind::Tint { black, white, amount } => {
             let (b, w, a) = (rgb(black), rgb(white), amount.clamp(0.0, 1.0));
             let mut m = [0.0f32; 20];
             for c in 0..3 {
@@ -266,8 +223,7 @@ fn apply_matrix(buf: &mut [f32], m: &[f32; 20]) {
         }
         let c = [p[0] / a, p[1] / a, p[2] / a];
         for i in 0..3 {
-            let v = (m[i * 5] * c[0] + m[i * 5 + 1] * c[1] + m[i * 5 + 2] * c[2] + m[i * 5 + 4])
-                .clamp(0.0, 1.0);
+            let v = (m[i * 5] * c[0] + m[i * 5 + 1] * c[1] + m[i * 5 + 2] * c[2] + m[i * 5 + 4]).clamp(0.0, 1.0);
             p[i] = v * a;
         }
     }
@@ -281,12 +237,9 @@ pub fn effect_pad(effects: &[LayerEffect], scale: f32) -> usize {
     let mut pad = 0usize;
     for e in effects.iter().filter(|e| e.enabled && e.validate().is_ok()) {
         match &e.kind {
-            EffectKind::Blur { radius } => {
-                pad += crate::postfx::blur_extent((radius * scale).min(MAX_BLUR_PX))
-            }
+            EffectKind::Blur { radius } => pad += crate::postfx::blur_extent((radius * scale).min(MAX_BLUR_PX)),
             EffectKind::DropShadow { dx, dy, blur, .. } => {
-                pad += (dx * scale).abs().max((dy * scale).abs()).ceil() as usize
-                    + crate::postfx::blur_extent((blur * scale).min(MAX_BLUR_PX));
+                pad += (dx * scale).abs().max((dy * scale).abs()).ceil() as usize + crate::postfx::blur_extent((blur * scale).min(MAX_BLUR_PX));
             }
             _ => {}
         }
@@ -308,41 +261,92 @@ pub fn apply_premul(buf: &mut Vec<f32>, w: usize, h: usize, effects: &[LayerEffe
                     *buf = crate::postfx::blur_premul(buf, w, h, r);
                 }
             }
-            EffectKind::DropShadow {
-                dx,
-                dy,
-                blur,
-                color,
-                opacity,
-            } => {
-                let alpha: Vec<f32> = buf
-                    .chunks_exact(4)
-                    .flat_map(|p| [0.0, 0.0, 0.0, p[3]])
-                    .collect();
-                let moved = crate::postfx::shift(
-                    &alpha,
-                    w,
-                    h,
-                    (dx * scale).round() as i32,
-                    (dy * scale).round() as i32,
-                );
+            EffectKind::DropShadow { dx, dy, blur, color, opacity } => {
+                let alpha: Vec<f32> = buf.chunks_exact(4).flat_map(|p| [0.0, 0.0, 0.0, p[3]]).collect();
+                let moved = crate::postfx::shift(&alpha, w, h, (dx * scale).round() as i32, (dy * scale).round() as i32);
                 let soft = (blur * scale).min(MAX_BLUR_PX);
-                let moved = if soft > 0.0 {
-                    crate::postfx::blur_premul(&moved, w, h, soft)
-                } else {
-                    moved
-                };
-                let shadow = crate::postfx::solid_from_alpha(
-                    &crate::postfx::alpha_of(&moved),
-                    rgb(color),
-                    opacity * color.a.clamp(0.0, 1.0),
-                );
+                let moved = if soft > 0.0 { crate::postfx::blur_premul(&moved, w, h, soft) } else { moved };
+                let shadow = crate::postfx::solid_from_alpha(&crate::postfx::alpha_of(&moved), rgb(color), opacity * color.a.clamp(0.0, 1.0));
                 *buf = crate::postfx::over(buf, &shadow);
             }
+            EffectKind::Texture { preset, seed, tile, amount } => apply_texture(buf, w, h, preset, *seed, *tile, *amount, scale),
             k => {
                 if let Some(m) = color_matrix(k) {
                     apply_matrix(buf, &m);
                 }
+            }
+        }
+    }
+}
+
+type TileCache = std::collections::HashMap<(String, u32, usize), std::sync::Arc<Vec<u8>>>;
+
+/// One repeat of a texture as RGBA8, generated once per (preset, seed, side) and kept (at most 12 are held).
+fn texture_tile(preset: &str, seed: u32, side: usize) -> Option<std::sync::Arc<Vec<u8>>> {
+    use std::sync::{Arc, Mutex, OnceLock};
+    static CACHE: OnceLock<Mutex<TileCache>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new(TileCache::new()));
+    let key = (preset.to_string(), seed, side);
+    if let Some(t) = cache.lock().ok()?.get(&key) {
+        return Some(t.clone());
+    }
+    let mut p = crate::fractal::preset(preset)?;
+    p.size = side as u32;
+    p.seed = seed;
+    p.ssaa = 1;
+    let t = Arc::new(crate::fractal::generate(&p).ok()?.color);
+    let mut c = cache.lock().ok()?;
+    if c.len() >= 12 {
+        c.clear();
+    }
+    c.insert(key, t.clone());
+    Some(t)
+}
+
+#[allow(clippy::too_many_arguments, clippy::needless_range_loop)]
+fn apply_texture(
+    buf: &mut [f32],
+    w: usize,
+    h: usize,
+    preset: &str,
+    seed: u32,
+    tile: f32,
+    amount: f32,
+    scale: f32,
+) {
+    let amt = amount.clamp(0.0, 1.0);
+    let repeat_px = (tile * scale).max(1.0);
+    // a tile side of the next power of two keeps one texel per output pixel or more
+    let side = (repeat_px.ceil() as usize)
+        .next_power_of_two()
+        .clamp(64, 1024);
+    let Some(t) = texture_tile(preset, seed, side) else {
+        return;
+    };
+    let texel =
+        |x: usize, y: usize, c: usize| t[(y % side * side + x % side) * 4 + c] as f32 / 255.0;
+    for y in 0..h {
+        for x in 0..w {
+            let p = &mut buf[(y * w + x) * 4..(y * w + x) * 4 + 4];
+            let a = p[3];
+            if a <= 0.0 {
+                continue;
+            }
+            // bilinear sample of the wrapping tile at this pixel's place on the canvas
+            let fx = (x as f32 + 0.5) / repeat_px * side as f32 - 0.5;
+            let fy = (y as f32 + 0.5) / repeat_px * side as f32 - 0.5;
+            let (x0, y0) = (fx.floor(), fy.floor());
+            let (tx, ty) = (fx - x0, fy - y0);
+            let (ix, iy) = (
+                (x0 as i64).rem_euclid(side as i64) as usize,
+                (y0 as i64).rem_euclid(side as i64) as usize,
+            );
+            for c in 0..3 {
+                let top = texel(ix, iy, c) * (1.0 - tx) + texel(ix + 1, iy, c) * tx;
+                let bot = texel(ix, iy + 1, c) * (1.0 - tx) + texel(ix + 1, iy + 1, c) * tx;
+                let tv = top * (1.0 - ty) + bot * ty;
+                let orig = p[c] / a;
+                p[c] = (orig * (1.0 - amt) + tv * amt).clamp(0.0, 1.0) * a;
             }
         }
     }
@@ -361,11 +365,7 @@ pub fn apply_pixmap(pm: &mut tiny_skia::Pixmap, effects: &[LayerEffect], scale: 
 fn num(v: f32) -> String {
     let s = format!("{v:.5}");
     let s = s.trim_end_matches('0').trim_end_matches('.');
-    if s.is_empty() || s == "-0" {
-        "0".into()
-    } else {
-        s.into()
-    }
+    if s.is_empty() || s == "-0" { "0".into() } else { s.into() }
 }
 
 /// An SVG `<filter id="{id}">` with the same chain, covering the canvas (`width` x `height` user
@@ -373,72 +373,35 @@ fn num(v: f32) -> String {
 pub fn svg_filter(effects: &[LayerEffect], id: &str, width: f32, height: f32) -> Option<String> {
     let mut prims = String::new();
     let mut cur = "SourceGraphic".to_string();
-    for (k, e) in effects
-        .iter()
-        .enumerate()
-        .filter(|(_, e)| e.enabled && e.validate().is_ok())
-    {
+    for (k, e) in effects.iter().enumerate().filter(|(_, e)| e.enabled && e.validate().is_ok()) {
         match &e.kind {
             EffectKind::Blur { radius } => {
                 if *radius > 0.0 {
-                    let _ = writeln!(
-                        prims,
-                        r#"<feGaussianBlur in="{cur}" stdDeviation="{}" result="r{k}"/>"#,
-                        num(radius * 0.5)
-                    );
+                    let _ = writeln!(prims, r#"<feGaussianBlur in="{cur}" stdDeviation="{}" result="r{k}"/>"#, num(radius * 0.5));
                     cur = format!("r{k}");
                 }
             }
-            EffectKind::DropShadow {
-                dx,
-                dy,
-                blur,
-                color,
-                opacity,
-            } => {
+            EffectKind::DropShadow { dx, dy, blur, color, opacity } => {
                 let c = rgb(color);
                 let a = opacity * color.a.clamp(0.0, 1.0);
-                let _ = writeln!(
-                    prims,
-                    r#"<feColorMatrix in="{cur}" type="matrix" values="0 0 0 0 {} 0 0 0 0 {} 0 0 0 0 {} 0 0 0 {} 0" result="s{k}"/>"#,
-                    num(c[0]),
-                    num(c[1]),
-                    num(c[2]),
-                    num(a)
-                );
+                let _ = writeln!(prims, r#"<feColorMatrix in="{cur}" type="matrix" values="0 0 0 0 {} 0 0 0 0 {} 0 0 0 0 {} 0 0 0 {} 0" result="s{k}"/>"#, num(c[0]), num(c[1]), num(c[2]), num(a));
                 let mut sh = format!("s{k}");
                 let (ox, oy) = (dx.round(), dy.round());
                 if ox != 0.0 || oy != 0.0 {
-                    let _ = writeln!(
-                        prims,
-                        r#"<feOffset in="{sh}" dx="{}" dy="{}" result="o{k}"/>"#,
-                        num(ox),
-                        num(oy)
-                    );
+                    let _ = writeln!(prims, r#"<feOffset in="{sh}" dx="{}" dy="{}" result="o{k}"/>"#, num(ox), num(oy));
                     sh = format!("o{k}");
                 }
                 if *blur > 0.0 {
-                    let _ = writeln!(
-                        prims,
-                        r#"<feGaussianBlur in="{sh}" stdDeviation="{}" result="b{k}"/>"#,
-                        num(blur * 0.5)
-                    );
+                    let _ = writeln!(prims, r#"<feGaussianBlur in="{sh}" stdDeviation="{}" result="b{k}"/>"#, num(blur * 0.5));
                     sh = format!("b{k}");
                 }
-                let _ = writeln!(
-                    prims,
-                    r#"<feMerge result="r{k}"><feMergeNode in="{sh}"/><feMergeNode in="{cur}"/></feMerge>"#
-                );
+                let _ = writeln!(prims, r#"<feMerge result="r{k}"><feMergeNode in="{sh}"/><feMergeNode in="{cur}"/></feMerge>"#);
                 cur = format!("r{k}");
             }
             kind => {
                 if let Some(m) = color_matrix(kind) {
                     let vals: Vec<String> = m.iter().map(|v| num(*v)).collect();
-                    let _ = writeln!(
-                        prims,
-                        r#"<feColorMatrix in="{cur}" type="matrix" values="{}" result="r{k}"/>"#,
-                        vals.join(" ")
-                    );
+                    let _ = writeln!(prims, r#"<feColorMatrix in="{cur}" type="matrix" values="{}" result="r{k}"/>"#, vals.join(" "));
                     cur = format!("r{k}");
                 }
             }
@@ -460,16 +423,11 @@ mod tests {
 
     #[test]
     fn serde_roundtrip_and_defaults() {
-        let e = vec![
-            LayerEffect::blur(3.0),
-            LayerEffect::drop_shadow(2.0, 3.0, 4.0, Rgba::BLACK, 0.5),
-        ];
+        let e = vec![LayerEffect::blur(3.0), LayerEffect::drop_shadow(2.0, 3.0, 4.0, Rgba::BLACK, 0.5)];
         let j = serde_json::to_string(&e).unwrap();
         let back: Vec<LayerEffect> = serde_json::from_str(&j).unwrap();
         assert_eq!(e, back);
-        let d: LayerEffect =
-            serde_json::from_str(r##"{"type":"tint","black":"#000000","white":"#ff0000"}"##)
-                .unwrap();
+        let d: LayerEffect = serde_json::from_str(r##"{"type":"tint","black":"#000000","white":"#ff0000"}"##).unwrap();
         assert!(d.enabled && d.get(Prop::FxAmount) == Some(1.0));
         assert!(serde_json::from_str::<LayerEffect>(r#"{"type":"nope"}"#).is_err());
     }
@@ -496,24 +454,8 @@ mod tests {
 
     #[test]
     fn svg_filter_composes_standard_primitives() {
-        let f = svg_filter(
-            &[
-                LayerEffect::blur(4.0),
-                LayerEffect::drop_shadow(3.0, 2.0, 2.0, Rgba::BLACK, 0.5),
-                LayerEffect::tint(Rgba::BLACK, Rgba::WHITE, 1.0),
-            ],
-            "f0",
-            10.0,
-            10.0,
-        )
-        .unwrap();
-        for p in [
-            "feGaussianBlur",
-            "feOffset",
-            "feMerge",
-            "feColorMatrix",
-            "sRGB",
-        ] {
+        let f = svg_filter(&[LayerEffect::blur(4.0), LayerEffect::drop_shadow(3.0, 2.0, 2.0, Rgba::BLACK, 0.5), LayerEffect::tint(Rgba::BLACK, Rgba::WHITE, 1.0)], "f0", 10.0, 10.0).unwrap();
+        for p in ["feGaussianBlur", "feOffset", "feMerge", "feColorMatrix", "sRGB"] {
             assert!(f.contains(p), "{p} missing in {f}");
         }
         assert!(svg_filter(&[LayerEffect::blur(0.0)], "f", 1.0, 1.0).is_none());
@@ -547,15 +489,7 @@ mod tests {
 
     fn img(p: &Project, frame: f32) -> Img {
         let e = Engine::new(p.clone()).unwrap();
-        let (w, h, d) = render_rgba(
-            &e,
-            frame,
-            &RasterOptions {
-                scale: 1.0,
-                show_bones: false,
-                transparent: true,
-            },
-        );
+        let (w, h, d) = render_rgba(&e, frame, &RasterOptions { scale: 1.0, show_bones: false, transparent: true });
         Img::new(w as usize, h as usize, d).unwrap()
     }
 
@@ -566,38 +500,15 @@ mod tests {
 
     #[test]
     fn blur_softens_edges_and_keeps_the_middle() {
-        let sharp = img(
-            &project(vec![rect("a", 20.0, 10.0, 20.0, 20.0, "#ff0000")], vec![]),
-            0.0,
-        );
-        let soft = img(
-            &project(
-                vec![with_fx(
-                    rect("a", 20.0, 10.0, 20.0, 20.0, "#ff0000"),
-                    vec![LayerEffect::blur(6.0)],
-                )],
-                vec![],
-            ),
-            0.0,
-        );
+        let sharp = img(&project(vec![rect("a", 20.0, 10.0, 20.0, 20.0, "#ff0000")], vec![]), 0.0);
+        let soft = img(&project(vec![with_fx(rect("a", 20.0, 10.0, 20.0, 20.0, "#ff0000"), vec![LayerEffect::blur(6.0)])], vec![]), 0.0);
         assert_eq!(sharp.px(18, 20)[3], 0);
-        assert!(
-            soft.px(18, 20)[3] > 10,
-            "halo outside the edge: {:?}",
-            soft.px(18, 20)
-        );
+        assert!(soft.px(18, 20)[3] > 10, "halo outside the edge: {:?}", soft.px(18, 20));
         assert!(soft.px(21, 20)[3] < 250, "edge pixel is no longer opaque");
         assert!(soft.px(30, 20)[3] >= 254, "centre stays opaque");
         let sum = |i: &Img| i.rgba.chunks(4).map(|p| p[3] as f64).sum::<f64>();
-        assert!(
-            (sum(&sharp) - sum(&soft)).abs() / sum(&sharp) < 0.02,
-            "alpha energy is conserved"
-        );
-        assert_eq!(
-            &soft.px(18, 20)[..3],
-            &[255, 0, 0],
-            "colour of the halo stays red"
-        );
+        assert!((sum(&sharp) - sum(&soft)).abs() / sum(&sharp) < 0.02, "alpha energy is conserved");
+        assert_eq!(&soft.px(18, 20)[..3], &[255, 0, 0], "colour of the halo stays red");
     }
 
     /// C10c: a layer that extends past the canvas blurs against its real surroundings: the canvas edge
@@ -605,67 +516,25 @@ mod tests {
     /// A layer that really ends at the edge of the canvas still falls off there.
     #[test]
     fn blur_at_the_canvas_edge_uses_the_content_beyond_it() {
-        let big = with_fx(
-            rect(
-                "a",
-                -30.0,
-                -30.0,
-                W as f32 + 60.0,
-                H as f32 + 60.0,
-                "#ff0000",
-            ),
-            vec![LayerEffect::blur(8.0)],
-        );
+        let big = with_fx(rect("a", -30.0, -30.0, W as f32 + 60.0, H as f32 + 60.0, "#ff0000"), vec![LayerEffect::blur(8.0)]);
         let p = project(vec![big], vec![]);
         let i = img(&p, 0.0);
-        assert!(
-            i.px(0, H / 2)[3] >= 253 && i.px(W / 2, 0)[3] >= 253 && i.px(W - 1, H - 1)[3] >= 253,
-            "edge pixels stay opaque: {:?}",
-            i.px(0, H / 2)
-        );
+        assert!(i.px(0, H / 2)[3] >= 253 && i.px(W / 2, 0)[3] >= 253 && i.px(W - 1, H - 1)[3] >= 253, "edge pixels stay opaque: {:?}", i.px(0, H / 2));
         // the float renderer agrees
         let e = Engine::new(p).unwrap();
-        let o = RasterOptions {
-            scale: 1.0,
-            show_bones: false,
-            transparent: true,
-        };
+        let o = RasterOptions { scale: 1.0, show_bones: false, transparent: true };
         let f = crate::fraster::render_float(&e, 0.0, &o).to_straight_u8();
         let a = |x: usize, y: usize| f[(y * W + x) * 4 + 3];
-        assert!(
-            a(0, H / 2) >= 253 && a(W / 2, 0) >= 253,
-            "float edge {}",
-            a(0, H / 2)
-        );
+        assert!(a(0, H / 2) >= 253 && a(W / 2, 0) >= 253, "float edge {}", a(0, H / 2));
         // a layer that really ends at the canvas edge still falls off there
-        let flush = project(
-            vec![with_fx(
-                rect("a", 0.0, 0.0, W as f32, H as f32, "#ff0000"),
-                vec![LayerEffect::blur(8.0)],
-            )],
-            vec![],
-        );
+        let flush = project(vec![with_fx(rect("a", 0.0, 0.0, W as f32, H as f32, "#ff0000"), vec![LayerEffect::blur(8.0)])], vec![]);
         let j = img(&flush, 0.0);
-        assert!(
-            j.px(0, H / 2)[3] < 200 && j.px(W / 2, H / 2)[3] >= 250,
-            "{:?} {:?}",
-            j.px(0, H / 2),
-            j.px(W / 2, H / 2)
-        );
+        assert!(j.px(0, H / 2)[3] < 200 && j.px(W / 2, H / 2)[3] >= 250, "{:?} {:?}", j.px(0, H / 2), j.px(W / 2, H / 2));
     }
 
     #[test]
     fn drop_shadow_is_offset_coloured_and_behind() {
-        let l = with_fx(
-            rect("a", 10.0, 10.0, 10.0, 10.0, "#ff0000"),
-            vec![LayerEffect::drop_shadow(
-                8.0,
-                6.0,
-                0.0,
-                Rgba::new(0.0, 0.0, 1.0, 1.0),
-                0.5,
-            )],
-        );
+        let l = with_fx(rect("a", 10.0, 10.0, 10.0, 10.0, "#ff0000"), vec![LayerEffect::drop_shadow(8.0, 6.0, 0.0, Rgba::new(0.0, 0.0, 1.0, 1.0), 0.5)]);
         let i = img(&project(vec![l], vec![]), 0.0);
         assert_eq!(i.px(12, 12), [255, 0, 0, 255], "layer stays on top");
         let s = i.px(25, 23);
@@ -676,28 +545,12 @@ mod tests {
 
     #[test]
     fn tint_and_fill_recolour_groups_and_images() {
-        let group = Layer::group(
-            "g",
-            vec![
-                rect("a", 0.0, 0.0, 10.0, 10.0, "#ffffff"),
-                rect("b", 20.0, 0.0, 10.0, 10.0, "#000000"),
-            ],
-        );
-        let tinted = with_fx(
-            group.clone(),
-            vec![LayerEffect::tint(
-                Rgba::new(0.0, 0.0, 1.0, 1.0),
-                Rgba::new(1.0, 1.0, 0.0, 1.0),
-                1.0,
-            )],
-        );
+        let group = Layer::group("g", vec![rect("a", 0.0, 0.0, 10.0, 10.0, "#ffffff"), rect("b", 20.0, 0.0, 10.0, 10.0, "#000000")]);
+        let tinted = with_fx(group.clone(), vec![LayerEffect::tint(Rgba::new(0.0, 0.0, 1.0, 1.0), Rgba::new(1.0, 1.0, 0.0, 1.0), 1.0)]);
         let i = img(&project(vec![tinted], vec![]), 0.0);
         assert_eq!(i.px(5, 5), [255, 255, 0, 255]);
         assert_eq!(i.px(25, 5), [0, 0, 255, 255]);
-        let filled = with_fx(
-            group,
-            vec![LayerEffect::fill(Rgba::new(0.0, 1.0, 0.0, 1.0), 0.5)],
-        );
+        let filled = with_fx(group, vec![LayerEffect::fill(Rgba::new(0.0, 1.0, 0.0, 1.0), 0.5)]);
         let i = img(&project(vec![filled], vec![]), 0.0);
         assert_eq!(i.px(5, 5), [128, 255, 128, 255]);
         // an image layer (2x2 red PNG)
@@ -709,10 +562,7 @@ mod tests {
             let mut w = e.write_header().unwrap();
             w.write_image_data(&[255, 0, 0, 255].repeat(4)).unwrap();
         }
-        let im = with_fx(
-            Layer::image_from_png("im", &enc, crate::math::Vec2::ZERO),
-            vec![LayerEffect::fill(Rgba::new(0.0, 1.0, 0.0, 1.0), 1.0)],
-        );
+        let im = with_fx(Layer::image_from_png("im", &enc, crate::math::Vec2::ZERO), vec![LayerEffect::fill(Rgba::new(0.0, 1.0, 0.0, 1.0), 1.0)]);
         let i = img(&project(vec![im], vec![]), 0.0);
         let p = i.px(0, 0);
         assert!(p[1] > 250 && p[0] < 5 && p[3] > 250, "{p:?}");
@@ -723,22 +573,7 @@ mod tests {
         let a = rect("a", 4.0, 14.0, 10.0, 10.0, "#ff0000");
         let b = rect("b", 44.0, 14.0, 10.0, 10.0, "#0000ff");
         let plain = img(&project(vec![a.clone(), b.clone()], vec![]), 0.0);
-        let fx = img(
-            &project(
-                vec![
-                    with_fx(
-                        a.clone(),
-                        vec![
-                            LayerEffect::blur(5.0),
-                            LayerEffect::drop_shadow(3.0, 3.0, 2.0, Rgba::BLACK, 1.0),
-                        ],
-                    ),
-                    b.clone(),
-                ],
-                vec![],
-            ),
-            0.0,
-        );
+        let fx = img(&project(vec![with_fx(a.clone(), vec![LayerEffect::blur(5.0), LayerEffect::drop_shadow(3.0, 3.0, 2.0, Rgba::BLACK, 1.0)]), b.clone()], vec![]), 0.0);
         assert_ne!(plain, fx);
         // everything right of x = 30 (b and the space around it) is bit-identical
         for y in 0..H {
@@ -750,17 +585,8 @@ mod tests {
         assert_eq!(fx.px(44, 19), [0, 0, 255, 255]);
         assert_eq!(fx.px(43, 19)[3], 0);
         // the same layer alone renders like it does in company (no cross talk the other way round)
-        let alone = img(
-            &project(
-                vec![with_fx(a.clone(), vec![LayerEffect::blur(5.0)])],
-                vec![],
-            ),
-            0.0,
-        );
-        let together = img(
-            &project(vec![with_fx(a, vec![LayerEffect::blur(5.0)]), b], vec![]),
-            0.0,
-        );
+        let alone = img(&project(vec![with_fx(a.clone(), vec![LayerEffect::blur(5.0)])], vec![]), 0.0);
+        let together = img(&project(vec![with_fx(a, vec![LayerEffect::blur(5.0)]), b], vec![]), 0.0);
         for y in 0..H {
             for x in 0..30 {
                 assert_eq!(alone.px(x, y), together.px(x, y));
@@ -774,22 +600,12 @@ mod tests {
         let mut l = with_fx(base.clone(), vec![LayerEffect::blur(6.0)]);
         l.opacity = 0.5;
         let i = img(&project(vec![l], vec![]), 0.0);
-        assert!(
-            (i.px(30, 20)[3] as i32 - 128).abs() <= 1,
-            "opacity multiplies the effect result: {:?}",
-            i.px(30, 20)
-        );
+        assert!((i.px(30, 20)[3] as i32 - 128).abs() <= 1, "opacity multiplies the effect result: {:?}", i.px(30, 20));
         // order matters: a fill after the shadow recolours the shadow too, a fill before it leaves the shadow black
         let sh = || LayerEffect::drop_shadow(14.0, 0.0, 0.0, Rgba::BLACK, 1.0);
         let green = || LayerEffect::fill(Rgba::new(0.0, 1.0, 0.0, 1.0), 1.0);
-        let shadow_first = img(
-            &project(vec![with_fx(base.clone(), vec![sh(), green()])], vec![]),
-            0.0,
-        );
-        let fill_first = img(
-            &project(vec![with_fx(base, vec![green(), sh()])], vec![]),
-            0.0,
-        );
+        let shadow_first = img(&project(vec![with_fx(base.clone(), vec![sh(), green()])], vec![]), 0.0);
+        let fill_first = img(&project(vec![with_fx(base, vec![green(), sh()])], vec![]), 0.0);
         assert_eq!(shadow_first.px(50, 20), [0, 255, 0, 255]);
         assert_eq!(fill_first.px(50, 20), [0, 0, 0, 255]);
         assert_eq!(fill_first.px(30, 20), [0, 255, 0, 255]);
@@ -801,45 +617,25 @@ mod tests {
         let mut off = LayerEffect::blur(8.0);
         off.enabled = false;
         let none = img(&project(vec![base.clone()], vec![]), 0.0);
-        let dis = img(
-            &project(vec![with_fx(base.clone(), vec![off.clone()])], vec![]),
-            0.0,
-        );
+        let dis = img(&project(vec![with_fx(base.clone(), vec![off.clone()])], vec![]), 0.0);
         assert_eq!(none, dis);
         // a channel on a disabled effect still resolves (index counts all effects) and changes nothing
-        let ch = vec![Channel::keys(
-            "a::fx0",
-            Prop::FxBlur,
-            Track::with_keys(&[(0.0, 1.0, Ease::Linear), (10.0, 9.0, Ease::Linear)]),
-        )];
+        let ch = vec![Channel::keys("a::fx0", Prop::FxBlur, Track::with_keys(&[(0.0, 1.0, Ease::Linear), (10.0, 9.0, Ease::Linear)]))];
         let p = project(vec![with_fx(base.clone(), vec![off.clone()])], ch.clone());
         assert_eq!(img(&p, 5.0), none);
         let e = Engine::new(p).unwrap();
         assert!(e.evaluate(5.0).nodes[0].effects.is_empty());
         // index counts disabled ones: the second effect is fx1
-        let ch1 = vec![Channel::keys(
-            "a::fx1",
-            Prop::FxBlur,
-            Track::with_keys(&[(0.0, 0.0, Ease::Linear), (10.0, 8.0, Ease::Linear)]),
-        )];
+        let ch1 = vec![Channel::keys("a::fx1", Prop::FxBlur, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (10.0, 8.0, Ease::Linear)]))];
         let p = project(vec![with_fx(base, vec![off, LayerEffect::blur(0.0)])], ch1);
         let e = Engine::new(p).unwrap();
-        assert_eq!(
-            e.evaluate(5.0).nodes[0].effects[0].get(Prop::FxBlur),
-            Some(4.0)
-        );
+        assert_eq!(e.evaluate(5.0).nodes[0].effects[0].get(Prop::FxBlur), Some(4.0));
     }
 
     #[test]
     fn channels_animate_every_effect_number() {
         let base = rect("a", 20.0, 10.0, 20.0, 20.0, "#ff0000");
-        let key = |t: &str, p: Prop, a: f32, b: f32| {
-            Channel::keys(
-                t,
-                p,
-                Track::with_keys(&[(0.0, a, Ease::Linear), (10.0, b, Ease::Linear)]),
-            )
-        };
+        let key = |t: &str, p: Prop, a: f32, b: f32| Channel::keys(t, p, Track::with_keys(&[(0.0, a, Ease::Linear), (10.0, b, Ease::Linear)]));
         let ch = vec![
             key("a::fx0", Prop::FxBlur, 0.0, 8.0),
             key("a::fx1", Prop::FxDx, 0.0, 10.0),
@@ -848,27 +644,12 @@ mod tests {
             key("a::fx1", Prop::FxAmount, 1.0, 0.0),
             key("a::fx2", Prop::FxAmount, 0.0, 1.0),
         ];
-        let l = with_fx(
-            base,
-            vec![
-                LayerEffect::blur(0.0),
-                LayerEffect::drop_shadow(0.0, 0.0, 0.0, Rgba::BLACK, 1.0),
-                LayerEffect::tint(Rgba::BLACK, Rgba::WHITE, 0.0),
-            ],
-        );
+        let l = with_fx(base, vec![LayerEffect::blur(0.0), LayerEffect::drop_shadow(0.0, 0.0, 0.0, Rgba::BLACK, 1.0), LayerEffect::tint(Rgba::BLACK, Rgba::WHITE, 0.0)]);
         let p = project(vec![l], ch);
         let e = Engine::new(p.clone()).unwrap();
         let fx = &e.evaluate(5.0).nodes[0].effects;
         assert_eq!(fx[0].get(Prop::FxBlur), Some(4.0));
-        assert_eq!(
-            (
-                fx[1].get(Prop::FxDx),
-                fx[1].get(Prop::FxDy),
-                fx[1].get(Prop::FxSoft),
-                fx[1].get(Prop::FxAmount)
-            ),
-            (Some(5.0), Some(-2.0), Some(1.0), Some(0.5))
-        );
+        assert_eq!((fx[1].get(Prop::FxDx), fx[1].get(Prop::FxDy), fx[1].get(Prop::FxSoft), fx[1].get(Prop::FxAmount)), (Some(5.0), Some(-2.0), Some(1.0), Some(0.5)));
         assert_eq!(fx[2].get(Prop::FxAmount), Some(0.5));
         // the picture changes over time and is a pure function of the frame
         let (a, b, c) = (img(&p, 0.0), img(&p, 5.0), img(&p, 10.0));
@@ -876,19 +657,8 @@ mod tests {
         assert_ne!(b, c);
         assert_eq!(img(&p, 5.0), b);
         // values that overshoot (noise, add mode) are clamped, never invalid
-        let wild = vec![Channel::keys(
-            "a::fx0",
-            Prop::FxBlur,
-            Track::with_keys(&[(0.0, -50.0, Ease::Linear), (10.0, 1e6, Ease::Linear)]),
-        )];
-        let e = Engine::new(project(
-            vec![with_fx(
-                rect("a", 1.0, 1.0, 5.0, 5.0, "#000"),
-                vec![LayerEffect::blur(1.0)],
-            )],
-            wild,
-        ))
-        .unwrap();
+        let wild = vec![Channel::keys("a::fx0", Prop::FxBlur, Track::with_keys(&[(0.0, -50.0, Ease::Linear), (10.0, 1e6, Ease::Linear)]))];
+        let e = Engine::new(project(vec![with_fx(rect("a", 1.0, 1.0, 5.0, 5.0, "#000"), vec![LayerEffect::blur(1.0)])], wild)).unwrap();
         for f in [0.0, 5.0, 10.0] {
             let r = e.evaluate(f).nodes[0].effects[0].get(Prop::FxBlur).unwrap();
             assert!((0.0..=MAX_BLUR).contains(&r));
@@ -898,47 +668,16 @@ mod tests {
     #[test]
     fn bad_effects_and_channels_are_rejected_not_panicked() {
         let base = || rect("a", 1.0, 1.0, 5.0, 5.0, "#000");
-        for bad in [
-            LayerEffect::blur(f32::NAN),
-            LayerEffect::blur(-1.0),
-            LayerEffect::blur(1e9),
-            LayerEffect::drop_shadow(f32::INFINITY, 0.0, 0.0, Rgba::BLACK, 1.0),
-            LayerEffect::tint(Rgba::BLACK, Rgba::WHITE, 5.0),
-            LayerEffect::fill(Rgba::new(f32::NAN, 0.0, 0.0, 1.0), 1.0),
-        ] {
-            let errs = Engine::new(project(vec![with_fx(base(), vec![bad])], vec![]))
-                .err()
-                .expect("must be rejected");
+        for bad in [LayerEffect::blur(f32::NAN), LayerEffect::blur(-1.0), LayerEffect::blur(1e9), LayerEffect::drop_shadow(f32::INFINITY, 0.0, 0.0, Rgba::BLACK, 1.0), LayerEffect::tint(Rgba::BLACK, Rgba::WHITE, 5.0), LayerEffect::fill(Rgba::new(f32::NAN, 0.0, 0.0, 1.0), 1.0)] {
+            let errs = Engine::new(project(vec![with_fx(base(), vec![bad])], vec![])).err().expect("must be rejected");
             assert!(errs.iter().any(|e| e.contains("effect 0")), "{errs:?}");
         }
-        let errs = Engine::new(project(
-            vec![with_fx(
-                base(),
-                vec![LayerEffect::blur(1.0); MAX_EFFECTS + 1],
-            )],
-            vec![],
-        ))
-        .err()
-        .unwrap();
+        let errs = Engine::new(project(vec![with_fx(base(), vec![LayerEffect::blur(1.0); MAX_EFFECTS + 1])], vec![])).err().unwrap();
         assert!(errs.iter().any(|e| e.contains("at most")));
         // channel to a missing effect, or to a property the effect does not have
-        let k = |t: &str, p: Prop| {
-            vec![Channel::keys(
-                t,
-                p,
-                Track::with_keys(&[(0.0, 1.0, Ease::Linear)]),
-            )]
-        };
-        assert!(Engine::new(project(
-            vec![with_fx(base(), vec![LayerEffect::blur(1.0)])],
-            k("a::fx3", Prop::FxBlur)
-        ))
-        .is_err());
-        assert!(Engine::new(project(
-            vec![with_fx(base(), vec![LayerEffect::blur(1.0)])],
-            k("a::fx0", Prop::FxDx)
-        ))
-        .is_err());
+        let k = |t: &str, p: Prop| vec![Channel::keys(t, p, Track::with_keys(&[(0.0, 1.0, Ease::Linear)]))];
+        assert!(Engine::new(project(vec![with_fx(base(), vec![LayerEffect::blur(1.0)])], k("a::fx3", Prop::FxBlur))).is_err());
+        assert!(Engine::new(project(vec![with_fx(base(), vec![LayerEffect::blur(1.0)])], k("a::fx0", Prop::FxDx))).is_err());
         assert!(Engine::new(project(vec![base()], k("a::fx0", Prop::FxBlur))).is_err());
     }
 
@@ -949,18 +688,9 @@ mod tests {
         assert!(!j.contains("effects"), "{j}");
         let back: Project = serde_json::from_str(&j).unwrap();
         assert!(back.layers[0].effects.is_empty());
-        let with = project(
-            vec![with_fx(
-                rect("a", 1.0, 1.0, 5.0, 5.0, "#000"),
-                vec![LayerEffect::blur(2.0)],
-            )],
-            vec![],
-        );
+        let with = project(vec![with_fx(rect("a", 1.0, 1.0, 5.0, 5.0, "#000"), vec![LayerEffect::blur(2.0)])], vec![]);
         let j = serde_json::to_string(&with).unwrap();
-        assert!(
-            j.contains(r#""effects":[{"enabled":true,"type":"blur","radius":2.0}]"#),
-            "{j}"
-        );
+        assert!(j.contains(r#""effects":[{"enabled":true,"type":"blur","radius":2.0}]"#), "{j}");
         let back: Project = serde_json::from_str(&j).unwrap();
         assert_eq!(back.layers[0].effects, with.layers[0].effects);
     }
@@ -968,82 +698,35 @@ mod tests {
     #[test]
     fn editor_edits_are_undoable() {
         use crate::edit::{Editor, Op};
-        let mut ed =
-            Editor::new(project(vec![rect("a", 1.0, 1.0, 5.0, 5.0, "#000")], vec![])).unwrap();
+        let mut ed = Editor::new(project(vec![rect("a", 1.0, 1.0, 5.0, 5.0, "#000")], vec![])).unwrap();
         let fx = serde_json::to_value(vec![LayerEffect::blur(3.0)]).unwrap();
-        ed.apply(Op::Set {
-            path: "/layers/0/effects".into(),
-            value: fx,
-        })
-        .unwrap();
+        ed.apply(Op::Set { path: "/layers/0/effects".into(), value: fx }).unwrap();
         assert_eq!(ed.project().layers[0].effects.len(), 1);
-        ed.apply(Op::Set {
-            path: "/layers/0/effects/0/radius".into(),
-            value: serde_json::json!(7.0),
-        })
-        .unwrap();
-        assert_eq!(
-            ed.engine().evaluate(0.0).nodes[0].effects[0].get(Prop::FxBlur),
-            Some(7.0)
-        );
+        ed.apply(Op::Set { path: "/layers/0/effects/0/radius".into(), value: serde_json::json!(7.0) }).unwrap();
+        assert_eq!(ed.engine().evaluate(0.0).nodes[0].effects[0].get(Prop::FxBlur), Some(7.0));
         // an invalid edit is refused and leaves the document as it was
-        assert!(ed
-            .apply(Op::Set {
-                path: "/layers/0/effects/0/radius".into(),
-                value: serde_json::json!(-4.0)
-            })
-            .is_err());
-        assert_eq!(
-            ed.project().layers[0].effects[0].get(Prop::FxBlur),
-            Some(7.0)
-        );
+        assert!(ed.apply(Op::Set { path: "/layers/0/effects/0/radius".into(), value: serde_json::json!(-4.0) }).is_err());
+        assert_eq!(ed.project().layers[0].effects[0].get(Prop::FxBlur), Some(7.0));
         assert!(ed.undo() && ed.undo());
         assert!(ed.project().layers[0].effects.is_empty());
-        assert!(!ed.doc()["layers"][0]
-            .as_object()
-            .unwrap()
-            .contains_key("effects"));
+        assert!(!ed.doc()["layers"][0].as_object().unwrap().contains_key("effects"));
         assert!(ed.redo());
         assert_eq!(ed.project().layers[0].effects.len(), 1);
     }
 
     #[test]
     fn float_renderer_matches_the_8_bit_raster() {
-        let l = with_fx(
-            rect("a", 15.0, 8.0, 25.0, 20.0, "#2288dd"),
-            vec![
-                LayerEffect::tint(Rgba::BLACK, Rgba::new(1.0, 0.8, 0.2, 1.0), 0.8),
-                LayerEffect::drop_shadow(5.0, 4.0, 3.0, Rgba::BLACK, 0.6),
-                LayerEffect::blur(2.0),
-            ],
-        );
+        let l = with_fx(rect("a", 15.0, 8.0, 25.0, 20.0, "#2288dd"), vec![LayerEffect::tint(Rgba::BLACK, Rgba::new(1.0, 0.8, 0.2, 1.0), 0.8), LayerEffect::drop_shadow(5.0, 4.0, 3.0, Rgba::BLACK, 0.6), LayerEffect::blur(2.0)]);
         let e = Engine::new(project(vec![l], vec![])).unwrap();
-        let o = RasterOptions {
-            scale: 1.0,
-            show_bones: false,
-            transparent: true,
-        };
+        let o = RasterOptions { scale: 1.0, show_bones: false, transparent: true };
         let (w, h, d) = render_rgba(&e, 0.0, &o);
         // compare over white: straight colour of nearly transparent pixels is quantisation noise
         let over_white = |px: &[u8]| -> Vec<u8> {
-            px.chunks(4)
-                .flat_map(|p| {
-                    let a = p[3] as f32 / 255.0;
-                    [p[0], p[1], p[2]]
-                        .map(|c| (c as f32 * a + 255.0 * (1.0 - a)).round() as u8)
-                        .into_iter()
-                        .chain([255])
-                })
-                .collect()
+            px.chunks(4).flat_map(|p| { let a = p[3] as f32 / 255.0; [p[0], p[1], p[2]].map(|c| (c as f32 * a + 255.0 * (1.0 - a)).round() as u8).into_iter().chain([255]) }).collect()
         };
         let a = Img::new(w as usize, h as usize, over_white(&d)).unwrap();
         let f = crate::fraster::render_float(&e, 0.0, &o);
-        let b = Img::new(
-            f.width as usize,
-            f.height as usize,
-            over_white(&f.to_straight_u8()),
-        )
-        .unwrap();
+        let b = Img::new(f.width as usize, f.height as usize, over_white(&f.to_straight_u8())).unwrap();
         let ssim = crate::percep::ssim(&a, &b).unwrap();
         let mse = crate::percep::mse(&a, &b).unwrap();
         assert!(ssim > 0.995 && mse < 4.0, "ssim {ssim} mse {mse}");
@@ -1062,9 +745,7 @@ mod tests {
     /// Straight 2D gaussian (not separable), edges transparent, on premultiplied RGBA in 0..1.
     fn gauss2d(src: &[f32], sigma: f32) -> Vec<f32> {
         let r = (sigma * 3.0).ceil() as i32;
-        let k: Vec<f32> = (-r..=r)
-            .map(|i| (-(i * i) as f32 / (2.0 * sigma * sigma)).exp())
-            .collect();
+        let k: Vec<f32> = (-r..=r).map(|i| (-(i * i) as f32 / (2.0 * sigma * sigma)).exp()).collect();
         let norm: f32 = k.iter().sum();
         let mut out = vec![0.0f32; src.len()];
         for y in 0..H as i32 {
@@ -1076,9 +757,7 @@ mod tests {
                             continue;
                         }
                         for c in 0..4 {
-                            out[(y as usize * W + x as usize) * 4 + c] +=
-                                src[(sy as usize * W + sx as usize) * 4 + c] * ki * kj
-                                    / (norm * norm);
+                            out[(y as usize * W + x as usize) * 4 + c] += src[(sy as usize * W + sx as usize) * 4 + c] * ki * kj / (norm * norm);
                         }
                     }
                 }
@@ -1089,28 +768,18 @@ mod tests {
 
     /// Run the primitives of an emitted `<filter>` over premultiplied RGBA with the semantics of the SVG filter spec.
     fn run_svg_filter(filter: &str, src: &[f32]) -> Vec<f32> {
-        let mut named: std::collections::HashMap<String, Vec<f32>> =
-            std::collections::HashMap::new();
+        let mut named: std::collections::HashMap<String, Vec<f32>> = std::collections::HashMap::new();
         named.insert("SourceGraphic".into(), src.to_vec());
         let mut last = src.to_vec();
         let mut pos = 0;
         while let Some(i) = filter[pos..].find("<fe") {
             let at = pos + i;
-            let tag: String = filter[at + 1..]
-                .chars()
-                .take_while(|c| c.is_alphanumeric())
-                .collect();
+            let tag: String = filter[at + 1..].chars().take_while(|c| c.is_alphanumeric()).collect();
             let input = |n: &str| named.get(&attr(filter, at, n).unwrap()).unwrap().clone();
             let out = match tag.as_str() {
-                "feGaussianBlur" => gauss2d(
-                    &input("in"),
-                    attr(filter, at, "stdDeviation").unwrap().parse().unwrap(),
-                ),
+                "feGaussianBlur" => gauss2d(&input("in"), attr(filter, at, "stdDeviation").unwrap().parse().unwrap()),
                 "feOffset" => {
-                    let (dx, dy): (i32, i32) = (
-                        attr(filter, at, "dx").unwrap().parse::<f32>().unwrap() as i32,
-                        attr(filter, at, "dy").unwrap().parse::<f32>().unwrap() as i32,
-                    );
+                    let (dx, dy): (i32, i32) = (attr(filter, at, "dx").unwrap().parse::<f32>().unwrap() as i32, attr(filter, at, "dy").unwrap().parse::<f32>().unwrap() as i32);
                     let s = input("in");
                     let mut o = vec![0.0; s.len()];
                     for y in 0..H as i32 {
@@ -1118,8 +787,7 @@ mod tests {
                             let (sx, sy) = (x - dx, y - dy);
                             if sx >= 0 && sy >= 0 && sx < W as i32 && sy < H as i32 {
                                 for c in 0..4 {
-                                    o[(y as usize * W + x as usize) * 4 + c] =
-                                        s[(sy as usize * W + sx as usize) * 4 + c];
+                                    o[(y as usize * W + x as usize) * 4 + c] = s[(sy as usize * W + sx as usize) * 4 + c];
                                 }
                             }
                         }
@@ -1127,29 +795,12 @@ mod tests {
                     o
                 }
                 "feColorMatrix" => {
-                    let m: Vec<f32> = attr(filter, at, "values")
-                        .unwrap()
-                        .split_whitespace()
-                        .map(|v| v.parse().unwrap())
-                        .collect();
+                    let m: Vec<f32> = attr(filter, at, "values").unwrap().split_whitespace().map(|v| v.parse().unwrap()).collect();
                     let mut s = input("in");
                     for p in s.chunks_exact_mut(4) {
                         let a = p[3];
-                        let c = if a > 0.0 {
-                            [p[0] / a, p[1] / a, p[2] / a, a]
-                        } else {
-                            [0.0; 4]
-                        };
-                        let n: Vec<f32> = (0..4)
-                            .map(|r| {
-                                (m[r * 5] * c[0]
-                                    + m[r * 5 + 1] * c[1]
-                                    + m[r * 5 + 2] * c[2]
-                                    + m[r * 5 + 3] * c[3]
-                                    + m[r * 5 + 4])
-                                    .clamp(0.0, 1.0)
-                            })
-                            .collect();
+                        let c = if a > 0.0 { [p[0] / a, p[1] / a, p[2] / a, a] } else { [0.0; 4] };
+                        let n: Vec<f32> = (0..4).map(|r| (m[r * 5] * c[0] + m[r * 5 + 1] * c[1] + m[r * 5 + 2] * c[2] + m[r * 5 + 3] * c[3] + m[r * 5 + 4]).clamp(0.0, 1.0)).collect();
                         p.copy_from_slice(&[n[0] * n[3], n[1] * n[3], n[2] * n[3], n[3]]);
                     }
                     s
@@ -1187,33 +838,9 @@ mod tests {
 
     #[test]
     fn svg_filter_semantics_match_the_raster_pass() {
-        let effects = vec![
-            LayerEffect::tint(
-                Rgba::new(0.1, 0.0, 0.3, 1.0),
-                Rgba::new(1.0, 0.9, 0.4, 1.0),
-                0.7,
-            ),
-            LayerEffect::blur(4.0),
-            LayerEffect::drop_shadow(5.0, 3.0, 4.0, Rgba::new(0.0, 0.0, 0.5, 1.0), 0.6),
-            LayerEffect::fill(Rgba::new(0.9, 0.2, 0.2, 1.0), 0.25),
-        ];
-        let src = img(
-            &project(vec![rect("a", 15.0, 8.0, 25.0, 20.0, "#2288dd")], vec![]),
-            0.0,
-        );
-        let premul: Vec<f32> = src
-            .rgba
-            .chunks(4)
-            .flat_map(|p| {
-                let a = p[3] as f32 / 255.0;
-                [
-                    p[0] as f32 / 255.0 * a,
-                    p[1] as f32 / 255.0 * a,
-                    p[2] as f32 / 255.0 * a,
-                    a,
-                ]
-            })
-            .collect();
+        let effects = vec![LayerEffect::tint(Rgba::new(0.1, 0.0, 0.3, 1.0), Rgba::new(1.0, 0.9, 0.4, 1.0), 0.7), LayerEffect::blur(4.0), LayerEffect::drop_shadow(5.0, 3.0, 4.0, Rgba::new(0.0, 0.0, 0.5, 1.0), 0.6), LayerEffect::fill(Rgba::new(0.9, 0.2, 0.2, 1.0), 0.25)];
+        let src = img(&project(vec![rect("a", 15.0, 8.0, 25.0, 20.0, "#2288dd")], vec![]), 0.0);
+        let premul: Vec<f32> = src.rgba.chunks(4).flat_map(|p| { let a = p[3] as f32 / 255.0; [p[0] as f32 / 255.0 * a, p[1] as f32 / 255.0 * a, p[2] as f32 / 255.0 * a, a] }).collect();
         let mut via_raster = premul.clone();
         apply_premul(&mut via_raster, W, H, &effects, 1.0);
         let filter = svg_filter(&effects, "t", W as f32, H as f32).unwrap();
@@ -1222,13 +849,7 @@ mod tests {
             let mut px = Vec::new();
             for p in v.chunks(4) {
                 let a = p[3].clamp(0.0, 1.0);
-                let un = |c: f32| {
-                    if a > 0.0 {
-                        ((c / a).clamp(0.0, 1.0) * 255.0).round() as u8
-                    } else {
-                        0
-                    }
-                };
+                let un = |c: f32| if a > 0.0 { ((c / a).clamp(0.0, 1.0) * 255.0).round() as u8 } else { 0 };
                 px.extend_from_slice(&[un(p[0]), un(p[1]), un(p[2]), (a * 255.0).round() as u8]);
             }
             Img::new(W, H, px).unwrap()
@@ -1241,29 +862,70 @@ mod tests {
 
     #[test]
     fn svg_output_filters_only_the_layer_with_effects() {
-        let p = project(
-            vec![
-                with_fx(
-                    rect("a", 4.0, 4.0, 10.0, 10.0, "#f00"),
-                    vec![LayerEffect::blur(3.0)],
-                ),
-                rect("b", 30.0, 4.0, 10.0, 10.0, "#00f"),
-            ],
-            vec![],
-        );
+        let p = project(vec![with_fx(rect("a", 4.0, 4.0, 10.0, 10.0, "#f00"), vec![LayerEffect::blur(3.0)]), rect("b", 30.0, 4.0, 10.0, 10.0, "#00f")], vec![]);
         let e = Engine::new(p).unwrap();
         let svg = crate::svg::render_frame(&e, 0.0, &Default::default());
         assert_eq!(svg.matches("<filter").count(), 1, "{svg}");
         assert_eq!(svg.matches("filter=\"url(#fx").count(), 1);
         assert!(svg.find("filter=\"url").unwrap() < svg.find("id=\"b\"").unwrap_or(usize::MAX));
         // no effects: no filter markup at all (old output unchanged)
-        let plain = Engine::new(project(
-            vec![rect("a", 4.0, 4.0, 10.0, 10.0, "#f00")],
-            vec![],
-        ))
-        .unwrap();
+        let plain = Engine::new(project(vec![rect("a", 4.0, 4.0, 10.0, 10.0, "#f00")], vec![])).unwrap();
         assert!(!crate::svg::render_frame(&plain, 0.0, &Default::default()).contains("filter"));
         // deterministic
         assert_eq!(svg, crate::svg::render_frame(&e, 0.0, &Default::default()));
+    }
+
+    #[test]
+    fn texture_effect_validates_serialises_and_paints_only_inside_the_alpha() {
+        let e = LayerEffect::texture("rock", 3, 128.0, 1.0);
+        assert!(e.validate().is_ok());
+        let j = serde_json::to_string(&e).unwrap();
+        assert!(j.contains(r#""type":"texture""#), "{j}");
+        let back: LayerEffect = serde_json::from_str(&j).unwrap();
+        assert_eq!(e, back);
+        let d: LayerEffect = serde_json::from_str(r#"{"type":"texture","preset":"lava"}"#).unwrap();
+        assert!(d.validate().is_ok() && d.get(Prop::FxAmount) == Some(1.0));
+        for bad in [
+            LayerEffect::texture("nope", 1, 128.0, 1.0),
+            LayerEffect::texture("mandelbrot", 1, 128.0, 1.0),
+            LayerEffect::texture("rock", 1, 1.0, 1.0),
+            LayerEffect::texture("rock", 1, f32::NAN, 1.0),
+            LayerEffect::texture("rock", 1, 128.0, 1.5),
+        ] {
+            assert!(bad.validate().is_err(), "{bad:?}");
+        }
+        // left half opaque grey, right half transparent
+        let (w, h) = (64usize, 64usize);
+        let mut buf = vec![0.0f32; w * h * 4];
+        for y in 0..h {
+            for x in 0..w / 2 {
+                buf[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[0.5, 0.5, 0.5, 1.0]);
+            }
+        }
+        let before = buf.clone();
+        apply_premul(&mut buf, w, h, std::slice::from_ref(&e), 1.0);
+        assert_ne!(buf, before, "the texture changes the colours");
+        for y in 0..h {
+            for x in 0..w {
+                let p = &buf[(y * w + x) * 4..(y * w + x) * 4 + 4];
+                assert_eq!(p[3], before[(y * w + x) * 4 + 3], "alpha is untouched");
+                if x >= w / 2 {
+                    assert_eq!(p, [0.0; 4], "nothing is painted outside the layer");
+                }
+            }
+        }
+        // amount 0 is a no-op, and the result is deterministic
+        let mut z = before.clone();
+        apply_premul(
+            &mut z,
+            w,
+            h,
+            &[LayerEffect::texture("rock", 3, 128.0, 0.0)],
+            1.0,
+        );
+        assert_eq!(z, before);
+        let mut again = before.clone();
+        apply_premul(&mut again, w, h, &[e], 1.0);
+        assert_eq!(again, buf);
     }
 }

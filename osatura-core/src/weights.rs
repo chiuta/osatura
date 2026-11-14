@@ -42,11 +42,7 @@ pub struct DiffusionOptions {
 
 impl Default for DiffusionOptions {
     fn default() -> Self {
-        DiffusionOptions {
-            seed_radius: 4.0,
-            max_sweeps: 4000,
-            tolerance: 1e-5,
-        }
+        DiffusionOptions { seed_radius: 4.0, max_sweeps: 4000, tolerance: 1e-5 }
     }
 }
 
@@ -176,20 +172,11 @@ pub fn diffusion_weights(
 
 /// Convert dense rows to named weights, keeping the `k` strongest influences (renormalised).
 pub fn to_bone_weights(rows: &[Vec<f32>], names: &[String], k: usize) -> Vec<Vec<BoneWeight>> {
-    rows.iter()
-        .map(|r| limit_influences(&dense_to_named(r, names), k))
-        .collect()
+    rows.iter().map(|r| limit_influences(&dense_to_named(r, names), k)).collect()
 }
 
 fn dense_to_named(r: &[f32], names: &[String]) -> Vec<BoneWeight> {
-    r.iter()
-        .zip(names)
-        .filter(|(w, _)| **w > 0.0)
-        .map(|(&w, n)| BoneWeight {
-            bone: n.clone(),
-            weight: w,
-        })
-        .collect()
+    r.iter().zip(names).filter(|(w, _)| **w > 0.0).map(|(&w, n)| BoneWeight { bone: n.clone(), weight: w }).collect()
 }
 
 /// Keep the `k` largest weights and renormalise to sum 1.
@@ -213,14 +200,7 @@ pub fn normalize(w: &mut [BoneWeight]) {
 
 /// Laplacian smoothing of per-vertex weights: each vertex moves `lambda` of the way toward
 /// the mean of its neighbours, `iterations` times. Result is renormalised and limited to `k`.
-pub fn smooth(
-    weights: &[Vec<BoneWeight>],
-    tris: &[[usize; 3]],
-    names: &[String],
-    iterations: usize,
-    lambda: f32,
-    k: usize,
-) -> Vec<Vec<BoneWeight>> {
+pub fn smooth(weights: &[Vec<BoneWeight>], tris: &[[usize; 3]], names: &[String], iterations: usize, lambda: f32, k: usize) -> Vec<Vec<BoneWeight>> {
     let n = weights.len();
     let index = |b: &str| names.iter().position(|x| x == b);
     let nb = names.len();
@@ -256,8 +236,7 @@ pub fn smooth(
                 continue;
             }
             for b in 0..nb {
-                let mean: f32 =
-                    nbrs[i].iter().map(|&j| prev[j][b]).sum::<f32>() / nbrs[i].len() as f32;
+                let mean: f32 = nbrs[i].iter().map(|&j| prev[j][b]).sum::<f32>() / nbrs[i].len() as f32;
                 dense[i][b] = prev[i][b] + (mean - prev[i][b]) * lambda.clamp(0.0, 1.0);
             }
         }
@@ -266,11 +245,7 @@ pub fn smooth(
 }
 
 /// Copy weights between two meshes by nearest source vertex (e.g. after re-meshing).
-pub fn transfer_nearest(
-    src_verts: &[Vec2],
-    src_weights: &[Vec<BoneWeight>],
-    dst_verts: &[Vec2],
-) -> Vec<Vec<BoneWeight>> {
+pub fn transfer_nearest(src_verts: &[Vec2], src_weights: &[Vec<BoneWeight>], dst_verts: &[Vec2]) -> Vec<Vec<BoneWeight>> {
     dst_verts
         .iter()
         .map(|&p| {
@@ -288,12 +263,7 @@ pub fn transfer_nearest(
 
 /// Mirror weights across a vertical axis `x = axis`: for every vertex find the vertex at the
 /// mirrored position and give it this vertex's weights with bone names swapped by `rename`.
-pub fn mirror_x(
-    verts: &[Vec2],
-    weights: &[Vec<BoneWeight>],
-    axis: f32,
-    rename: &dyn Fn(&str) -> String,
-) -> Vec<Vec<BoneWeight>> {
+pub fn mirror_x(verts: &[Vec2], weights: &[Vec<BoneWeight>], axis: f32, rename: &dyn Fn(&str) -> String) -> Vec<Vec<BoneWeight>> {
     verts
         .iter()
         .map(|&p| {
@@ -305,13 +275,7 @@ pub fn mirror_x(
                     best = (i, d);
                 }
             }
-            weights[best.0]
-                .iter()
-                .map(|w| BoneWeight {
-                    bone: rename(&w.bone),
-                    weight: w.weight,
-                })
-                .collect()
+            weights[best.0].iter().map(|w| BoneWeight { bone: rename(&w.bone), weight: w.weight }).collect()
         })
         .collect()
 }
@@ -336,19 +300,8 @@ mod tests {
         let (cols, rows) = (20, 4);
         let v = grid(cols, rows, 200.0, 40.0);
         let tris = grid_triangles(cols, rows);
-        let segs = [
-            (Vec2::new(0.0, 20.0), Vec2::new(60.0, 20.0)),
-            (Vec2::new(140.0, 20.0), Vec2::new(200.0, 20.0)),
-        ];
-        let w = diffusion_weights(
-            &v,
-            &tris,
-            &segs,
-            DiffusionOptions {
-                seed_radius: 12.0,
-                ..Default::default()
-            },
-        );
+        let segs = [(Vec2::new(0.0, 20.0), Vec2::new(60.0, 20.0)), (Vec2::new(140.0, 20.0), Vec2::new(200.0, 20.0))];
+        let w = diffusion_weights(&v, &tris, &segs, DiffusionOptions { seed_radius: 12.0, ..Default::default() });
         for row in &w {
             let s: f32 = row.iter().sum();
             assert!((s - 1.0).abs() < 1e-4, "row sums to {s}");
@@ -356,18 +309,9 @@ mod tests {
         }
         // along the middle row the weight of bone 0 falls monotonically from left to right
         let mid: Vec<f32> = (0..=cols).map(|c| w[2 * (cols + 1) + c][0]).collect();
-        assert!(
-            mid[0] > 0.99 && mid[cols] < 0.01,
-            "ends belong to their bone: {:?}",
-            (mid[0], mid[cols])
-        );
+        assert!(mid[0] > 0.99 && mid[cols] < 0.01, "ends belong to their bone: {:?}", (mid[0], mid[cols]));
         for i in 1..mid.len() {
-            assert!(
-                mid[i] <= mid[i - 1] + 1e-4,
-                "monotone at {i}: {} > {}",
-                mid[i],
-                mid[i - 1]
-            );
+            assert!(mid[i] <= mid[i - 1] + 1e-4, "monotone at {i}: {} > {}", mid[i], mid[i - 1]);
         }
     }
 
@@ -376,30 +320,11 @@ mod tests {
         // two disconnected strips; each only touches the bone near it
         let mut v = grid(4, 1, 40.0, 10.0);
         let off = v.len();
-        v.extend(
-            grid(4, 1, 40.0, 10.0)
-                .into_iter()
-                .map(|p| p + Vec2::new(0.0, 100.0)),
-        );
+        v.extend(grid(4, 1, 40.0, 10.0).into_iter().map(|p| p + Vec2::new(0.0, 100.0)));
         let mut tris = grid_triangles(4, 1);
-        tris.extend(
-            grid_triangles(4, 1)
-                .into_iter()
-                .map(|t| [t[0] + off, t[1] + off, t[2] + off]),
-        );
-        let segs = [
-            (Vec2::new(0.0, 5.0), Vec2::new(40.0, 5.0)),
-            (Vec2::new(0.0, 105.0), Vec2::new(40.0, 105.0)),
-        ];
-        let w = diffusion_weights(
-            &v,
-            &tris,
-            &segs,
-            DiffusionOptions {
-                seed_radius: 2.0,
-                ..Default::default()
-            },
-        );
+        tris.extend(grid_triangles(4, 1).into_iter().map(|t| [t[0] + off, t[1] + off, t[2] + off]));
+        let segs = [(Vec2::new(0.0, 5.0), Vec2::new(40.0, 5.0)), (Vec2::new(0.0, 105.0), Vec2::new(40.0, 105.0))];
+        let w = diffusion_weights(&v, &tris, &segs, DiffusionOptions { seed_radius: 2.0, ..Default::default() });
         for i in 0..off {
             assert!(w[i][0] > 0.99, "upper strip belongs to bone 0");
             assert!(w[i + off][1] > 0.99, "lower strip belongs to bone 1");
@@ -409,18 +334,9 @@ mod tests {
     #[test]
     fn limit_normalize_and_smooth() {
         let w = vec![
-            BoneWeight {
-                bone: "a".into(),
-                weight: 0.5,
-            },
-            BoneWeight {
-                bone: "b".into(),
-                weight: 0.3,
-            },
-            BoneWeight {
-                bone: "c".into(),
-                weight: 0.2,
-            },
+            BoneWeight { bone: "a".into(), weight: 0.5 },
+            BoneWeight { bone: "b".into(), weight: 0.3 },
+            BoneWeight { bone: "c".into(), weight: 0.2 },
         ];
         let l = limit_influences(&w, 2);
         assert_eq!(l.len(), 2);
@@ -429,14 +345,8 @@ mod tests {
 
         let names = vec!["a".to_string(), "b".to_string()];
         let rows = vec![
-            vec![BoneWeight {
-                bone: "a".into(),
-                weight: 1.0,
-            }],
-            vec![BoneWeight {
-                bone: "b".into(),
-                weight: 1.0,
-            }],
+            vec![BoneWeight { bone: "a".into(), weight: 1.0 }],
+            vec![BoneWeight { bone: "b".into(), weight: 1.0 }],
         ];
         let tris = vec![[0usize, 1, 1]];
         let s = smooth(&rows, &tris, &names, 1, 0.5, 4);
@@ -448,21 +358,12 @@ mod tests {
     fn transfer_and_mirror() {
         let src = vec![Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0)];
         let sw = vec![
-            vec![BoneWeight {
-                bone: "arm_L".into(),
-                weight: 1.0,
-            }],
-            vec![BoneWeight {
-                bone: "arm_R".into(),
-                weight: 1.0,
-            }],
+            vec![BoneWeight { bone: "arm_L".into(), weight: 1.0 }],
+            vec![BoneWeight { bone: "arm_R".into(), weight: 1.0 }],
         ];
         let t = transfer_nearest(&src, &sw, &[Vec2::new(9.0, 1.0)]);
         assert_eq!(t[0][0].bone, "arm_R");
         let m = mirror_x(&src, &sw, 5.0, &|n| crate::anim_tools::mirror_name(n));
-        assert_eq!(
-            m[0][0].bone, "arm_L",
-            "vertex at x=0 mirrors x=10 whose bone arm_R is renamed arm_L"
-        );
+        assert_eq!(m[0][0].bone, "arm_L", "vertex at x=0 mirrors x=10 whose bone arm_R is renamed arm_L");
     }
 }

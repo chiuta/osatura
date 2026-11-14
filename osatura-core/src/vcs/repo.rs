@@ -10,22 +10,15 @@ pub const VCS_DIR: &str = ".osatura-vcs";
 // ---------------------------------------------------------------------------------------------
 
 pub(super) const K256: [u32; 64] = [
-    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ];
 
 /// SHA-256 digest of `data`.
 pub fn sha256(data: &[u8]) -> [u8; 32] {
-    let mut h: [u32; 8] = [
-        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
-        0x5be0cd19,
-    ];
+    let mut h: [u32; 8] = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
     let mut msg = data.to_vec();
     msg.push(0x80);
     while msg.len() % 64 != 56 {
@@ -35,30 +28,18 @@ pub fn sha256(data: &[u8]) -> [u8; 32] {
     for chunk in msg.chunks(64) {
         let mut w = [0u32; 64];
         for i in 0..16 {
-            w[i] = u32::from_be_bytes([
-                chunk[4 * i],
-                chunk[4 * i + 1],
-                chunk[4 * i + 2],
-                chunk[4 * i + 3],
-            ]);
+            w[i] = u32::from_be_bytes([chunk[4 * i], chunk[4 * i + 1], chunk[4 * i + 2], chunk[4 * i + 3]]);
         }
         for i in 16..64 {
             let s0 = w[i - 15].rotate_right(7) ^ w[i - 15].rotate_right(18) ^ (w[i - 15] >> 3);
             let s1 = w[i - 2].rotate_right(17) ^ w[i - 2].rotate_right(19) ^ (w[i - 2] >> 10);
-            w[i] = w[i - 16]
-                .wrapping_add(s0)
-                .wrapping_add(w[i - 7])
-                .wrapping_add(s1);
+            w[i] = w[i - 16].wrapping_add(s0).wrapping_add(w[i - 7]).wrapping_add(s1);
         }
         let mut v = h;
         for i in 0..64 {
             let s1 = v[4].rotate_right(6) ^ v[4].rotate_right(11) ^ v[4].rotate_right(25);
             let ch = (v[4] & v[5]) ^ (!v[4] & v[6]);
-            let t1 = v[7]
-                .wrapping_add(s1)
-                .wrapping_add(ch)
-                .wrapping_add(K256[i])
-                .wrapping_add(w[i]);
+            let t1 = v[7].wrapping_add(s1).wrapping_add(ch).wrapping_add(K256[i]).wrapping_add(w[i]);
             let s0 = v[0].rotate_right(2) ^ v[0].rotate_right(13) ^ v[0].rotate_right(22);
             let maj = (v[0] & v[1]) ^ (v[0] & v[2]) ^ (v[1] & v[2]);
             let t2 = s0.wrapping_add(maj);
@@ -87,9 +68,7 @@ pub fn sha256_hex(data: &[u8]) -> String {
 }
 
 pub(super) fn is_hash(s: &str) -> bool {
-    s.len() == 64
-        && s.bytes()
-            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    s.len() == 64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -103,29 +82,20 @@ pub(super) fn encode_object(kind: &str, payload: &[u8]) -> Vec<u8> {
 }
 
 pub(super) fn decode_object(bytes: &[u8]) -> Result<(String, Vec<u8>), String> {
-    let nl = bytes
-        .iter()
-        .position(|b| *b == b'\n')
-        .ok_or("object has no header")?;
+    let nl = bytes.iter().position(|b| *b == b'\n').ok_or("object has no header")?;
     let head = std::str::from_utf8(&bytes[..nl]).map_err(|_| "object header is not text")?;
     let mut it = head.split(' ');
     if it.next() != Some("ARMOBJ1") {
         return Err("object has a wrong magic".into());
     }
     let kind = it.next().ok_or("object header lacks a kind")?;
-    let len: usize = it
-        .next()
-        .and_then(|l| l.parse().ok())
-        .ok_or("object header lacks a length")?;
+    let len: usize = it.next().and_then(|l| l.parse().ok()).ok_or("object header lacks a length")?;
     if it.next().is_some() || !matches!(kind, "blob" | "tree" | "commit") {
         return Err(format!("object header is malformed ({head:?})"));
     }
     let payload = &bytes[nl + 1..];
     if payload.len() != len {
-        return Err(format!(
-            "object length {} differs from header {len}",
-            payload.len()
-        ));
+        return Err(format!("object length {} differs from header {len}", payload.len()));
     }
     Ok((kind.to_string(), payload.to_vec()))
 }
@@ -139,10 +109,7 @@ pub fn split_parts(doc: &Value) -> Result<BTreeMap<String, Value>, String> {
         match v {
             Value::Array(a) => match semdiff::elem_ids(a) {
                 Some(ids) => {
-                    parts.insert(
-                        format!("order/{k}"),
-                        Value::Array(ids.iter().map(|i| Value::String(i.clone())).collect()),
-                    );
+                    parts.insert(format!("order/{k}"), Value::Array(ids.iter().map(|i| Value::String(i.clone())).collect()));
                     for (id, e) in ids.iter().zip(a) {
                         parts.insert(format!("arr/{k}/{id}"), e.clone());
                     }
@@ -171,26 +138,14 @@ pub fn join_parts(parts: &BTreeMap<String, Value>) -> Result<Value, String> {
         _ => return Err("tree lacks the meta part".into()),
     }
     for (name, v) in parts {
-        if let Some(k) = name
-            .strip_prefix("obj/")
-            .or_else(|| name.strip_prefix("val/"))
-        {
+        if let Some(k) = name.strip_prefix("obj/").or_else(|| name.strip_prefix("val/")) {
             out.insert(k.to_string(), v.clone());
         } else if let Some(k) = name.strip_prefix("order/") {
-            let ids = v
-                .as_array()
-                .ok_or_else(|| format!("part {name} is not a list"))?;
+            let ids = v.as_array().ok_or_else(|| format!("part {name} is not a list"))?;
             let mut arr = Vec::new();
             for id in ids {
-                let id = id
-                    .as_str()
-                    .ok_or_else(|| format!("part {name} holds a non-text id"))?;
-                arr.push(
-                    parts
-                        .get(&format!("arr/{k}/{id}"))
-                        .ok_or_else(|| format!("tree lacks part arr/{k}/{id}"))?
-                        .clone(),
-                );
+                let id = id.as_str().ok_or_else(|| format!("part {name} holds a non-text id"))?;
+                arr.push(parts.get(&format!("arr/{k}/{id}")).ok_or_else(|| format!("tree lacks part arr/{k}/{id}"))?.clone());
             }
             out.insert(k.to_string(), Value::Array(arr));
         }
@@ -265,8 +220,7 @@ pub(super) fn valid_ref_name(n: &str) -> Result<(), String> {
         && !n.contains("..")
         && !n.contains("//")
         && !n.ends_with(".lock")
-        && n.chars()
-            .all(|c| c.is_ascii_alphanumeric() || "._-/".contains(c));
+        && n.chars().all(|c| c.is_ascii_alphanumeric() || "._-/".contains(c));
     if ok {
         Ok(())
     } else {
@@ -279,92 +233,49 @@ impl Repo {
 
     /// Create a repository next to `project_file` (a path to an existing project JSON).
     pub fn init(project_file: &Path, author: Option<&str>) -> Result<Repo, String> {
-        let root = project_file
-            .parent()
-            .map(|p| {
-                if p.as_os_str().is_empty() {
-                    Path::new(".")
-                } else {
-                    p
-                }
-            })
-            .unwrap_or(Path::new("."))
-            .to_path_buf();
-        let name = project_file
-            .file_name()
-            .and_then(|n| n.to_str())
-            .ok_or("bad project file name")?
-            .to_string();
-        let text = fs::read_to_string(project_file)
-            .map_err(|e| format!("cannot read {}: {e}", project_file.display()))?;
-        let v: Value = serde_json::from_str(&text)
-            .map_err(|e| format!("{} is not JSON: {e}", project_file.display()))?;
+        let root = project_file.parent().map(|p| if p.as_os_str().is_empty() { Path::new(".") } else { p }).unwrap_or(Path::new(".")).to_path_buf();
+        let name = project_file.file_name().and_then(|n| n.to_str()).ok_or("bad project file name")?.to_string();
+        let text = fs::read_to_string(project_file).map_err(|e| format!("cannot read {}: {e}", project_file.display()))?;
+        let v: Value = serde_json::from_str(&text).map_err(|e| format!("{} is not JSON: {e}", project_file.display()))?;
         if !v.is_object() {
-            return Err(format!(
-                "{} is not a project (a JSON object is expected)",
-                project_file.display()
-            ));
+            return Err(format!("{} is not a project (a JSON object is expected)", project_file.display()));
         }
         let dir = root.join(VCS_DIR);
         if dir.exists() {
             return Err(format!("{} already exists", dir.display()));
         }
         for sub in ["objects", "refs/heads", "refs/tags"] {
-            fs::create_dir_all(dir.join(sub))
-                .map_err(|e| format!("cannot create {}: {e}", dir.join(sub).display()))?;
+            fs::create_dir_all(dir.join(sub)).map_err(|e| format!("cannot create {}: {e}", dir.join(sub).display()))?;
         }
-        let r = Repo {
-            root,
-            dir,
-            fixed_time: None,
-        };
+        let r = Repo { root, dir, fixed_time: None };
         write_atomic(&r.dir.join("HEAD"), b"ref: refs/heads/main\n")?;
         let cfg = json!({"project": name, "author": author.unwrap_or("")});
-        write_atomic(
-            &r.dir.join("config"),
-            semdiff::canon_string(&cfg, true).as_bytes(),
-        )?;
+        write_atomic(&r.dir.join("config"), semdiff::canon_string(&cfg, true).as_bytes())?;
         Ok(r)
     }
 
     /// Open the repository containing `start` (walks up through the parent directories).
     pub fn open(start: &Path) -> Result<Repo, String> {
-        let abs =
-            fs::canonicalize(start).map_err(|e| format!("cannot open {}: {e}", start.display()))?;
+        let abs = fs::canonicalize(start).map_err(|e| format!("cannot open {}: {e}", start.display()))?;
         for d in abs.ancestors() {
             if d.join(VCS_DIR).is_dir() {
-                return Ok(Repo {
-                    root: d.to_path_buf(),
-                    dir: d.join(VCS_DIR),
-                    fixed_time: None,
-                });
+                return Ok(Repo { root: d.to_path_buf(), dir: d.join(VCS_DIR), fixed_time: None });
             }
         }
-        Err(format!(
-            "no {VCS_DIR} repository found from {} upwards (run: osatura vcs init <project.json>)",
-            abs.display()
-        ))
+        Err(format!("no {VCS_DIR} repository found from {} upwards (run: osatura vcs init <project.json>)", abs.display()))
     }
 
     pub(super) fn config(&self) -> Result<Value, String> {
-        let t = fs::read_to_string(self.dir.join("config"))
-            .map_err(|e| format!("cannot read config: {e}"))?;
+        let t = fs::read_to_string(self.dir.join("config")).map_err(|e| format!("cannot read config: {e}"))?;
         serde_json::from_str(&t).map_err(|e| format!("config is damaged: {e}"))
     }
 
     /// Absolute path of the tracked project file.
     pub fn project_path(&self) -> Result<PathBuf, String> {
         let c = self.config()?;
-        let name = c
-            .get("project")
-            .and_then(|p| p.as_str())
-            .ok_or("config lacks the project file name")?;
+        let name = c.get("project").and_then(|p| p.as_str()).ok_or("config lacks the project file name")?;
         let p = Path::new(name);
-        if p.is_absolute()
-            || p.components()
-                .any(|c| matches!(c, std::path::Component::ParentDir))
-            || name.is_empty()
-        {
+        if p.is_absolute() || p.components().any(|c| matches!(c, std::path::Component::ParentDir)) || name.is_empty() {
             return Err(format!("config names an unsafe project path '{name}'"));
         }
         Ok(self.root.join(p))
@@ -372,19 +283,11 @@ impl Repo {
 
     pub fn default_author(&self) -> String {
         if let Ok(c) = self.config() {
-            if let Some(a) = c
-                .get("author")
-                .and_then(|a| a.as_str())
-                .filter(|a| !a.is_empty())
-            {
+            if let Some(a) = c.get("author").and_then(|a| a.as_str()).filter(|a| !a.is_empty()) {
                 return a.to_string();
             }
         }
-        std::env::var("OSATURA_AUTHOR")
-            .ok()
-            .filter(|a| !a.is_empty())
-            .or_else(|| std::env::var("USER").ok().filter(|a| !a.is_empty()))
-            .unwrap_or_else(|| "unknown".into())
+        std::env::var("OSATURA_AUTHOR").ok().filter(|a| !a.is_empty()).or_else(|| std::env::var("USER").ok().filter(|a| !a.is_empty())).unwrap_or_else(|| "unknown".into())
     }
 
     pub(super) fn now(&self) -> u64 {
@@ -415,8 +318,7 @@ impl Repo {
     }
 
     pub fn get_object(&self, h: &str) -> Result<(String, Vec<u8>), String> {
-        let bytes = fs::read(self.obj_path(h)?)
-            .map_err(|_| format!("object {} is missing", &h[..h.len().min(12)]))?;
+        let bytes = fs::read(self.obj_path(h)?).map_err(|_| format!("object {} is missing", &h[..h.len().min(12)]))?;
         if sha256_hex(&bytes) != h {
             return Err(format!("object {} is corrupt (hash mismatch)", &h[..12]));
         }
@@ -428,8 +330,7 @@ impl Repo {
         if k != kind {
             return Err(format!("object {} is a {k}, expected a {kind}", &h[..12]));
         }
-        serde_json::from_slice(&p)
-            .map_err(|e| format!("object {} is not valid JSON: {e}", &h[..12]))
+        serde_json::from_slice(&p).map_err(|e| format!("object {} is not valid JSON: {e}", &h[..12]))
     }
 
     /// Store a canonical project document as a tree; returns the tree hash.
@@ -437,12 +338,7 @@ impl Repo {
         let doc = semdiff::canonicalize(doc);
         let mut names = BTreeMap::new();
         for (name, part) in split_parts(&doc)? {
-            names.insert(
-                name,
-                Value::String(
-                    self.put_object("blob", semdiff::canon_string(&part, false).as_bytes())?,
-                ),
-            );
+            names.insert(name, Value::String(self.put_object("blob", semdiff::canon_string(&part, false).as_bytes())?));
         }
         let tree = json!({"parts": Value::Object(names.into_iter().collect())});
         self.put_object("tree", semdiff::canon_string(&tree, false).as_bytes())
@@ -450,24 +346,17 @@ impl Repo {
 
     pub fn read_tree(&self, h: &str) -> Result<Value, String> {
         let t = self.get_json(h, "tree")?;
-        let names = t
-            .get("parts")
-            .and_then(|p| p.as_object())
-            .ok_or("tree has no parts")?;
+        let names = t.get("parts").and_then(|p| p.as_object()).ok_or("tree has no parts")?;
         let mut parts = BTreeMap::new();
         for (n, ph) in names {
-            parts.insert(
-                n.clone(),
-                self.get_json(ph.as_str().ok_or("tree part hash is not text")?, "blob")?,
-            );
+            parts.insert(n.clone(), self.get_json(ph.as_str().ok_or("tree part hash is not text")?, "blob")?);
         }
         join_parts(&parts)
     }
 
     pub fn read_commit(&self, h: &str) -> Result<Commit, String> {
         let v = self.get_json(h, "commit")?;
-        let c: Commit = serde_json::from_value(v)
-            .map_err(|e| format!("commit {} is malformed: {e}", &h[..12]))?;
+        let c: Commit = serde_json::from_value(v).map_err(|e| format!("commit {} is malformed: {e}", &h[..12]))?;
         if !is_hash(&c.tree) || c.parents.iter().any(|p| !is_hash(p)) {
             return Err(format!("commit {} holds a malformed hash", &h[..12]));
         }
@@ -506,8 +395,7 @@ impl Repo {
 
     /// Current branch name, or `None` for a detached HEAD.
     pub fn current_branch(&self) -> Result<Option<String>, String> {
-        let t = fs::read_to_string(self.dir.join("HEAD"))
-            .map_err(|e| format!("cannot read HEAD: {e}"))?;
+        let t = fs::read_to_string(self.dir.join("HEAD")).map_err(|e| format!("cannot read HEAD: {e}"))?;
         let t = t.trim();
         if let Some(r) = t.strip_prefix("ref: refs/heads/") {
             valid_ref_name(r)?;
@@ -523,8 +411,7 @@ impl Repo {
         match self.current_branch()? {
             Some(b) => self.read_ref_file(&format!("refs/heads/{b}")),
             None => {
-                let t = fs::read_to_string(self.dir.join("HEAD"))
-                    .map_err(|e| format!("cannot read HEAD: {e}"))?;
+                let t = fs::read_to_string(self.dir.join("HEAD")).map_err(|e| format!("cannot read HEAD: {e}"))?;
                 Ok(Some(t.trim().to_string()))
             }
         }
@@ -548,11 +435,7 @@ impl Repo {
             };
             for e in rd.flatten() {
                 let name = e.file_name().to_string_lossy().to_string();
-                let full = if prefix.is_empty() {
-                    name.clone()
-                } else {
-                    format!("{prefix}/{name}")
-                };
+                let full = if prefix.is_empty() { name.clone() } else { format!("{prefix}/{name}") };
                 if e.path().is_dir() {
                     walk(&e.path(), &full, out)?;
                 } else if !name.starts_with('.') {
@@ -574,14 +457,10 @@ impl Repo {
 
     pub fn branches(&self) -> Result<Vec<(String, String, bool)>, String> {
         let cur = self.current_branch()?;
-        Ok(self
-            .list_refs("refs/heads")?
-            .into_iter()
-            .map(|(n, h)| {
-                let c = cur.as_deref() == Some(n.as_str());
-                (n, h, c)
-            })
-            .collect())
+        Ok(self.list_refs("refs/heads")?.into_iter().map(|(n, h)| {
+            let c = cur.as_deref() == Some(n.as_str());
+            (n, h, c)
+        }).collect())
     }
 
     pub fn tags(&self) -> Result<Vec<(String, String)>, String> {
@@ -592,34 +471,19 @@ impl Repo {
     /// by `~N` (N-th first-parent ancestor) to a commit hash.
     pub fn resolve_rev(&self, rev: &str) -> Result<String, String> {
         let (base, back) = match rev.split_once('~') {
-            Some((b, n)) => (
-                b,
-                if n.is_empty() {
-                    1
-                } else {
-                    n.parse::<usize>()
-                        .map_err(|_| format!("bad revision '{rev}'"))?
-                },
-            ),
+            Some((b, n)) => (b, if n.is_empty() { 1 } else { n.parse::<usize>().map_err(|_| format!("bad revision '{rev}'"))? }),
             None => (rev, 0),
         };
         let mut h = self.resolve_base(base)?;
         for _ in 0..back {
-            h = self
-                .read_commit(&h)?
-                .parents
-                .first()
-                .cloned()
-                .ok_or_else(|| format!("'{rev}' goes past the first commit"))?;
+            h = self.read_commit(&h)?.parents.first().cloned().ok_or_else(|| format!("'{rev}' goes past the first commit"))?;
         }
         Ok(h)
     }
 
     pub(super) fn resolve_base(&self, s: &str) -> Result<String, String> {
         if s == "HEAD" {
-            return self
-                .head_commit()?
-                .ok_or_else(|| "there are no commits yet".to_string());
+            return self.head_commit()?.ok_or_else(|| "there are no commits yet".to_string());
         }
         if valid_ref_name(s).is_ok() {
             if let Some(h) = self.read_ref_file(&format!("refs/heads/{s}"))? {
@@ -629,19 +493,10 @@ impl Repo {
                 return Ok(h);
             }
         }
-        if s.len() >= 4
-            && s.len() <= 64
-            && s.bytes()
-                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-        {
+        if s.len() >= 4 && s.len() <= 64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
             let mut hits = Vec::new();
             for h in self.all_object_names()? {
-                if h.starts_with(s)
-                    && self
-                        .get_object(&h)
-                        .map(|o| o.0 == "commit")
-                        .unwrap_or(false)
-                {
+                if h.starts_with(s) && self.get_object(&h).map(|o| o.0 == "commit").unwrap_or(false) {
                     hits.push(h);
                 }
             }
@@ -656,8 +511,7 @@ impl Repo {
 
     pub(super) fn all_object_names(&self) -> Result<Vec<String>, String> {
         let mut out = Vec::new();
-        let rd = fs::read_dir(self.dir.join("objects"))
-            .map_err(|e| format!("cannot list objects: {e}"))?;
+        let rd = fs::read_dir(self.dir.join("objects")).map_err(|e| format!("cannot list objects: {e}"))?;
         for d in rd.flatten() {
             let dn = d.file_name().to_string_lossy().to_string();
             if dn.len() != 2 || !d.path().is_dir() {
@@ -681,23 +535,16 @@ impl Repo {
     pub fn read_working(&self) -> Result<Value, String> {
         let p = self.project_path()?;
         let t = fs::read_to_string(&p).map_err(|e| format!("cannot read {}: {e}", p.display()))?;
-        let v: Value = serde_json::from_str(&t)
-            .map_err(|e| format!("{} is not valid JSON: {e}", p.display()))?;
+        let v: Value = serde_json::from_str(&t).map_err(|e| format!("{} is not valid JSON: {e}", p.display()))?;
         if !v.is_object() {
-            return Err(format!(
-                "{} is not a project (a JSON object is expected)",
-                p.display()
-            ));
+            return Err(format!("{} is not a project (a JSON object is expected)", p.display()));
         }
         Ok(semdiff::canonicalize(&v))
     }
 
     /// Replace the project file atomically (temporary file in the same directory, then rename).
     pub fn write_working(&self, doc: &Value) -> Result<(), String> {
-        write_atomic(
-            &self.project_path()?,
-            semdiff::canon_string(&semdiff::canonicalize(doc), true).as_bytes(),
-        )
+        write_atomic(&self.project_path()?, semdiff::canon_string(&semdiff::canonicalize(doc), true).as_bytes())
     }
 
     /// Whether the working file differs from the commit at HEAD (an unborn branch counts as clean
@@ -714,9 +561,7 @@ impl Repo {
 
     pub(super) fn load_state(&self) -> Result<Option<MergeState>, String> {
         match fs::read_to_string(self.dir.join("MERGE_STATE")) {
-            Ok(t) => Ok(Some(
-                serde_json::from_str(&t).map_err(|e| format!("MERGE_STATE is damaged: {e}"))?,
-            )),
+            Ok(t) => Ok(Some(serde_json::from_str(&t).map_err(|e| format!("MERGE_STATE is damaged: {e}"))?)),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
             Err(e) => Err(format!("cannot read MERGE_STATE: {e}")),
         }
@@ -724,10 +569,7 @@ impl Repo {
 
     pub(super) fn save_state(&self, s: &MergeState) -> Result<(), String> {
         let v = serde_json::to_value(s).map_err(|e| e.to_string())?;
-        write_atomic(
-            &self.dir.join("MERGE_STATE"),
-            semdiff::canon_string(&v, true).as_bytes(),
-        )
+        write_atomic(&self.dir.join("MERGE_STATE"), semdiff::canon_string(&v, true).as_bytes())
     }
 
     pub(super) fn clear_state(&self) -> Result<(), String> {
@@ -751,23 +593,9 @@ impl Repo {
 
     // ----- commits -----
 
-    pub(super) fn make_commit(
-        &self,
-        doc: &Value,
-        parents: Vec<String>,
-        message: &str,
-        author: Option<&str>,
-    ) -> Result<String, String> {
+    pub(super) fn make_commit(&self, doc: &Value, parents: Vec<String>, message: &str, author: Option<&str>) -> Result<String, String> {
         let tree = self.write_tree(doc)?;
-        let c = Commit {
-            tree,
-            parents,
-            author: author
-                .map(String::from)
-                .unwrap_or_else(|| self.default_author()),
-            time: self.now(),
-            message: message.to_string(),
-        };
+        let c = Commit { tree, parents, author: author.map(String::from).unwrap_or_else(|| self.default_author()), time: self.now(), message: message.to_string() };
         let v = serde_json::to_value(&c).map_err(|e| e.to_string())?;
         self.put_object("commit", semdiff::canon_string(&v, false).as_bytes())
     }
@@ -792,9 +620,7 @@ impl Repo {
                 return Err("nothing to commit (the project is unchanged)".into());
             }
         }
-        let msg = msg
-            .filter(|m| !m.trim().is_empty())
-            .ok_or("a commit message is required (-m)")?;
+        let msg = msg.filter(|m| !m.trim().is_empty()).ok_or("a commit message is required (-m)")?;
         let h = self.make_commit(&doc, parents, &msg, author)?;
         self.set_head_commit(&h)?;
         self.clear_state()?;
@@ -820,10 +646,7 @@ impl Repo {
                 *children.entry(p.as_str()).or_insert(0) += 1;
             }
         }
-        let mut ready: Vec<&String> = all
-            .keys()
-            .filter(|h| !children.contains_key(h.as_str()))
-            .collect();
+        let mut ready: Vec<&String> = all.keys().filter(|h| !children.contains_key(h.as_str())).collect();
         let mut out = Vec::new();
         while !ready.is_empty() && out.len() < limit {
             ready.sort_by(|a, b| (all[*a].time, a.as_str()).cmp(&(all[*b].time, b.as_str())));
@@ -871,4 +694,5 @@ impl Repo {
         keyed.sort();
         Ok(keyed.pop().map(|x| x.1))
     }
+
 }

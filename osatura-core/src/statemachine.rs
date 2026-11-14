@@ -34,27 +34,14 @@ fn yes() -> bool {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Cond {
     /// The named event arrives on this frame.
-    Event {
-        name: String,
-    },
-    Above {
-        input: String,
-        value: f32,
-    },
-    Below {
-        input: String,
-        value: f32,
-    },
-    Equals {
-        input: String,
-        value: f32,
-    },
+    Event { name: String },
+    Above { input: String, value: f32 },
+    Below { input: String, value: f32 },
+    Equals { input: String, value: f32 },
     /// A non-looping state has played to its end.
     Finished,
     /// At least this many frames have passed in the state.
-    After {
-        frames: f32,
-    },
+    After { frames: f32 },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -131,10 +118,7 @@ impl StateMachine {
             if !names.contains(t.to.as_str()) {
                 return Err(format!("transition to unknown state '{}'", t.to));
             }
-            if !matches!(
-                t.fade.partial_cmp(&0.0),
-                Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)
-            ) {
+            if !matches!(t.fade.partial_cmp(&0.0), Some(std::cmp::Ordering::Greater | std::cmp::Ordering::Equal)) {
                 return Err("transition fade must be >= 0".into());
             }
         }
@@ -154,11 +138,7 @@ struct Fade {
 }
 
 /// Run the machine for `frames` frames against an input event log.
-pub fn simulate(
-    sm: &StateMachine,
-    events: &[InputEvent],
-    frames: u32,
-) -> Result<Vec<FrameState>, String> {
+pub fn simulate(sm: &StateMachine, events: &[InputEvent], frames: u32) -> Result<Vec<FrameState>, String> {
     sm.validate()?;
     let mut by_frame: BTreeMap<u32, Vec<&InputEvent>> = BTreeMap::new();
     for e in events {
@@ -201,9 +181,7 @@ pub fn simulate(
                     Cond::Event { name } => fired.contains(name.as_str()),
                     Cond::Above { input, value } => inputs.get(input).is_some_and(|v| v > value),
                     Cond::Below { input, value } => inputs.get(input).is_some_and(|v| v < value),
-                    Cond::Equals { input, value } => {
-                        inputs.get(input).is_some_and(|v| (v - value).abs() < 1e-6)
-                    }
+                    Cond::Equals { input, value } => inputs.get(input).is_some_and(|v| (v - value).abs() < 1e-6),
                     Cond::Finished => !clip.looped && local >= clip.length,
                     Cond::After { frames } => local >= *frames,
                 };
@@ -212,12 +190,7 @@ pub fn simulate(
                         cur = to;
                         entered = f;
                     } else {
-                        fade = Some(Fade {
-                            to,
-                            start: f,
-                            len: t.fade,
-                            ease: t.ease,
-                        });
+                        fade = Some(Fade { to, start: f, len: t.fade, ease: t.ease });
                     }
                     break;
                 }
@@ -259,24 +232,15 @@ fn clip_tracks(c: &Clip) -> HashMap<(String, Prop), (&Track, Mode)> {
 /// within `tol` of the exact per-frame blend. Only keyed channels take part.
 pub fn bake(sm: &StateMachine, timeline: &[FrameState], tol: f32) -> Vec<Channel> {
     let tracks: Vec<_> = sm.states.iter().map(clip_tracks).collect();
-    let mut keys: Vec<(String, Prop)> = tracks
-        .iter()
-        .flat_map(|m| m.keys().cloned())
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-    keys.sort_by(|a, b| {
-        (a.0.as_str(), format!("{:?}", a.1)).cmp(&(b.0.as_str(), format!("{:?}", b.1)))
-    });
+    let mut keys: Vec<(String, Prop)> = tracks.iter().flat_map(|m| m.keys().cloned()).collect::<HashSet<_>>().into_iter().collect();
+    keys.sort_by(|a, b| (a.0.as_str(), format!("{:?}", a.1)).cmp(&(b.0.as_str(), format!("{:?}", b.1))));
     keys.into_iter()
         .map(|(target, prop)| {
             let mut samples = Vec::new();
             let mut mode = Mode::Replace;
             for fs in timeline {
                 let sample = |si: usize, local: f32| -> Option<f32> {
-                    tracks[si]
-                        .get(&(target.clone(), prop))
-                        .and_then(|(t, _)| t.eval(clip_time(&sm.states[si], local)))
+                    tracks[si].get(&(target.clone(), prop)).and_then(|(t, _)| t.eval(clip_time(&sm.states[si], local)))
                 };
                 if let Some((t, m)) = tracks[fs.state].get(&(target.clone(), prop)) {
                     let _ = t;
@@ -308,60 +272,23 @@ mod tests {
     use super::*;
 
     fn clip(name: &str, value: f32, looped: bool, len: f32) -> Clip {
-        Clip {
-            name: name.into(),
-            length: len,
-            looped,
-            channels: vec![Channel::keys(
-                "b",
-                Prop::BoneAngle,
-                Track::with_keys(&[(0.0, value, Ease::Linear), (len, value, Ease::Linear)]),
-            )],
-        }
+        Clip { name: name.into(), length: len, looped, channels: vec![Channel::keys("b", Prop::BoneAngle, Track::with_keys(&[(0.0, value, Ease::Linear), (len, value, Ease::Linear)]))] }
     }
 
     fn machine() -> StateMachine {
         StateMachine {
             initial: "idle".into(),
-            states: vec![
-                clip("idle", 0.0, true, 24.0),
-                clip("jump", 90.0, false, 12.0),
-                clip("land", 10.0, false, 6.0),
-            ],
+            states: vec![clip("idle", 0.0, true, 24.0), clip("jump", 90.0, false, 12.0), clip("land", 10.0, false, 6.0)],
             transitions: vec![
-                Transition {
-                    from: "idle".into(),
-                    to: "jump".into(),
-                    when: Cond::Event {
-                        name: "jump".into(),
-                    },
-                    fade: 4.0,
-                    ease: Ease::Linear,
-                },
-                Transition {
-                    from: "jump".into(),
-                    to: "land".into(),
-                    when: Cond::Finished,
-                    fade: 2.0,
-                    ease: Ease::Linear,
-                },
-                Transition {
-                    from: "land".into(),
-                    to: "idle".into(),
-                    when: Cond::After { frames: 6.0 },
-                    fade: 0.0,
-                    ease: Ease::Linear,
-                },
+                Transition { from: "idle".into(), to: "jump".into(), when: Cond::Event { name: "jump".into() }, fade: 4.0, ease: Ease::Linear },
+                Transition { from: "jump".into(), to: "land".into(), when: Cond::Finished, fade: 2.0, ease: Ease::Linear },
+                Transition { from: "land".into(), to: "idle".into(), when: Cond::After { frames: 6.0 }, fade: 0.0, ease: Ease::Linear },
             ],
         }
     }
 
     fn ev(frame: u32, name: &str) -> InputEvent {
-        InputEvent {
-            frame,
-            name: name.into(),
-            value: 1.0,
-        }
+        InputEvent { frame, name: name.into(), value: 1.0 }
     }
 
     #[test]
@@ -382,41 +309,17 @@ mod tests {
     fn no_events_stays_in_initial_state() {
         let a = simulate(&machine(), &[], 30).unwrap();
         assert!(a.iter().all(|f| f.state == 0 && f.fade.is_none()));
-        assert_eq!(
-            a[25].local, 25.0,
-            "local time counts up (looping is applied when sampling)"
-        );
+        assert_eq!(a[25].local, 25.0, "local time counts up (looping is applied when sampling)");
     }
 
     #[test]
     fn input_conditions_and_any_state() {
         let mut sm = machine();
-        sm.transitions = vec![Transition {
-            from: "*".into(),
-            to: "jump".into(),
-            when: Cond::Above {
-                input: "speed".into(),
-                value: 0.5,
-            },
-            fade: 0.0,
-            ease: Ease::Linear,
-        }];
-        let a = simulate(
-            &sm,
-            &[InputEvent {
-                frame: 5,
-                name: "speed".into(),
-                value: 0.9,
-            }],
-            10,
-        )
-        .unwrap();
+        sm.transitions = vec![Transition { from: "*".into(), to: "jump".into(), when: Cond::Above { input: "speed".into(), value: 0.5 }, fade: 0.0, ease: Ease::Linear }];
+        let a = simulate(&sm, &[InputEvent { frame: 5, name: "speed".into(), value: 0.9 }], 10).unwrap();
         assert_eq!(a[4].state, 0);
         assert_eq!(a[5].state, 1);
-        assert_eq!(
-            a[9].state, 1,
-            "'*' never re-enters the state it is already in"
-        );
+        assert_eq!(a[9].state, 1, "'*' never re-enters the state it is already in");
     }
 
     #[test]
@@ -425,21 +328,12 @@ mod tests {
         let tl = simulate(&sm, &[ev(10, "jump")], 40).unwrap();
         let ch = bake(&sm, &tl, 0.01);
         assert_eq!(ch.len(), 1);
-        let Source::Keys { track } = &ch[0].source else {
-            panic!()
-        };
+        let Source::Keys { track } = &ch[0].source else { panic!() };
         assert!(track.eval(5.0).unwrap().abs() < 1e-3, "idle value");
         let mid = track.eval(12.0).unwrap();
-        assert!(
-            (mid - 45.0).abs() < 0.5,
-            "half-way through a linear 4-frame fade to 90: {mid}"
-        );
+        assert!((mid - 45.0).abs() < 0.5, "half-way through a linear 4-frame fade to 90: {mid}");
         assert!((track.eval(20.0).unwrap() - 90.0).abs() < 0.5);
-        assert!(
-            track.keys.len() < 40,
-            "reduced from per-frame samples: {}",
-            track.keys.len()
-        );
+        assert!(track.keys.len() < 40, "reduced from per-frame samples: {}", track.keys.len());
     }
 
     #[test]
@@ -458,8 +352,7 @@ mod tests {
     #[test]
     fn json_round_trip() {
         let sm = machine();
-        let back: StateMachine =
-            serde_json::from_str(&serde_json::to_string(&sm).unwrap()).unwrap();
+        let back: StateMachine = serde_json::from_str(&serde_json::to_string(&sm).unwrap()).unwrap();
         assert_eq!(sm, back);
     }
 }

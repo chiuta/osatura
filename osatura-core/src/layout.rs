@@ -88,9 +88,7 @@ pub fn content_bounds(l: &Layer) -> Option<(Vec2, Vec2)> {
 }
 
 fn get(p: &Project, name: &str) -> Result<(Vec2, Vec2), String> {
-    let l = p
-        .find_layer(name)
-        .ok_or_else(|| format!("no layer '{name}'"))?;
+    let l = p.find_layer(name).ok_or_else(|| format!("no layer '{name}'"))?;
     layer_bounds(l).ok_or_else(|| format!("layer '{name}' has no measurable geometry"))
 }
 
@@ -102,21 +100,12 @@ fn shift(p: &mut Project, name: &str, d: Vec2) {
 
 /// Align layers to each other (`to_stage = false`: to the union box of the selection) or to the
 /// stage rectangle. Moves the static layer position; keyed positions are not touched.
-pub fn align(
-    p: &mut Project,
-    names: &[String],
-    mode: AlignMode,
-    to_stage: bool,
-) -> Result<(), String> {
+pub fn align(p: &mut Project, names: &[String], mode: AlignMode, to_stage: bool) -> Result<(), String> {
     if names.is_empty() || (!to_stage && names.len() < 2) {
         return Err("select at least two layers (or one with --stage)".into());
     }
     let boxes: Vec<(Vec2, Vec2)> = names.iter().map(|n| get(p, n)).collect::<Result<_, _>>()?;
-    let (mut lo, mut hi) = if to_stage {
-        (Vec2::ZERO, Vec2::new(p.width, p.height))
-    } else {
-        boxes[0]
-    };
+    let (mut lo, mut hi) = if to_stage { (Vec2::ZERO, Vec2::new(p.width, p.height)) } else { boxes[0] };
     if !to_stage {
         for (a, b) in &boxes {
             lo = Vec2::new(lo.x.min(a.x), lo.y.min(a.y));
@@ -138,12 +127,7 @@ pub fn align(
 }
 
 /// Spread layers evenly between the two outermost ones along an axis.
-pub fn distribute(
-    p: &mut Project,
-    names: &[String],
-    axis: Axis,
-    how: Distribute,
-) -> Result<(), String> {
+pub fn distribute(p: &mut Project, names: &[String], axis: Axis, how: Distribute) -> Result<(), String> {
     if names.len() < 3 {
         return Err("distribute needs at least three layers".into());
     }
@@ -178,15 +162,7 @@ pub fn distribute(
     }
     for (it, t) in items.iter().zip(targets) {
         let d = t - it.1;
-        shift(
-            p,
-            &it.0,
-            if axis == Axis::X {
-                Vec2::new(d, 0.0)
-            } else {
-                Vec2::new(0.0, d)
-            },
-        );
+        shift(p, &it.0, if axis == Axis::X { Vec2::new(d, 0.0) } else { Vec2::new(0.0, d) });
     }
     Ok(())
 }
@@ -194,17 +170,8 @@ pub fn distribute(
 /// Keep only the part of a path between `start` and `end` (fractions 0..1 of its length,
 /// after shifting both by `offset`; closed paths wrap). Returns an open polyline path with
 /// the same stroke and no fill. Bake it per frame for animated "draw-on" effects.
-pub fn trim_path(
-    src: &VPath,
-    start: f32,
-    end: f32,
-    offset: f32,
-    tolerance: f32,
-) -> Result<VPath, String> {
-    if ![start, end, offset].iter().all(|v| v.is_finite())
-        || !(0.0..=1.0).contains(&start)
-        || !(0.0..=1.0).contains(&end)
-    {
+pub fn trim_path(src: &VPath, start: f32, end: f32, offset: f32, tolerance: f32) -> Result<VPath, String> {
+    if ![start, end, offset].iter().all(|v| v.is_finite()) || !(0.0..=1.0).contains(&start) || !(0.0..=1.0).contains(&end) {
         return Err("start and end must be within 0..1".into());
     }
     let pl = src.polyline(tolerance.max(0.01));
@@ -236,17 +203,8 @@ mod tests {
 
     fn proj() -> Project {
         let mut p = Project::new("l", 400.0, 200.0, 24.0, 5);
-        let r = |n: &str, x: f32, y: f32, w: f32| {
-            Layer::vector(
-                n,
-                vec![VPath::rect("r", x, y, w, 20.0).with_fill("#ff0000")],
-            )
-        };
-        p.layers = vec![
-            r("a", 10.0, 10.0, 20.0),
-            r("b", 100.0, 50.0, 40.0),
-            r("c", 300.0, 90.0, 20.0),
-        ];
+        let r = |n: &str, x: f32, y: f32, w: f32| Layer::vector(n, vec![VPath::rect("r", x, y, w, 20.0).with_fill("#ff0000")]);
+        p.layers = vec![r("a", 10.0, 10.0, 20.0), r("b", 100.0, 50.0, 40.0), r("c", 300.0, 90.0, 20.0)];
         p
     }
     fn names() -> Vec<String> {
@@ -271,13 +229,7 @@ mod tests {
             ((a.y + b.y) * 0.5 - 100.0).abs() < 0.6
         }));
         assert!(align(&mut proj(), &["a".into()], AlignMode::Left, false).is_err());
-        assert!(align(
-            &mut proj(),
-            &["a".into(), "zz".into()],
-            AlignMode::Left,
-            false
-        )
-        .is_err());
+        assert!(align(&mut proj(), &["a".into(), "zz".into()], AlignMode::Left, false).is_err());
     }
 
     #[test]
@@ -286,10 +238,7 @@ mod tests {
         distribute(&mut p, &names(), Axis::X, Distribute::Gaps).unwrap();
         let (a, b, c) = (bx(&p, "a"), bx(&p, "b"), bx(&p, "c"));
         assert!(((b.0.x - a.1.x) - (c.0.x - b.1.x)).abs() < 1.0);
-        assert!(
-            (a.0.x - 10.0).abs() < 0.6 && (c.1.x - 320.0).abs() < 0.6,
-            "ends stay put"
-        );
+        assert!((a.0.x - 10.0).abs() < 0.6 && (c.1.x - 320.0).abs() < 0.6, "ends stay put");
         let mut p = proj();
         distribute(&mut p, &names(), Axis::X, Distribute::Centers).unwrap();
         let mid = |n: &str| (bx(&p, n).0.x + bx(&p, n).1.x) * 0.5;
@@ -299,14 +248,7 @@ mod tests {
 
     #[test]
     fn trim_keeps_requested_fraction() {
-        let line = VPath::new(
-            "l",
-            false,
-            vec![
-                Anchor::corner(Vec2::new(0.0, 0.0)),
-                Anchor::corner(Vec2::new(100.0, 0.0)),
-            ],
-        );
+        let line = VPath::new("l", false, vec![Anchor::corner(Vec2::new(0.0, 0.0)), Anchor::corner(Vec2::new(100.0, 0.0))]);
         let t = trim_path(&line, 0.25, 0.75, 0.0, 0.5).unwrap();
         let pl = t.polyline(0.5);
         assert!((pl.length() - 50.0).abs() < 0.5);
@@ -317,9 +259,6 @@ mod tests {
         assert!(trim_path(&line, -0.1, 1.0, 0.0, 0.5).is_err());
         let sq = VPath::rect("s", 0.0, 0.0, 10.0, 10.0);
         let w = trim_path(&sq, 0.0, 0.5, 0.25, 0.5).unwrap();
-        assert!(
-            (w.polyline(0.5).length() - 20.0).abs() < 0.5,
-            "closed paths wrap with offset"
-        );
+        assert!((w.polyline(0.5).length() - 20.0).abs() < 0.5, "closed paths wrap with offset");
     }
 }

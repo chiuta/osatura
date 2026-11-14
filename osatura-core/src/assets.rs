@@ -31,10 +31,7 @@ pub fn allow_external() -> bool {
 
 fn looks_absolute(rel: &str) -> bool {
     let b = rel.as_bytes();
-    Path::new(rel).is_absolute()
-        || rel.starts_with('/')
-        || rel.starts_with('\\')
-        || (b.len() >= 2 && b[1] == b':' && b[0].is_ascii_alphabetic())
+    Path::new(rel).is_absolute() || rel.starts_with('/') || rel.starts_with('\\') || (b.len() >= 2 && b[1] == b':' && b[0].is_ascii_alphabetic())
 }
 
 /// The directory relative paths are taken from: an empty path (a project given as `p.json`) means `.`.
@@ -71,20 +68,11 @@ pub fn resolve_with(base_dir: &Path, rel: &str, allow_external: bool) -> Result<
     } else if rel.is_empty() || rel.contains('\0') {
         return Err("asset path is empty or contains a NUL byte".into());
     }
-    let joined = if allow_external && looks_absolute(rel) {
-        PathBuf::from(rel)
-    } else {
-        base.join(rel)
-    };
+    let joined = if allow_external && looks_absolute(rel) { PathBuf::from(rel) } else { base.join(rel) };
     match std::fs::canonicalize(&joined) {
         Ok(real) => {
             if !allow_external {
-                let root = std::fs::canonicalize(&base).map_err(|e| {
-                    format!(
-                        "asset '{rel}': cannot access the project directory {}: {e}",
-                        base.display()
-                    )
-                })?;
+                let root = std::fs::canonicalize(&base).map_err(|e| format!("asset '{rel}': cannot access the project directory {}: {e}", base.display()))?;
                 if !real.starts_with(&root) {
                     return Err(format!("asset '{rel}': resolves to {} which is outside the project directory (symbolic link?); use --allow-external-assets to override", real.display()));
                 }
@@ -93,10 +81,7 @@ pub fn resolve_with(base_dir: &Path, rel: &str, allow_external: bool) -> Result<
         }
         // a file that does not exist is not read; callers report their own "cannot read" error for it
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(joined),
-        Err(e) => Err(format!(
-            "asset '{rel}': cannot access {}: {e}",
-            joined.display()
-        )),
+        Err(e) => Err(format!("asset '{rel}': cannot access {}: {e}", joined.display())),
     }
 }
 
@@ -109,20 +94,12 @@ pub fn resolve(base_dir: &Path, rel: &str) -> Result<PathBuf, String> {
 
 /// `path` must be a regular file of at most `max` bytes. Returns its size. Missing files are an error here.
 pub fn check_regular(path: &Path, max: u64, what: &str) -> Result<u64, String> {
-    let md = std::fs::metadata(path)
-        .map_err(|e| format!("cannot read {what} {}: {e}", path.display()))?;
+    let md = std::fs::metadata(path).map_err(|e| format!("cannot read {what} {}: {e}", path.display()))?;
     if !md.is_file() {
-        return Err(format!(
-            "{what} {} is not a regular file (devices, pipes and directories are refused)",
-            path.display()
-        ));
+        return Err(format!("{what} {} is not a regular file (devices, pipes and directories are refused)", path.display()));
     }
     if md.len() > max {
-        return Err(format!(
-            "{what} {} is too large ({} bytes, limit {max})",
-            path.display(),
-            md.len()
-        ));
+        return Err(format!("{what} {} is too large ({} bytes, limit {max})", path.display(), md.len()));
     }
     Ok(md.len())
 }
@@ -137,17 +114,11 @@ pub fn read(base_dir: &Path, rel: &str, max: u64, what: &str) -> Result<Vec<u8>,
 pub fn read_path(full: &Path, max: u64, what: &str) -> Result<Vec<u8>, String> {
     use std::io::Read;
     check_regular(full, max, what)?;
-    let f = std::fs::File::open(full)
-        .map_err(|e| format!("cannot read {what} {}: {e}", full.display()))?;
+    let f = std::fs::File::open(full).map_err(|e| format!("cannot read {what} {}: {e}", full.display()))?;
     let mut out = Vec::new();
-    f.take(max + 1)
-        .read_to_end(&mut out)
-        .map_err(|e| format!("cannot read {what} {}: {e}", full.display()))?;
+    f.take(max + 1).read_to_end(&mut out).map_err(|e| format!("cannot read {what} {}: {e}", full.display()))?;
     if out.len() as u64 > max {
-        return Err(format!(
-            "{what} {} is too large (limit {max} bytes)",
-            full.display()
-        ));
+        return Err(format!("{what} {} is too large (limit {max} bytes)", full.display()));
     }
     Ok(out)
 }
@@ -168,20 +139,13 @@ pub fn set_default_dir(dir: Option<PathBuf>) {
 
 /// The directory set by [`set_default_dir`], or `.`.
 pub fn default_dir() -> PathBuf {
-    DEFAULT_DIR
-        .lock()
-        .ok()
-        .and_then(|g| g.clone())
-        .unwrap_or_else(|| PathBuf::from("."))
+    DEFAULT_DIR.lock().ok().and_then(|g| g.clone()).unwrap_or_else(|| PathBuf::from("."))
 }
 
 /// `target` expressed relative to `base` without any `..` (target must lie below base), else `None`.
 fn relative_below(base: &Path, target: &Path) -> Option<String> {
     let rel = target.strip_prefix(base).ok()?;
-    let parts: Vec<String> = rel
-        .components()
-        .map(|c| c.as_os_str().to_string_lossy().into_owned())
-        .collect();
+    let parts: Vec<String> = rel.components().map(|c| c.as_os_str().to_string_lossy().into_owned()).collect();
     if parts.is_empty() {
         None
     } else {
@@ -189,14 +153,7 @@ fn relative_below(base: &Path, target: &Path) -> Option<String> {
     }
 }
 
-fn rewrite_one(
-    rel: &mut String,
-    from: &Path,
-    to: &Path,
-    from_c: &Path,
-    to_c: &Path,
-    notes: &mut Vec<String>,
-) {
+fn rewrite_one(rel: &mut String, from: &Path, to: &Path, from_c: &Path, to_c: &Path, notes: &mut Vec<String>) {
     if looks_absolute(rel) || rel.is_empty() {
         return; // absolute paths stay valid wherever the project goes
     }
@@ -221,11 +178,7 @@ fn rewrite_one(
 /// file exists and lies below `to`; otherwise (a sibling directory: `..` is not allowed in a project) a note is
 /// returned and the path is left alone (with `--allow-external-assets` it becomes absolute). Embedded
 /// (base64) images and missing files are untouched. Returns the notes.
-pub fn rewrite_relative_assets(
-    p: &mut crate::project::Project,
-    from: &Path,
-    to: &Path,
-) -> Vec<String> {
+pub fn rewrite_relative_assets(p: &mut crate::project::Project, from: &Path, to: &Path) -> Vec<String> {
     let (from, to) = (base_or_dot(from), base_or_dot(to));
     let (Ok(from_c), Ok(to_c)) = (std::fs::canonicalize(&from), std::fs::canonicalize(&to)) else {
         return Vec::new();
@@ -234,14 +187,7 @@ pub fn rewrite_relative_assets(
         return Vec::new();
     }
     let mut notes = Vec::new();
-    fn walk(
-        ls: &mut [crate::project::Layer],
-        from: &Path,
-        to: &Path,
-        fc: &Path,
-        tc: &Path,
-        notes: &mut Vec<String>,
-    ) {
+    fn walk(ls: &mut [crate::project::Layer], from: &Path, to: &Path, fc: &Path, tc: &Path, notes: &mut Vec<String>) {
         for l in ls {
             if let Some(nm) = &mut l.normal_map {
                 if let Some(pth) = &mut nm.path {
@@ -254,10 +200,7 @@ pub fn rewrite_relative_assets(
                         rewrite_one(f, from, to, fc, tc, notes);
                     }
                 }
-                crate::project::LayerKind::Group { layers }
-                | crate::project::LayerKind::Selector { layers, .. } => {
-                    walk(layers, from, to, fc, tc, notes)
-                }
+                crate::project::LayerKind::Group { layers } | crate::project::LayerKind::Selector { layers, .. } => walk(layers, from, to, fc, tc, notes),
                 _ => {}
             }
         }
@@ -284,16 +227,10 @@ pub fn check_dims(w: u32, h: u32) -> Result<(), String> {
         return Err("image is empty (width or height is 0)".into());
     }
     if w > MAX_SIDE || h > MAX_SIDE {
-        return Err(format!(
-            "image is {w}x{h}: a side may be at most {MAX_SIDE} pixels"
-        ));
+        return Err(format!("image is {w}x{h}: a side may be at most {MAX_SIDE} pixels"));
     }
     if (w as u64) * (h as u64) > MAX_PIXELS {
-        return Err(format!(
-            "image is {w}x{h} = {} Mpixel, more than the limit of {} Mpixel",
-            (w as u64) * (h as u64) / 1_000_000,
-            MAX_PIXELS / 1_000_000
-        ));
+        return Err(format!("image is {w}x{h} = {} Mpixel, more than the limit of {} Mpixel", (w as u64) * (h as u64) / 1_000_000, MAX_PIXELS / 1_000_000));
     }
     Ok(())
 }
@@ -341,24 +278,13 @@ mod tests {
         std::fs::write(d.join("img/a.png"), b"x").unwrap();
         let ok = resolve_with(d.path(), "img/a.png", false).unwrap();
         assert!(ok.ends_with("img/a.png") && ok.is_absolute());
-        assert!(
-            resolve_with(d.path(), "./img/../img/a.png", false).is_err(),
-            "'..' is refused even when it would stay inside"
-        );
+        assert!(resolve_with(d.path(), "./img/../img/a.png", false).is_err(), "'..' is refused even when it would stay inside");
         let abs = d.join("img/a.png");
         let e = resolve_with(d.path(), abs.to_str().unwrap(), false).unwrap_err();
         assert!(e.contains("absolute"), "{e}");
-        assert!(resolve_with(d.path(), "../etc/passwd", false)
-            .unwrap_err()
-            .contains("'..'"));
-        assert!(
-            resolve_with(d.path(), "C:\\x", false).is_err()
-                && resolve_with(d.path(), "\\\\srv\\x", false).is_err()
-        );
-        assert!(
-            resolve_with(d.path(), "", false).is_err()
-                && resolve_with(d.path(), "a\0b", false).is_err()
-        );
+        assert!(resolve_with(d.path(), "../etc/passwd", false).unwrap_err().contains("'..'"));
+        assert!(resolve_with(d.path(), "C:\\x", false).is_err() && resolve_with(d.path(), "\\\\srv\\x", false).is_err());
+        assert!(resolve_with(d.path(), "", false).is_err() && resolve_with(d.path(), "a\0b", false).is_err());
         // with the switch the same paths pass
         assert!(resolve_with(d.path(), abs.to_str().unwrap(), true).is_ok());
         assert!(resolve_with(&d.join("img"), "../img/a.png", true).is_ok());
@@ -368,11 +294,7 @@ mod tests {
     #[test]
     fn a_missing_file_resolves_to_the_joined_path_and_an_empty_base_means_dot() {
         let p = resolve_with(Path::new(""), "http://example.invalid/x.wav", false).unwrap();
-        assert!(
-            p.starts_with("./"),
-            "never a bare URL-looking path: {}",
-            p.display()
-        );
+        assert!(p.starts_with("./"), "never a bare URL-looking path: {}", p.display());
         assert_eq!(base_or_dot(Path::new("")), PathBuf::from("."));
     }
 
@@ -398,35 +320,22 @@ mod tests {
     #[test]
     fn only_regular_files_under_the_cap_are_read() {
         let d = dir();
-        assert!(check_regular(Path::new("/dev/zero"), 1 << 20, "image")
-            .unwrap_err()
-            .contains("not a regular file"));
+        assert!(check_regular(Path::new("/dev/zero"), 1 << 20, "image").unwrap_err().contains("not a regular file"));
         assert!(check_regular(d.path(), 10, "image").is_err(), "a directory");
         let fifo = d.join("pipe.png");
-        if std::process::Command::new("mkfifo")
-            .arg(&fifo)
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false)
-        {
+        if std::process::Command::new("mkfifo").arg(&fifo).status().map(|s| s.success()).unwrap_or(false) {
             // must return at once instead of blocking on the pipe
-            assert!(read_path(&fifo, 1 << 20, "image")
-                .unwrap_err()
-                .contains("not a regular file"));
+            assert!(read_path(&fifo, 1 << 20, "image").unwrap_err().contains("not a regular file"));
         }
         let big = d.join("big.bin");
         let f = std::fs::File::create(&big).unwrap();
         f.set_len(2000).unwrap();
-        assert!(read_path(&big, 1000, "image")
-            .unwrap_err()
-            .contains("too large"));
+        assert!(read_path(&big, 1000, "image").unwrap_err().contains("too large"));
         assert_eq!(read_path(&big, 4000, "image").unwrap().len(), 2000);
     }
 
     fn png_header(w: u32, h: u32) -> Vec<u8> {
-        let mut v = vec![
-            0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, b'I', b'H', b'D', b'R',
-        ];
+        let mut v = vec![0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, b'I', b'H', b'D', b'R'];
         v.extend_from_slice(&w.to_be_bytes());
         v.extend_from_slice(&h.to_be_bytes());
         v.extend_from_slice(&[8, 6, 0, 0, 0]);

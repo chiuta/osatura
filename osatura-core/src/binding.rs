@@ -82,16 +82,7 @@ pub struct Binding {
 
 impl Binding {
     pub fn new(name: &str, path: &str, target: Target) -> Binding {
-        Binding {
-            name: name.into(),
-            path: path.into(),
-            expr: None,
-            remap: None,
-            smooth: 0.0,
-            target,
-            mode: Mode::Replace,
-            weight: 1.0,
-        }
+        Binding { name: name.into(), path: path.into(), expr: None, remap: None, smooth: 0.0, target, mode: Mode::Replace, weight: 1.0 }
     }
 }
 
@@ -117,9 +108,7 @@ fn rewrite(src: &str) -> Result<String, String> {
             if !is_call && id == "value" {
                 out.push_str("frame");
             } else if !is_call && FORBIDDEN_VARS.contains(&id.as_str()) {
-                return Err(format!(
-                    "variable '{id}' is not available in binding expressions (use 'value')"
-                ));
+                return Err(format!("variable '{id}' is not available in binding expressions (use 'value')"));
             } else {
                 out.push_str(&id);
             }
@@ -137,11 +126,7 @@ fn rewrite(src: &str) -> Result<String, String> {
 /// Parse a binding expression.
 pub fn parse_expr(src: &str) -> Result<Expr, String> {
     if src.len() > expr::MAX_SOURCE_BYTES {
-        return Err(format!(
-            "expression is {} bytes long, the limit is {}",
-            src.len(),
-            expr::MAX_SOURCE_BYTES
-        ));
+        return Err(format!("expression is {} bytes long, the limit is {}", src.len(), expr::MAX_SOURCE_BYTES));
     }
     let e = expr::parse(&rewrite(src)?)?;
     let mut gets = Vec::new();
@@ -154,23 +139,14 @@ pub fn parse_expr(src: &str) -> Result<Expr, String> {
 
 fn eval_expr(e: &Expr, value: f32) -> f32 {
     let get = |_: &str, _: &str| 0.0f32;
-    e.eval(&Ctx {
-        frame: value,
-        fps: 1.0,
-        frames: 1.0,
-        get: &get,
-    })
+    e.eval(&Ctx { frame: value, fps: 1.0, frames: 1.0, get: &get })
 }
 
 impl Remap {
     pub fn apply(&self, x: f32) -> f32 {
         let (lo, hi) = (self.in_min.min(self.in_max), self.in_min.max(self.in_max));
         let curved = self.curve != Ease::Linear;
-        let x = if self.clamp || curved {
-            x.clamp(lo, hi)
-        } else {
-            x
-        };
+        let x = if self.clamp || curved { x.clamp(lo, hi) } else { x };
         let mut u = (x - self.in_min) / (self.in_max - self.in_min);
         if curved {
             u = self.curve.apply(u);
@@ -183,11 +159,7 @@ impl Remap {
 pub fn valid_path(p: &str) -> bool {
     !p.is_empty()
         && p.len() <= 256
-        && p.split('.').all(|s| {
-            !s.is_empty()
-                && s.chars()
-                    .all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '[' | ']'))
-        })
+        && p.split('.').all(|s| !s.is_empty() && s.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '[' | ']')))
 }
 
 /// Structural validation of `p.bindings` (property targets are checked by compiling an engine,
@@ -211,21 +183,14 @@ pub fn validate(p: &crate::project::Project) -> Vec<String> {
             }
         }
         if let Some(r) = &b.remap {
-            if ![r.in_min, r.in_max, r.out_min, r.out_max]
-                .iter()
-                .all(|v| v.is_finite())
-            {
+            if ![r.in_min, r.in_max, r.out_min, r.out_max].iter().all(|v| v.is_finite()) {
                 errs.push(format!("binding '{n}': remap values must be finite"));
             } else if r.in_min == r.in_max {
-                errs.push(format!(
-                    "binding '{n}': remap in_min and in_max must differ"
-                ));
+                errs.push(format!("binding '{n}': remap in_min and in_max must differ"));
             }
         }
         if !(b.smooth.is_finite() && b.smooth >= 0.0) {
-            errs.push(format!(
-                "binding '{n}': smooth must be a finite number >= 0"
-            ));
+            errs.push(format!("binding '{n}': smooth must be a finite number >= 0"));
         }
         if !(b.weight.is_finite() && (0.0..=1.0).contains(&b.weight)) {
             errs.push(format!("binding '{n}': weight must be within 0..1"));
@@ -236,18 +201,14 @@ pub fn validate(p: &crate::project::Project) -> Vec<String> {
                     errs.push(format!("binding '{n}': target name is empty"));
                 }
             }
-            Target::Input { machine, input } => {
-                match p.machines.iter().find(|m| &m.name == machine) {
-                    None => errs.push(format!("binding '{n}': unknown machine '{machine}'")),
-                    Some(m) => {
-                        if !m.inputs.iter().any(|i| &i.name == input) {
-                            errs.push(format!(
-                                "binding '{n}': machine '{machine}' has no input '{input}'"
-                            ));
-                        }
+            Target::Input { machine, input } => match p.machines.iter().find(|m| &m.name == machine) {
+                None => errs.push(format!("binding '{n}': unknown machine '{machine}'")),
+                Some(m) => {
+                    if !m.inputs.iter().any(|i| &i.name == input) {
+                        errs.push(format!("binding '{n}': machine '{machine}' has no input '{input}'"));
                     }
                 }
-            }
+            },
         }
     }
     errs
@@ -295,14 +256,7 @@ impl BindingRuntime {
             });
         }
         let n = bindings.len();
-        Ok(BindingRuntime {
-            bindings: bindings.to_vec(),
-            exprs,
-            values: HashMap::new(),
-            smoothed: vec![None; n],
-            out: vec![None; n],
-            prev_out: vec![0.0; n],
-        })
+        Ok(BindingRuntime { bindings: bindings.to_vec(), exprs, values: HashMap::new(), smoothed: vec![None; n], out: vec![None; n], prev_out: vec![0.0; n] })
     }
 
     pub fn is_empty(&self) -> bool {
@@ -369,11 +323,7 @@ impl BindingRuntime {
         let mut v = Vec::new();
         for (i, b) in self.bindings.iter().enumerate() {
             if let (Target::Prop { target, prop }, Some(y)) = (&b.target, self.out[i]) {
-                let mut c = Channel::keys(
-                    target,
-                    *prop,
-                    Track::with_keys(&[(0.0, y as f32, Ease::Linear)]),
-                );
+                let mut c = Channel::keys(target, *prop, Track::with_keys(&[(0.0, y as f32, Ease::Linear)]));
                 c.mode = b.mode;
                 c.weight = b.weight;
                 v.push(c);
@@ -387,12 +337,7 @@ impl BindingRuntime {
         let mut v = Vec::new();
         for (i, b) in self.bindings.iter().enumerate() {
             if let (Target::Input { machine, input }, Some(y)) = (&b.target, self.out[i]) {
-                v.push((
-                    machine.clone(),
-                    input.clone(),
-                    y,
-                    self.prev_out[i] <= 0.0 && y > 0.0,
-                ));
+                v.push((machine.clone(), input.clone(), y, self.prev_out[i] <= 0.0 && y > 0.0));
             }
         }
         v
@@ -401,19 +346,13 @@ impl BindingRuntime {
 
 /// One-shot evaluation (no smoothing history) of `values`: `(binding name, output)` for every
 /// binding whose path has a value.
-pub fn eval_once(
-    bindings: &[Binding],
-    values: &[(String, f64)],
-) -> Result<Vec<(String, f64)>, String> {
+pub fn eval_once(bindings: &[Binding], values: &[(String, f64)]) -> Result<Vec<(String, f64)>, String> {
     let mut rt = BindingRuntime::new(bindings)?;
     for (p, v) in values {
         rt.set_value(p, *v)?;
     }
     rt.update(0.0);
-    Ok(bindings
-        .iter()
-        .filter_map(|b| rt.output(&b.name).map(|v| (b.name.clone(), v)))
-        .collect())
+    Ok(bindings.iter().filter_map(|b| rt.output(&b.name).map(|v| (b.name.clone(), v))).collect())
 }
 
 #[cfg(test)]
@@ -434,41 +373,20 @@ mod tests {
     use crate::project::{Project, Source};
 
     fn prop(name: &str, path: &str) -> Binding {
-        Binding::new(
-            name,
-            path,
-            Target::Prop {
-                target: "arm".into(),
-                prop: Prop::BoneAngle,
-            },
-        )
+        Binding::new(name, path, Target::Prop { target: "arm".into(), prop: Prop::BoneAngle })
     }
 
     #[test]
     fn remap_and_clamp() {
         let mut b = prop("b", "player.health");
-        b.remap = Some(Remap {
-            in_min: 0.0,
-            in_max: 100.0,
-            out_min: 0.0,
-            out_max: 1.0,
-            clamp: true,
-            curve: Ease::Linear,
-        });
+        b.remap = Some(Remap { in_min: 0.0, in_max: 100.0, out_min: 0.0, out_max: 1.0, clamp: true, curve: Ease::Linear });
         assert!((b.shape(50.0).unwrap() - 0.5).abs() < 1e-6);
         assert_eq!(b.shape(250.0).unwrap(), 1.0);
         assert_eq!(b.shape(-5.0).unwrap(), 0.0);
         b.remap.as_mut().unwrap().clamp = false;
         assert!((b.shape(200.0).unwrap() - 2.0).abs() < 1e-6);
         // reversed output range
-        b.remap = Some(Remap {
-            in_min: 0.0,
-            in_max: 10.0,
-            out_min: 90.0,
-            out_max: -90.0,
-            clamp: true,
-            curve: Ease::Linear,
-        });
+        b.remap = Some(Remap { in_min: 0.0, in_max: 10.0, out_min: 90.0, out_max: -90.0, clamp: true, curve: Ease::Linear });
         assert!((b.shape(5.0).unwrap()).abs() < 1e-4);
         assert_eq!(b.shape(99.0).unwrap(), -90.0);
     }
@@ -532,26 +450,8 @@ mod tests {
         let mut bad = prop("a", "bad path");
         bad.smooth = -1.0;
         bad.expr = Some("value +".into());
-        bad.remap = Some(Remap {
-            in_min: 1.0,
-            in_max: 1.0,
-            out_min: 0.0,
-            out_max: 1.0,
-            clamp: true,
-            curve: Ease::Linear,
-        });
-        p.bindings = vec![
-            bad,
-            prop("a", "ok.path"),
-            Binding::new(
-                "c",
-                "q",
-                Target::Input {
-                    machine: "m".into(),
-                    input: "i".into(),
-                },
-            ),
-        ];
+        bad.remap = Some(Remap { in_min: 1.0, in_max: 1.0, out_min: 0.0, out_max: 1.0, clamp: true, curve: Ease::Linear });
+        p.bindings = vec![bad, prop("a", "ok.path"), Binding::new("c", "q", Target::Input { machine: "m".into(), input: "i".into() })];
         let errs = validate(&p).join("\n");
         assert!(errs.contains("invalid value path"), "{errs}");
         assert!(errs.contains("smooth"), "{errs}");
@@ -566,14 +466,7 @@ mod tests {
     #[test]
     fn eval_once_reports_outputs() {
         let mut b = prop("op", "ui.alpha");
-        b.remap = Some(Remap {
-            in_min: 0.0,
-            in_max: 255.0,
-            out_min: 0.0,
-            out_max: 1.0,
-            clamp: true,
-            curve: Ease::Linear,
-        });
+        b.remap = Some(Remap { in_min: 0.0, in_max: 255.0, out_min: 0.0, out_max: 1.0, clamp: true, curve: Ease::Linear });
         let r = eval_once(&[b], &[("ui.alpha".into(), 255.0), ("other".into(), 1.0)]).unwrap();
         assert_eq!(r, vec![("op".to_string(), 1.0)]);
     }

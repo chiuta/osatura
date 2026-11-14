@@ -44,29 +44,30 @@ use std::io::{Read, Write};
 
 pub const SCHEMA: &str = "osatura.sizefit/1";
 
-mod fitter;
-mod lottie;
-mod output;
-mod paths;
-mod quant;
-mod reduce;
-mod report;
-mod series;
+
 mod settings;
 mod util;
+mod paths;
+mod reduce;
+mod quant;
 mod webm;
+mod series;
+mod lottie;
+mod output;
+mod fitter;
+mod report;
 
-pub use fitter::*;
-pub use lottie::*;
-pub use output::*;
-pub use paths::*;
-pub use quant::*;
-pub use reduce::*;
-pub use report::*;
-use series::*;
 pub use settings::*;
 pub use util::*;
+pub use paths::*;
+pub use reduce::*;
+pub use quant::*;
 pub use webm::*;
+use series::*;
+pub use lottie::*;
+pub use output::*;
+pub use fitter::*;
+pub use report::*;
 
 #[cfg(test)]
 mod tests;

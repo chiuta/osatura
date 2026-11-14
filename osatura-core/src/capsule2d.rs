@@ -32,10 +32,7 @@ impl Capsule {
             return Err("capsule coordinates must be finite".into());
         }
         if !self.radius.is_finite() || self.radius <= 0.0 {
-            return Err(format!(
-                "capsule radius must be a positive finite number, got {}",
-                self.radius
-            ));
+            return Err(format!("capsule radius must be a positive finite number, got {}", self.radius));
         }
         Ok(())
     }
@@ -87,11 +84,7 @@ pub fn closest_points(p0: P2, p1: P2, q0: P2, q1: P2) -> (f64, f64, P2, P2) {
         } else {
             let b = dot(d1, d2);
             let denom = a * e - b * b;
-            let mut s0 = if denom > 1e-12 * a * e {
-                ((b * f - c * e) / denom).clamp(0.0, 1.0)
-            } else {
-                0.0
-            };
+            let mut s0 = if denom > 1e-12 * a * e { ((b * f - c * e) / denom).clamp(0.0, 1.0) } else { 0.0 };
             let mut t0 = (b * s0 + f) / e;
             if t0 < 0.0 {
                 t0 = 0.0;
@@ -129,13 +122,7 @@ pub fn collide(a: &Capsule, b: &Capsule) -> Result<Option<Contact>, String> {
             [1.0, 0.0]
         }
     };
-    Ok(Some(Contact {
-        distance,
-        depth: sum - distance,
-        normal,
-        point_a: pa,
-        point_b: pb,
-    }))
+    Ok(Some(Contact { distance, depth: sum - distance, normal, point_a: pa, point_b: pb }))
 }
 
 /// Position corrections `(for A, for B)` that separate a contact: A moves by `-n * depth * wa / (wa + wb)`, B by `+n * depth * wb / (wa + wb)`
@@ -149,18 +136,12 @@ pub fn corrections(c: &Contact, wa: f64, wb: f64) -> Result<(P2, P2), String> {
         return Ok(([0.0, 0.0], [0.0, 0.0]));
     }
     let (ka, kb) = (c.depth * wa / total, c.depth * wb / total);
-    Ok((
-        [-c.normal[0] * ka, -c.normal[1] * ka],
-        [c.normal[0] * kb, c.normal[1] * kb],
-    ))
+    Ok(([-c.normal[0] * ka, -c.normal[1] * ka], [c.normal[0] * kb, c.normal[1] * kb]))
 }
 
 /// The capsules of a chain of points: segment `i` runs from `points[i]` to `points[i + 1]`.
 pub fn chain_capsules(points: &[P2], radius: f64) -> Vec<Capsule> {
-    points
-        .windows(2)
-        .map(|w| Capsule::new(w[0], w[1], radius))
-        .collect()
+    points.windows(2).map(|w| Capsule::new(w[0], w[1], radius)).collect()
 }
 
 /// Colliding pairs `(i, j, contact)` with `i < j` of a chain, skipping neighbours (`j - i <= 1`).
@@ -213,16 +194,12 @@ mod tests {
 
     #[test]
     fn far_apart() {
-        assert!(collide(&base(), &cap([5.0, 3.0], [5.0, 10.0], 1.0))
-            .unwrap()
-            .is_none());
+        assert!(collide(&base(), &cap([5.0, 3.0], [5.0, 10.0], 1.0)).unwrap().is_none());
     }
 
     #[test]
     fn overlap_depth_normal_and_points() {
-        let c = collide(&base(), &cap([5.0, 1.5], [5.0, 10.0], 1.0))
-            .unwrap()
-            .unwrap();
+        let c = collide(&base(), &cap([5.0, 1.5], [5.0, 10.0], 1.0)).unwrap().unwrap();
         near(c.distance, 1.5);
         near(c.depth, 0.5);
         near2(c.normal, [0.0, 1.0]);
@@ -232,12 +209,7 @@ mod tests {
 
     #[test]
     fn parallel_segments() {
-        let c = collide(
-            &cap([0.0, 0.0], [10.0, 0.0], 1.5),
-            &cap([3.0, 2.0], [7.0, 2.0], 1.5),
-        )
-        .unwrap()
-        .unwrap();
+        let c = collide(&cap([0.0, 0.0], [10.0, 0.0], 1.5), &cap([3.0, 2.0], [7.0, 2.0], 1.5)).unwrap().unwrap();
         near(c.distance, 2.0);
         near(c.depth, 1.0);
         near2(c.normal, [0.0, 1.0]);
@@ -245,9 +217,7 @@ mod tests {
 
     #[test]
     fn crossing_segments_use_the_left_normal() {
-        let c = collide(&base(), &cap([5.0, -5.0], [5.0, 5.0], 1.0))
-            .unwrap()
-            .unwrap();
+        let c = collide(&base(), &cap([5.0, -5.0], [5.0, 5.0], 1.0)).unwrap().unwrap();
         near(c.distance, 0.0);
         near(c.depth, 2.0);
         near2(c.normal, [0.0, 1.0]);
@@ -255,14 +225,10 @@ mod tests {
 
     #[test]
     fn end_regions() {
-        let c = collide(&base(), &cap([11.5, 0.0], [20.0, 0.0], 1.0))
-            .unwrap()
-            .unwrap();
+        let c = collide(&base(), &cap([11.5, 0.0], [20.0, 0.0], 1.0)).unwrap().unwrap();
         near(c.depth, 0.5);
         near2(c.normal, [1.0, 0.0]);
-        let c = collide(&base(), &cap([11.0, 5.0], [11.0, -5.0], 1.0))
-            .unwrap()
-            .unwrap();
+        let c = collide(&base(), &cap([11.0, 5.0], [11.0, -5.0], 1.0)).unwrap().unwrap();
         near2(c.point_a, [10.0, 0.0]);
         near2(c.point_b, [11.0, 0.0]);
         near(c.depth, 1.0);
@@ -271,48 +237,30 @@ mod tests {
 
     #[test]
     fn circles_and_degenerate_segments() {
-        let c = collide(
-            &cap([0.0, 0.0], [0.0, 0.0], 1.0),
-            &cap([1.5, 0.0], [1.5, 0.0], 1.0),
-        )
-        .unwrap()
-        .unwrap();
+        let c = collide(&cap([0.0, 0.0], [0.0, 0.0], 1.0), &cap([1.5, 0.0], [1.5, 0.0], 1.0)).unwrap().unwrap();
         near(c.depth, 0.5);
         near2(c.normal, [1.0, 0.0]);
         // a point against a segment
-        let c = collide(&base(), &cap([5.0, 1.0], [5.0, 1.0], 1.5))
-            .unwrap()
-            .unwrap();
+        let c = collide(&base(), &cap([5.0, 1.0], [5.0, 1.0], 1.5)).unwrap().unwrap();
         near(c.distance, 1.0);
         // coincident points: normal (1, 0)
-        let c = collide(
-            &cap([2.0, 2.0], [2.0, 2.0], 1.0),
-            &cap([2.0, 2.0], [2.0, 2.0], 1.0),
-        )
-        .unwrap()
-        .unwrap();
+        let c = collide(&cap([2.0, 2.0], [2.0, 2.0], 1.0), &cap([2.0, 2.0], [2.0, 2.0], 1.0)).unwrap().unwrap();
         near2(c.normal, [1.0, 0.0]);
         near(c.depth, 2.0);
         // collinear overlapping segments
-        let c = collide(&base(), &cap([5.0, 0.0], [15.0, 0.0], 1.0))
-            .unwrap()
-            .unwrap();
+        let c = collide(&base(), &cap([5.0, 0.0], [15.0, 0.0], 1.0)).unwrap().unwrap();
         near(c.distance, 0.0);
         near2(c.normal, [0.0, 1.0]);
     }
 
     #[test]
     fn tangent_is_not_a_collision() {
-        assert!(collide(&base(), &cap([5.0, 2.0], [5.0, 10.0], 1.0))
-            .unwrap()
-            .is_none());
+        assert!(collide(&base(), &cap([5.0, 2.0], [5.0, 10.0], 1.0)).unwrap().is_none());
     }
 
     #[test]
     fn corrections_by_inverse_mass() {
-        let c = collide(&base(), &cap([5.0, 1.5], [5.0, 10.0], 1.0))
-            .unwrap()
-            .unwrap();
+        let c = collide(&base(), &cap([5.0, 1.5], [5.0, 10.0], 1.0)).unwrap().unwrap();
         let (a, b) = corrections(&c, 1.0, 1.0).unwrap();
         near2(a, [0.0, -0.25]);
         near2(b, [0.0, 0.25]);
@@ -325,12 +273,7 @@ mod tests {
     }
 
     fn chain(r: f64) -> Vec<Capsule> {
-        vec![
-            cap([0.0, 0.0], [10.0, 0.0], r),
-            cap([10.0, 0.0], [10.0, 1.0], r),
-            cap([10.0, 1.0], [0.0, 1.0], r),
-            cap([0.0, 1.0], [0.0, 0.5], r),
-        ]
+        vec![cap([0.0, 0.0], [10.0, 0.0], r), cap([10.0, 0.0], [10.0, 1.0], r), cap([10.0, 1.0], [0.0, 1.0], r), cap([0.0, 1.0], [0.0, 0.5], r)]
     }
 
     #[test]
@@ -365,10 +308,7 @@ mod tests {
             near2(fwd[i], back[3 - i]);
         }
         assert!(chain_corrections(&c, &w[..3]).is_err());
-        assert_eq!(
-            chain_capsules(&[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]], 0.5).len(),
-            2
-        );
+        assert_eq!(chain_capsules(&[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]], 0.5).len(), 2);
     }
 
     #[test]

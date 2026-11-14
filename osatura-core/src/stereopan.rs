@@ -45,11 +45,7 @@ pub fn pan_mono_frame(sample: f64, p: f64) -> Result<(f64, f64), String> {
 /// `p > 0`: left = in_left * gain_left, right = in_right + in_left * gain_right.
 pub fn pan_stereo_frame(left: f64, right: f64, p: f64) -> Result<(f64, f64), String> {
     let (gl, gr) = stereo_gains(p)?;
-    Ok(if clamp_pan(p)? <= 0.0 {
-        (left + right * gl, right * gr)
-    } else {
-        (left * gl, right + left * gr)
-    })
+    Ok(if clamp_pan(p)? <= 0.0 { (left + right * gl, right * gr) } else { (left * gl, right + left * gr) })
 }
 
 /// A mono buffer to interleaved stereo (`L R L R ...`) at a constant pan. An empty buffer gives an empty result.
@@ -90,11 +86,7 @@ pub fn pan_at(keys: &[(f64, f64)], t: f64) -> f64 {
             for w in keys.windows(2) {
                 if t <= w[1].0 {
                     let span = w[1].0 - w[0].0;
-                    return if span <= 0.0 {
-                        w[1].1
-                    } else {
-                        w[0].1 + (w[1].1 - w[0].1) * (t - w[0].0) / span
-                    };
+                    return if span <= 0.0 { w[1].1 } else { w[0].1 + (w[1].1 - w[0].1) * (t - w[0].0) / span };
                 }
             }
             keys[keys.len() - 1].1
@@ -103,25 +95,16 @@ pub fn pan_at(keys: &[(f64, f64)], t: f64) -> f64 {
 }
 
 /// A mono buffer panned along keys: the pan of each sample is `pan_at(keys, i / sample_rate)`.
-pub fn pan_mono_keyed(
-    input: &[f32],
-    sample_rate: u32,
-    keys: &[(f64, f64)],
-) -> Result<Vec<f32>, String> {
+pub fn pan_mono_keyed(input: &[f32], sample_rate: u32, keys: &[(f64, f64)]) -> Result<Vec<f32>, String> {
     if sample_rate == 0 {
         return Err("sample rate must be positive".into());
     }
-    if keys.iter().any(|k| !k.0.is_finite() || !k.1.is_finite())
-        || keys.windows(2).any(|w| w[1].0 < w[0].0)
-    {
+    if keys.iter().any(|k| !k.0.is_finite() || !k.1.is_finite()) || keys.windows(2).any(|w| w[1].0 < w[0].0) {
         return Err("pan keys must be finite and sorted by time".into());
     }
     let mut out = Vec::with_capacity(input.len() * 2);
     for (i, &s) in input.iter().enumerate() {
-        let (l, r) = pan_mono_frame(
-            f64::from(s),
-            pan_at(keys, i as f64 / f64::from(sample_rate)),
-        )?;
+        let (l, r) = pan_mono_frame(f64::from(s), pan_at(keys, i as f64 / f64::from(sample_rate)))?;
         out.push(l as f32);
         out.push(r as f32);
     }
@@ -168,14 +151,8 @@ mod tests {
 
     #[test]
     fn out_of_range_is_clamped_and_non_finite_is_an_error() {
-        assert_eq!(
-            pan_mono_frame(1.0, 2.5).unwrap(),
-            pan_mono_frame(1.0, 1.0).unwrap()
-        );
-        assert_eq!(
-            pan_stereo_frame(0.3, 0.2, -9.0).unwrap(),
-            pan_stereo_frame(0.3, 0.2, -1.0).unwrap()
-        );
+        assert_eq!(pan_mono_frame(1.0, 2.5).unwrap(), pan_mono_frame(1.0, 1.0).unwrap());
+        assert_eq!(pan_stereo_frame(0.3, 0.2, -9.0).unwrap(), pan_stereo_frame(0.3, 0.2, -1.0).unwrap());
         assert!(pan_mono_frame(1.0, f64::NAN).is_err());
         assert!(pan_stereo_frame(1.0, 1.0, f64::INFINITY).is_err());
         assert!(pan_mono(&[0.1], f64::NAN).is_err());

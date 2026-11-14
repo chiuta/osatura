@@ -19,12 +19,7 @@ pub(super) struct Skel {
 }
 
 impl Skel {
-    pub(super) fn new(
-        names: Vec<String>,
-        parent: Vec<Option<usize>>,
-        pos: Vec<V3>,
-        lat_fixed: bool,
-    ) -> Skel {
+    pub(super) fn new(names: Vec<String>, parent: Vec<Option<usize>>, pos: Vec<V3>, lat_fixed: bool) -> Skel {
         let n = names.len();
         let mut children = vec![vec![]; n];
         let mut depth = vec![0; n];
@@ -34,47 +29,17 @@ impl Skel {
                 depth[i] = depth[p] + 1;
             }
         }
-        Skel {
-            names,
-            parent,
-            children,
-            pos,
-            depth,
-            lat_axis: 0,
-            lat_sign: 1.0,
-            lat_fixed,
-        }
+        Skel { names, parent, children, pos, depth, lat_axis: 0, lat_sign: 1.0, lat_fixed }
     }
     pub(super) fn from_bvh(b: &Bvh) -> Skel {
         let pose = b.pose(None);
-        Skel::new(
-            b.joints.iter().map(|j| j.name.clone()).collect(),
-            b.joints.iter().map(|j| j.parent).collect(),
-            pose.pos,
-            false,
-        )
+        Skel::new(b.joints.iter().map(|j| j.name.clone()).collect(), b.joints.iter().map(|j| j.parent).collect(), pose.pos, false)
     }
     pub(super) fn from_rig(p: &Project) -> Result<Skel, String> {
         let w = crate::rigedit::rest_world(p)?;
-        let idx: BTreeMap<&str, usize> = p
-            .bones
-            .iter()
-            .enumerate()
-            .map(|(i, b)| (b.name.as_str(), i))
-            .collect();
-        let parent = p
-            .bones
-            .iter()
-            .map(|b| b.parent.as_deref().and_then(|n| idx.get(n).copied()))
-            .collect();
-        Ok(Skel::new(
-            p.bones.iter().map(|b| b.name.clone()).collect(),
-            parent,
-            w.iter()
-                .map(|(h, _)| [h.x as f64, -(h.y as f64), 0.0])
-                .collect(),
-            true,
-        ))
+        let idx: BTreeMap<&str, usize> = p.bones.iter().enumerate().map(|(i, b)| (b.name.as_str(), i)).collect();
+        let parent = p.bones.iter().map(|b| b.parent.as_deref().and_then(|n| idx.get(n).copied())).collect();
+        Ok(Skel::new(p.bones.iter().map(|b| b.name.clone()).collect(), parent, w.iter().map(|(h, _)| [h.x as f64, -(h.y as f64), 0.0]).collect(), true))
     }
     pub(super) fn lat(&self, j: usize) -> f64 {
         self.pos[j][self.lat_axis] * self.lat_sign
@@ -82,16 +47,7 @@ impl Skel {
     /// Lateral coordinate of the subtree point farthest sideways from `origin` (signed).
     pub(super) fn lat_ext(&self, c: usize, origin: usize) -> f64 {
         let o = self.lat(origin);
-        self.subtree(c)
-            .iter()
-            .map(|&q| self.lat(q))
-            .fold(o, |best, v| {
-                if (v - o).abs() > (best - o).abs() {
-                    v
-                } else {
-                    best
-                }
-            })
+        self.subtree(c).iter().map(|&q| self.lat(q)).fold(o, |best, v| if (v - o).abs() > (best - o).abs() { v } else { best })
     }
     pub(super) fn subtree(&self, j: usize) -> Vec<usize> {
         let mut out = vec![j];
@@ -167,10 +123,7 @@ pub(super) fn slot_key(role: Role, side: Option<Side>) -> Option<String> {
         Role::Toe => "toe",
         _ => return None,
     };
-    Some(format!(
-        "{nm}.{}",
-        if side? == Side::Left { "l" } else { "r" }
-    ))
+    Some(format!("{nm}.{}", if side? == Side::Left { "l" } else { "r" }))
 }
 
 pub(super) fn name_slots(s: &Skel) -> Slots {
@@ -199,25 +152,13 @@ pub(super) fn name_slots(s: &Skel) -> Slots {
             continue;
         }
         if tag.role == Role::Spine {
-            spine.push(Assign {
-                joint: j,
-                conf: tag.conf,
-                via: Via::Name,
-            });
+            spine.push(Assign { joint: j, conf: tag.conf, via: Via::Name });
             continue;
         }
-        let Some(key) = slot_key(tag.role, tag.side) else {
-            continue;
-        };
-        let a = Assign {
-            joint: j,
-            conf: tag.conf,
-            via: Via::Name,
-        };
+        let Some(key) = slot_key(tag.role, tag.side) else { continue };
+        let a = Assign { joint: j, conf: tag.conf, via: Via::Name };
         match out.single.get(&key) {
-            Some(old)
-                if (old.conf, std::cmp::Reverse(s.depth[old.joint]))
-                    >= (a.conf, std::cmp::Reverse(s.depth[a.joint])) => {}
+            Some(old) if (old.conf, std::cmp::Reverse(s.depth[old.joint])) >= (a.conf, std::cmp::Reverse(s.depth[a.joint])) => {}
             _ => {
                 out.single.insert(key, a);
             }
@@ -239,12 +180,7 @@ pub(super) fn topo_slots(s: &mut Skel, hips_hint: Option<usize>) -> Slots {
         Some(h) => h,
         None => {
             let roots: Vec<usize> = (0..n).filter(|&i| s.parent[i].is_none()).collect();
-            let Some(&r) = roots
-                .iter()
-                .max_by_key(|&&r| (s.subtree(r).len(), std::cmp::Reverse(r)))
-            else {
-                return out;
-            };
+            let Some(&r) = roots.iter().max_by_key(|&&r| (s.subtree(r).len(), std::cmp::Reverse(r))) else { return out };
             let mut c = r;
             while s.children[c].len() == 1 {
                 c = s.children[c][0];
@@ -257,14 +193,7 @@ pub(super) fn topo_slots(s: &mut Skel, hips_hint: Option<usize>) -> Slots {
     };
     let tc = 0.6f32;
     let ts = 0.55f32;
-    out.single.insert(
-        "hips".into(),
-        Assign {
-            joint: hips,
-            conf: tc,
-            via: Via::Topology,
-        },
-    );
+    out.single.insert("hips".into(), Assign { joint: hips, conf: tc, via: Via::Topology });
     let hy = s.pos[hips][1];
     let mut legs: Vec<(usize, f64)> = Vec::new();
     let mut up: Vec<(usize, f64)> = Vec::new();
@@ -282,22 +211,14 @@ pub(super) fn topo_slots(s: &mut Skel, hips_hint: Option<usize>) -> Slots {
     up.sort_by(|a, b| b.1.total_cmp(&a.1).then(a.0.cmp(&b.0)));
     // lateral axis of this skeleton from the leg separation
     let total_h = {
-        let (lo, hi) = s
-            .pos
-            .iter()
-            .fold((f64::MAX, f64::MIN), |(l, h), p| (l.min(p[1]), h.max(p[1])));
+        let (lo, hi) = s.pos.iter().fold((f64::MAX, f64::MIN), |(l, h), p| (l.min(p[1]), h.max(p[1])));
         (hi - lo).max(1e-9)
     };
     let mut sided = false;
     if legs.len() >= 2 {
         let (a, b) = (legs[0].0, legs[1].0);
         if !s.lat_fixed {
-            let ext = |c: usize, ax: usize| {
-                s.subtree(c)
-                    .iter()
-                    .map(|&q| s.pos[q][ax] - s.pos[hips][ax])
-                    .fold(0.0f64, |m, v| if v.abs() > m.abs() { v } else { m })
-            };
+            let ext = |c: usize, ax: usize| s.subtree(c).iter().map(|&q| s.pos[q][ax] - s.pos[hips][ax]).fold(0.0f64, |m, v| if v.abs() > m.abs() { v } else { m });
             let dx = (ext(a, 0) - ext(b, 0)).abs();
             let dz = (ext(a, 2) - ext(b, 2)).abs();
             if dz > dx {
@@ -313,14 +234,7 @@ pub(super) fn topo_slots(s: &mut Skel, hips_hint: Option<usize>) -> Slots {
                 let ch = s.chain(c);
                 for (k, role) in ["thigh", "shin", "foot", "toe"].iter().enumerate() {
                     if let Some(&j) = ch.get(k) {
-                        out.single.insert(
-                            format!("{role}.{side}"),
-                            Assign {
-                                joint: j,
-                                conf: ts,
-                                via: Via::Topology,
-                            },
-                        );
+                        out.single.insert(format!("{role}.{side}"), Assign { joint: j, conf: ts, via: Via::Topology });
                     }
                 }
             }
@@ -337,100 +251,39 @@ pub(super) fn topo_slots(s: &mut Skel, hips_hint: Option<usize>) -> Slots {
         let top = *chain.last().unwrap();
         let kids = s.children[top].clone();
         if kids.len() >= 3 {
-            let spread = |j: usize| {
-                s.subtree(j)
-                    .iter()
-                    .map(|&q| (s.lat(q) - s.lat(top)).abs())
-                    .fold(0.0, f64::max)
-            };
+            let spread = |j: usize| s.subtree(j).iter().map(|&q| (s.lat(q) - s.lat(top)).abs()).fold(0.0, f64::max);
             let mut ranked: Vec<(usize, f64)> = kids.iter().map(|&k| (k, spread(k))).collect();
             ranked.sort_by(|a, b| b.1.total_cmp(&a.1).then(a.0.cmp(&b.0)));
             let arms = [ranked[0].0, ranked[1].0];
-            let neck_c = ranked[2..]
-                .iter()
-                .max_by(|a, b| s.pos[a.0][1].total_cmp(&s.pos[b.0][1]).then(b.0.cmp(&a.0)))
-                .map(|x| x.0);
-            out.spine = chain
-                .iter()
-                .map(|&j| Assign {
-                    joint: j,
-                    conf: ts,
-                    via: Via::Topology,
-                })
-                .collect();
+            let neck_c = ranked[2..].iter().max_by(|a, b| s.pos[a.0][1].total_cmp(&s.pos[b.0][1]).then(b.0.cmp(&a.0))).map(|x| x.0);
+            out.spine = chain.iter().map(|&j| Assign { joint: j, conf: ts, via: Via::Topology }).collect();
             if let Some(nc) = neck_c {
                 let nch = s.chain(nc);
                 if nch.len() >= 2 {
-                    out.single.insert(
-                        "neck".into(),
-                        Assign {
-                            joint: nch[0],
-                            conf: ts,
-                            via: Via::Topology,
-                        },
-                    );
-                    out.single.insert(
-                        "head".into(),
-                        Assign {
-                            joint: nch[1],
-                            conf: ts,
-                            via: Via::Topology,
-                        },
-                    );
+                    out.single.insert("neck".into(), Assign { joint: nch[0], conf: ts, via: Via::Topology });
+                    out.single.insert("head".into(), Assign { joint: nch[1], conf: ts, via: Via::Topology });
                 } else {
-                    out.single.insert(
-                        "head".into(),
-                        Assign {
-                            joint: nch[0],
-                            conf: ts,
-                            via: Via::Topology,
-                        },
-                    );
+                    out.single.insert("head".into(), Assign { joint: nch[0], conf: ts, via: Via::Topology });
                 }
             }
             let (l0, l1) = (s.lat_ext(arms[0], top), s.lat_ext(arms[1], top));
             if (l0 - l1).abs() > 0.01 * total_h {
-                let (l, r) = if l0 > l1 {
-                    (arms[0], arms[1])
-                } else {
-                    (arms[1], arms[0])
-                };
+                let (l, r) = if l0 > l1 { (arms[0], arms[1]) } else { (arms[1], arms[0]) };
                 for (c, side) in [(l, "l"), (r, "r")] {
                     let ch = s.chain(c);
                     let shift = usize::from(ch.len() >= 4 && s.seg(&ch, 0) < 0.5 * s.seg(&ch, 1));
                     if shift == 1 {
-                        out.single.insert(
-                            format!("clavicle.{side}"),
-                            Assign {
-                                joint: ch[0],
-                                conf: ts,
-                                via: Via::Topology,
-                            },
-                        );
+                        out.single.insert(format!("clavicle.{side}"), Assign { joint: ch[0], conf: ts, via: Via::Topology });
                     }
                     for (k, role) in ["upperarm", "forearm", "hand"].iter().enumerate() {
                         if let Some(&j) = ch.get(k + shift) {
-                            out.single.insert(
-                                format!("{role}.{side}"),
-                                Assign {
-                                    joint: j,
-                                    conf: ts,
-                                    via: Via::Topology,
-                                },
-                            );
+                            out.single.insert(format!("{role}.{side}"), Assign { joint: j, conf: ts, via: Via::Topology });
                         }
                     }
                 }
             }
         } else {
-            out.spine = chain
-                .iter()
-                .map(|&j| Assign {
-                    joint: j,
-                    conf: ts,
-                    via: Via::Topology,
-                })
-                .collect();
+            out.spine = chain.iter().map(|&j| Assign { joint: j, conf: ts, via: Via::Topology }).collect();
         }
     }
     let _ = sided;
@@ -439,12 +292,7 @@ pub(super) fn topo_slots(s: &mut Skel, hips_hint: Option<usize>) -> Slots {
 
 pub(super) fn merge_slots(name: Slots, topo: Slots) -> Slots {
     let mut out = name;
-    let mut used: BTreeSet<usize> = out
-        .single
-        .values()
-        .map(|a| a.joint)
-        .chain(out.spine.iter().map(|a| a.joint))
-        .collect();
+    let mut used: BTreeSet<usize> = out.single.values().map(|a| a.joint).chain(out.spine.iter().map(|a| a.joint)).collect();
     for (k, a) in topo.single {
         if !out.single.contains_key(&k) && !used.contains(&a.joint) {
             used.insert(a.joint);
@@ -452,11 +300,7 @@ pub(super) fn merge_slots(name: Slots, topo: Slots) -> Slots {
         }
     }
     if out.spine.is_empty() {
-        out.spine = topo
-            .spine
-            .into_iter()
-            .filter(|a| !used.contains(&a.joint))
-            .collect();
+        out.spine = topo.spine.into_iter().filter(|a| !used.contains(&a.joint)).collect();
     }
     out
 }

@@ -38,11 +38,7 @@ pub struct Gray {
 
 impl Gray {
     pub fn new(w: usize, h: usize, v: f32) -> Gray {
-        Gray {
-            w,
-            h,
-            px: vec![v; w * h],
-        }
+        Gray { w, h, px: vec![v; w * h] }
     }
     /// From straight RGBA bytes (Rec. 601 luma, alpha composited over white).
     pub fn from_rgba(w: usize, h: usize, rgba: &[u8]) -> Result<Gray, String> {
@@ -127,24 +123,18 @@ impl Gray {
             return;
         }
         let r = (sigma * 3.0).ceil() as isize;
-        let mut k: Vec<f32> = (-r..=r)
-            .map(|i| (-((i * i) as f32) / (2.0 * sigma * sigma)).exp())
-            .collect();
+        let mut k: Vec<f32> = (-r..=r).map(|i| (-((i * i) as f32) / (2.0 * sigma * sigma)).exp()).collect();
         let s: f32 = k.iter().sum();
         k.iter_mut().for_each(|v| *v /= s);
         let mut tmp = self.clone();
         for y in 0..self.h as isize {
             for x in 0..self.w as isize {
-                tmp.px[y as usize * self.w + x as usize] = (-r..=r)
-                    .map(|i| k[(i + r) as usize] * self.at(x + i, y))
-                    .sum();
+                tmp.px[y as usize * self.w + x as usize] = (-r..=r).map(|i| k[(i + r) as usize] * self.at(x + i, y)).sum();
             }
         }
         for y in 0..self.h as isize {
             for x in 0..self.w as isize {
-                self.px[y as usize * self.w + x as usize] = (-r..=r)
-                    .map(|i| k[(i + r) as usize] * tmp.at(x, y + i))
-                    .sum();
+                self.px[y as usize * self.w + x as usize] = (-r..=r).map(|i| k[(i + r) as usize] * tmp.at(x, y + i)).sum();
             }
         }
     }
@@ -156,11 +146,7 @@ impl Gray {
             enc.set_color(png::ColorType::Grayscale);
             enc.set_depth(png::BitDepth::Eight);
             let mut wr = enc.write_header().map_err(|e| e.to_string())?;
-            let bytes: Vec<u8> = self
-                .px
-                .iter()
-                .map(|v| (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8)
-                .collect();
+            let bytes: Vec<u8> = self.px.iter().map(|v| (v.clamp(0.0, 1.0) * 255.0 + 0.5) as u8).collect();
             wr.write_image_data(&bytes).map_err(|e| e.to_string())?;
         }
         Ok(out)
@@ -278,13 +264,7 @@ pub fn interocular(p: &[Vec2]) -> f32 {
 pub fn nme(truth: &[Vec2], pred: &[Vec2]) -> f32 {
     let d = interocular(truth).max(1e-6);
     let n = truth.len().min(pred.len()).max(1);
-    truth
-        .iter()
-        .zip(pred)
-        .map(|(a, b)| (*a - *b).length())
-        .sum::<f32>()
-        / n as f32
-        / d
+    truth.iter().zip(pred).map(|(a, b)| (*a - *b).length()).sum::<f32>() / n as f32 / d
 }
 
 struct Xf {
@@ -310,10 +290,7 @@ impl Xf {
     /// Head-plane point with roll only (silhouette).
     fn flat(&self, u: f32, v: f32) -> Vec2 {
         let (x, y) = (u * self.hw, v * self.ry);
-        Vec2::new(
-            self.cx + x * self.cr - y * self.sr,
-            self.cy + x * self.sr + y * self.cr,
-        )
+        Vec2::new(self.cx + x * self.cr - y * self.sr, self.cy + x * self.sr + y * self.cr)
     }
 }
 
@@ -323,16 +300,8 @@ impl FaceSpec {
         let hw = rr(r, hw_lo, hw_hi);
         let aspect = rr(r, 1.1, 1.4);
         let pad = hw * aspect * 1.05;
-        let cx = if w > 2.0 * pad {
-            rr(r, pad, w - pad)
-        } else {
-            w * 0.5
-        };
-        let cy = if h > 2.0 * pad {
-            rr(r, pad, h - pad)
-        } else {
-            h * 0.5
-        };
+        let cx = if w > 2.0 * pad { rr(r, pad, w - pad) } else { w * 0.5 };
+        let cy = if h > 2.0 * pad { rr(r, pad, h - pad) } else { h * 0.5 };
         let skin = rand_colour(r, 0.35, 0.97);
         let mut bg = rand_colour(r, 0.05, 1.0);
         let mut guard = 0;
@@ -345,13 +314,7 @@ impl FaceSpec {
             .map(|_| {
                 let a = rr(r, -1.0, 1.0);
                 let b = rr(r, -1.0, 1.0);
-                [
-                    a,
-                    rr(r, -1.0, -0.2),
-                    a + rr(r, -0.3, 0.3),
-                    b.abs() * 0.6 + rr(r, -0.1, 0.5),
-                    rr(r, 1.0, 3.0),
-                ]
+                [a, rr(r, -1.0, -0.2), a + rr(r, -0.3, 0.3), b.abs() * 0.6 + rr(r, -0.1, 0.5), rr(r, 1.0, 3.0)]
             })
             .collect();
         FaceSpec {
@@ -366,26 +329,14 @@ impl FaceSpec {
             bg,
             ink: mul(skin, ink_k),
             iris: mul(rand_colour(r, 0.1, 0.8), 0.7),
-            lip: [
-                rr(r, 0.5, 0.85) * luma(skin).max(0.4),
-                rr(r, 0.1, 0.4) * luma(skin),
-                rr(r, 0.1, 0.4) * luma(skin),
-            ],
+            lip: [rr(r, 0.5, 0.85) * luma(skin).max(0.4), rr(r, 0.1, 0.4) * luma(skin), rr(r, 0.1, 0.4) * luma(skin)],
             hair: mul(rand_colour(r, 0.05, 0.6), 0.8),
             eye_dx: rr(r, 0.30, 0.46),
             eye_y: rr(r, -0.30, -0.10),
             eye_w: rr(r, 0.20, 0.30),
             eye_h: rr(r, 0.35, 0.55),
-            open_r: if r.unit() < 0.15 {
-                rr(r, 0.0, 0.3)
-            } else {
-                rr(r, 0.6, 1.0)
-            },
-            open_l: if r.unit() < 0.15 {
-                rr(r, 0.0, 0.3)
-            } else {
-                rr(r, 0.6, 1.0)
-            },
+            open_r: if r.unit() < 0.15 { rr(r, 0.0, 0.3) } else { rr(r, 0.6, 1.0) },
+            open_l: if r.unit() < 0.15 { rr(r, 0.0, 0.3) } else { rr(r, 0.6, 1.0) },
             pupil: rr(r, 0.35, 0.6),
             brow_off: rr(r, 0.14, 0.24),
             brow_raise: rr(r, 0.0, 0.6),
@@ -396,36 +347,17 @@ impl FaceSpec {
             nose_z: rr(r, 0.15, 0.30),
             mouth_y: rr(r, 0.45, 0.62),
             mouth_w: rr(r, 0.24, 0.42),
-            mouth_open: if r.unit() < 0.5 {
-                rr(r, 0.0, 0.12)
-            } else {
-                rr(r, 0.1, 1.0)
-            },
+            mouth_open: if r.unit() < 0.5 { rr(r, 0.0, 0.12) } else { rr(r, 0.1, 1.0) },
             smile: rr(r, -0.06, 0.06),
             line_w: rr(r, 1.0, 2.5),
-            fringe: if r.unit() < 0.5 {
-                rr(r, -0.80, -0.55)
-            } else {
-                -1.0
-            },
+            fringe: if r.unit() < 0.5 { rr(r, -0.80, -0.55) } else { -1.0 },
             strokes: if r.unit() < 0.4 { strokes } else { vec![] },
         }
     }
 
     fn xf(&self) -> Xf {
         let rr_ = self.roll.to_radians();
-        Xf {
-            cx: self.cx,
-            cy: self.cy,
-            hw: self.hw,
-            ry: self.hw * self.aspect,
-            cr: rr_.cos(),
-            sr: rr_.sin(),
-            cyaw: self.yaw.cos(),
-            syaw: self.yaw.sin(),
-            cp: self.pitch.cos(),
-            sp: self.pitch.sin(),
-        }
+        Xf { cx: self.cx, cy: self.cy, hw: self.hw, ry: self.hw * self.aspect, cr: rr_.cos(), sr: rr_.sin(), cyaw: self.yaw.cos(), syaw: self.yaw.sin(), cp: self.pitch.cos(), sp: self.pitch.sin() }
     }
 
     /// Eye lid curve points for the eye centred at head-unit (cu, cv): returns (outline polygon,
@@ -442,14 +374,7 @@ impl FaceSpec {
         for i in (1..10).rev() {
             poly.push(curve(-1.0 + 0.2 * i as f32, 1.0));
         }
-        let q = [
-            curve(-1.0, 0.0),
-            curve(-0.5, -1.0),
-            curve(0.5, -1.0),
-            curve(1.0, 0.0),
-            curve(0.5, 1.0),
-            curve(-0.5, 1.0),
-        ];
+        let q = [curve(-1.0, 0.0), curve(-0.5, -1.0), curve(0.5, -1.0), curve(1.0, 0.0), curve(0.5, 1.0), curve(-0.5, 1.0)];
         (poly, q)
     }
 
@@ -459,13 +384,7 @@ impl FaceSpec {
         let (_, re) = self.eye(&x, -self.eye_dx, self.eye_y, self.open_r);
         let (_, le) = self.eye(&x, self.eye_dx, self.eye_y, self.open_l);
         let gap = self.mouth_open * 0.5 * self.mouth_w;
-        let mv = |t: f32, dv: f32| {
-            x.p(
-                t * self.mouth_w * 0.5,
-                self.mouth_y + self.smile * t * t + dv,
-                0.0,
-            )
-        };
+        let mv = |t: f32, dv: f32| x.p(t * self.mouth_w * 0.5, self.mouth_y + self.smile * t * t + dv, 0.0);
         let bv = self.eye_y - self.brow_off - self.brow_raise * 0.12;
         let sil = (1.0 - self.eye_y * self.eye_y).max(0.0).sqrt();
         let mut v: Vec<Vec2> = Vec::with_capacity(23);
@@ -486,155 +405,68 @@ impl FaceSpec {
     }
 
     pub fn truth(&self) -> FaceTruth {
-        FaceTruth {
-            pts: self.landmarks(),
-            cx: self.cx,
-            cy: self.cy,
-            side: 2.2 * self.hw * self.aspect,
-        }
+        FaceTruth { pts: self.landmarks(), cx: self.cx, cy: self.cy, side: 2.2 * self.hw * self.aspect }
     }
 
     /// SVG shapes (no `<svg>` wrapper, no background).
     pub fn svg_shapes(&self) -> String {
         let x = self.xf();
         let mut s = String::new();
-        let poly = |s: &mut String,
-                    pts: &[Vec2],
-                    fill: Option<[f32; 3]>,
-                    stroke: Option<([f32; 3], f32)>,
-                    closed: bool| {
-            let pp: Vec<String> = pts
-                .iter()
-                .map(|p| format!("{:.2},{:.2}", p.x, p.y))
-                .collect();
-            let _ = write!(
-                s,
-                "<{} points=\"{}\" fill=\"{}\"",
-                if closed { "polygon" } else { "polyline" },
-                pp.join(" "),
-                fill.map(hex).unwrap_or("none".into())
-            );
+        let poly = |s: &mut String, pts: &[Vec2], fill: Option<[f32; 3]>, stroke: Option<([f32; 3], f32)>, closed: bool| {
+            let pp: Vec<String> = pts.iter().map(|p| format!("{:.2},{:.2}", p.x, p.y)).collect();
+            let _ = write!(s, "<{} points=\"{}\" fill=\"{}\"", if closed { "polygon" } else { "polyline" }, pp.join(" "), fill.map(hex).unwrap_or("none".into()));
             if let Some((c, w)) = stroke {
                 let _ = write!(s, " stroke=\"{}\" stroke-width=\"{:.2}\"", hex(c), w);
             }
             s.push_str("/>");
         };
         // head
-        let head: Vec<Vec2> = (0..72)
-            .map(|i| {
-                let a = std::f32::consts::TAU * i as f32 / 72.0;
-                x.flat(a.cos(), a.sin())
-            })
-            .collect();
-        poly(
-            &mut s,
-            &head,
-            Some(self.skin),
-            Some((mul(self.skin, 0.7), self.line_w)),
-            true,
-        );
+        let head: Vec<Vec2> = (0..72).map(|i| {
+            let a = std::f32::consts::TAU * i as f32 / 72.0;
+            x.flat(a.cos(), a.sin())
+        }).collect();
+        poly(&mut s, &head, Some(self.skin), Some((mul(self.skin, 0.7), self.line_w)), true);
         // eyes
         for (sgn, open) in [(-1.0f32, self.open_r), (1.0, self.open_l)] {
             let (outline, _) = self.eye(&x, sgn * self.eye_dx, self.eye_y, open);
             let white = [0.96, 0.96, 0.94];
-            poly(
-                &mut s,
-                &outline,
-                Some(white),
-                Some((self.ink, self.line_w)),
-                true,
-            );
+            poly(&mut s, &outline, Some(white), Some((self.ink, self.line_w)), true);
             if open > 0.25 {
                 let pr = self.pupil * self.eye_w * 0.5 * open.min(1.0).sqrt();
                 let pu = sgn * self.eye_dx + self.yaw.sin() * 0.0;
-                let ring: Vec<Vec2> = (0..14)
-                    .map(|i| {
-                        let a = std::f32::consts::TAU * i as f32 / 14.0;
-                        x.p(
-                            pu + pr * a.cos(),
-                            self.eye_y + pr * a.sin() / self.aspect,
-                            0.0,
-                        )
-                    })
-                    .collect();
+                let ring: Vec<Vec2> = (0..14).map(|i| {
+                    let a = std::f32::consts::TAU * i as f32 / 14.0;
+                    x.p(pu + pr * a.cos(), self.eye_y + pr * a.sin() / self.aspect, 0.0)
+                }).collect();
                 poly(&mut s, &ring, Some(self.iris), Some((self.ink, 0.5)), true);
             }
         }
         // brows
         let bv = self.eye_y - self.brow_off - self.brow_raise * 0.12;
         for sgn in [-1.0f32, 1.0] {
-            let pts: Vec<Vec2> = (0..7)
-                .map(|i| {
-                    let t = -1.0 + i as f32 / 3.0;
-                    x.p(
-                        sgn * self.eye_dx + t * self.brow_len * 0.5,
-                        bv - 0.03 * (1.0 - t * t) + self.brow_tilt * t * sgn,
-                        0.0,
-                    )
-                })
-                .collect();
+            let pts: Vec<Vec2> = (0..7).map(|i| {
+                let t = -1.0 + i as f32 / 3.0;
+                x.p(sgn * self.eye_dx + t * self.brow_len * 0.5, bv - 0.03 * (1.0 - t * t) + self.brow_tilt * t * sgn, 0.0)
+            }).collect();
             poly(&mut s, &pts, None, Some((self.ink, self.brow_thick)), false);
         }
         // nose
         let bridge = x.p(0.0, self.eye_y + 0.04, 0.08);
         let tip = x.p(0.0, self.nose_y, self.nose_z);
-        poly(
-            &mut s,
-            &[bridge, tip],
-            None,
-            Some((mul(self.skin, 0.6), self.line_w)),
-            false,
-        );
-        let nostrils = [
-            x.p(-0.09, self.nose_y + 0.015, self.nose_z * 0.8),
-            tip,
-            x.p(0.09, self.nose_y + 0.015, self.nose_z * 0.8),
-        ];
-        poly(
-            &mut s,
-            &nostrils,
-            None,
-            Some((self.ink, self.line_w)),
-            false,
-        );
+        poly(&mut s, &[bridge, tip], None, Some((mul(self.skin, 0.6), self.line_w)), false);
+        let nostrils = [x.p(-0.09, self.nose_y + 0.015, self.nose_z * 0.8), tip, x.p(0.09, self.nose_y + 0.015, self.nose_z * 0.8)];
+        poly(&mut s, &nostrils, None, Some((self.ink, self.line_w)), false);
         // mouth
         let gap = self.mouth_open * 0.5 * self.mouth_w;
-        let mv = |t: f32, dv: f32| {
-            x.p(
-                t * self.mouth_w * 0.5,
-                self.mouth_y + self.smile * t * t + dv,
-                0.0,
-            )
-        };
+        let mv = |t: f32, dv: f32| x.p(t * self.mouth_w * 0.5, self.mouth_y + self.smile * t * t + dv, 0.0);
         let ts: Vec<f32> = (0..=10).map(|i| -1.0 + 0.2 * i as f32).collect();
-        let mut mouth: Vec<Vec2> = ts
-            .iter()
-            .map(|&t| mv(t, -gap * 0.5 * (1.0 - t * t)))
-            .collect();
-        mouth.extend(
-            ts.iter()
-                .rev()
-                .skip(1)
-                .take(9)
-                .map(|&t| mv(t, gap * 0.5 * (1.0 - t * t))),
-        );
+        let mut mouth: Vec<Vec2> = ts.iter().map(|&t| mv(t, -gap * 0.5 * (1.0 - t * t))).collect();
+        mouth.extend(ts.iter().rev().skip(1).take(9).map(|&t| mv(t, gap * 0.5 * (1.0 - t * t))));
         if gap > 0.01 {
-            poly(
-                &mut s,
-                &mouth,
-                Some(mul(self.lip, 0.35)),
-                Some((self.lip, self.line_w * 1.2)),
-                true,
-            );
+            poly(&mut s, &mouth, Some(mul(self.lip, 0.35)), Some((self.lip, self.line_w * 1.2)), true);
         } else {
             let line: Vec<Vec2> = ts.iter().map(|&t| mv(t, 0.0)).collect();
-            poly(
-                &mut s,
-                &line,
-                None,
-                Some((self.lip, self.line_w * 1.6)),
-                false,
-            );
+            poly(&mut s, &line, None, Some((self.lip, self.line_w * 1.6)), false);
         }
         // fringe and strokes (occluders)
         if self.fringe > -0.99 {
@@ -645,21 +477,12 @@ impl FaceSpec {
             }
             for i in (0..=20).rev() {
                 let t = -1.0 + 2.0 * i as f32 / 20.0;
-                f.push(x.flat(
-                    t * 0.97,
-                    self.fringe + 0.12 * (t * 2.5).sin() * 0.5 + 0.08 * t * t,
-                ));
+                f.push(x.flat(t * 0.97, self.fringe + 0.12 * (t * 2.5).sin() * 0.5 + 0.08 * t * t));
             }
             poly(&mut s, &f, Some(self.hair), None, true);
         }
         for st in &self.strokes {
-            poly(
-                &mut s,
-                &[x.flat(st[0], st[1]), x.flat(st[2], st[3])],
-                None,
-                Some((self.hair, st[4])),
-                false,
-            );
+            poly(&mut s, &[x.flat(st[0], st[1]), x.flat(st[2], st[3])], None, Some((self.hair, st[4])), false);
         }
         s
     }
@@ -681,38 +504,17 @@ pub fn render_svg_gray(svg: &str, w: usize, h: usize) -> Result<Gray, String> {
     }
     let imp = import_svg(svg)?;
     let sw = if imp.width > 0.0 { imp.width } else { w as f32 };
-    let sh = if imp.height > 0.0 {
-        imp.height
-    } else {
-        h as f32
-    };
+    let sh = if imp.height > 0.0 { imp.height } else { h as f32 };
     let mut p = Project::new("facegen", sw, sh, 24.0, 1);
     p.layers = vec![Layer::vector("svg", imp.paths)];
-    p.background = Some(crate::style::Rgba {
-        r: 1.0,
-        g: 1.0,
-        b: 1.0,
-        a: 1.0,
-    });
+    p.background = Some(crate::style::Rgba { r: 1.0, g: 1.0, b: 1.0, a: 1.0 });
     let eng = Engine::new(p).map_err(|e| e.join("; "))?;
-    let (pw, ph, rgba) = render_rgba(
-        &eng,
-        0.0,
-        &RasterOptions {
-            scale: w as f32 / sw,
-            ..Default::default()
-        },
-    );
+    let (pw, ph, rgba) = render_rgba(&eng, 0.0, &RasterOptions { scale: w as f32 / sw, ..Default::default() });
     let g = Gray::from_rgba(pw as usize, ph as usize, &rgba)?;
     if (g.w, g.h) == (w, h) {
         Ok(g)
     } else {
-        Ok(g.crop_resize(
-            g.w as f32 * 0.5,
-            g.h as f32 * 0.5,
-            g.w.max(g.h) as f32,
-            w.max(h),
-        ))
+        Ok(g.crop_resize(g.w as f32 * 0.5, g.h as f32 * 0.5, g.w.max(g.h) as f32, w.max(h)))
     }
 }
 
@@ -727,25 +529,9 @@ pub struct Post {
     pub gain: f32,
 }
 impl Post {
-    pub const NONE: Post = Post {
-        light: 0.0,
-        light_dir: 0.0,
-        blur: 0.0,
-        noise: 0.0,
-        gain: 1.0,
-    };
+    pub const NONE: Post = Post { light: 0.0, light_dir: 0.0, blur: 0.0, noise: 0.0, gain: 1.0 };
     pub fn random(r: &mut Rng) -> Post {
-        Post {
-            light: rr(r, 0.0, 0.35),
-            light_dir: rr(r, 0.0, std::f32::consts::TAU),
-            blur: if r.unit() < 0.5 { rr(r, 0.0, 1.2) } else { 0.0 },
-            noise: if r.unit() < 0.6 {
-                rr(r, 0.0, 0.05)
-            } else {
-                0.0
-            },
-            gain: rr(r, 0.8, 1.1),
-        }
+        Post { light: rr(r, 0.0, 0.35), light_dir: rr(r, 0.0, std::f32::consts::TAU), blur: if r.unit() < 0.5 { rr(r, 0.0, 1.2) } else { 0.0 }, noise: if r.unit() < 0.6 { rr(r, 0.0, 0.05) } else { 0.0 }, gain: rr(r, 0.8, 1.1) }
     }
     pub fn apply(&self, g: &mut Gray, r: &mut Rng) {
         g.blur(self.blur);
@@ -755,13 +541,7 @@ impl Post {
             for x in 0..g.w {
                 let t = ((x as f32 / w - 0.5) * cd + (y as f32 / h - 0.5) * sd) * 2.0;
                 let v = &mut g.px[y * g.w + x];
-                *v = (*v * self.gain * (1.0 + self.light * t)
-                    + if self.noise > 0.0 {
-                        self.noise * gauss(r)
-                    } else {
-                        0.0
-                    })
-                .clamp(0.0, 1.0);
+                *v = (*v * self.gain * (1.0 + self.light * t) + if self.noise > 0.0 { self.noise * gauss(r) } else { 0.0 }).clamp(0.0, 1.0);
             }
         }
     }
@@ -772,52 +552,23 @@ impl Post {
 pub fn clutter_svg(r: &mut Rng, w: usize, h: usize, decoys: bool) -> String {
     let (wf, hf) = (w as f32, h as f32);
     let bg = rand_colour(r, 0.05, 1.0);
-    let mut s = format!(
-        "<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{}\"/>",
-        hex(bg)
-    );
+    let mut s = format!("<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{}\"/>", hex(bg));
     for _ in 0..(2 + r.below(10)) {
         let c = rand_colour(r, 0.0, 1.0);
         let (x, y) = (rr(r, -0.1, 1.1) * wf, rr(r, -0.1, 1.1) * hf);
         let sz = rr(r, 0.04, 0.5) * wf.min(hf);
         match r.below(5) {
             0 => {
-                let _ = write!(
-                    s,
-                    "<rect x=\"{:.1}\" y=\"{:.1}\" width=\"{:.1}\" height=\"{:.1}\" fill=\"{}\"/>",
-                    x,
-                    y,
-                    sz,
-                    sz * rr(r, 0.2, 2.0),
-                    hex(c)
-                );
+                let _ = write!(s, "<rect x=\"{:.1}\" y=\"{:.1}\" width=\"{:.1}\" height=\"{:.1}\" fill=\"{}\"/>", x, y, sz, sz * rr(r, 0.2, 2.0), hex(c));
             }
             1 => {
-                let _ = write!(
-                    s,
-                    "<ellipse cx=\"{:.1}\" cy=\"{:.1}\" rx=\"{:.1}\" ry=\"{:.1}\" fill=\"{}\"/>",
-                    x,
-                    y,
-                    sz * 0.5,
-                    sz * rr(r, 0.2, 0.7),
-                    hex(c)
-                );
+                let _ = write!(s, "<ellipse cx=\"{:.1}\" cy=\"{:.1}\" rx=\"{:.1}\" ry=\"{:.1}\" fill=\"{}\"/>", x, y, sz * 0.5, sz * rr(r, 0.2, 0.7), hex(c));
             }
             2 => {
                 let _ = write!(s, "<polyline points=\"{:.1},{:.1} {:.1},{:.1}\" fill=\"none\" stroke=\"{}\" stroke-width=\"{:.1}\"/>", x, y, x + rr(r, -1.0, 1.0) * sz * 2.0, y + rr(r, -1.0, 1.0) * sz * 2.0, hex(c), rr(r, 1.0, 6.0));
             }
             3 => {
-                let _ = write!(
-                    s,
-                    "<polygon points=\"{:.1},{:.1} {:.1},{:.1} {:.1},{:.1}\" fill=\"{}\"/>",
-                    x,
-                    y,
-                    x + rr(r, -1.0, 1.0) * sz,
-                    y + rr(r, -1.0, 1.0) * sz,
-                    x + rr(r, -1.0, 1.0) * sz,
-                    y + rr(r, -1.0, 1.0) * sz,
-                    hex(c)
-                );
+                let _ = write!(s, "<polygon points=\"{:.1},{:.1} {:.1},{:.1} {:.1},{:.1}\" fill=\"{}\"/>", x, y, x + rr(r, -1.0, 1.0) * sz, y + rr(r, -1.0, 1.0) * sz, x + rr(r, -1.0, 1.0) * sz, y + rr(r, -1.0, 1.0) * sz, hex(c));
             }
             _ => {
                 let _ = write!(s, "<polyline points=\"{:.1},{:.1} {:.1},{:.1} {:.1},{:.1}\" fill=\"none\" stroke=\"{}\" stroke-width=\"{:.1}\"/>", x, y, x + sz * 0.5, y + rr(r, -0.5, 0.5) * sz, x + sz, y, hex(c), rr(r, 1.0, 4.0));
@@ -834,26 +585,16 @@ pub fn clutter_svg(r: &mut Rng, w: usize, h: usize, decoys: bool) -> String {
         let _ = n;
         f.fringe = -1.0;
         match cut {
-            0 => s.push_str(keep[0]),                                     // bare head
+            0 => s.push_str(keep[0]),                              // bare head
             1 => keep.iter().skip(1).take(4).for_each(|k| s.push_str(k)), // eyes without head
-            _ => keep
-                .iter()
-                .skip(keep.len().saturating_sub(5))
-                .for_each(|k| s.push_str(k)), // mouth / hair without head
+            _ => keep.iter().skip(keep.len().saturating_sub(5)).for_each(|k| s.push_str(k)), // mouth / hair without head
         }
     }
     s
 }
 
 /// A scene with one synthetic face on clutter, rendered and degraded. Returns the image and the truth.
-pub fn face_scene(
-    r: &mut Rng,
-    w: usize,
-    h: usize,
-    hw_lo: f32,
-    hw_hi: f32,
-    nuisance: bool,
-) -> Result<(Gray, FaceTruth), String> {
+pub fn face_scene(r: &mut Rng, w: usize, h: usize, hw_lo: f32, hw_hi: f32, nuisance: bool) -> Result<(Gray, FaceTruth), String> {
     face_scene_with(r, w, h, hw_lo, hw_hi, |_, p, r| {
         if nuisance {
             *p = Post::random(r);
@@ -865,31 +606,13 @@ pub fn face_scene(
 
 /// Like [`face_scene`], but `tweak` may override any spec field and the [`Post`] (which starts as
 /// [`Post::NONE`]) before rendering; used by the robustness sweeps.
-pub fn face_scene_with(
-    r: &mut Rng,
-    w: usize,
-    h: usize,
-    hw_lo: f32,
-    hw_hi: f32,
-    mut tweak: impl FnMut(&mut FaceSpec, &mut Post, &mut Rng),
-) -> Result<(Gray, FaceTruth), String> {
+pub fn face_scene_with(r: &mut Rng, w: usize, h: usize, hw_lo: f32, hw_hi: f32, mut tweak: impl FnMut(&mut FaceSpec, &mut Post, &mut Rng)) -> Result<(Gray, FaceTruth), String> {
     let mut spec = FaceSpec::random(r, w as f32, h as f32, hw_lo, hw_hi);
     let mut post = Post::NONE;
     let plain = r.unit() < 0.5;
-    let clutter = if plain {
-        String::new()
-    } else {
-        clutter_svg(r, w, h, false)
-    };
+    let clutter = if plain { String::new() } else { clutter_svg(r, w, h, false) };
     tweak(&mut spec, &mut post, r);
-    let mut body = if plain {
-        format!(
-            "<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{}\"/>",
-            hex(spec.bg)
-        )
-    } else {
-        clutter
-    };
+    let mut body = if plain { format!("<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{}\"/>", hex(spec.bg)) } else { clutter };
     body.push_str(&spec.svg_shapes());
     let mut g = render_svg_gray(&svg_doc(w, h, &body), w, h)?;
     post.apply(&mut g, r);
@@ -905,19 +628,9 @@ pub fn negative_scene(r: &mut Rng, w: usize, h: usize) -> Result<Gray, String> {
 
 /// Render one spec on a plain background (`clutter_seed` None) or on clutter that is the same in every
 /// call with the same seed (a static scene behind a moving head).
-pub fn render_spec(
-    spec: &FaceSpec,
-    w: usize,
-    h: usize,
-    clutter_seed: Option<u64>,
-    post: &Post,
-    noise_seed: u64,
-) -> Result<Gray, String> {
+pub fn render_spec(spec: &FaceSpec, w: usize, h: usize, clutter_seed: Option<u64>, post: &Post, noise_seed: u64) -> Result<Gray, String> {
     let mut body = match clutter_seed {
-        None => format!(
-            "<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{}\"/>",
-            hex(spec.bg)
-        ),
+        None => format!("<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{}\"/>", hex(spec.bg)),
         Some(cs) => clutter_svg(&mut Rng::new(cs), w, h, false),
     };
     body.push_str(&spec.svg_shapes());
@@ -943,11 +656,7 @@ pub fn anim_spec(seed: u64, t: f32, size: f32) -> FaceSpec {
     s.pitch = 0.18 * (t * 0.6 + 1.0).sin();
     s.roll = 8.0 * (t * 0.4).sin();
     let ph = t % 2.6;
-    let blink = if ph > 2.35 {
-        1.0 - ((ph - 2.475).abs() / 0.125).min(1.0)
-    } else {
-        0.0
-    };
+    let blink = if ph > 2.35 { 1.0 - ((ph - 2.475).abs() / 0.125).min(1.0) } else { 0.0 };
     s.open_r = 1.0 - blink;
     s.open_l = 1.0 - blink;
     s.mouth_open = (0.9 * (t * 2.6).sin()).max(0.0);
@@ -973,25 +682,10 @@ pub struct Cartoon {
 fn eye_pts(cx: f32, cy: f32, hw: f32, hh: f32) -> [Vec2; 6] {
     // corners at the horizontal extremes, lid points at 1/4 and 3/4 of the width on an elliptical lid
     let k = (1.0 - 0.25f32).sqrt() * hh;
-    [
-        Vec2::new(cx - hw, cy),
-        Vec2::new(cx - hw * 0.5, cy - k),
-        Vec2::new(cx + hw * 0.5, cy - k),
-        Vec2::new(cx + hw, cy),
-        Vec2::new(cx + hw * 0.5, cy + k),
-        Vec2::new(cx - hw * 0.5, cy + k),
-    ]
+    [Vec2::new(cx - hw, cy), Vec2::new(cx - hw * 0.5, cy - k), Vec2::new(cx + hw * 0.5, cy - k), Vec2::new(cx + hw, cy), Vec2::new(cx + hw * 0.5, cy + k), Vec2::new(cx - hw * 0.5, cy + k)]
 }
 
-fn all_pts(
-    re: [Vec2; 6],
-    le: [Vec2; 6],
-    m: [Vec2; 4],
-    brows: [Vec2; 2],
-    nose: [Vec2; 2],
-    chin: Vec2,
-    sides: [Vec2; 2],
-) -> Vec<Vec2> {
+fn all_pts(re: [Vec2; 6], le: [Vec2; 6], m: [Vec2; 4], brows: [Vec2; 2], nose: [Vec2; 2], chin: Vec2, sides: [Vec2; 2]) -> Vec<Vec2> {
     let mut v = Vec::with_capacity(23);
     v.extend(re);
     v.extend(le);
@@ -1019,20 +713,7 @@ pub fn cartoons() -> Vec<Cartoon> {
         out.push(Cartoon {
             name: "round-emoji",
             svg_body: body.into(),
-            pts: all_pts(
-                eye_pts(70.0, 82.0, 9.0, 14.0),
-                eye_pts(130.0, 82.0, 9.0, 14.0),
-                [
-                    p(60.0, 125.0),
-                    p(140.0, 125.0),
-                    p(100.0, 125.0),
-                    p(100.0, 150.0),
-                ],
-                [p(70.0, 50.0), p(130.0, 50.0)],
-                [p(100.0, 108.0), p(100.0, 82.0)],
-                p(100.0, 180.0),
-                [p(22.5, 82.0), p(177.5, 82.0)],
-            ),
+            pts: all_pts(eye_pts(70.0, 82.0, 9.0, 14.0), eye_pts(130.0, 82.0, 9.0, 14.0), [p(60.0, 125.0), p(140.0, 125.0), p(100.0, 125.0), p(100.0, 150.0)], [p(70.0, 50.0), p(130.0, 50.0)], [p(100.0, 108.0), p(100.0, 82.0)], p(100.0, 180.0), [p(22.5, 82.0), p(177.5, 82.0)]),
             head: (100.0, 100.0, 176.0),
         });
     }
@@ -1049,20 +730,7 @@ pub fn cartoons() -> Vec<Cartoon> {
         out.push(Cartoon {
             name: "manga-oval",
             svg_body: body.into(),
-            pts: all_pts(
-                eye_pts(68.0, 98.0, 17.0, 21.0),
-                eye_pts(132.0, 98.0, 17.0, 21.0),
-                [
-                    p(90.0, 150.0),
-                    p(110.0, 150.0),
-                    p(100.0, 146.0),
-                    p(100.0, 154.0),
-                ],
-                [p(68.0, 60.0), p(132.0, 60.0)],
-                [p(100.0, 128.0), p(100.0, 98.0)],
-                p(100.0, 185.0),
-                [p(100.0 - s, 98.0), p(100.0 + s, 98.0)],
-            ),
+            pts: all_pts(eye_pts(68.0, 98.0, 17.0, 21.0), eye_pts(132.0, 98.0, 17.0, 21.0), [p(90.0, 150.0), p(110.0, 150.0), p(100.0, 146.0), p(100.0, 154.0)], [p(68.0, 60.0), p(132.0, 60.0)], [p(100.0, 128.0), p(100.0, 98.0)], p(100.0, 185.0), [p(100.0 - s, 98.0), p(100.0 + s, 98.0)]),
             head: (100.0, 105.0, 176.0),
         });
     }
@@ -1073,33 +741,11 @@ pub fn cartoons() -> Vec<Cartoon> {
             <rect x=\"56\" y=\"52\" width=\"30\" height=\"6\" fill=\"#44505c\"/><rect x=\"114\" y=\"52\" width=\"30\" height=\"6\" fill=\"#44505c\"/>\
             <polygon points=\"100,100 92,120 108,120\" fill=\"#8895a3\" stroke=\"#44505c\" stroke-width=\"2\"/>\
             <rect x=\"66\" y=\"136\" width=\"68\" height=\"16\" fill=\"#101820\"/>";
-        let eye = |cx: f32| {
-            [
-                p(cx - 15.0, 83.0),
-                p(cx - 7.5, 72.0),
-                p(cx + 7.5, 72.0),
-                p(cx + 15.0, 83.0),
-                p(cx + 7.5, 94.0),
-                p(cx - 7.5, 94.0),
-            ]
-        };
+        let eye = |cx: f32| [p(cx - 15.0, 83.0), p(cx - 7.5, 72.0), p(cx + 7.5, 72.0), p(cx + 15.0, 83.0), p(cx + 7.5, 94.0), p(cx - 7.5, 94.0)];
         out.push(Cartoon {
             name: "boxy-robot",
             svg_body: body.into(),
-            pts: all_pts(
-                eye(71.0),
-                eye(129.0),
-                [
-                    p(66.0, 144.0),
-                    p(134.0, 144.0),
-                    p(100.0, 136.0),
-                    p(100.0, 152.0),
-                ],
-                [p(71.0, 55.0), p(129.0, 55.0)],
-                [p(100.0, 120.0), p(100.0, 83.0)],
-                p(100.0, 170.0),
-                [p(40.0, 83.0), p(160.0, 83.0)],
-            ),
+            pts: all_pts(eye(71.0), eye(129.0), [p(66.0, 144.0), p(134.0, 144.0), p(100.0, 136.0), p(100.0, 152.0)], [p(71.0, 55.0), p(129.0, 55.0)], [p(100.0, 120.0), p(100.0, 83.0)], p(100.0, 170.0), [p(40.0, 83.0), p(160.0, 83.0)]),
             head: (100.0, 100.0, 154.0),
         });
     }
@@ -1113,34 +759,12 @@ pub fn cartoons() -> Vec<Cartoon> {
             <polyline points=\"112,62 130,56 148,62\" fill=\"none\" stroke=\"#111111\" stroke-width=\"3\"/>\
             <polyline points=\"100,88 100,118 92,122 108,122\" fill=\"none\" stroke=\"#111111\" stroke-width=\"3\"/>\
             <path d=\"M72,144 Q100,160 128,144 Q100,150 72,144 Z\" fill=\"none\" stroke=\"#111111\" stroke-width=\"3\"/>";
-        let eye = |cx: f32| {
-            [
-                p(cx - 16.0, 86.0),
-                p(cx - 8.0, 78.0),
-                p(cx + 8.0, 78.0),
-                p(cx + 16.0, 86.0),
-                p(cx + 8.0, 91.0),
-                p(cx - 8.0, 91.0),
-            ]
-        };
+        let eye = |cx: f32| [p(cx - 16.0, 86.0), p(cx - 8.0, 78.0), p(cx + 8.0, 78.0), p(cx + 16.0, 86.0), p(cx + 8.0, 91.0), p(cx - 8.0, 91.0)];
         let s = (1.0f32 - (86.0f32 - 100.0).powi(2) / 6724.0).sqrt() * 64.0;
         out.push(Cartoon {
             name: "line-drawing",
             svg_body: body.into(),
-            pts: all_pts(
-                eye(70.0),
-                eye(130.0),
-                [
-                    p(72.0, 144.0),
-                    p(128.0, 144.0),
-                    p(100.0, 147.0),
-                    p(100.0, 152.0),
-                ],
-                [p(70.0, 59.0), p(130.0, 59.0)],
-                [p(100.0, 118.0), p(100.0, 86.0)],
-                p(100.0, 182.0),
-                [p(100.0 - s, 86.0), p(100.0 + s, 86.0)],
-            ),
+            pts: all_pts(eye(70.0), eye(130.0), [p(72.0, 144.0), p(128.0, 144.0), p(100.0, 147.0), p(100.0, 152.0)], [p(70.0, 59.0), p(130.0, 59.0)], [p(100.0, 118.0), p(100.0, 86.0)], p(100.0, 182.0), [p(100.0 - s, 86.0), p(100.0 + s, 86.0)]),
             head: (100.0, 100.0, 180.0),
         });
     }
@@ -1153,35 +777,15 @@ impl Cartoon {
     /// (landmarks and box in pixels).
     // public render signature is stable; the eight scalars are independent view parameters.
     #[allow(clippy::too_many_arguments)]
-    pub fn render(
-        &self,
-        w: usize,
-        h: usize,
-        scale: f32,
-        roll_deg: f32,
-        cx: f32,
-        cy: f32,
-        bg: [f32; 3],
-    ) -> Result<(Gray, FaceTruth), String> {
-        let (c, s) = (
-            roll_deg.to_radians().cos() * scale,
-            roll_deg.to_radians().sin() * scale,
-        );
+    pub fn render(&self, w: usize, h: usize, scale: f32, roll_deg: f32, cx: f32, cy: f32, bg: [f32; 3]) -> Result<(Gray, FaceTruth), String> {
+        let (c, s) = (roll_deg.to_radians().cos() * scale, roll_deg.to_radians().sin() * scale);
         // x' = a x + c y + e ; maps design (100,100) to (cx, cy)
         let (e, f) = (cx - (c * 100.0 - s * 100.0), cy - (s * 100.0 + c * 100.0));
         let svg = svg_doc(w, h, &format!("<rect x=\"0\" y=\"0\" width=\"{w}\" height=\"{h}\" fill=\"{}\"/><g transform=\"matrix({c} {s} {} {c} {e} {f})\">{}</g>", hex(bg), -s, self.svg_body));
         let g = render_svg_gray(&svg, w, h)?;
         let m = |q: &Vec2| Vec2::new(c * q.x - s * q.y + e, s * q.x + c * q.y + f);
         let hc = m(&Vec2::new(self.head.0, self.head.1));
-        Ok((
-            g,
-            FaceTruth {
-                pts: self.pts.iter().map(m).collect(),
-                cx: hc.x,
-                cy: hc.y,
-                side: self.head.2 * scale,
-            },
-        ))
+        Ok((g, FaceTruth { pts: self.pts.iter().map(m).collect(), cx: hc.x, cy: hc.y, side: self.head.2 * scale }))
     }
 }
 
@@ -1204,10 +808,7 @@ mod tests {
         let p = fa.landmarks();
         assert_eq!(p.len(), 23);
         for q in &p {
-            assert!(
-                q.x.is_finite()
-                    && (*q - Vec2::new(fa.cx, fa.cy)).length() <= fa.hw * fa.aspect * 1.25
-            );
+            assert!(q.x.is_finite() && (*q - Vec2::new(fa.cx, fa.cy)).length() <= fa.hw * fa.aspect * 1.25);
         }
     }
 
@@ -1265,14 +866,7 @@ mod tests {
         s.strokes.clear();
         s.roll = 0.0;
         s.open_r = 1.0;
-        let svg = svg_doc(
-            128,
-            128,
-            &format!(
-                "<rect x=\"0\" y=\"0\" width=\"128\" height=\"128\" fill=\"#ffffff\"/>{}",
-                s.svg_shapes()
-            ),
-        );
+        let svg = svg_doc(128, 128, &format!("<rect x=\"0\" y=\"0\" width=\"128\" height=\"128\" fill=\"#ffffff\"/>{}", s.svg_shapes()));
         let g = render_svg_gray(&svg, 128, 128).unwrap();
         let p = s.landmarks();
         // the right-eye outline is drawn in the ink colour at the corner

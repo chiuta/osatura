@@ -40,18 +40,13 @@ pub(super) fn tokens(path: &str) -> Result<Vec<String>, String> {
 }
 
 pub(super) fn ptr_of(toks: &[String]) -> String {
-    toks.iter()
-        .map(|t| format!("/{}", t.replace('~', "~0").replace('/', "~1")))
-        .collect()
+    toks.iter().map(|t| format!("/{}", t.replace('~', "~0").replace('/', "~1"))).collect()
 }
 
 pub(super) fn child_of(doc: &Doc, cur: &Val, tok: &str) -> Option<Val> {
     let Val::Ref(id) = cur else { return None };
     match doc.nodes.get(id)? {
-        Cont::Obj(m) => m
-            .get(tok)
-            .filter(|r| r.val != Val::Absent)
-            .map(|r| r.val.clone()),
+        Cont::Obj(m) => m.get(tok).filter(|r| r.val != Val::Absent).map(|r| r.val.clone()),
         Cont::Arr(_) => {
             let i: usize = tok.parse().ok()?;
             doc.visible(*id).get(i).map(|e| e.reg.val.clone())
@@ -62,27 +57,16 @@ pub(super) fn child_of(doc: &Doc, cur: &Val, tok: &str) -> Option<Val> {
 pub(super) fn walk(doc: &Doc, toks: &[String]) -> Result<Val, String> {
     let mut cur = doc.root.val.clone();
     for (n, t) in toks.iter().enumerate() {
-        cur = child_of(doc, &cur, t)
-            .ok_or_else(|| format!("no such path '{}'", ptr_of(&toks[..=n])))?;
+        cur = child_of(doc, &cur, t).ok_or_else(|| format!("no such path '{}'", ptr_of(&toks[..=n])))?;
     }
     Ok(cur)
 }
 
 pub(super) fn slot_prim(slot: &Slot, value: &Value) -> Prim {
     match slot {
-        Slot::Root => Prim::SetRoot {
-            value: value.clone(),
-        },
-        Slot::Key(o, k) => Prim::SetKey {
-            obj: *o,
-            key: k.clone(),
-            value: value.clone(),
-        },
-        Slot::Elem(a, e) => Prim::SetElem {
-            arr: *a,
-            elem: *e,
-            value: value.clone(),
-        },
+        Slot::Root => Prim::SetRoot { value: value.clone() },
+        Slot::Key(o, k) => Prim::SetKey { obj: *o, key: k.clone(), value: value.clone() },
+        Slot::Elem(a, e) => Prim::SetElem { arr: *a, elem: *e, value: value.clone() },
     }
 }
 
@@ -90,19 +74,12 @@ pub(super) fn slot_prim(slot: &Slot, value: &Value) -> Prim {
 /// entities: replacing one by the other is a remove plus an insert, not a field-by-field rewrite.
 pub(super) fn same_identity(a: &Value, b: &Value) -> bool {
     match (a, b) {
-        (Value::Object(x), Value::Object(y)) => {
-            ["id", "name", "target", "prop"]
-                .iter()
-                .all(|k| match (x.get(*k), y.get(*k)) {
-                    (Some(p), Some(q)) => p == q,
-                    _ => true,
-                })
-        }
+        (Value::Object(x), Value::Object(y)) => ["id", "name", "target", "prop"].iter().all(|k| match (x.get(*k), y.get(*k)) {
+            (Some(p), Some(q)) => p == q,
+            _ => true,
+        }),
         (Value::Array(_), Value::Array(_)) => true,
-        (Value::Object(_), _)
-        | (_, Value::Object(_))
-        | (Value::Array(_), _)
-        | (_, Value::Array(_)) => false,
+        (Value::Object(_), _) | (_, Value::Object(_)) | (Value::Array(_), _) | (_, Value::Array(_)) => false,
         _ => true,
     }
 }
@@ -112,25 +89,10 @@ pub(super) fn diff_slot(doc: &mut Doc, tx: &mut Tx, slot: Slot, new: &Value) -> 
     match (&cur, new) {
         (Val::Ref(id), Value::Object(nm)) if doc.obj(*id).is_some() => {
             let id = *id;
-            let existing: BTreeSet<String> = doc
-                .obj(id)
-                .map(|m| {
-                    m.iter()
-                        .filter(|(_, r)| r.val != Val::Absent)
-                        .map(|(k, _)| k.clone())
-                        .collect()
-                })
-                .unwrap_or_default();
+            let existing: BTreeSet<String> = doc.obj(id).map(|m| m.iter().filter(|(_, r)| r.val != Val::Absent).map(|(k, _)| k.clone()).collect()).unwrap_or_default();
             for k in &existing {
                 if !nm.contains_key(k) {
-                    emit(
-                        doc,
-                        tx,
-                        Prim::DelKey {
-                            obj: id,
-                            key: k.clone(),
-                        },
-                    )?;
+                    emit(doc, tx, Prim::DelKey { obj: id, key: k.clone() })?;
                 }
             }
             let mut keys: Vec<&String> = nm.keys().collect();
@@ -139,15 +101,7 @@ pub(super) fn diff_slot(doc: &mut Doc, tx: &mut Tx, slot: Slot, new: &Value) -> 
                 if existing.contains(k) {
                     diff_slot(doc, tx, Slot::Key(id, k.clone()), &nm[k])?;
                 } else {
-                    emit(
-                        doc,
-                        tx,
-                        Prim::SetKey {
-                            obj: id,
-                            key: k.clone(),
-                            value: nm[k].clone(),
-                        },
-                    )?;
+                    emit(doc, tx, Prim::SetKey { obj: id, key: k.clone(), value: nm[k].clone() })?;
                 }
             }
             Ok(())
@@ -159,11 +113,7 @@ pub(super) fn diff_slot(doc: &mut Doc, tx: &mut Tx, slot: Slot, new: &Value) -> 
 }
 
 pub(super) fn diff_array(doc: &mut Doc, tx: &mut Tx, arr: Id, new: &[Value]) -> Result<(), String> {
-    let old: Vec<(Id, Value)> = doc
-        .visible(arr)
-        .iter()
-        .map(|e| (e.id, doc.val_json(&e.reg.val, 0).unwrap_or(Value::Null)))
-        .collect();
+    let old: Vec<(Id, Value)> = doc.visible(arr).iter().map(|e| (e.id, doc.val_json(&e.reg.val, 0).unwrap_or(Value::Null))).collect();
     let (n, m) = (old.len(), new.len());
     let mut pre = 0;
     while pre < n && pre < m && old[pre].1 == new[pre] {
@@ -181,11 +131,7 @@ pub(super) fn diff_array(doc: &mut Doc, tx: &mut Tx, arr: Id, new: &[Value]) -> 
         let mut t = vec![0u32; (on + 1) * w];
         for i in (0..on).rev() {
             for j in (0..nn).rev() {
-                t[i * w + j] = if old[pre + i].1 == new[pre + j] {
-                    t[(i + 1) * w + j + 1] + 1
-                } else {
-                    t[(i + 1) * w + j].max(t[i * w + j + 1])
-                };
+                t[i * w + j] = if old[pre + i].1 == new[pre + j] { t[(i + 1) * w + j + 1] + 1 } else { t[(i + 1) * w + j].max(t[i * w + j + 1]) };
             }
         }
         let (mut i, mut j) = (0, 0);
@@ -219,39 +165,16 @@ pub(super) fn diff_array(doc: &mut Doc, tx: &mut Tx, arr: Id, new: &[Value]) -> 
             } else {
                 emit(doc, tx, Prim::DelElem { arr, elem: *oid })?;
                 let nid = tx.gen.peek();
-                emit(
-                    doc,
-                    tx,
-                    Prim::InsElem {
-                        arr,
-                        after: anchor,
-                        value: nv.clone(),
-                    },
-                )?;
+                emit(doc, tx, Prim::InsElem { arr, after: anchor, value: nv.clone() })?;
                 anchor = Some(nid);
             }
         }
         for t in k..lo {
-            emit(
-                doc,
-                tx,
-                Prim::DelElem {
-                    arr,
-                    elem: old[oi + t].0,
-                },
-            )?;
+            emit(doc, tx, Prim::DelElem { arr, elem: old[oi + t].0 })?;
         }
         for t in k..ln {
             let nid = tx.gen.peek();
-            emit(
-                doc,
-                tx,
-                Prim::InsElem {
-                    arr,
-                    after: anchor,
-                    value: new[nj + t].clone(),
-                },
-            )?;
+            emit(doc, tx, Prim::InsElem { arr, after: anchor, value: new[nj + t].clone() })?;
             anchor = Some(nid);
         }
         if mi < n {
@@ -279,34 +202,18 @@ pub(super) fn translate(doc: &mut Doc, tx: &mut Tx, op: &Op) -> Result<(), Strin
             let (pt, last) = toks.split_at(toks.len() - 1);
             let tok = &last[0];
             let parent = walk(doc, pt).map_err(|_| format!("no such path '{}'", ptr_of(pt)))?;
-            let Val::Ref(pid) = parent else {
-                return Err(format!("'{}' is not a container", ptr_of(pt)));
-            };
+            let Val::Ref(pid) = parent else { return Err(format!("'{}' is not a container", ptr_of(pt))) };
             match doc.nodes.get(&pid) {
                 Some(Cont::Obj(m)) => {
                     if m.get(tok).map(|r| r.val != Val::Absent).unwrap_or(false) {
                         diff_slot(doc, tx, Slot::Key(pid, tok.clone()), value)
                     } else {
-                        emit(
-                            doc,
-                            tx,
-                            Prim::SetKey {
-                                obj: pid,
-                                key: tok.clone(),
-                                value: value.clone(),
-                            },
-                        )
+                        emit(doc, tx, Prim::SetKey { obj: pid, key: tok.clone(), value: value.clone() })
                     }
                 }
                 Some(Cont::Arr(_)) => {
-                    let i: usize = tok
-                        .parse()
-                        .map_err(|_| format!("bad array index '{tok}'"))?;
-                    let id = doc
-                        .visible(pid)
-                        .get(i)
-                        .map(|e| e.id)
-                        .ok_or_else(|| format!("index {i} out of range at '{}'", ptr_of(pt)))?;
+                    let i: usize = tok.parse().map_err(|_| format!("bad array index '{tok}'"))?;
+                    let id = doc.visible(pid).get(i).map(|e| e.id).ok_or_else(|| format!("index {i} out of range at '{}'", ptr_of(pt)))?;
                     diff_slot(doc, tx, Slot::Elem(pid, id), value)
                 }
                 None => Err(format!("'{}' is not a container", ptr_of(pt))),
@@ -320,46 +227,23 @@ pub(super) fn translate(doc: &mut Doc, tx: &mut Tx, op: &Op) -> Result<(), Strin
             let (pt, last) = toks.split_at(toks.len() - 1);
             let tok = &last[0];
             let parent = walk(doc, pt).map_err(|_| format!("no such path '{}'", ptr_of(pt)))?;
-            let Val::Ref(pid) = parent else {
-                return Err(format!("'{}' is not a container", ptr_of(pt)));
-            };
+            let Val::Ref(pid) = parent else { return Err(format!("'{}' is not a container", ptr_of(pt))) };
             match doc.nodes.get(&pid) {
                 Some(Cont::Obj(m)) => {
                     if m.get(tok).map(|r| r.val != Val::Absent).unwrap_or(false) {
                         diff_slot(doc, tx, Slot::Key(pid, tok.clone()), value)
                     } else {
-                        emit(
-                            doc,
-                            tx,
-                            Prim::SetKey {
-                                obj: pid,
-                                key: tok.clone(),
-                                value: value.clone(),
-                            },
-                        )
+                        emit(doc, tx, Prim::SetKey { obj: pid, key: tok.clone(), value: value.clone() })
                     }
                 }
                 Some(Cont::Arr(_)) => {
                     let vis = doc.visible(pid);
-                    let i = if tok == "-" {
-                        vis.len()
-                    } else {
-                        tok.parse()
-                            .map_err(|_| format!("bad array index '{tok}'"))?
-                    };
+                    let i = if tok == "-" { vis.len() } else { tok.parse().map_err(|_| format!("bad array index '{tok}'"))? };
                     if i > vis.len() {
                         return Err(format!("insert index {i} out of range at '{}'", ptr_of(pt)));
                     }
                     let after = if i == 0 { None } else { Some(vis[i - 1].id) };
-                    emit(
-                        doc,
-                        tx,
-                        Prim::InsElem {
-                            arr: pid,
-                            after,
-                            value: value.clone(),
-                        },
-                    )
+                    emit(doc, tx, Prim::InsElem { arr: pid, after, value: value.clone() })
                 }
                 None => Err(format!("'{}' is not a container", ptr_of(pt))),
             }
@@ -372,33 +256,18 @@ pub(super) fn translate(doc: &mut Doc, tx: &mut Tx, op: &Op) -> Result<(), Strin
             let (pt, last) = toks.split_at(toks.len() - 1);
             let tok = &last[0];
             let parent = walk(doc, pt).map_err(|_| format!("no such path '{}'", ptr_of(pt)))?;
-            let Val::Ref(pid) = parent else {
-                return Err(format!("'{}' is not a container", ptr_of(pt)));
-            };
+            let Val::Ref(pid) = parent else { return Err(format!("'{}' is not a container", ptr_of(pt))) };
             match doc.nodes.get(&pid) {
                 Some(Cont::Obj(m)) => {
                     if m.get(tok).map(|r| r.val != Val::Absent).unwrap_or(false) {
-                        emit(
-                            doc,
-                            tx,
-                            Prim::DelKey {
-                                obj: pid,
-                                key: tok.clone(),
-                            },
-                        )
+                        emit(doc, tx, Prim::DelKey { obj: pid, key: tok.clone() })
                     } else {
                         Err(format!("no key '{tok}' at '{}'", ptr_of(pt)))
                     }
                 }
                 Some(Cont::Arr(_)) => {
-                    let i: usize = tok
-                        .parse()
-                        .map_err(|_| format!("bad array index '{tok}'"))?;
-                    let id = doc
-                        .visible(pid)
-                        .get(i)
-                        .map(|e| e.id)
-                        .ok_or_else(|| format!("index {i} out of range at '{}'", ptr_of(pt)))?;
+                    let i: usize = tok.parse().map_err(|_| format!("bad array index '{tok}'"))?;
+                    let id = doc.visible(pid).get(i).map(|e| e.id).ok_or_else(|| format!("index {i} out of range at '{}'", ptr_of(pt)))?;
                     emit(doc, tx, Prim::DelElem { arr: pid, elem: id })
                 }
                 None => Err(format!("'{}' is not a container", ptr_of(pt))),
@@ -415,12 +284,7 @@ pub(super) fn coalesce(undos: Vec<Undo>) -> Vec<Undo> {
             Undo::Restore { slot, stamp, prev } => {
                 let mut merged = false;
                 for x in out.iter_mut() {
-                    if let Undo::Restore {
-                        slot: s2,
-                        stamp: st2,
-                        ..
-                    } = x
-                    {
+                    if let Undo::Restore { slot: s2, stamp: st2, .. } = x {
                         if *s2 == slot {
                             *st2 = stamp;
                             merged = true;
@@ -432,24 +296,11 @@ pub(super) fn coalesce(undos: Vec<Undo>) -> Vec<Undo> {
                     out.push(Undo::Restore { slot, stamp, prev });
                 }
             }
-            Undo::Reinsert {
-                arr,
-                elem,
-                left,
-                value,
-            } => {
-                if let Some(p) = out
-                    .iter()
-                    .position(|x| matches!(x, Undo::Remove { elem: e2, .. } if *e2 == elem))
-                {
+            Undo::Reinsert { arr, elem, left, value } => {
+                if let Some(p) = out.iter().position(|x| matches!(x, Undo::Remove { elem: e2, .. } if *e2 == elem)) {
                     out.remove(p);
                 } else {
-                    out.push(Undo::Reinsert {
-                        arr,
-                        elem,
-                        left,
-                        value,
-                    });
+                    out.push(Undo::Reinsert { arr, elem, left, value });
                 }
             }
             other => out.push(other),
@@ -462,37 +313,15 @@ pub(super) fn coalesce(undos: Vec<Undo>) -> Vec<Undo> {
 pub(super) fn plan_inverse(doc: &mut Doc, tx: &mut Tx, u: &Undo) -> Result<(), String> {
     match u {
         Undo::Remove { arr, elem } => {
-            let live = doc
-                .arr(*arr)
-                .and_then(|v| v.iter().find(|e| e.id == *elem))
-                .map(|e| e.tomb.is_none())
-                .unwrap_or(false);
+            let live = doc.arr(*arr).and_then(|v| v.iter().find(|e| e.id == *elem)).map(|e| e.tomb.is_none()).unwrap_or(false);
             if live {
-                emit(
-                    doc,
-                    tx,
-                    Prim::DelElem {
-                        arr: *arr,
-                        elem: *elem,
-                    },
-                )?;
+                emit(doc, tx, Prim::DelElem { arr: *arr, elem: *elem })?;
             }
             Ok(())
         }
-        Undo::Reinsert {
-            arr,
-            elem,
-            left,
-            value,
-        } => {
+        Undo::Reinsert { arr, elem, left, value } => {
             let v = doc.arr(*arr).ok_or("array is gone")?;
-            let nearest_before = |p: usize| {
-                v[..=p]
-                    .iter()
-                    .rev()
-                    .find(|e| e.tomb.is_none())
-                    .map(|e| e.id)
-            };
+            let nearest_before = |p: usize| v[..=p].iter().rev().find(|e| e.tomb.is_none()).map(|e| e.id);
             let after = match v.iter().position(|e| e.id == *elem) {
                 Some(p) => {
                     if v[p].tomb.is_none() {
@@ -509,41 +338,21 @@ pub(super) fn plan_inverse(doc: &mut Doc, tx: &mut Tx, u: &Undo) -> Result<(), S
                     },
                 },
             };
-            emit(
-                doc,
-                tx,
-                Prim::InsElem {
-                    arr: *arr,
-                    after,
-                    value: value.clone(),
-                },
-            )
+            emit(doc, tx, Prim::InsElem { arr: *arr, after, value: value.clone() })
         }
         Undo::Restore { slot, stamp, prev } => {
             if doc.reg_stamp(slot) != Some(*stamp) {
                 return Ok(()); // somebody wrote after us: their write stays
             }
             if let Slot::Elem(a, e) = slot {
-                if doc
-                    .arr(*a)
-                    .and_then(|v| v.iter().find(|x| x.id == *e))
-                    .map(|x| x.tomb.is_some())
-                    .unwrap_or(true)
-                {
+                if doc.arr(*a).and_then(|v| v.iter().find(|x| x.id == *e)).map(|x| x.tomb.is_some()).unwrap_or(true) {
                     return Ok(());
                 }
             }
             match (slot, prev) {
                 (Slot::Root, Some(v)) => diff_slot(doc, tx, Slot::Root, v),
                 (Slot::Root, None) => Ok(()),
-                (Slot::Key(o, k), None) => emit(
-                    doc,
-                    tx,
-                    Prim::DelKey {
-                        obj: *o,
-                        key: k.clone(),
-                    },
-                ),
+                (Slot::Key(o, k), None) => emit(doc, tx, Prim::DelKey { obj: *o, key: k.clone() }),
                 (s, Some(v)) => diff_slot(doc, tx, s.clone(), v),
                 (Slot::Elem(..), None) => Ok(()),
             }

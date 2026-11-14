@@ -50,16 +50,8 @@ impl Pivot {
             "center" | "centre" => Ok(Pivot::Center),
             t if t.starts_with("bone:") && t.len() > 5 => Ok(Pivot::Bone(t[5..].to_string())),
             t => {
-                let (a, b) = t.split_once(',').ok_or_else(|| {
-                    format!("bad pivot '{s}' (use x,y | bone:NAME | centroid | center)")
-                })?;
-                let n = |q: &str| {
-                    q.trim()
-                        .parse::<f32>()
-                        .ok()
-                        .filter(|v| v.is_finite())
-                        .ok_or_else(|| format!("bad number '{q}'"))
-                };
+                let (a, b) = t.split_once(',').ok_or_else(|| format!("bad pivot '{s}' (use x,y | bone:NAME | centroid | center)"))?;
+                let n = |q: &str| q.trim().parse::<f32>().ok().filter(|v| v.is_finite()).ok_or_else(|| format!("bad number '{q}'"));
                 Ok(Pivot::Point(Vec2::new(n(a)?, n(b)?)))
             }
         }
@@ -83,27 +75,18 @@ impl Falloff {
             "gauss" => Falloff::Gauss,
             "sharp" => Falloff::Sharp,
             "constant" => Falloff::Constant,
-            _ => {
-                return Err(format!(
-                    "unknown falloff '{s}' (linear, smooth, gauss, sharp, constant)"
-                ))
-            }
+            _ => return Err(format!("unknown falloff '{s}' (linear, smooth, gauss, sharp, constant)")),
         })
     }
 }
 
 /// Weight at distance `d` from the selection for a soft radius `radius` (> 0).
 pub fn falloff_weight(kind: Falloff, d: f32, radius: f32) -> f32 {
-    if (radius.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !d.is_finite() || d < 0.0
-    {
+    if (radius.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !d.is_finite() || d < 0.0 {
         return if d == 0.0 { 1.0 } else { 0.0 };
     }
     if d >= radius {
-        return if kind == Falloff::Constant && d == radius {
-            1.0
-        } else {
-            0.0
-        };
+        return if kind == Falloff::Constant && d == radius { 1.0 } else { 0.0 };
     }
     let t = d / radius;
     match kind {
@@ -150,20 +133,8 @@ impl Controls {
         match self.kind {
             Kind::Cage => (format!("{layer}::{name}::{i}"), Prop::CageDx, Prop::CageDy),
             Kind::Pin => (format!("{layer}::{name}::{i}"), Prop::PinDx, Prop::PinDy),
-            Kind::Spine => (
-                format!("{layer}::{name}::{i}"),
-                Prop::SpineDx,
-                Prop::SpineDy,
-            ),
-            Kind::Lattice => (
-                format!(
-                    "{layer}::{name}::{},{}",
-                    i % (self.cols + 1),
-                    i / (self.cols + 1)
-                ),
-                Prop::LatticeDx,
-                Prop::LatticeDy,
-            ),
+            Kind::Spine => (format!("{layer}::{name}::{i}"), Prop::SpineDx, Prop::SpineDy),
+            Kind::Lattice => (format!("{layer}::{name}::{},{}", i % (self.cols + 1), i / (self.cols + 1)), Prop::LatticeDx, Prop::LatticeDy),
         }
     }
     pub fn len(&self) -> usize {
@@ -174,11 +145,7 @@ impl Controls {
     }
     /// Current positions (rest + offset).
     pub fn positions(&self) -> Vec<Vec2> {
-        self.rest
-            .iter()
-            .zip(&self.cur)
-            .map(|(r, c)| *r + *c)
-            .collect()
+        self.rest.iter().zip(&self.cur).map(|(r, c)| *r + *c).collect()
     }
 }
 
@@ -186,10 +153,7 @@ fn grid_points(rect: [f32; 4], cols: usize, rows: usize) -> Vec<Vec2> {
     let mut v = Vec::with_capacity((cols + 1) * (rows + 1));
     for r in 0..=rows {
         for c in 0..=cols {
-            v.push(Vec2::new(
-                rect[0] + rect[2] * c as f32 / cols as f32,
-                rect[1] + rect[3] * r as f32 / rows as f32,
-            ));
+            v.push(Vec2::new(rect[0] + rect[2] * c as f32 / cols as f32, rect[1] + rect[3] * r as f32 / rows as f32));
         }
     }
     v
@@ -197,8 +161,7 @@ fn grid_points(rect: [f32; 4], cols: usize, rows: usize) -> Vec<Vec2> {
 
 /// Static transform chain: layer space -> stage at rest (no animation, bones at rest).
 fn rest_stage(p: &Project, layer: &str) -> Result<Affine2, String> {
-    p.find_layer(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?;
+    p.find_layer(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
     let mut m = Affine2::IDENTITY;
     let mut acc = String::new();
     for part in layer.split('/') {
@@ -206,9 +169,7 @@ fn rest_stage(p: &Project, layer: &str) -> Result<Affine2, String> {
             acc.push('/');
         }
         acc.push_str(part);
-        let l = p
-            .find_layer(&acc)
-            .ok_or_else(|| format!("no layer at '{acc}'"))?;
+        let l = p.find_layer(&acc).ok_or_else(|| format!("no layer at '{acc}'"))?;
         m = m.mul(l.transform.matrix());
     }
     Ok(m)
@@ -217,24 +178,14 @@ fn rest_stage(p: &Project, layer: &str) -> Result<Affine2, String> {
 /// Make sure `layer` has a deformer to key and return its name. With `name = None` the layer's
 /// only deformer is used; an image layer with a grid mesh and no deformer gets a per-vertex `cloth`
 /// grid called `warp`.
-fn ensure_deformer(
-    p: &Project,
-    layer: &str,
-    name: Option<&str>,
-) -> Result<(Project, String), String> {
-    let lay = p
-        .find_layer(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?;
+fn ensure_deformer(p: &Project, layer: &str, name: Option<&str>) -> Result<(Project, String), String> {
+    let lay = p.find_layer(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
     let chosen = match name {
         Some(n) => n.to_string(),
         None => match lay.deformers.len() {
             1 => lay.deformers[0].name().to_string(),
             0 => "warp".to_string(),
-            _ => {
-                return Err(format!(
-                    "layer '{layer}' has several deformers; pick one with deformer=NAME"
-                ))
-            }
+            _ => return Err(format!("layer '{layer}' has several deformers; pick one with deformer=NAME")),
         },
     };
     if lay.deformers.iter().any(|d| d.name() == chosen) {
@@ -263,68 +214,33 @@ fn ensure_deformer(
 }
 
 fn keyed_value(p: &Project, target: &str, prop: Prop, frame: f32) -> Option<f32> {
-    p.channels
-        .iter()
-        .find(|c| c.target == target && c.prop == prop)
-        .and_then(|c| match &c.source {
-            Source::Keys { track } => track.eval(frame),
-            _ => None,
-        })
+    p.channels.iter().find(|c| c.target == target && c.prop == prop).and_then(|c| match &c.source {
+        Source::Keys { track } => track.eval(frame),
+        _ => None,
+    })
 }
 
 /// Read the control points of `layer`'s deformer `name` as they are at `frame`.
 pub fn controls(p: &Project, layer: &str, name: &str, frame: f32) -> Result<Controls, String> {
-    let lay = p
-        .find_layer(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?;
-    let d = lay
-        .deformers
-        .iter()
-        .find(|d| d.name() == name)
-        .ok_or_else(|| format!("layer '{layer}' has no deformer '{name}'"))?;
+    let lay = p.find_layer(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
+    let d = lay.deformers.iter().find(|d| d.name() == name).ok_or_else(|| format!("layer '{layer}' has no deformer '{name}'"))?;
     let (kind, cols, rest, stat): (Kind, usize, Vec<Vec2>, &Vec<Vec2>) = match d {
         Deformer::Cage { rest, offsets, .. } => (Kind::Cage, 0, rest.clone(), offsets),
         Deformer::Pin { pins, offsets, .. } => (Kind::Pin, 0, pins.clone(), offsets),
         Deformer::Spine { rest, offsets, .. } => (Kind::Spine, 0, rest.clone(), offsets),
-        Deformer::Lattice {
-            cols,
-            rows,
-            rect,
-            offsets,
-            ..
-        }
-        | Deformer::Cloth {
-            cols,
-            rows,
-            rect,
-            offsets,
-            ..
-        } => {
+        Deformer::Lattice { cols, rows, rect, offsets, .. } | Deformer::Cloth { cols, rows, rect, offsets, .. } => {
             if *cols == 0 || *rows == 0 {
                 return Err(format!("deformer '{name}' has an empty grid"));
             }
-            (
-                Kind::Lattice,
-                *cols,
-                grid_points(*rect, *cols, *rows),
-                offsets,
-            )
+            (Kind::Lattice, *cols, grid_points(*rect, *cols, *rows), offsets)
         }
     };
-    let mut c = Controls {
-        kind,
-        cols,
-        rest,
-        cur: vec![],
-    };
+    let mut c = Controls { kind, cols, rest, cur: vec![] };
     c.cur = (0..c.rest.len())
         .map(|i| {
             let (t, px, py) = c.target(layer, name, i);
             let base = stat.get(i).copied().unwrap_or(Vec2::ZERO);
-            Vec2::new(
-                keyed_value(p, &t, px, frame).unwrap_or(base.x),
-                keyed_value(p, &t, py, frame).unwrap_or(base.y),
-            )
+            Vec2::new(keyed_value(p, &t, px, frame).unwrap_or(base.x), keyed_value(p, &t, py, frame).unwrap_or(base.y))
         })
         .collect();
     Ok(c)
@@ -334,10 +250,7 @@ fn select(c: &Controls, s: &Selection) -> Result<Vec<usize>, String> {
     let mut v: Vec<usize> = Vec::new();
     for &i in &s.indices {
         if i >= c.len() {
-            return Err(format!(
-                "control point {i} does not exist (0..{})",
-                c.len() - 1
-            ));
+            return Err(format!("control point {i} does not exist (0..{})", c.len() - 1));
         }
         v.push(i);
     }
@@ -367,10 +280,7 @@ pub fn selection_weights(rest: &[Vec2], sel: &[usize], radius: f32, kind: Fallof
         if sel.contains(&i) {
             *wi = 1.0;
         } else if radius > 0.0 {
-            let d = sel
-                .iter()
-                .map(|&s| rest[s].distance(rest[i]))
-                .fold(f32::MAX, f32::min);
+            let d = sel.iter().map(|&s| rest[s].distance(rest[i])).fold(f32::MAX, f32::min);
             *wi = falloff_weight(kind, d, radius);
         }
     }
@@ -387,11 +297,7 @@ pub struct Xform {
 
 impl Default for Xform {
     fn default() -> Self {
-        Xform {
-            rotate_deg: 0.0,
-            scale: Vec2::new(1.0, 1.0),
-            translate: Vec2::ZERO,
-        }
+        Xform { rotate_deg: 0.0, scale: Vec2::new(1.0, 1.0), translate: Vec2::ZERO }
     }
 }
 
@@ -408,10 +314,7 @@ impl Xform {
     }
     /// Apply with weight `w` to `p` about `c`.
     pub fn apply(&self, p: Vec2, c: Vec2, w: f32) -> Vec2 {
-        let s = Vec2::new(
-            1.0 + (self.scale.x - 1.0) * w,
-            1.0 + (self.scale.y - 1.0) * w,
-        );
+        let s = Vec2::new(1.0 + (self.scale.x - 1.0) * w, 1.0 + (self.scale.y - 1.0) * w);
         let (sn, cs) = (self.rotate_deg * w).to_radians().sin_cos();
         let r = p - c;
         let r = Vec2::new(r.x * s.x, r.y * s.y);
@@ -423,13 +326,7 @@ fn vec_ok(v: Vec2) -> bool {
     v.x.is_finite() && v.y.is_finite()
 }
 
-fn resolve_pivot(
-    p: &Project,
-    layer: &str,
-    piv: &Pivot,
-    c: &Controls,
-    sel: &[usize],
-) -> Result<Vec2, String> {
+fn resolve_pivot(p: &Project, layer: &str, piv: &Pivot, c: &Controls, sel: &[usize]) -> Result<Vec2, String> {
     let pos = c.positions();
     match piv {
         Pivot::Point(v) if vec_ok(*v) => Ok(*v),
@@ -455,11 +352,7 @@ fn resolve_pivot(
 
 /// Head of bone `name` in the rest pose, expressed in `layer`'s own coordinates.
 pub fn bone_head_in_layer(p: &Project, layer: &str, name: &str) -> Result<Vec2, String> {
-    let bi = p
-        .bones
-        .iter()
-        .position(|b| b.name == name)
-        .ok_or_else(|| format!("no bone '{name}'"))?;
+    let bi = p.bones.iter().position(|b| b.name == name).ok_or_else(|| format!("no bone '{name}'"))?;
     let head = p.rest_world()?[bi].apply(Vec2::ZERO);
     let m = rest_stage(p, layer)?;
     let inv = m.inverse().ok_or("the layer transform is not invertible")?;
@@ -467,19 +360,9 @@ pub fn bone_head_in_layer(p: &Project, layer: &str, name: &str) -> Result<Vec2, 
 }
 
 /// Key `new` positions (`(index, new offset)`) of a deformer at `frame`.
-fn key_changes(
-    p: &Project,
-    layer: &str,
-    name: &str,
-    c: &Controls,
-    changes: &[(usize, Vec2)],
-    frame: f32,
-    ease: Ease,
-) -> Result<Project, String> {
+fn key_changes(p: &Project, layer: &str, name: &str, c: &Controls, changes: &[(usize, Vec2)], frame: f32, ease: Ease) -> Result<Project, String> {
     if changes.is_empty() {
-        return Err(
-            "nothing to change: the transform leaves every control point where it is".into(),
-        );
+        return Err("nothing to change: the transform leaves every control point where it is".into());
     }
     for &(i, o) in changes {
         let (t, px, py) = c.target(layer, name, i);
@@ -489,15 +372,8 @@ fn key_changes(
         chanmeta::assert_unlocked(p, &t, px)?;
         chanmeta::assert_unlocked(p, &t, py)?;
     }
-    let stat: Vec<Vec2> = match p
-        .find_layer(layer)
-        .and_then(|l| l.deformers.iter().find(|d| d.name() == name))
-    {
-        Some(Deformer::Cage { offsets, .. })
-        | Some(Deformer::Pin { offsets, .. })
-        | Some(Deformer::Spine { offsets, .. })
-        | Some(Deformer::Lattice { offsets, .. })
-        | Some(Deformer::Cloth { offsets, .. }) => offsets.clone(),
+    let stat: Vec<Vec2> = match p.find_layer(layer).and_then(|l| l.deformers.iter().find(|d| d.name() == name)) {
+        Some(Deformer::Cage { offsets, .. }) | Some(Deformer::Pin { offsets, .. }) | Some(Deformer::Spine { offsets, .. }) | Some(Deformer::Lattice { offsets, .. }) | Some(Deformer::Cloth { offsets, .. }) => offsets.clone(),
         None => vec![],
     };
     let mut q = p.clone();
@@ -505,14 +381,9 @@ fn key_changes(
         let (t, px, py) = c.target(layer, name, i);
         let s0 = stat.get(i).copied().unwrap_or(Vec2::ZERO);
         for (prop, v, base) in [(px, o.x, s0.x), (py, o.y, s0.y)] {
-            let existing = q.channels.iter_mut().find(|ch| {
-                ch.target == t && ch.prop == prop && matches!(ch.source, Source::Keys { .. })
-            });
+            let existing = q.channels.iter_mut().find(|ch| ch.target == t && ch.prop == prop && matches!(ch.source, Source::Keys { .. }));
             match existing {
-                Some(Channel {
-                    source: Source::Keys { track },
-                    ..
-                }) => track.set_key(frame, v, ease),
+                Some(Channel { source: Source::Keys { track }, .. }) => track.set_key(frame, v, ease),
                 _ => {
                     let mut tr = Track::new();
                     if frame > 0.0 {
@@ -602,15 +473,7 @@ pub enum ResizeTo {
 /// `keep_aspect` (the default of the CLI) a single factor is applied to both axes: `Width(w)` and
 /// `Height(h)` derive it from the current box, `Size(w, h)` is refused unless it has the same
 /// aspect ratio (1e-3 relative).
-pub fn resize_mesh(
-    p: &Project,
-    layer: &str,
-    deformer: Option<&str>,
-    to: ResizeTo,
-    keep_aspect: bool,
-    frame: f32,
-    ease: Ease,
-) -> Result<Project, String> {
+pub fn resize_mesh(p: &Project, layer: &str, deformer: Option<&str>, to: ResizeTo, keep_aspect: bool, frame: f32, ease: Ease) -> Result<Project, String> {
     if !frame.is_finite() || frame < 0.0 {
         return Err("frame must be a number >= 0".into());
     }
@@ -628,19 +491,11 @@ pub fn resize_mesh(
         ResizeTo::Factor(f) if pos_f(f) => Vec2::new(f, f),
         ResizeTo::Width(w) if pos_f(w) && bw > 0.0 => {
             let f = w / bw;
-            if keep_aspect {
-                Vec2::new(f, f)
-            } else {
-                Vec2::new(f, 1.0)
-            }
+            if keep_aspect { Vec2::new(f, f) } else { Vec2::new(f, 1.0) }
         }
         ResizeTo::Height(h) if pos_f(h) && bh > 0.0 => {
             let f = h / bh;
-            if keep_aspect {
-                Vec2::new(f, f)
-            } else {
-                Vec2::new(1.0, f)
-            }
+            if keep_aspect { Vec2::new(f, f) } else { Vec2::new(1.0, f) }
         }
         ResizeTo::Size(w, h) if pos_f(w) && pos_f(h) && bw > 0.0 && bh > 0.0 => {
             let (fx, fy) = (w / bw, h / bh);
@@ -649,16 +504,10 @@ pub fn resize_mesh(
             }
             Vec2::new(fx, fy)
         }
-        _ => return Err(
-            "the resize target must be a positive number and the mesh must have a non-zero extent"
-                .into(),
-        ),
+        _ => return Err("the resize target must be a positive number and the mesh must have a non-zero extent".into()),
     };
     let centre = (lo + hi) * 0.5;
-    let x = Xform {
-        scale: s,
-        ..Default::default()
-    };
+    let x = Xform { scale: s, ..Default::default() };
     let changes: Vec<(usize, Vec2)> = (0..c.len())
         .map(|i| (i, x.apply(pos[i], centre, 1.0) - c.rest[i]))
         .filter(|(i, off)| (*off - c.cur[*i]).length() > 1e-6)
@@ -670,32 +519,15 @@ pub fn resize_mesh(
 /// Refused when position / rotation / scale / skew are animated by channels (the compensation
 /// would only be right at rest).
 pub fn set_layer_pivot(p: &Project, layer: &str, pivot: &Pivot) -> Result<Project, String> {
-    let lay = p
-        .find_layer(layer)
-        .ok_or_else(|| format!("no layer at '{layer}'"))?;
+    let lay = p.find_layer(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
     let animated = p.channels.iter().any(|c| {
         c.target == layer
-            && matches!(
-                c.prop,
-                Prop::LayerX
-                    | Prop::LayerY
-                    | Prop::LayerRotation
-                    | Prop::LayerScaleX
-                    | Prop::LayerScaleY
-                    | Prop::LayerSkew
-            )
+            && matches!(c.prop, Prop::LayerX | Prop::LayerY | Prop::LayerRotation | Prop::LayerScaleX | Prop::LayerScaleY | Prop::LayerSkew)
     });
     if animated {
         return Err(format!("layer '{layer}' has animated transform channels; the pivot can only be moved on a static transform"));
     }
-    for prop in [
-        Prop::LayerX,
-        Prop::LayerY,
-        Prop::LayerRotation,
-        Prop::LayerScaleX,
-        Prop::LayerScaleY,
-        Prop::LayerSkew,
-    ] {
+    for prop in [Prop::LayerX, Prop::LayerY, Prop::LayerRotation, Prop::LayerScaleX, Prop::LayerScaleY, Prop::LayerSkew] {
         chanmeta::assert_unlocked(p, layer, prop)?;
     }
     let q_pt = match pivot {
@@ -706,9 +538,7 @@ pub fn set_layer_pivot(p: &Project, layer: &str, pivot: &Pivot) -> Result<Projec
     };
     let t = &lay.transform;
     // layer-to-parent matrix without the translation part: L = R * Shear * S
-    let lin = Affine2::rotate(t.rotation.to_radians())
-        .mul(Affine2::shear_x(t.skew.to_radians()))
-        .mul(Affine2::scale_xy(t.scale.x, t.scale.y));
+    let lin = Affine2::rotate(t.rotation.to_radians()).mul(Affine2::shear_x(t.skew.to_radians())).mul(Affine2::scale_xy(t.scale.x, t.scale.y));
     let d = q_pt - t.anchor;
     let shift = Vec2::new(lin.a * d.x + lin.c * d.y, lin.b * d.x + lin.d * d.y);
     let mut q = p.clone();
@@ -721,14 +551,7 @@ pub fn set_layer_pivot(p: &Project, layer: &str, pivot: &Pivot) -> Result<Projec
 
 /// Parse `x,y,w,h`.
 pub fn parse_region(s: &str) -> Result<[f32; 4], String> {
-    let v: Vec<f32> = s
-        .split(',')
-        .map(|t| {
-            t.trim()
-                .parse::<f32>()
-                .map_err(|_| format!("bad number '{t}'"))
-        })
-        .collect::<Result<_, _>>()?;
+    let v: Vec<f32> = s.split(',').map(|t| t.trim().parse::<f32>().map_err(|_| format!("bad number '{t}'"))).collect::<Result<_, _>>()?;
     if v.len() != 4 || !v.iter().all(|n| n.is_finite()) {
         return Err("region is x,y,w,h".into());
     }
@@ -737,13 +560,7 @@ pub fn parse_region(s: &str) -> Result<[f32; 4], String> {
 
 /// Parse `s` or `sx,sy`.
 pub fn parse_scale(s: &str) -> Result<Vec2, String> {
-    let n = |t: &str| {
-        t.trim()
-            .parse::<f32>()
-            .ok()
-            .filter(|v| v.is_finite())
-            .ok_or_else(|| format!("bad number '{t}'"))
-    };
+    let n = |t: &str| t.trim().parse::<f32>().ok().filter(|v| v.is_finite()).ok_or_else(|| format!("bad number '{t}'"));
     match s.split_once(',') {
         Some((a, b)) => Ok(Vec2::new(n(a)?, n(b)?)),
         None => {
@@ -769,15 +586,8 @@ mod tests {
     fn cage_proj() -> Project {
         let mut p = Project::new("w", 400.0, 400.0, 24.0, 20);
         p.bones = vec![Bone::new("hip", None, 50.0, v(300.0, 100.0), 0.0)];
-        let mut l = Layer::vector(
-            "a",
-            vec![crate::path::VPath::rect("r", 60.0, 60.0, 80.0, 80.0)],
-        );
-        l.deformers.push(Deformer::Cage {
-            name: "c".into(),
-            rest: vec![v(0.0, 0.0), v(200.0, 0.0), v(200.0, 200.0), v(0.0, 200.0)],
-            offsets: vec![],
-        });
+        let mut l = Layer::vector("a", vec![crate::path::VPath::rect("r", 60.0, 60.0, 80.0, 80.0)]);
+        l.deformers.push(Deformer::Cage { name: "c".into(), rest: vec![v(0.0, 0.0), v(200.0, 0.0), v(200.0, 200.0), v(0.0, 200.0)], offsets: vec![] });
         p.layers = vec![l];
         p
     }
@@ -786,11 +596,7 @@ mod tests {
         let mut l = Layer::image_from_png("img", &png(80, 80), v(100.0, 100.0));
         if let LayerKind::Image { mesh, size, .. } = &mut l.kind {
             *size = Some(v(80.0, 80.0));
-            *mesh = Some(crate::project::MeshSpec {
-                cols,
-                rows,
-                ..Default::default()
-            });
+            *mesh = Some(crate::project::MeshSpec { cols, rows, ..Default::default() });
         }
         p.layers = vec![l];
         p
@@ -804,15 +610,9 @@ mod tests {
         let p = cage_proj();
         let o = WarpOptions {
             deformer: Some("c".into()),
-            selection: Selection {
-                indices: vec![1, 2],
-                region: None,
-            },
+            selection: Selection { indices: vec![1, 2], region: None },
             pivot: Pivot::Point(v(100.0, 100.0)),
-            xform: Xform {
-                rotate_deg: 90.0,
-                ..Default::default()
-            },
+            xform: Xform { rotate_deg: 90.0, ..Default::default() },
             frame: 5.0,
             ..Default::default()
         };
@@ -838,15 +638,9 @@ mod tests {
         let p = cage_proj();
         let o = |pv: Pivot| WarpOptions {
             deformer: Some("c".into()),
-            selection: Selection {
-                indices: vec![0, 1, 2, 3],
-                region: None,
-            },
+            selection: Selection { indices: vec![0, 1, 2, 3], region: None },
             pivot: pv,
-            xform: Xform {
-                rotate_deg: 180.0,
-                ..Default::default()
-            },
+            xform: Xform { rotate_deg: 180.0, ..Default::default() },
             ..Default::default()
         };
         // rotating the whole square by 180 about the bone head at (300,100) mirrors it through that point
@@ -865,22 +659,12 @@ mod tests {
         assert!(bone_head_in_layer(&t, "a", "nope").is_err());
         assert_eq!(Pivot::parse("bone:hip").unwrap(), Pivot::Bone("hip".into()));
         assert_eq!(Pivot::parse("3, 4").unwrap(), Pivot::Point(v(3.0, 4.0)));
-        assert!(
-            Pivot::parse("a,b").is_err()
-                && Pivot::parse("zzz").is_err()
-                && Pivot::parse("bone:").is_err()
-        );
+        assert!(Pivot::parse("a,b").is_err() && Pivot::parse("zzz").is_err() && Pivot::parse("bone:").is_err());
     }
 
     #[test]
     fn falloff_weights_are_monotone_and_bounded() {
-        for k in [
-            Falloff::Linear,
-            Falloff::Smooth,
-            Falloff::Gauss,
-            Falloff::Sharp,
-            Falloff::Constant,
-        ] {
+        for k in [Falloff::Linear, Falloff::Smooth, Falloff::Gauss, Falloff::Sharp, Falloff::Constant] {
             let mut prev = 2.0f32;
             for i in 0..=240 {
                 let d = i as f32 * 0.5; // 0..120 with radius 100
@@ -902,15 +686,9 @@ mod tests {
         // 8x1 cloth grid over an 80x80 image: control points on a 10 px pitch
         let p = grid_proj(8, 1);
         let o = WarpOptions {
-            selection: Selection {
-                indices: vec![8],
-                region: None,
-            }, // right end of the top row
+            selection: Selection { indices: vec![8], region: None }, // right end of the top row
             pivot: Pivot::Point(v(100.0, 100.0)),
-            xform: Xform {
-                scale: v(2.0, 1.0),
-                ..Default::default()
-            },
+            xform: Xform { scale: v(2.0, 1.0), ..Default::default() },
             radius: 40.0,
             falloff: Falloff::Smooth,
             ..Default::default()
@@ -919,10 +697,7 @@ mod tests {
         let c = controls(&q, "img", "warp", 0.0).unwrap();
         // displacement along x of the top row: monotone non-increasing away from the selection
         let dx: Vec<f32> = (0..=8).map(|i| c.cur[i].x).collect();
-        assert!(
-            (dx[8] - 80.0).abs() < 1e-3,
-            "selected point doubles its distance: {dx:?}"
-        );
+        assert!((dx[8] - 80.0).abs() < 1e-3, "selected point doubles its distance: {dx:?}");
         for i in 1..=8 {
             assert!(dx[i] >= dx[i - 1] - 1e-4, "{dx:?}");
         }
@@ -936,11 +711,7 @@ mod tests {
         let e = Engine::new(q).unwrap();
         let f = e.evaluate(0.0);
         let m = f.nodes[0].image.as_ref().unwrap().mesh.as_ref().unwrap();
-        assert!(
-            m.positions[8].distance(v(260.0, 100.0)) < 1e-3,
-            "{:?}",
-            m.positions[8]
-        );
+        assert!(m.positions[8].distance(v(260.0, 100.0)) < 1e-3, "{:?}", m.positions[8]);
         assert!(m.positions[0].distance(v(100.0, 100.0)) < 1e-3);
     }
 
@@ -950,143 +721,37 @@ mod tests {
         let (q, name) = ensure_deformer(&p, "img", None).unwrap();
         let c = controls(&q, "img", &name, 0.0).unwrap();
         assert_eq!(c.len(), 25);
-        let s = select(
-            &c,
-            &Selection {
-                indices: vec![0],
-                region: Some([140.0, 100.0, 40.0, 0.0]),
-            },
-        )
-        .unwrap();
-        assert_eq!(
-            s,
-            vec![0, 2, 3, 4],
-            "x = 140..180 on the first row plus index 0"
-        );
+        let s = select(&c, &Selection { indices: vec![0], region: Some([140.0, 100.0, 40.0, 0.0]) }).unwrap();
+        assert_eq!(s, vec![0, 2, 3, 4], "x = 140..180 on the first row plus index 0");
         let w = selection_weights(&c.rest, &s, 40.0, Falloff::Linear);
         assert_eq!(w[0], 1.0);
         assert!((w[1] - 0.5).abs() < 1e-6, "{}", w[1]); // 20 px (the pitch) from selected 0 and 2
         assert!(select(&c, &Selection::default()).is_err());
-        assert!(select(
-            &c,
-            &Selection {
-                indices: vec![99],
-                region: None
-            }
-        )
-        .is_err());
-        assert!(select(
-            &c,
-            &Selection {
-                indices: vec![],
-                region: Some([f32::NAN, 0.0, 1.0, 1.0])
-            }
-        )
-        .is_err());
+        assert!(select(&c, &Selection { indices: vec![99], region: None }).is_err());
+        assert!(select(&c, &Selection { indices: vec![], region: Some([f32::NAN, 0.0, 1.0, 1.0]) }).is_err());
     }
 
     #[test]
     fn whole_mesh_resize_keeps_the_aspect_around_the_bbox_centre() {
         let p = grid_proj(4, 2); // 80 x 80 image at (100,100): centre (140,140)
-        let q = resize_mesh(
-            &p,
-            "img",
-            None,
-            ResizeTo::Factor(1.5),
-            true,
-            0.0,
-            Ease::Linear,
-        )
-        .unwrap();
+        let q = resize_mesh(&p, "img", None, ResizeTo::Factor(1.5), true, 0.0, Ease::Linear).unwrap();
         let pos = pos_at(&q, "img", "warp", 0.0);
         let (lo, hi) = (pos[0], pos[pos.len() - 1]);
-        assert!(
-            lo.distance(v(80.0, 80.0)) < 1e-3 && hi.distance(v(200.0, 200.0)) < 1e-3,
-            "{lo:?} {hi:?}"
-        );
+        assert!(lo.distance(v(80.0, 80.0)) < 1e-3 && hi.distance(v(200.0, 200.0)) < 1e-3, "{lo:?} {hi:?}");
         // width target derives the factor and keeps the proportions
-        let q = resize_mesh(
-            &p,
-            "img",
-            None,
-            ResizeTo::Width(40.0),
-            true,
-            0.0,
-            Ease::Linear,
-        )
-        .unwrap();
+        let q = resize_mesh(&p, "img", None, ResizeTo::Width(40.0), true, 0.0, Ease::Linear).unwrap();
         let pos = pos_at(&q, "img", "warp", 0.0);
-        assert!(
-            (pos[pos.len() - 1].x - pos[0].x - 40.0).abs() < 1e-3
-                && (pos[pos.len() - 1].y - pos[0].y - 40.0).abs() < 1e-3
-        );
+        assert!((pos[pos.len() - 1].x - pos[0].x - 40.0).abs() < 1e-3 && (pos[pos.len() - 1].y - pos[0].y - 40.0).abs() < 1e-3);
         assert!(((pos[0] + pos[pos.len() - 1]) * 0.5).distance(v(140.0, 140.0)) < 1e-3);
         // free aspect changes only one axis; a size with another aspect is refused when aspect is kept
-        let q = resize_mesh(
-            &p,
-            "img",
-            None,
-            ResizeTo::Width(160.0),
-            false,
-            0.0,
-            Ease::Linear,
-        )
-        .unwrap();
+        let q = resize_mesh(&p, "img", None, ResizeTo::Width(160.0), false, 0.0, Ease::Linear).unwrap();
         let pos = pos_at(&q, "img", "warp", 0.0);
         assert!((pos[pos.len() - 1].y - pos[0].y - 80.0).abs() < 1e-3);
-        assert!(resize_mesh(
-            &p,
-            "img",
-            None,
-            ResizeTo::Size(160.0, 80.0),
-            true,
-            0.0,
-            Ease::Linear
-        )
-        .is_err());
-        assert!(resize_mesh(
-            &p,
-            "img",
-            None,
-            ResizeTo::Size(160.0, 80.0),
-            false,
-            0.0,
-            Ease::Linear
-        )
-        .is_ok());
-        assert!(resize_mesh(
-            &p,
-            "img",
-            None,
-            ResizeTo::Factor(-1.0),
-            true,
-            0.0,
-            Ease::Linear
-        )
-        .is_err());
-        assert!(resize_mesh(
-            &p,
-            "img",
-            None,
-            ResizeTo::Factor(f32::NAN),
-            true,
-            0.0,
-            Ease::Linear
-        )
-        .is_err());
-        assert!(
-            resize_mesh(
-                &p,
-                "img",
-                None,
-                ResizeTo::Factor(1.0),
-                true,
-                0.0,
-                Ease::Linear
-            )
-            .is_err(),
-            "identity changes nothing"
-        );
+        assert!(resize_mesh(&p, "img", None, ResizeTo::Size(160.0, 80.0), true, 0.0, Ease::Linear).is_err());
+        assert!(resize_mesh(&p, "img", None, ResizeTo::Size(160.0, 80.0), false, 0.0, Ease::Linear).is_ok());
+        assert!(resize_mesh(&p, "img", None, ResizeTo::Factor(-1.0), true, 0.0, Ease::Linear).is_err());
+        assert!(resize_mesh(&p, "img", None, ResizeTo::Factor(f32::NAN), true, 0.0, Ease::Linear).is_err());
+        assert!(resize_mesh(&p, "img", None, ResizeTo::Factor(1.0), true, 0.0, Ease::Linear).is_err(), "identity changes nothing");
     }
 
     #[test]
@@ -1094,15 +759,9 @@ mod tests {
         let p = cage_proj();
         let mk = |deg: f32, frame: f32| WarpOptions {
             deformer: Some("c".into()),
-            selection: Selection {
-                indices: vec![1],
-                region: None,
-            },
+            selection: Selection { indices: vec![1], region: None },
             pivot: Pivot::Point(v(100.0, 100.0)),
-            xform: Xform {
-                rotate_deg: deg,
-                ..Default::default()
-            },
+            xform: Xform { rotate_deg: deg, ..Default::default() },
             frame,
             ..Default::default()
         };
@@ -1113,144 +772,43 @@ mod tests {
         assert!(pos[1].distance(v(200.0, 200.0)) < 1e-3, "{:?}", pos[1]);
         // locked channel => refusal, project untouched
         let mut l = q.clone();
-        crate::chanmeta::set_meta(
-            &mut l,
-            "a::c::1",
-            Some(Prop::CageDx),
-            &crate::chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        crate::chanmeta::set_meta(&mut l, "a::c::1", Some(Prop::CageDx), &crate::chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
         let err = warp_pivot(&l, "a", &mk(10.0, 10.0)).unwrap_err();
         assert!(err.to_lowercase().contains("lock"), "{err}");
         // validation paths
-        assert!(warp_pivot(
-            &p,
-            "a",
-            &WarpOptions {
-                frame: -1.0,
-                ..mk(10.0, 0.0)
-            }
-        )
-        .is_err());
-        assert!(warp_pivot(
-            &p,
-            "a",
-            &WarpOptions {
-                radius: -3.0,
-                ..mk(10.0, 0.0)
-            }
-        )
-        .is_err());
-        assert!(warp_pivot(
-            &p,
-            "a",
-            &WarpOptions {
-                xform: Xform {
-                    scale: v(0.0, 1.0),
-                    ..Default::default()
-                },
-                ..mk(0.0, 0.0)
-            }
-        )
-        .is_err());
-        assert!(warp_pivot(
-            &p,
-            "a",
-            &WarpOptions {
-                xform: Xform {
-                    rotate_deg: f32::NAN,
-                    ..Default::default()
-                },
-                ..mk(0.0, 0.0)
-            }
-        )
-        .is_err());
+        assert!(warp_pivot(&p, "a", &WarpOptions { frame: -1.0, ..mk(10.0, 0.0) }).is_err());
+        assert!(warp_pivot(&p, "a", &WarpOptions { radius: -3.0, ..mk(10.0, 0.0) }).is_err());
+        assert!(warp_pivot(&p, "a", &WarpOptions { xform: Xform { scale: v(0.0, 1.0), ..Default::default() }, ..mk(0.0, 0.0) }).is_err());
+        assert!(warp_pivot(&p, "a", &WarpOptions { xform: Xform { rotate_deg: f32::NAN, ..Default::default() }, ..mk(0.0, 0.0) }).is_err());
         assert!(warp_pivot(&p, "zz", &mk(10.0, 0.0)).is_err());
-        assert!(warp_pivot(
-            &p,
-            "a",
-            &WarpOptions {
-                deformer: Some("nope".into()),
-                ..mk(10.0, 0.0)
-            }
-        )
-        .is_err());
-        assert!(
-            warp_pivot(&p, "a", &mk(0.0, 0.0)).is_err(),
-            "a no-op is reported"
-        );
+        assert!(warp_pivot(&p, "a", &WarpOptions { deformer: Some("nope".into()), ..mk(10.0, 0.0) }).is_err());
+        assert!(warp_pivot(&p, "a", &mk(0.0, 0.0)).is_err(), "a no-op is reported");
     }
 
     #[test]
     fn lattice_pin_and_free_mesh_cases() {
         let mut p = cage_proj();
-        p.layers[0].deformers.push(Deformer::Lattice {
-            name: "lat".into(),
-            cols: 2,
-            rows: 2,
-            rect: [0.0, 0.0, 100.0, 100.0],
-            offsets: vec![],
-        });
-        p.layers[0].deformers.push(Deformer::Pin {
-            name: "pins".into(),
-            pins: vec![v(10.0, 10.0), v(90.0, 90.0)],
-            offsets: vec![],
-            radius: 50.0,
-        });
+        p.layers[0].deformers.push(Deformer::Lattice { name: "lat".into(), cols: 2, rows: 2, rect: [0.0, 0.0, 100.0, 100.0], offsets: vec![] });
+        p.layers[0].deformers.push(Deformer::Pin { name: "pins".into(), pins: vec![v(10.0, 10.0), v(90.0, 90.0)], offsets: vec![], radius: 50.0 });
         let o = WarpOptions {
             deformer: Some("lat".into()),
-            selection: Selection {
-                indices: vec![8],
-                region: None,
-            },
+            selection: Selection { indices: vec![8], region: None },
             pivot: Pivot::Point(v(0.0, 0.0)),
-            xform: Xform {
-                translate: v(5.0, -5.0),
-                ..Default::default()
-            },
+            xform: Xform { translate: v(5.0, -5.0), ..Default::default() },
             ..Default::default()
         };
         let q = warp_pivot(&p, "a", &o).unwrap();
-        assert!(q
-            .channels
-            .iter()
-            .any(|c| c.target == "a::lat::2,2" && c.prop == Prop::LatticeDx));
+        assert!(q.channels.iter().any(|c| c.target == "a::lat::2,2" && c.prop == Prop::LatticeDx));
         assert!(pos_at(&q, "a", "lat", 0.0)[8].distance(v(105.0, 95.0)) < 1e-4);
-        let o2 = WarpOptions {
-            deformer: Some("pins".into()),
-            selection: Selection {
-                indices: vec![1],
-                region: None,
-            },
-            ..o.clone()
-        };
+        let o2 = WarpOptions { deformer: Some("pins".into()), selection: Selection { indices: vec![1], region: None }, ..o.clone() };
         let q = warp_pivot(&p, "a", &o2).unwrap();
-        assert!(q
-            .channels
-            .iter()
-            .any(|c| c.target == "a::pins::1" && c.prop == Prop::PinDx));
+        assert!(q.channels.iter().any(|c| c.target == "a::pins::1" && c.prop == Prop::PinDx));
         // several deformers and no name => asks for one
-        assert!(warp_pivot(
-            &p,
-            "a",
-            &WarpOptions {
-                deformer: None,
-                ..o.clone()
-            }
-        )
-        .unwrap_err()
-        .contains("deformer=NAME"));
+        assert!(warp_pivot(&p, "a", &WarpOptions { deformer: None, ..o.clone() }).unwrap_err().contains("deformer=NAME"));
         // free mesh => explains the alternative
         let mut f = grid_proj(2, 2);
         if let LayerKind::Image { mesh: Some(m), .. } = &mut f.layers[0].kind {
-            m.free = Some(crate::project::FreeMesh {
-                vertices: vec![v(100.0, 100.0), v(180.0, 100.0), v(100.0, 180.0)],
-                triangles: vec![[0, 1, 2]],
-                uvs: vec![],
-            });
+            m.free = Some(crate::project::FreeMesh { vertices: vec![v(100.0, 100.0), v(180.0, 100.0), v(100.0, 180.0)], triangles: vec![[0, 1, 2]], uvs: vec![] });
         }
         assert!(warp_pivot(&f, "img", &o).unwrap_err().contains("cage"));
     }
@@ -1276,11 +834,7 @@ mod tests {
         // bone pivot, animated channels refused, bad pivot kinds refused
         assert!(set_layer_pivot(&p, "a", &Pivot::Bone("hip".into())).is_ok());
         let mut a = p.clone();
-        a.channels.push(Channel::keys(
-            "a",
-            Prop::LayerRotation,
-            Track::with_keys(&[(0.0, 0.0, Ease::Linear), (5.0, 9.0, Ease::Linear)]),
-        ));
+        a.channels.push(Channel::keys("a", Prop::LayerRotation, Track::with_keys(&[(0.0, 0.0, Ease::Linear), (5.0, 9.0, Ease::Linear)])));
         assert!(set_layer_pivot(&a, "a", &Pivot::Point(v(1.0, 1.0))).is_err());
         assert!(set_layer_pivot(&p, "a", &Pivot::Centroid).is_err());
         assert!(set_layer_pivot(&p, "zz", &Pivot::Point(v(1.0, 1.0))).is_err());

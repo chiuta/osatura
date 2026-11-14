@@ -34,23 +34,12 @@ pub struct Event {
 
 fn capture_layers(ls: &[Layer], prefix: &str, out: &mut BTreeMap<String, LayerState>) {
     for l in ls {
-        let path = if prefix.is_empty() {
-            l.name.clone()
-        } else {
-            format!("{prefix}/{}", l.name)
-        };
+        let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
         let selected = match &l.kind {
             LayerKind::Selector { selected, .. } => Some(*selected),
             _ => None,
         };
-        out.insert(
-            path.clone(),
-            LayerState {
-                visible: l.visible,
-                opacity: l.opacity,
-                selected,
-            },
-        );
+        out.insert(path.clone(), LayerState { visible: l.visible, opacity: l.opacity, selected });
         capture_layers(l.children(), &path, out);
     }
 }
@@ -63,30 +52,20 @@ pub fn capture(p: &mut Project, name: &str) -> Result<(), String> {
     let mut layers = BTreeMap::new();
     capture_layers(&p.layers, "", &mut layers);
     p.comps.retain(|c| c.name != name);
-    p.comps.push(Comp {
-        name: name.to_string(),
-        layers,
-    });
+    p.comps.push(Comp { name: name.to_string(), layers });
     Ok(())
 }
 
 /// Apply a comp. Layers that no longer exist are skipped and reported.
 pub fn apply(p: &mut Project, name: &str) -> Result<Vec<String>, String> {
-    let comp = p
-        .comps
-        .iter()
-        .find(|c| c.name == name)
-        .cloned()
-        .ok_or_else(|| format!("no comp named '{name}'"))?;
+    let comp = p.comps.iter().find(|c| c.name == name).cloned().ok_or_else(|| format!("no comp named '{name}'"))?;
     let mut missing = Vec::new();
     for (path, st) in &comp.layers {
         match p.find_layer_mut(path) {
             Some(l) => {
                 l.visible = st.visible;
                 l.opacity = st.opacity;
-                if let (LayerKind::Selector { selected, layers }, Some(s)) =
-                    (&mut l.kind, st.selected)
-                {
+                if let (LayerKind::Selector { selected, layers }, Some(s)) = (&mut l.kind, st.selected) {
                     *selected = s.min(layers.len().saturating_sub(1));
                 }
             }
@@ -98,18 +77,12 @@ pub fn apply(p: &mut Project, name: &str) -> Result<Vec<String>, String> {
 
 /// Events active on `frame` (within half a frame).
 pub fn events_at(events: &[Event], frame: f32) -> Vec<&Event> {
-    events
-        .iter()
-        .filter(|e| (e.frame - frame).abs() < 0.5)
-        .collect()
+    events.iter().filter(|e| (e.frame - frame).abs() < 0.5).collect()
 }
 
 /// Events in `[from, to)` in time order — what a player fires while crossing that range.
 pub fn events_between(events: &[Event], from: f32, to: f32) -> Vec<&Event> {
-    let mut v: Vec<&Event> = events
-        .iter()
-        .filter(|e| e.frame >= from && e.frame < to)
-        .collect();
+    let mut v: Vec<&Event> = events.iter().filter(|e| e.frame >= from && e.frame < to).collect();
     v.sort_by(|a, b| a.frame.total_cmp(&b.frame));
     v
 }
@@ -165,29 +138,13 @@ mod tests {
     #[test]
     fn events_are_found_by_frame_and_range() {
         let ev = vec![
-            Event {
-                name: "step".into(),
-                frame: 6.0,
-                data: serde_json::json!({"sound": "step.wav"}),
-            },
-            Event {
-                name: "step".into(),
-                frame: 18.0,
-                data: serde_json::Value::Null,
-            },
-            Event {
-                name: "end".into(),
-                frame: 47.0,
-                data: serde_json::Value::Null,
-            },
+            Event { name: "step".into(), frame: 6.0, data: serde_json::json!({"sound": "step.wav"}) },
+            Event { name: "step".into(), frame: 18.0, data: serde_json::Value::Null },
+            Event { name: "end".into(), frame: 47.0, data: serde_json::Value::Null },
         ];
         assert_eq!(events_at(&ev, 6.0).len(), 1);
         assert_eq!(events_between(&ev, 0.0, 20.0).len(), 2);
-        assert_eq!(
-            events_between(&ev, 7.0, 47.0).len(),
-            1,
-            "range end is exclusive"
-        );
+        assert_eq!(events_between(&ev, 7.0, 47.0).len(), 1, "range end is exclusive");
         let j = serde_json::to_string(&ev[1]).unwrap();
         assert!(!j.contains("data"), "null payload omitted");
     }

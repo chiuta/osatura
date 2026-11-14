@@ -45,11 +45,7 @@ pub struct Key<const N: usize> {
 
 impl<const N: usize> Key<N> {
     pub fn new(time: f64, value: [f64; N]) -> Key<N> {
-        Key {
-            time,
-            value,
-            tangents: None,
-        }
+        Key { time, value, tangents: None }
     }
 }
 
@@ -59,18 +55,12 @@ pub fn validate<const N: usize>(keys: &[Key<N>]) -> Result<(), String> {
         return Err("a track needs at least one key".into());
     }
     for (i, k) in keys.iter().enumerate() {
-        let tan_ok = k
-            .tangents
-            .is_none_or(|(a, b)| a.iter().chain(&b).all(|v| v.is_finite()));
+        let tan_ok = k.tangents.is_none_or(|(a, b)| a.iter().chain(&b).all(|v| v.is_finite()));
         if !k.time.is_finite() || !k.value.iter().all(|v| v.is_finite()) || !tan_ok {
             return Err(format!("key {i} has a non-finite number"));
         }
         if i > 0 && k.time <= keys[i - 1].time {
-            return Err(format!(
-                "key times must be strictly increasing (key {i}: {} after {})",
-                k.time,
-                keys[i - 1].time
-            ));
+            return Err(format!("key times must be strictly increasing (key {i}: {} after {})", k.time, keys[i - 1].time));
         }
     }
     Ok(())
@@ -113,12 +103,7 @@ pub fn quat_z(angle: f64) -> [f64; 4] {
 
 /// Value of a track at `time` (held before the first and after the last key). `rotation` selects spherical interpolation for LINEAR
 /// (the track must then have 4 components). Keys must pass [`validate`].
-pub fn sample<const N: usize>(
-    keys: &[Key<N>],
-    interp: Interp,
-    rotation: bool,
-    time: f64,
-) -> [f64; N] {
+pub fn sample<const N: usize>(keys: &[Key<N>], interp: Interp, rotation: bool, time: f64) -> [f64; N] {
     if keys.len() == 1 || time <= keys[0].time {
         return keys[0].value;
     }
@@ -126,11 +111,7 @@ pub fn sample<const N: usize>(
     if time >= keys[last].time {
         return keys[last].value;
     }
-    let i = keys
-        .iter()
-        .rposition(|k| k.time <= time)
-        .unwrap_or(0)
-        .min(last - 1);
+    let i = keys.iter().rposition(|k| k.time <= time).unwrap_or(0).min(last - 1);
     let (a, b) = (&keys[i], &keys[i + 1]);
     let dt = b.time - a.time;
     let t = (time - a.time) / dt;
@@ -138,10 +119,7 @@ pub fn sample<const N: usize>(
         Interp::Step => a.value,
         Interp::Linear => {
             if rotation && N == 4 {
-                let (qa, qb) = (
-                    [0, 1, 2, 3].map(|c| a.value[c % N]),
-                    [0, 1, 2, 3].map(|c| b.value[c % N]),
-                );
+                let (qa, qb) = ([0, 1, 2, 3].map(|c| a.value[c % N]), [0, 1, 2, 3].map(|c| b.value[c % N]));
                 let q = slerp(qa, qb, t);
                 std::array::from_fn(|c| q[c % 4])
             } else {
@@ -153,12 +131,7 @@ pub fn sample<const N: usize>(
             let m0 = a.tangents.map_or(zero, |t| t.1);
             let m1 = b.tangents.map_or(zero, |t| t.0);
             let (t2, t3) = (t * t, t * t * t);
-            std::array::from_fn(|c| {
-                (2.0 * t3 - 3.0 * t2 + 1.0) * a.value[c]
-                    + (t3 - 2.0 * t2 + t) * dt * m0[c]
-                    + (-2.0 * t3 + 3.0 * t2) * b.value[c]
-                    + (t3 - t2) * dt * m1[c]
-            })
+            std::array::from_fn(|c| (2.0 * t3 - 3.0 * t2 + 1.0) * a.value[c] + (t3 - 2.0 * t2 + t) * dt * m0[c] + (-2.0 * t3 + 3.0 * t2) * b.value[c] + (t3 - t2) * dt * m1[c])
         }
     }
 }
@@ -205,127 +178,67 @@ impl Path {
 #[derive(Clone, Debug)]
 pub enum NodeTrack {
     /// 2D position, written with z = 0.
-    Translation {
-        node: usize,
-        interp: Interp,
-        keys: Vec<Key<2>>,
-    },
+    Translation { node: usize, interp: Interp, keys: Vec<Key<2>> },
     /// Angle in radians about Z; written as unit quaternions.
-    Rotation {
-        node: usize,
-        interp: Interp,
-        keys: Vec<Key<1>>,
-    },
+    Rotation { node: usize, interp: Interp, keys: Vec<Key<1>> },
     /// 2D scale, written with z = 1.
-    Scale {
-        node: usize,
-        interp: Interp,
-        keys: Vec<Key<2>>,
-    },
+    Scale { node: usize, interp: Interp, keys: Vec<Key<2>> },
 }
 
 /// Appends the data of the tracks to `bin` and returns the glTF `samplers` and `channels` arrays. Errors: an empty track, times that are not
 /// strictly increasing, non-finite values. A track with one key becomes a sampler with one input (and interpolation LINEAR).
-pub(super) fn append_animation(
-    bin: &mut Bin,
-    tracks: &[NodeTrack],
-) -> Result<(Vec<Value>, Vec<Value>), String> {
+pub(super) fn append_animation(bin: &mut Bin, tracks: &[NodeTrack]) -> Result<(Vec<Value>, Vec<Value>), String> {
     let (mut samplers, mut channels) = (Vec::new(), Vec::new());
     for tr in tracks {
-        let (node, path, interp, times, data, ty): (usize, Path, Interp, Vec<f64>, Vec<f32>, &str) =
-            match tr {
-                NodeTrack::Translation { node, interp, keys } => {
-                    validate(keys)?;
-                    let mut d = Vec::new();
-                    for k in keys {
-                        if *interp == Interp::CubicSpline {
-                            let (i, o) = k.tangents.unwrap_or(([0.0; 2], [0.0; 2]));
-                            d.extend(
-                                [
-                                    i[0], i[1], 0.0, k.value[0], k.value[1], 0.0, o[0], o[1], 0.0,
-                                ]
-                                .map(|v| v as f32),
-                            );
-                        } else {
-                            d.extend([k.value[0], k.value[1], 0.0].map(|v| v as f32));
-                        }
+        let (node, path, interp, times, data, ty): (usize, Path, Interp, Vec<f64>, Vec<f32>, &str) = match tr {
+            NodeTrack::Translation { node, interp, keys } => {
+                validate(keys)?;
+                let mut d = Vec::new();
+                for k in keys {
+                    if *interp == Interp::CubicSpline {
+                        let (i, o) = k.tangents.unwrap_or(([0.0; 2], [0.0; 2]));
+                        d.extend([i[0], i[1], 0.0, k.value[0], k.value[1], 0.0, o[0], o[1], 0.0].map(|v| v as f32));
+                    } else {
+                        d.extend([k.value[0], k.value[1], 0.0].map(|v| v as f32));
                     }
-                    (
-                        *node,
-                        Path::Translation,
-                        *interp,
-                        keys.iter().map(|k| k.time).collect(),
-                        d,
-                        "VEC3",
-                    )
                 }
-                NodeTrack::Scale { node, interp, keys } => {
-                    validate(keys)?;
-                    let mut d = Vec::new();
-                    for k in keys {
-                        if *interp == Interp::CubicSpline {
-                            let (i, o) = k.tangents.unwrap_or(([0.0; 2], [0.0; 2]));
-                            d.extend(
-                                [
-                                    i[0], i[1], 0.0, k.value[0], k.value[1], 1.0, o[0], o[1], 0.0,
-                                ]
-                                .map(|v| v as f32),
-                            );
-                        } else {
-                            d.extend([k.value[0], k.value[1], 1.0].map(|v| v as f32));
-                        }
+                (*node, Path::Translation, *interp, keys.iter().map(|k| k.time).collect(), d, "VEC3")
+            }
+            NodeTrack::Scale { node, interp, keys } => {
+                validate(keys)?;
+                let mut d = Vec::new();
+                for k in keys {
+                    if *interp == Interp::CubicSpline {
+                        let (i, o) = k.tangents.unwrap_or(([0.0; 2], [0.0; 2]));
+                        d.extend([i[0], i[1], 0.0, k.value[0], k.value[1], 1.0, o[0], o[1], 0.0].map(|v| v as f32));
+                    } else {
+                        d.extend([k.value[0], k.value[1], 1.0].map(|v| v as f32));
                     }
-                    (
-                        *node,
-                        Path::Scale,
-                        *interp,
-                        keys.iter().map(|k| k.time).collect(),
-                        d,
-                        "VEC3",
-                    )
                 }
-                NodeTrack::Rotation { node, interp, keys } => {
-                    validate(keys)?;
-                    let mut d = Vec::new();
-                    let q_of = |k: &Key<1>| quat_z(k.value[0]);
-                    for k in keys {
-                        if *interp == Interp::CubicSpline {
-                            return Err("CUBICSPLINE rotation is not supported (the tangent mapping for angles is not specified)".into());
-                        } else {
-                            d.extend(q_of(k).map(|v| v as f32));
-                        }
+                (*node, Path::Scale, *interp, keys.iter().map(|k| k.time).collect(), d, "VEC3")
+            }
+            NodeTrack::Rotation { node, interp, keys } => {
+                validate(keys)?;
+                let mut d = Vec::new();
+                let q_of = |k: &Key<1>| quat_z(k.value[0]);
+                for k in keys {
+                    if *interp == Interp::CubicSpline {
+                        return Err("CUBICSPLINE rotation is not supported (the tangent mapping for angles is not specified)".into());
+                    } else {
+                        d.extend(q_of(k).map(|v| v as f32));
                     }
-                    (
-                        *node,
-                        Path::Rotation,
-                        *interp,
-                        keys.iter().map(|k| k.time).collect(),
-                        d,
-                        "VEC4",
-                    )
                 }
-            };
+                (*node, Path::Rotation, *interp, keys.iter().map(|k| k.time).collect(), d, "VEC4")
+            }
+        };
         let times32: Vec<f32> = times.iter().map(|t| *t as f32).collect();
         let (tmin, tmax) = (times32[0], times32[times32.len() - 1]);
-        let t_acc = bin.add(
-            &f32s(&times32),
-            5126,
-            times32.len(),
-            "SCALAR",
-            Some((vec![tmin], vec![tmax])),
-            None,
-        );
+        let t_acc = bin.add(&f32s(&times32), 5126, times32.len(), "SCALAR", Some((vec![tmin], vec![tmax])), None);
         let per_key = if interp == Interp::CubicSpline { 3 } else { 1 };
         let o_acc = bin.add(&f32s(&data), 5126, times32.len() * per_key, ty, None, None);
-        let mode = if times32.len() == 1 && interp == Interp::CubicSpline {
-            Interp::Linear
-        } else {
-            interp
-        };
+        let mode = if times32.len() == 1 && interp == Interp::CubicSpline { Interp::Linear } else { interp };
         samplers.push(json!({"input": t_acc, "output": o_acc, "interpolation": mode.name()}));
-        channels.push(
-            json!({"sampler": samplers.len() - 1, "target": {"node": node, "path": path.name()}}),
-        );
+        channels.push(json!({"sampler": samplers.len() - 1, "target": {"node": node, "path": path.name()}}));
     }
     Ok((samplers, channels))
 }
@@ -356,18 +269,7 @@ mod tests {
 
     #[test]
     fn cubic_spline_with_tangents() {
-        let k = vec![
-            Key {
-                time: 0.0,
-                value: [0.0],
-                tangents: Some(([0.0], [10.0])),
-            },
-            Key {
-                time: 2.0,
-                value: [10.0],
-                tangents: Some(([0.0], [0.0])),
-            },
-        ];
+        let k = vec![Key { time: 0.0, value: [0.0], tangents: Some(([0.0], [10.0])) }, Key { time: 2.0, value: [10.0], tangents: Some(([0.0], [0.0])) }];
         close(sample(&k, Interp::CubicSpline, false, 1.0)[0], 7.5);
         let flat = vec![Key::new(0.0, [0.0]), Key::new(2.0, [10.0])];
         close(sample(&flat, Interp::CubicSpline, false, 1.0)[0], 5.0);
@@ -384,16 +286,7 @@ mod tests {
             close(*g, w);
         }
         // opposite sign: same rotation, shortest path
-        let neg = slerp(
-            [0.0, 0.0, 0.0, 1.0],
-            [
-                0.0,
-                0.0,
-                -std::f64::consts::FRAC_1_SQRT_2,
-                -std::f64::consts::FRAC_1_SQRT_2,
-            ],
-            0.5,
-        );
+        let neg = slerp([0.0, 0.0, 0.0, 1.0], [0.0, 0.0, -std::f64::consts::FRAC_1_SQRT_2, -std::f64::consts::FRAC_1_SQRT_2], 0.5);
         for (g, w) in neg.iter().zip([0.0, 0.0, 0.382_683, 0.923_880]) {
             close(*g, w);
         }
@@ -409,9 +302,7 @@ mod tests {
     #[test]
     fn invalid_tracks() {
         assert!(validate::<2>(&[]).is_err());
-        assert!(validate(&[Key::new(1.0, [0.0]), Key::new(1.0, [1.0])])
-            .unwrap_err()
-            .contains("strictly"));
+        assert!(validate(&[Key::new(1.0, [0.0]), Key::new(1.0, [1.0])]).unwrap_err().contains("strictly"));
         assert!(validate(&[Key::new(1.0, [0.0]), Key::new(0.5, [1.0])]).is_err());
         assert!(validate(&[Key::new(f64::NAN, [0.0])]).is_err());
         assert!(validate(&[Key::new(0.0, [f64::INFINITY])]).is_err());
@@ -420,15 +311,9 @@ mod tests {
 
     #[test]
     fn long_turns_get_intermediate_keys() {
-        let dense = densify_rotation(&[
-            (0.0, 0.0),
-            (1.0, 3.0 * PI / 2.0),
-            (2.0, 3.0 * PI / 2.0 + 0.1),
-        ]);
+        let dense = densify_rotation(&[(0.0, 0.0), (1.0, 3.0 * PI / 2.0), (2.0, 3.0 * PI / 2.0 + 0.1)]);
         assert!(dense.len() > 3);
-        assert!(dense
-            .windows(2)
-            .all(|w| (w[1].1 - w[0].1).abs() <= PI / 2.0 + 1e-9));
+        assert!(dense.windows(2).all(|w| (w[1].1 - w[0].1).abs() <= PI / 2.0 + 1e-9));
         assert_eq!(dense[0], (0.0, 0.0));
         assert_eq!(*dense.last().unwrap(), (2.0, 3.0 * PI / 2.0 + 0.1));
         // times stay strictly increasing
@@ -438,11 +323,7 @@ mod tests {
     }
 
     fn bin() -> Bin {
-        Bin {
-            data: Vec::new(),
-            views: Vec::new(),
-            accessors: Vec::new(),
-        }
+        Bin { data: Vec::new(), views: Vec::new(), accessors: Vec::new() }
     }
 
     fn read_f32(b: &Bin, acc: usize) -> Vec<f32> {
@@ -450,31 +331,16 @@ mod tests {
         let v = &b.views[a["bufferView"].as_u64().unwrap() as usize];
         let off = v["byteOffset"].as_u64().unwrap() as usize;
         let len = v["byteLength"].as_u64().unwrap() as usize;
-        b.data[off..off + len]
-            .chunks_exact(4)
-            .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
-            .collect()
+        b.data[off..off + len].chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect()
     }
 
     #[test]
     fn encodes_samplers_and_channels() {
         let mut b = bin();
         let tracks = vec![
-            NodeTrack::Translation {
-                node: 3,
-                interp: Interp::Linear,
-                keys: two(),
-            },
-            NodeTrack::Rotation {
-                node: 3,
-                interp: Interp::Step,
-                keys: vec![Key::new(0.0, [0.0]), Key::new(2.0, [PI / 2.0])],
-            },
-            NodeTrack::Scale {
-                node: 4,
-                interp: Interp::Linear,
-                keys: vec![Key::new(0.5, [2.0, 3.0])],
-            },
+            NodeTrack::Translation { node: 3, interp: Interp::Linear, keys: two() },
+            NodeTrack::Rotation { node: 3, interp: Interp::Step, keys: vec![Key::new(0.0, [0.0]), Key::new(2.0, [PI / 2.0])] },
+            NodeTrack::Scale { node: 4, interp: Interp::Linear, keys: vec![Key::new(0.5, [2.0, 3.0])] },
         ];
         let (s, c) = append_animation(&mut b, &tracks).unwrap();
         assert_eq!((s.len(), c.len()), (3, 3));
@@ -495,44 +361,17 @@ mod tests {
         // rotation: unit quaternions
         let q = read_f32(&b, s[1]["output"].as_u64().unwrap() as usize);
         assert_eq!(q.len(), 8);
-        assert!(
-            (f64::from(q[6]) - std::f64::consts::FRAC_1_SQRT_2).abs() < 1e-5
-                && (f64::from(q[7]) - std::f64::consts::FRAC_1_SQRT_2).abs() < 1e-5
-        );
-        assert!(q
-            .chunks(4)
-            .all(|c| (c.iter().map(|v| v * v).sum::<f32>() - 1.0).abs() < 1e-6));
+        assert!((f64::from(q[6]) - std::f64::consts::FRAC_1_SQRT_2).abs() < 1e-5 && (f64::from(q[7]) - std::f64::consts::FRAC_1_SQRT_2).abs() < 1e-5);
+        assert!(q.chunks(4).all(|c| (c.iter().map(|v| v * v).sum::<f32>() - 1.0).abs() < 1e-6));
         // scale: z = 1; a single key
-        assert_eq!(
-            read_f32(&b, s[2]["output"].as_u64().unwrap() as usize),
-            vec![2.0, 3.0, 1.0]
-        );
+        assert_eq!(read_f32(&b, s[2]["output"].as_u64().unwrap() as usize), vec![2.0, 3.0, 1.0]);
     }
 
     #[test]
     fn cubic_spline_output_has_three_elements_per_key() {
         let mut b = bin();
-        let keys = vec![
-            Key {
-                time: 0.0,
-                value: [1.0, 2.0],
-                tangents: Some(([0.1, 0.2], [0.3, 0.4])),
-            },
-            Key {
-                time: 1.0,
-                value: [3.0, 4.0],
-                tangents: Some(([0.5, 0.6], [0.7, 0.8])),
-            },
-        ];
-        let (s, _) = append_animation(
-            &mut b,
-            &[NodeTrack::Translation {
-                node: 0,
-                interp: Interp::CubicSpline,
-                keys,
-            }],
-        )
-        .unwrap();
+        let keys = vec![Key { time: 0.0, value: [1.0, 2.0], tangents: Some(([0.1, 0.2], [0.3, 0.4])) }, Key { time: 1.0, value: [3.0, 4.0], tangents: Some(([0.5, 0.6], [0.7, 0.8])) }];
+        let (s, _) = append_animation(&mut b, &[NodeTrack::Translation { node: 0, interp: Interp::CubicSpline, keys }]).unwrap();
         let out = s[0]["output"].as_u64().unwrap() as usize;
         assert_eq!(b.accessors[out]["count"], 6);
         let d = read_f32(&b, out);
@@ -543,42 +382,10 @@ mod tests {
     #[test]
     fn encoding_errors() {
         let mut b = bin();
-        assert!(append_animation(
-            &mut b,
-            &[NodeTrack::Translation {
-                node: 0,
-                interp: Interp::Linear,
-                keys: vec![]
-            }]
-        )
-        .is_err());
+        assert!(append_animation(&mut b, &[NodeTrack::Translation { node: 0, interp: Interp::Linear, keys: vec![] }]).is_err());
         let dup = vec![Key::new(1.0, [0.0, 0.0]), Key::new(1.0, [1.0, 1.0])];
-        assert!(append_animation(
-            &mut b,
-            &[NodeTrack::Scale {
-                node: 0,
-                interp: Interp::Linear,
-                keys: dup
-            }]
-        )
-        .is_err());
-        assert!(append_animation(
-            &mut b,
-            &[NodeTrack::Rotation {
-                node: 0,
-                interp: Interp::Linear,
-                keys: vec![Key::new(0.0, [f64::NAN])]
-            }]
-        )
-        .is_err());
-        assert!(append_animation(
-            &mut b,
-            &[NodeTrack::Rotation {
-                node: 0,
-                interp: Interp::CubicSpline,
-                keys: vec![Key::new(0.0, [0.0])]
-            }]
-        )
-        .is_err());
+        assert!(append_animation(&mut b, &[NodeTrack::Scale { node: 0, interp: Interp::Linear, keys: dup }]).is_err());
+        assert!(append_animation(&mut b, &[NodeTrack::Rotation { node: 0, interp: Interp::Linear, keys: vec![Key::new(0.0, [f64::NAN])] }]).is_err());
+        assert!(append_animation(&mut b, &[NodeTrack::Rotation { node: 0, interp: Interp::CubicSpline, keys: vec![Key::new(0.0, [0.0])] }]).is_err());
     }
 }

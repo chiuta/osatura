@@ -36,21 +36,22 @@ const MAX_DEPTH: usize = 512;
 const MAX_FRAMES: usize = 1_000_000;
 const MAX_VALUES: usize = 200_000_000;
 
+
 mod bvh;
 mod kinematics;
-mod matching;
-mod names;
 mod projection;
-mod retarget;
+mod names;
 mod skeleton;
+mod matching;
+mod retarget;
 
 pub use bvh::*;
 pub use kinematics::*;
-pub use matching::*;
-pub use names::*;
 pub use projection::*;
-pub use retarget::*;
+pub use names::*;
 pub use skeleton::*;
+pub use matching::*;
+pub use retarget::*;
 
 #[cfg(test)]
 mod tests;

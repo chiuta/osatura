@@ -7,10 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .to_path_buf()
+    Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap().to_path_buf()
 }
 
 fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -19,14 +16,9 @@ fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
         let p = e.path();
         let name = e.file_name().to_string_lossy().to_string();
         if p.is_dir() {
-            if name == "target" || name == "node_modules" || name.starts_with('.') {
-                continue;
-            }
+            if name == "target" || name == "node_modules" || name.starts_with('.') { continue; }
             walk(&p, out);
-        } else if matches!(
-            p.extension().and_then(|x| x.to_str()),
-            Some("rs" | "js" | "mjs" | "sh")
-        ) {
+        } else if matches!(p.extension().and_then(|x| x.to_str()), Some("rs" | "js" | "mjs" | "sh")) {
             out.push(p);
         }
     }
@@ -35,8 +27,7 @@ fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
 fn spdx_of(text: &str) -> Option<String> {
     text.lines().take(6).find_map(|l| {
         // REUSE-IgnoreStart
-        l.split_once("SPDX-License-Identifier:")
-            .map(|(_, r)| r.trim().trim_end_matches("*/").trim().to_string())
+        l.split_once("SPDX-License-Identifier:").map(|(_, r)| r.trim().trim_end_matches("*/").trim().to_string())
         // REUSE-IgnoreEnd
     })
 }
@@ -59,19 +50,9 @@ fn every_source_file_matches_its_crate_licence() {
     let r = root();
     let mut bad = Vec::new();
     let mut checked = 0;
-    for krate in [
-        "osatura-core",
-        "osatura-cli",
-        "osatura-capi",
-        "osatura-wasm",
-        "osatura-gpu",
-    ] {
+    for krate in ["osatura-core", "osatura-cli", "osatura-capi", "osatura-wasm", "osatura-gpu"] {
         let lic = cargo_license(&r.join(krate).join("Cargo.toml"));
-        let want = if krate == "osatura-cli" {
-            "AGPL-3.0-or-later"
-        } else {
-            "MPL-2.0"
-        };
+        let want = if krate == "osatura-cli" { "AGPL-3.0-or-later" } else { "MPL-2.0" };
         assert_eq!(lic, want, "{krate}: Cargo license field");
         let mut files = Vec::new();
         walk(&r.join(krate), &mut files);
@@ -102,15 +83,7 @@ fn every_source_file_matches_its_crate_licence() {
 fn reuse_toml_covers_non_source_files() {
     let r = root();
     let t = fs::read_to_string(r.join("REUSE.toml")).expect("REUSE.toml missing");
-    for needle in [
-        "studio.html",
-        "osatura.h",
-        "smoke.c",
-        "wgsl",
-        "face23_synth.bin",
-        "api_surface.txt",
-        "THIRD_PARTY_NOTICES.md",
-    ] {
+    for needle in ["studio.html", "osatura.h", "smoke.c", "wgsl", "face23_synth.bin", "api_surface.txt", "THIRD_PARTY_NOTICES.md"] {
         assert!(t.contains(needle), "REUSE.toml does not mention {needle}");
     }
 }

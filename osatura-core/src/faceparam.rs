@@ -82,41 +82,18 @@ use std::collections::{BTreeMap, HashMap};
 /// the EAR paper's p1..p6: p1 and p4 are the corners, p2/p3 the upper lid and p6/p5 the lower lid,
 /// listed left to right in an unmirrored picture (right eye: p1 outer; left eye: p1 inner).
 pub const NAMES: [&str; 23] = [
-    "r_eye_1",
-    "r_eye_2",
-    "r_eye_3",
-    "r_eye_4",
-    "r_eye_5",
-    "r_eye_6", //
-    "l_eye_1",
-    "l_eye_2",
-    "l_eye_3",
-    "l_eye_4",
-    "l_eye_5",
-    "l_eye_6", //
-    "mouth_r",
-    "mouth_l",
-    "mouth_top",
-    "mouth_bot", // corners, inner-lip centres
-    "r_brow",
-    "l_brow", // middle of each eyebrow
-    "nose_tip",
-    "nose_bridge",
-    "chin",
-    "face_r",
-    "face_l", // face sides at eye level
+    "r_eye_1", "r_eye_2", "r_eye_3", "r_eye_4", "r_eye_5", "r_eye_6", //
+    "l_eye_1", "l_eye_2", "l_eye_3", "l_eye_4", "l_eye_5", "l_eye_6", //
+    "mouth_r", "mouth_l", "mouth_top", "mouth_bot", // corners, inner-lip centres
+    "r_brow", "l_brow", // middle of each eyebrow
+    "nose_tip", "nose_bridge", "chin", "face_r", "face_l", // face sides at eye level
 ];
 const N: usize = NAMES.len();
 
 /// Point indices per name ([`NAMES`] order) for the common 68-point layout (0-based).
-pub const IBUG68: [usize; N] = [
-    36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 54, 62, 66, 19, 24, 30, 27, 8, 0, 16,
-];
+pub const IBUG68: [usize; N] = [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 54, 62, 66, 19, 24, 30, 27, 8, 0, 16];
 /// Same for the 468-point dense mesh layout.
-pub const MESH468: [usize; N] = [
-    33, 160, 158, 133, 153, 144, 362, 385, 387, 263, 373, 380, 61, 291, 13, 14, 105, 334, 1, 168,
-    152, 234, 454,
-];
+pub const MESH468: [usize; N] = [33, 160, 158, 133, 153, 144, 362, 385, 387, 263, 373, 380, 61, 291, 13, 14, 105, 334, 1, 168, 152, 234, 454];
 
 pub type Face = [Vec2; N];
 
@@ -135,25 +112,17 @@ impl Layout {
             "osatura23" | "23" => Ok(Layout::Osatura23),
             "ibug68" | "68" => Ok(Layout::Ibug68),
             "mesh468" | "468" | "478" | "mesh478" => Ok(Layout::Mesh468),
-            o => Err(format!(
-                "unknown layout '{o}' (osatura23, ibug68, mesh468 or an explicit points object)"
-            )),
+            o => Err(format!("unknown layout '{o}' (osatura23, ibug68, mesh468 or an explicit points object)")),
         }
     }
     pub fn from_json(v: &Value) -> Result<Layout, String> {
         match v {
             Value::String(s) => Layout::parse(s),
             Value::Object(o) => {
-                let pts = o
-                    .get("points")
-                    .and_then(|p| p.as_object())
-                    .ok_or("a layout object needs a points object")?;
+                let pts = o.get("points").and_then(|p| p.as_object()).ok_or("a layout object needs a points object")?;
                 let mut idx = Vec::with_capacity(N);
                 for n in NAMES {
-                    let i = pts
-                        .get(n)
-                        .and_then(|x| x.as_u64())
-                        .ok_or_else(|| format!("layout points: missing index for '{n}'"))?;
+                    let i = pts.get(n).and_then(|x| x.as_u64()).ok_or_else(|| format!("layout points: missing index for '{n}'"))?;
                     if i > 100_000 {
                         return Err(format!("layout points: index for '{n}' is too large"));
                     }
@@ -187,11 +156,7 @@ impl Layout {
     /// Pick the 23 named points out of a frame's points.
     pub fn select(&self, pts: &[Vec2]) -> Result<Face, String> {
         if pts.len() < self.min_points() {
-            return Err(format!(
-                "{} points, the layout needs at least {}",
-                pts.len(),
-                self.min_points()
-            ));
+            return Err(format!("{} points, the layout needs at least {}", pts.len(), self.min_points()));
         }
         let t = self.table();
         let mut f = [Vec2::new(0.0, 0.0); N];
@@ -267,15 +232,10 @@ fn points_of(p: &Value, size: (f32, f32)) -> Result<Option<Vec<Vec2>>, String> {
     Ok(Some(out))
 }
 
-fn named_face(
-    o: &serde_json::Map<String, Value>,
-    size: (f32, f32),
-) -> Result<Option<Face>, String> {
+fn named_face(o: &serde_json::Map<String, Value>, size: (f32, f32)) -> Result<Option<Face>, String> {
     let mut f = [Vec2::new(0.0, 0.0); N];
     for (i, n) in NAMES.iter().enumerate() {
-        let v = o
-            .get(*n)
-            .ok_or_else(|| format!("named point '{n}' is missing"))?;
+        let v = o.get(*n).ok_or_else(|| format!("named point '{n}' is missing"))?;
         match point(v) {
             Some(q) => f[i] = Vec2::new(q[0] * size.0, q[1] * size.1),
             None => return Ok(None),
@@ -296,14 +256,9 @@ fn parse_frame(v: &Value, c: &mut Ctx, fps: f32, index: usize) -> Result<Landmar
         _ => return Err("a frame must be an object or an array of points".into()),
     };
     let t = if let Some(t) = o.get("t") {
-        t.as_f64()
-            .filter(|x| x.is_finite())
-            .ok_or("t must be a finite number")? as f32
+        t.as_f64().filter(|x| x.is_finite()).ok_or("t must be a finite number")? as f32
     } else if let Some(fr) = o.get("frame") {
-        fr.as_f64()
-            .filter(|x| x.is_finite())
-            .ok_or("frame must be a finite number")? as f32
-            / fps
+        fr.as_f64().filter(|x| x.is_finite()).ok_or("frame must be a finite number")? as f32 / fps
     } else {
         index as f32 / fps
     };
@@ -317,12 +272,7 @@ fn parse_frame(v: &Value, c: &mut Ctx, fps: f32, index: usize) -> Result<Landmar
             None => None,
             Some(pts) => {
                 if c.layout.is_none() {
-                    c.layout = Some(Layout::infer(pts.len()).ok_or_else(|| {
-                        format!(
-                            "cannot infer a layout from {} points (23, 68, 468, 478 are known)",
-                            pts.len()
-                        )
-                    })?);
+                    c.layout = Some(Layout::infer(pts.len()).ok_or_else(|| format!("cannot infer a layout from {} points (23, 68, 468, 478 are known)", pts.len()))?);
                 }
                 {
                     let f = c.layout.as_ref().unwrap().select(&pts)?;
@@ -338,20 +288,11 @@ fn parse_frame(v: &Value, c: &mut Ctx, fps: f32, index: usize) -> Result<Landmar
 
 /// Tolerant NDJSON importer. `default_fps` is used for frames without a time (a header `fps` wins),
 /// `layout` overrides header and inference.
-pub fn parse_ndjson(
-    text: &str,
-    default_fps: f32,
-    layout: Option<Layout>,
-) -> Result<LandmarkStream, String> {
-    if (default_fps.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        || !default_fps.is_finite()
-    {
+pub fn parse_ndjson(text: &str, default_fps: f32, layout: Option<Layout>) -> Result<LandmarkStream, String> {
+    if (default_fps.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !default_fps.is_finite() {
         return Err("fps must be a positive number".into());
     }
-    let mut c = Ctx {
-        layout: layout.clone(),
-        size: (1.0, 1.0),
-    };
+    let mut c = Ctx { layout: layout.clone(), size: (1.0, 1.0) };
     let (mut fps, mut header_fps) = (default_fps, None);
     let mut out = LandmarkStream::default();
     let (mut seen_data, mut bad_total) = (false, 0usize);
@@ -370,10 +311,7 @@ pub fn parse_ndjson(
             Ok(v) => v,
             Err(e) => {
                 bad_total += 1;
-                warn(
-                    &mut out,
-                    format!("line {}: not JSON ({e}), skipped", ln + 1),
-                );
+                warn(&mut out, format!("line {}: not JSON ({e}), skipped", ln + 1));
                 continue;
             }
         };
@@ -393,25 +331,15 @@ pub fn parse_ndjson(
                 }
             }
             if let Some(f) = v.get("fps") {
-                let f = num(f)
-                    .filter(|f| *f > 0.0)
-                    .ok_or_else(|| format!("line {}: header fps must be positive", ln + 1))?;
+                let f = num(f).filter(|f| *f > 0.0).ok_or_else(|| format!("line {}: header fps must be positive", ln + 1))?;
                 header_fps = Some(f);
                 fps = f;
             }
             if let Some(s) = v.get("size") {
-                let a = s
-                    .as_array()
-                    .filter(|a| a.len() == 2)
-                    .ok_or_else(|| format!("line {}: size must be [w,h]", ln + 1))?;
+                let a = s.as_array().filter(|a| a.len() == 2).ok_or_else(|| format!("line {}: size must be [w,h]", ln + 1))?;
                 match (num(&a[0]), num(&a[1])) {
                     (Some(w), Some(h)) if w > 0.0 && h > 0.0 => c.size = (w, h),
-                    _ => {
-                        return Err(format!(
-                            "line {}: size must be two positive numbers",
-                            ln + 1
-                        ))
-                    }
+                    _ => return Err(format!("line {}: size must be two positive numbers", ln + 1)),
                 }
             }
             continue;
@@ -436,8 +364,7 @@ pub fn parse_ndjson(
         });
     }
     if bad_total > MAX_WARNINGS {
-        out.warnings
-            .push(format!("{} lines were skipped in total", bad_total));
+        out.warnings.push(format!("{} lines were skipped in total", bad_total));
     }
     out.fps = header_fps;
     let mut unsorted = false;
@@ -448,23 +375,14 @@ pub fn parse_ndjson(
     }
     if unsorted {
         out.frames.sort_by(|a, b| a.t.total_cmp(&b.t));
-        out.warnings
-            .push("frames were not in time order and were sorted".into());
+        out.warnings.push("frames were not in time order and were sorted".into());
     }
     Ok(out)
 }
 
 /// Parse studio-style frame objects (already decoded JSON).
-pub fn parse_frames(
-    frames: &[Value],
-    layout: Option<Layout>,
-    size: Option<(f32, f32)>,
-    fps: f32,
-) -> Result<Vec<LandmarkFrame>, String> {
-    let mut c = Ctx {
-        layout,
-        size: size.unwrap_or((1.0, 1.0)),
-    };
+pub fn parse_frames(frames: &[Value], layout: Option<Layout>, size: Option<(f32, f32)>, fps: f32) -> Result<Vec<LandmarkFrame>, String> {
+    let mut c = Ctx { layout, size: size.unwrap_or((1.0, 1.0)) };
     let mut out = Vec::new();
     for (i, f) in frames.iter().enumerate() {
         out.push(parse_frame(f, &mut c, fps, i).map_err(|e| format!("frame {i}: {e}"))?);
@@ -475,9 +393,7 @@ pub fn parse_frames(
 // ---- geometry ------------------------------------------------------------------------------
 
 /// Raw measurement keys, in order. `yaw`/`pitch` are in tangent space (see the module doc).
-pub const RAW_KEYS: [&str; 9] = [
-    "yaw", "pitch", "roll", "ear_r", "ear_l", "mar", "width", "brow_r", "brow_l",
-];
+pub const RAW_KEYS: [&str; 9] = ["yaw", "pitch", "roll", "ear_r", "ear_l", "mar", "width", "brow_r", "brow_l"];
 pub type Raw = [f32; 9];
 
 fn mid(a: Vec2, b: Vec2) -> Vec2 {
@@ -515,11 +431,7 @@ pub struct Geometry {
 }
 impl Default for Geometry {
     fn default() -> Self {
-        Geometry {
-            mirror: false,
-            yaw_depth: 0.30,
-            pitch_depth: 0.22,
-        }
+        Geometry { mirror: false, yaw_depth: 0.30, pitch_depth: 0.22 }
     }
 }
 
@@ -561,9 +473,7 @@ pub fn measure(face: &Face, g: &Geometry) -> Option<Raw> {
     let width = mw / fw;
     let brow_r = (rc - f[16]).dot(v) / iod;
     let brow_l = (lc - f[17]).dot(v) / iod;
-    let raw = [
-        yaw_t, pitch_t, roll, ear_r, ear_l, mar, width, brow_r, brow_l,
-    ];
+    let raw = [yaw_t, pitch_t, roll, ear_r, ear_l, mar, width, brow_r, brow_l];
     raw.iter().all(|x| x.is_finite()).then_some(raw)
 }
 
@@ -580,9 +490,7 @@ pub struct Calibration {
 fn pick(m: &BTreeMap<String, f32>, what: &str) -> Result<Raw, String> {
     let mut r = [0.0; 9];
     for (i, k) in RAW_KEYS.iter().enumerate() {
-        r[i] = *m
-            .get(*k)
-            .ok_or_else(|| format!("calibration {what}: missing '{k}'"))?;
+        r[i] = *m.get(*k).ok_or_else(|| format!("calibration {what}: missing '{k}'"))?;
         if !r[i].is_finite() {
             return Err(format!("calibration {what}: '{k}' is not finite"));
         }
@@ -590,11 +498,7 @@ fn pick(m: &BTreeMap<String, f32>, what: &str) -> Result<Raw, String> {
     Ok(r)
 }
 fn to_map(r: &Raw) -> BTreeMap<String, f32> {
-    RAW_KEYS
-        .iter()
-        .zip(r.iter())
-        .map(|(k, v)| (k.to_string(), *v))
-        .collect()
+    RAW_KEYS.iter().zip(r.iter()).map(|(k, v)| (k.to_string(), *v)).collect()
 }
 
 fn percentile(sorted: &[f32], q: f32) -> f32 {
@@ -608,27 +512,16 @@ impl Calibration {
     /// Average face, used when no calibration was captured. Only ratios are nominal; angles are 0.
     pub fn nominal() -> Calibration {
         let n: Raw = [0.0, 0.0, 0.0, 0.28, 0.28, 0.03, 0.40, 0.30, 0.30];
-        Calibration {
-            neutral: to_map(&n),
-            lo: to_map(&n),
-            hi: to_map(&n),
-        }
+        Calibration { neutral: to_map(&n), lo: to_map(&n), hi: to_map(&n) }
     }
 
     /// Neutral = per-key median of `neutral_rows`; lo/hi = 2nd/98th percentile of `range_rows`
     /// (the neutral rows when empty). Needs at least 3 neutral rows.
     pub fn from_rows(neutral_rows: &[Raw], range_rows: &[Raw]) -> Result<Calibration, String> {
         if neutral_rows.len() < 3 {
-            return Err(format!(
-                "calibration needs at least 3 usable neutral frames, got {}",
-                neutral_rows.len()
-            ));
+            return Err(format!("calibration needs at least 3 usable neutral frames, got {}", neutral_rows.len()));
         }
-        let range = if range_rows.is_empty() {
-            neutral_rows
-        } else {
-            range_rows
-        };
+        let range = if range_rows.is_empty() { neutral_rows } else { range_rows };
         let (mut n, mut lo, mut hi) = ([0.0; 9], [0.0; 9], [0.0; 9]);
         for k in 0..9 {
             let mut a: Vec<f32> = neutral_rows.iter().map(|r| r[k]).collect();
@@ -639,43 +532,24 @@ impl Calibration {
             lo[k] = percentile(&b, 0.02);
             hi[k] = percentile(&b, 0.98);
         }
-        Ok(Calibration {
-            neutral: to_map(&n),
-            lo: to_map(&lo),
-            hi: to_map(&hi),
-        })
+        Ok(Calibration { neutral: to_map(&n), lo: to_map(&lo), hi: to_map(&hi) })
     }
 
     pub fn from_json(s: &str) -> Result<Calibration, String> {
-        let c: Calibration =
-            serde_json::from_str(s).map_err(|e| format!("bad calibration: {e}"))?;
+        let c: Calibration = serde_json::from_str(s).map_err(|e| format!("bad calibration: {e}"))?;
         c.arrays()?;
         Ok(c)
     }
 
     fn arrays(&self) -> Result<(Raw, Raw, Raw), String> {
-        Ok((
-            pick(&self.neutral, "neutral")?,
-            pick(&self.lo, "lo")?,
-            pick(&self.hi, "hi")?,
-        ))
+        Ok((pick(&self.neutral, "neutral")?, pick(&self.lo, "lo")?, pick(&self.hi, "hi")?))
     }
 }
 
 // ---- signals -------------------------------------------------------------------------------
 
 pub const SIGNALS: [&str; 11] = [
-    "head_yaw",
-    "head_pitch",
-    "head_roll",
-    "eye_r_open",
-    "eye_l_open",
-    "mouth_open",
-    "mouth_wide",
-    "mouth_round",
-    "brow_r_raise",
-    "brow_l_raise",
-    "brow_raise",
+    "head_yaw", "head_pitch", "head_roll", "eye_r_open", "eye_l_open", "mouth_open", "mouth_wide", "mouth_round", "brow_r_raise", "brow_l_raise", "brow_raise",
 ];
 const BIPOLAR: usize = 3; // the first three signals
 
@@ -699,41 +573,22 @@ pub struct FaceConfig {
 }
 impl Default for FaceConfig {
     fn default() -> Self {
-        FaceConfig {
-            geometry: Geometry::default(),
-            mincutoff: 1.5,
-            beta: 1.0,
-            dcutoff: 1.0,
-            deadzone: 0.02,
-            span_deg: [35.0, 25.0, 30.0],
-            per_signal: BTreeMap::new(),
-        }
+        FaceConfig { geometry: Geometry::default(), mincutoff: 1.5, beta: 1.0, dcutoff: 1.0, deadzone: 0.02, span_deg: [35.0, 25.0, 30.0], per_signal: BTreeMap::new() }
     }
 }
 impl FaceConfig {
     pub fn validate(&self) -> Result<(), String> {
         let g = &self.geometry;
-        if !(g.yaw_depth > 0.0 && g.yaw_depth <= 4.0 && g.pitch_depth > 0.0 && g.pitch_depth <= 4.0)
-        {
+        if !(g.yaw_depth > 0.0 && g.yaw_depth <= 4.0 && g.pitch_depth > 0.0 && g.pitch_depth <= 4.0) {
             return Err("yaw_depth and pitch_depth must be within (0, 4]".into());
         }
-        if !(self.mincutoff > 0.0
-            && self.mincutoff <= 1000.0
-            && self.dcutoff > 0.0
-            && self.dcutoff <= 1000.0
-            && self.beta >= 0.0
-            && self.beta <= 1.0e6)
-        {
+        if !(self.mincutoff > 0.0 && self.mincutoff <= 1000.0 && self.dcutoff > 0.0 && self.dcutoff <= 1000.0 && self.beta >= 0.0 && self.beta <= 1.0e6) {
             return Err("mincutoff and dcutoff must be positive, beta non-negative".into());
         }
         if !(0.0..1.0).contains(&self.deadzone) {
             return Err("deadzone must be within 0..1 (1 excluded)".into());
         }
-        if !self
-            .span_deg
-            .iter()
-            .all(|s| s.is_finite() && *s > 1.0 && *s < 90.0)
-        {
+        if !self.span_deg.iter().all(|s| s.is_finite() && *s > 1.0 && *s < 90.0) {
             return Err("span_deg entries must be within (1, 90) degrees".into());
         }
         for (k, (m, b)) in &self.per_signal {
@@ -741,9 +596,7 @@ impl FaceConfig {
                 return Err(format!("per_signal: unknown signal '{k}'"));
             }
             if !(*m > 0.0 && m.is_finite() && *b >= 0.0 && b.is_finite()) {
-                return Err(format!(
-                    "per_signal {k}: mincutoff must be positive and beta non-negative"
-                ));
+                return Err(format!("per_signal {k}: mincutoff must be positive and beta non-negative"));
             }
         }
         Ok(())
@@ -765,13 +618,7 @@ pub fn normalise(raw: &Raw, cal: &Calibration, cfg: &FaceConfig) -> Result<[f32;
     let mut o = [0.0f32; 11];
     // angles
     for k in 0..3 {
-        let ang = |x: f32| {
-            if k < 2 {
-                (x - n[k]).atan().to_degrees()
-            } else {
-                x - n[k]
-            }
-        };
+        let ang = |x: f32| if k < 2 { (x - n[k]).atan().to_degrees() } else { x - n[k] };
         let (a_lo, a_hi) = (ang(lo[k]), ang(hi[k]));
         let mut span = a_lo.abs().max(a_hi.abs());
         if span < 3.0 {
@@ -871,12 +718,7 @@ impl FaceTracker {
     pub fn new(cfg: FaceConfig, cal: Calibration) -> Result<FaceTracker, String> {
         cfg.validate()?;
         cal.arrays()?;
-        Ok(FaceTracker {
-            cfg,
-            cal,
-            filters: vec![OneEuro::default(); SIGNALS.len()],
-            last_t: None,
-        })
+        Ok(FaceTracker { cfg, cal, filters: vec![OneEuro::default(); SIGNALS.len()], last_t: None })
     }
 
     pub fn set_calibration(&mut self, cal: Calibration) -> Result<(), String> {
@@ -895,9 +737,7 @@ impl FaceTracker {
 
     /// Smoothed signal values of one frame. Empty when the geometry is degenerate.
     pub fn process(&mut self, t: f32, face: &Face) -> Result<Vec<InputEvent>, String> {
-        let Some(raw) = measure(face, &self.cfg.geometry) else {
-            return Ok(vec![]);
-        };
+        let Some(raw) = measure(face, &self.cfg.geometry) else { return Ok(vec![]) };
         let norm = normalise(&raw, &self.cal, &self.cfg)?;
         if self.last_t.is_some_and(|lt| t - lt > RESET_GAP) {
             for f in &mut self.filters {
@@ -907,20 +747,10 @@ impl FaceTracker {
         self.last_t = Some(t);
         let mut ev = Vec::with_capacity(SIGNALS.len());
         for (i, name) in SIGNALS.iter().enumerate() {
-            let (mc, b) = self
-                .cfg
-                .per_signal
-                .get(*name)
-                .copied()
-                .unwrap_or((self.cfg.mincutoff, self.cfg.beta));
+            let (mc, b) = self.cfg.per_signal.get(*name).copied().unwrap_or((self.cfg.mincutoff, self.cfg.beta));
             let y = self.filters[i].filter(norm[i], t, mc, b, self.cfg.dcutoff);
             let y = dead(unit(y), self.cfg.deadzone, i < BIPOLAR);
-            ev.push(InputEvent {
-                source: InputSource::Face,
-                id: name.to_string(),
-                value: unit(y),
-                time: t.max(0.0),
-            });
+            ev.push(InputEvent { source: InputSource::Face, id: name.to_string(), value: unit(y), time: t.max(0.0) });
         }
         Ok(ev)
     }
@@ -930,25 +760,12 @@ impl FaceTracker {
 
 /// Raw measurements of the usable frames (index, time, raw).
 pub fn measure_stream(s: &LandmarkStream, g: &Geometry) -> Vec<(usize, f32, Raw)> {
-    s.frames
-        .iter()
-        .enumerate()
-        .filter_map(|(i, f)| {
-            f.face
-                .as_ref()
-                .and_then(|face| measure(face, g))
-                .map(|r| (i, f.t, r))
-        })
-        .collect()
+    s.frames.iter().enumerate().filter_map(|(i, f)| f.face.as_ref().and_then(|face| measure(face, g)).map(|r| (i, f.t, r))).collect()
 }
 
 /// Calibrate from a recording: the first `neutral_frames` frames (usable ones counted) are the
 /// neutral pose, the whole recording gives the range.
-pub fn calibrate(
-    s: &LandmarkStream,
-    cfg: &FaceConfig,
-    neutral_frames: usize,
-) -> Result<Calibration, String> {
+pub fn calibrate(s: &LandmarkStream, cfg: &FaceConfig, neutral_frames: usize) -> Result<Calibration, String> {
     cfg.validate()?;
     if neutral_frames < 3 {
         return Err("--calibrate-frames must be at least 3".into());
@@ -963,11 +780,7 @@ pub fn calibrate(
 }
 
 /// All events of a stream (deterministic).
-pub fn events(
-    s: &LandmarkStream,
-    cfg: &FaceConfig,
-    cal: &Calibration,
-) -> Result<Vec<InputEvent>, String> {
+pub fn events(s: &LandmarkStream, cfg: &FaceConfig, cal: &Calibration) -> Result<Vec<InputEvent>, String> {
     let mut tr = FaceTracker::new(cfg.clone(), cal.clone())?;
     let mut out = Vec::new();
     for f in &s.frames {
@@ -985,11 +798,7 @@ pub fn events(
 pub fn check_mapping(m: &Mapping) -> Result<(), String> {
     for (i, p) in m.params.iter().enumerate() {
         if p.source == InputSource::Face && p.id != "*" && !SIGNALS.contains(&p.id.as_str()) {
-            return Err(format!(
-                "map {i}: unknown face signal '{}' (known: {})",
-                p.id,
-                SIGNALS.join(", ")
-            ));
+            return Err(format!("map {i}: unknown face signal '{}' (known: {})", p.id, SIGNALS.join(", ")));
         }
     }
     for (i, t) in m.triggers.iter().enumerate() {
@@ -1004,9 +813,7 @@ pub fn check_mapping(m: &Mapping) -> Result<(), String> {
 pub fn parse_mapfile(text: &str) -> Result<(Mapping, FaceConfig), String> {
     let v: Value = serde_json::from_str(text).map_err(|e| format!("bad map file: {e}"))?;
     let cfg: FaceConfig = match v.get("face") {
-        Some(f) => {
-            serde_json::from_value(f.clone()).map_err(|e| format!("bad face section: {e}"))?
-        }
+        Some(f) => serde_json::from_value(f.clone()).map_err(|e| format!("bad face section: {e}"))?,
         None => FaceConfig::default(),
     };
     cfg.validate()?;
@@ -1021,14 +828,7 @@ pub fn parse_mapfile(text: &str) -> Result<(Mapping, FaceConfig), String> {
 
 /// Bake a landmark stream into the project as keyed channels, through the live-input mapping.
 /// Locks are respected and the result is all-or-nothing (see [`crate::liveinput::bake`]).
-pub fn bake(
-    p: &mut crate::project::Project,
-    s: &LandmarkStream,
-    m: &Mapping,
-    cfg: &FaceConfig,
-    cal: &Calibration,
-    tol: f32,
-) -> Result<crate::liveinput::BakeReport, String> {
+pub fn bake(p: &mut crate::project::Project, s: &LandmarkStream, m: &Mapping, cfg: &FaceConfig, cal: &Calibration, tol: f32) -> Result<crate::liveinput::BakeReport, String> {
     check_mapping(m)?;
     let ev = events(s, cfg, cal)?;
     crate::liveinput::bake(p, &ev, m, None, tol)
@@ -1051,33 +851,14 @@ mod tests {
         // (layout, right-eye p1..p6 point indices, left-eye p1..p6 point indices)
         let cases: Vec<(Layout, [usize; 6], [usize; 6])> = vec![
             (Layout::Osatura23, [0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11]),
-            (
-                Layout::Ibug68,
-                [36, 37, 38, 39, 40, 41],
-                [42, 43, 44, 45, 46, 47],
-            ),
-            (
-                Layout::Mesh468,
-                [33, 160, 158, 133, 153, 144],
-                [362, 385, 387, 263, 373, 380],
-            ),
-            (
-                Layout::Custom(IBUG68.to_vec()),
-                [36, 37, 38, 39, 40, 41],
-                [42, 43, 44, 45, 46, 47],
-            ),
+            (Layout::Ibug68, [36, 37, 38, 39, 40, 41], [42, 43, 44, 45, 46, 47]),
+            (Layout::Mesh468, [33, 160, 158, 133, 153, 144], [362, 385, 387, 263, 373, 380]),
+            (Layout::Custom(IBUG68.to_vec()), [36, 37, 38, 39, 40, 41], [42, 43, 44, 45, 46, 47]),
         ];
         for (layout, r, l) in cases {
             let mut pts = vec![Vec2::new(500.0, 500.0); layout.min_points().max(478)];
             // textbook geometry: p1 left corner, p2/p3 upper lid, p4 right corner, p5 lower right, p6 lower left
-            let shape = [
-                (0.0, 0.0),
-                (10.0, -5.0),
-                (20.0, -5.0),
-                (30.0, 0.0),
-                (20.0, 5.0),
-                (10.0, 5.0),
-            ];
+            let shape = [(0.0, 0.0), (10.0, -5.0), (20.0, -5.0), (30.0, 0.0), (20.0, 5.0), (10.0, 5.0)];
             for (k, &(x, y)) in shape.iter().enumerate() {
                 pts[r[k]] = Vec2::new(x, y + 100.0);
                 pts[l[k]] = Vec2::new(x + 100.0, y + 100.0);
@@ -1096,63 +877,34 @@ mod tests {
         }
     }
 
+
     /// Synthetic head: half face width 1, y down, z towards the viewer, orthographic projection.
     #[derive(Clone, Copy)]
     struct Pose {
         yaw: f32,
         pitch: f32,
         roll: f32,
-        eye: f32,  // lid gap (width 0.36)
-        gap: f32,  // inner lip gap
-        mw: f32,   // mouth width
-        brow: f32, // brow height above the eye line
+        eye: f32,   // lid gap (width 0.36)
+        gap: f32,   // inner lip gap
+        mw: f32,    // mouth width
+        brow: f32,  // brow height above the eye line
     }
-    const NEUTRAL: Pose = Pose {
-        yaw: 0.0,
-        pitch: 0.0,
-        roll: 0.0,
-        eye: 0.108,
-        gap: 0.02,
-        mw: 0.8,
-        brow: 0.27,
-    };
+    const NEUTRAL: Pose = Pose { yaw: 0.0, pitch: 0.0, roll: 0.0, eye: 0.108, gap: 0.02, mw: 0.8, brow: 0.27 };
 
     fn model(p: &Pose) -> Vec<[f32; 3]> {
         let mut v = Vec::new();
         for c in [-0.45f32, 0.45] {
             let h = p.eye * 0.5;
-            v.extend([
-                [c - 0.18, -0.25, 0.0],
-                [c - 0.06, -0.25 - h, 0.0],
-                [c + 0.06, -0.25 - h, 0.0],
-                [c + 0.18, -0.25, 0.0],
-                [c + 0.06, -0.25 + h, 0.0],
-                [c - 0.06, -0.25 + h, 0.0],
-            ]);
+            v.extend([[c - 0.18, -0.25, 0.0], [c - 0.06, -0.25 - h, 0.0], [c + 0.06, -0.25 - h, 0.0], [c + 0.18, -0.25, 0.0], [c + 0.06, -0.25 + h, 0.0], [c - 0.06, -0.25 + h, 0.0]]);
         }
-        v.extend([
-            [-p.mw / 2.0, 0.55, 0.0],
-            [p.mw / 2.0, 0.55, 0.0],
-            [0.0, 0.55 - p.gap / 2.0, 0.0],
-            [0.0, 0.55 + p.gap / 2.0, 0.0],
-        ]);
+        v.extend([[-p.mw / 2.0, 0.55, 0.0], [p.mw / 2.0, 0.55, 0.0], [0.0, 0.55 - p.gap / 2.0, 0.0], [0.0, 0.55 + p.gap / 2.0, 0.0]]);
         v.extend([[-0.45, -0.25 - p.brow, 0.0], [0.45, -0.25 - p.brow, 0.0]]);
-        v.extend([
-            [0.0, 0.15, 0.3],
-            [0.0, -0.3, 0.0],
-            [0.0, 1.0, 0.0],
-            [-1.0, -0.25, 0.0],
-            [1.0, -0.25, 0.0],
-        ]);
+        v.extend([[0.0, 0.15, 0.3], [0.0, -0.3, 0.0], [0.0, 1.0, 0.0], [-1.0, -0.25, 0.0], [1.0, -0.25, 0.0]]);
         v
     }
 
     fn project(p: &Pose) -> Vec<(f32, f32)> {
-        let (yw, pt, rl) = (
-            p.yaw.to_radians(),
-            p.pitch.to_radians(),
-            p.roll.to_radians(),
-        );
+        let (yw, pt, rl) = (p.yaw.to_radians(), p.pitch.to_radians(), p.roll.to_radians());
         model(p)
             .into_iter()
             .map(|[x, y, z]| {
@@ -1174,13 +926,7 @@ mod tests {
     }
 
     fn cfg() -> FaceConfig {
-        FaceConfig {
-            geometry: Geometry {
-                pitch_depth: 0.24,
-                ..Geometry::default()
-            },
-            ..FaceConfig::default()
-        }
+        FaceConfig { geometry: Geometry { pitch_depth: 0.24, ..Geometry::default() }, ..FaceConfig::default() }
     }
 
     fn raw(p: &Pose) -> Raw {
@@ -1191,22 +937,7 @@ mod tests {
     fn cal() -> Calibration {
         let n = raw(&NEUTRAL);
         let mut rows = vec![n; 5];
-        for p in [
-            Pose {
-                eye: 0.01,
-                ..NEUTRAL
-            },
-            Pose {
-                gap: 0.5,
-                ..NEUTRAL
-            },
-            Pose { mw: 1.0, ..NEUTRAL },
-            Pose { mw: 0.5, ..NEUTRAL },
-            Pose {
-                brow: 0.45,
-                ..NEUTRAL
-            },
-        ] {
+        for p in [Pose { eye: 0.01, ..NEUTRAL }, Pose { gap: 0.5, ..NEUTRAL }, Pose { mw: 1.0, ..NEUTRAL }, Pose { mw: 0.5, ..NEUTRAL }, Pose { brow: 0.45, ..NEUTRAL }] {
             for _ in 0..3 {
                 rows.push(raw(&p));
             }
@@ -1237,19 +968,9 @@ mod tests {
 
     #[test]
     fn eye_aspect_ratio_matches_the_formula() {
-        let r = raw(&Pose {
-            eye: 0.108,
-            ..NEUTRAL
-        });
-        assert!(
-            (r[3] - 0.3).abs() < 1e-4 && (r[4] - 0.3).abs() < 1e-4,
-            "{:?}",
-            r
-        );
-        let r = raw(&Pose {
-            eye: 0.0,
-            ..NEUTRAL
-        });
+        let r = raw(&Pose { eye: 0.108, ..NEUTRAL });
+        assert!((r[3] - 0.3).abs() < 1e-4 && (r[4] - 0.3).abs() < 1e-4, "{:?}", r);
+        let r = raw(&Pose { eye: 0.0, ..NEUTRAL });
         assert!(r[3].abs() < 1e-5);
         let r = raw(&NEUTRAL);
         assert!((r[5] - 0.02 / 0.8).abs() < 1e-4, "mar");
@@ -1263,136 +984,52 @@ mod tests {
         let n = |p: &Pose| normalise(&raw(p), &c, &cfg()).unwrap();
         // default spans: 35, 25, 30 degrees; value = 0.5 + 0.5 * angle / span
         for a in [-30.0f32, -10.0, 15.0, 30.0] {
-            assert!(
-                (sig(&n(&Pose { yaw: a, ..NEUTRAL }), "head_yaw") - (0.5 + 0.5 * a / 35.0)).abs()
-                    < 2e-3,
-                "yaw {a}"
-            );
-            assert!(
-                (sig(
-                    &n(&Pose {
-                        pitch: a * 0.6,
-                        ..NEUTRAL
-                    }),
-                    "head_pitch"
-                ) - (0.5 + 0.5 * a * 0.6 / 25.0))
-                    .abs()
-                    < 2e-3,
-                "pitch {a}"
-            );
-            assert!(
-                (sig(&n(&Pose { roll: a, ..NEUTRAL }), "head_roll") - (0.5 + 0.5 * a / 30.0)).abs()
-                    < 1e-4,
-                "roll {a}"
-            );
+            assert!((sig(&n(&Pose { yaw: a, ..NEUTRAL }), "head_yaw") - (0.5 + 0.5 * a / 35.0)).abs() < 2e-3, "yaw {a}");
+            assert!((sig(&n(&Pose { pitch: a * 0.6, ..NEUTRAL }), "head_pitch") - (0.5 + 0.5 * a * 0.6 / 25.0)).abs() < 2e-3, "pitch {a}");
+            assert!((sig(&n(&Pose { roll: a, ..NEUTRAL }), "head_roll") - (0.5 + 0.5 * a / 30.0)).abs() < 1e-4, "roll {a}");
         }
         assert!((sig(&n(&NEUTRAL), "head_yaw") - 0.5).abs() < 1e-5);
         // a combined small pose stays close (2D approximation)
-        let v = sig(
-            &n(&Pose {
-                yaw: 12.0,
-                pitch: 8.0,
-                roll: 5.0,
-                ..NEUTRAL
-            }),
-            "head_yaw",
-        );
+        let v = sig(&n(&Pose { yaw: 12.0, pitch: 8.0, roll: 5.0, ..NEUTRAL }), "head_yaw");
         assert!((v - (0.5 + 0.5 * 12.0 / 35.0)).abs() < 0.03, "{v}");
     }
 
     #[test]
     fn pitch_sign_and_mirror() {
-        let up = raw(&Pose {
-            pitch: 15.0,
-            ..NEUTRAL
-        });
-        let down = raw(&Pose {
-            pitch: -15.0,
-            ..NEUTRAL
-        });
+        let up = raw(&Pose { pitch: 15.0, ..NEUTRAL });
+        let down = raw(&Pose { pitch: -15.0, ..NEUTRAL });
         assert!(up[1] > raw(&NEUTRAL)[1] && down[1] < raw(&NEUTRAL)[1]);
         // mirroring the picture (negating x) is undone by the mirror flag
-        let mut f = face(&Pose {
-            yaw: 20.0,
-            roll: 10.0,
-            ..NEUTRAL
-        });
+        let mut f = face(&Pose { yaw: 20.0, roll: 10.0, ..NEUTRAL });
         let a = measure(&f, &cfg().geometry).unwrap();
         for p in f.iter_mut() {
             p.x = -p.x;
         }
-        let b = measure(
-            &f,
-            &Geometry {
-                mirror: true,
-                ..cfg().geometry
-            },
-        )
-        .unwrap();
+        let b = measure(&f, &Geometry { mirror: true, ..cfg().geometry }).unwrap();
         for k in 0..9 {
             assert!((a[k] - b[k]).abs() < 1e-3, "{k}");
         }
         let c = measure(&f, &cfg().geometry).unwrap();
-        assert!(
-            c[2].abs() > 90.0,
-            "without the flag a mirrored picture is not understood (roll {})",
-            c[2]
-        );
+        assert!(c[2].abs() > 90.0, "without the flag a mirrored picture is not understood (roll {})", c[2]);
     }
 
     #[test]
     fn eyes_mouth_and_brows() {
         assert!((sig(&norm(&NEUTRAL), "eye_r_open") - 1.0).abs() < 1e-3);
-        assert!(
-            sig(
-                &norm(&Pose {
-                    eye: 0.01,
-                    ..NEUTRAL
-                }),
-                "eye_r_open"
-            ) < 0.05
-        );
-        let half = sig(
-            &norm(&Pose {
-                eye: 0.06,
-                ..NEUTRAL
-            }),
-            "eye_l_open",
-        );
+        assert!(sig(&norm(&Pose { eye: 0.01, ..NEUTRAL }), "eye_r_open") < 0.05);
+        let half = sig(&norm(&Pose { eye: 0.06, ..NEUTRAL }), "eye_l_open");
         assert!(half > 0.3 && half < 0.7, "{half}");
-        let (m0, m1) = (
-            sig(&norm(&NEUTRAL), "mouth_open"),
-            sig(
-                &norm(&Pose {
-                    gap: 0.5,
-                    ..NEUTRAL
-                }),
-                "mouth_open",
-            ),
-        );
+        let (m0, m1) = (sig(&norm(&NEUTRAL), "mouth_open"), sig(&norm(&Pose { gap: 0.5, ..NEUTRAL }), "mouth_open"));
         assert!(m0 < 0.01 && m1 > 0.95, "{m0} {m1}");
-        assert!(
-            sig(&norm(&Pose { mw: 1.0, ..NEUTRAL }), "mouth_wide") > 0.95
-                && sig(&norm(&NEUTRAL), "mouth_wide") < 0.01
-        );
+        assert!(sig(&norm(&Pose { mw: 1.0, ..NEUTRAL }), "mouth_wide") > 0.95 && sig(&norm(&NEUTRAL), "mouth_wide") < 0.01);
         assert!(sig(&norm(&Pose { mw: 0.5, ..NEUTRAL }), "mouth_round") > 0.95);
         assert!(sig(&norm(&Pose { mw: 1.0, ..NEUTRAL }), "mouth_round") < 0.01);
-        let b = norm(&Pose {
-            brow: 0.45,
-            ..NEUTRAL
-        });
-        assert!(
-            sig(&b, "brow_r_raise") > 0.95
-                && sig(&b, "brow_l_raise") > 0.95
-                && sig(&b, "brow_raise") > 0.95
-        );
+        let b = norm(&Pose { brow: 0.45, ..NEUTRAL });
+        assert!(sig(&b, "brow_r_raise") > 0.95 && sig(&b, "brow_l_raise") > 0.95 && sig(&b, "brow_raise") > 0.95);
         assert!(sig(&norm(&NEUTRAL), "brow_raise") < 0.01);
         // one-sided blink: the other eye stays open
         let mut f = face(&NEUTRAL);
-        let c = face(&Pose {
-            eye: 0.0,
-            ..NEUTRAL
-        });
+        let c = face(&Pose { eye: 0.0, ..NEUTRAL });
         f[0..6].copy_from_slice(&c[0..6]);
         let n = normalise(&measure(&f, &cfg().geometry).unwrap(), &cal(), &cfg()).unwrap();
         assert!(sig(&n, "eye_r_open") < 0.05 && sig(&n, "eye_l_open") > 0.95);
@@ -1400,17 +1037,9 @@ mod tests {
 
     #[test]
     fn distance_does_not_matter() {
-        let f = face(&Pose {
-            eye: 0.07,
-            gap: 0.2,
-            yaw: 10.0,
-            ..NEUTRAL
-        });
+        let f = face(&Pose { eye: 0.07, gap: 0.2, yaw: 10.0, ..NEUTRAL });
         let g: Face = f.map(|p| Vec2::new(p.x * 0.37 + 11.0, p.y * 0.37 - 5.0));
-        let (a, b) = (
-            measure(&f, &cfg().geometry).unwrap(),
-            measure(&g, &cfg().geometry).unwrap(),
-        );
+        let (a, b) = (measure(&f, &cfg().geometry).unwrap(), measure(&g, &cfg().geometry).unwrap());
         for k in 0..9 {
             assert!((a[k] - b[k]).abs() < 1e-3, "{k}");
         }
@@ -1419,41 +1048,21 @@ mod tests {
     #[test]
     fn calibration_median_range_and_errors() {
         let mut rows = vec![raw(&NEUTRAL); 7];
-        rows.push(raw(&Pose {
-            eye: 0.0,
-            ..NEUTRAL
-        })); // an outlier among the neutral frames
+        rows.push(raw(&Pose { eye: 0.0, ..NEUTRAL })); // an outlier among the neutral frames
         let c = Calibration::from_rows(&rows, &[]).unwrap();
-        assert!(
-            (c.neutral["ear_r"] - 0.3).abs() < 1e-4,
-            "median ignores one outlier"
-        );
+        assert!((c.neutral["ear_r"] - 0.3).abs() < 1e-4, "median ignores one outlier");
         assert!(c.lo["ear_r"] < 0.3, "range sees the outlier");
-        assert!(Calibration::from_rows(&rows[..2], &[])
-            .unwrap_err()
-            .contains("at least 3"));
+        assert!(Calibration::from_rows(&rows[..2], &[]).unwrap_err().contains("at least 3"));
         // json round trip, missing key, non finite
         let j = serde_json::to_string(&c).unwrap();
         assert_eq!(Calibration::from_json(&j).unwrap(), c);
         let mut bad = c.clone();
         bad.hi.remove("mar");
-        assert!(
-            Calibration::from_json(&serde_json::to_string(&bad).unwrap())
-                .unwrap_err()
-                .contains("mar")
-        );
+        assert!(Calibration::from_json(&serde_json::to_string(&bad).unwrap()).unwrap_err().contains("mar"));
         assert!(Calibration::from_json("{").is_err());
         // without a blink in the calibration the eye uses the 25 % fallback
         let c2 = Calibration::from_rows(&[raw(&NEUTRAL); 3], &[]).unwrap();
-        let closed = normalise(
-            &raw(&Pose {
-                eye: 0.0,
-                ..NEUTRAL
-            }),
-            &c2,
-            &cfg(),
-        )
-        .unwrap();
+        let closed = normalise(&raw(&Pose { eye: 0.0, ..NEUTRAL }), &c2, &cfg()).unwrap();
         assert_eq!(sig(&closed, "eye_r_open"), 0.0);
         // degenerate default calibration keeps everything finite
         let nom = normalise(&raw(&NEUTRAL), &Calibration::nominal(), &cfg()).unwrap();
@@ -1470,21 +1079,12 @@ mod tests {
         };
         let xs: Vec<f32> = (0..600).map(|_| 0.5 + noise()).collect();
         let mut f = OneEuro::default();
-        let ys: Vec<f32> = xs
-            .iter()
-            .enumerate()
-            .map(|(i, x)| f.filter(*x, i as f32 / 60.0, 1.0, 0.0, 1.0))
-            .collect();
+        let ys: Vec<f32> = xs.iter().enumerate().map(|(i, x)| f.filter(*x, i as f32 / 60.0, 1.0, 0.0, 1.0)).collect();
         let sd = |v: &[f32]| {
             let m = v.iter().sum::<f32>() / v.len() as f32;
             (v.iter().map(|x| (x - m).powi(2)).sum::<f32>() / v.len() as f32).sqrt()
         };
-        assert!(
-            sd(&ys[60..]) < 0.4 * sd(&xs[60..]),
-            "{} vs {}",
-            sd(&ys[60..]),
-            sd(&xs[60..])
-        );
+        assert!(sd(&ys[60..]) < 0.4 * sd(&xs[60..]), "{} vs {}", sd(&ys[60..]), sd(&xs[60..]));
         // step response: time until 90 % of a unit step; a larger beta reacts faster
         let step = |beta: f32| {
             let mut f = OneEuro::default();
@@ -1517,17 +1117,7 @@ mod tests {
     }
 
     fn stream_from(poses: &[(f32, Option<Pose>)]) -> LandmarkStream {
-        LandmarkStream {
-            frames: poses
-                .iter()
-                .map(|(t, p)| LandmarkFrame {
-                    t: *t,
-                    face: p.as_ref().map(face),
-                })
-                .collect(),
-            warnings: vec![],
-            fps: None,
-        }
+        LandmarkStream { frames: poses.iter().map(|(t, p)| LandmarkFrame { t: *t, face: p.as_ref().map(face) }).collect(), warnings: vec![], fps: None }
     }
 
     /// 3 s at 30 fps: neutral for 1 s, then two blinks and a mouth opening.
@@ -1555,65 +1145,28 @@ mod tests {
         let b = events(&s, &cfg(), &c).unwrap();
         assert_eq!(a, b);
         assert_eq!(a.len(), 90 * SIGNALS.len());
-        assert!(a
-            .iter()
-            .all(|e| e.source == InputSource::Face && (0.0..=1.0).contains(&e.value)));
-        let mo: Vec<f32> = a
-            .iter()
-            .filter(|e| e.id == "mouth_open")
-            .map(|e| e.value)
-            .collect();
-        assert!(
-            mo[10] < 0.05 && mo.iter().cloned().fold(0.0, f32::max) > 0.8,
-            "{:?}",
-            &mo[..5]
-        );
-        let eyes: Vec<f32> = a
-            .iter()
-            .filter(|e| e.id == "eye_r_open")
-            .map(|e| e.value)
-            .collect();
-        assert!(
-            eyes[10] > 0.95 && eyes.iter().cloned().fold(1.0, f32::min) < 0.6,
-            "blink visible after smoothing"
-        );
+        assert!(a.iter().all(|e| e.source == InputSource::Face && (0.0..=1.0).contains(&e.value)));
+        let mo: Vec<f32> = a.iter().filter(|e| e.id == "mouth_open").map(|e| e.value).collect();
+        assert!(mo[10] < 0.05 && mo.iter().cloned().fold(0.0, f32::max) > 0.8, "{:?}", &mo[..5]);
+        let eyes: Vec<f32> = a.iter().filter(|e| e.id == "eye_r_open").map(|e| e.value).collect();
+        assert!(eyes[10] > 0.95 && eyes.iter().cloned().fold(1.0, f32::min) < 0.6, "blink visible after smoothing");
     }
 
     #[test]
     fn lost_frames_and_gaps() {
-        let mut v: Vec<(f32, Option<Pose>)> =
-            (0..10).map(|i| (i as f32 / 30.0, Some(NEUTRAL))).collect();
+        let mut v: Vec<(f32, Option<Pose>)> = (0..10).map(|i| (i as f32 / 30.0, Some(NEUTRAL))).collect();
         v[4].1 = None;
         let s = stream_from(&v);
         let ev = events(&s, &cfg(), &Calibration::nominal()).unwrap();
         assert_eq!(ev.len(), 9 * SIGNALS.len(), "a lost frame gives no events");
-        assert!(events(
-            &stream_from(&[(0.0, None)]),
-            &cfg(),
-            &Calibration::nominal()
-        )
-        .is_err());
+        assert!(events(&stream_from(&[(0.0, None)]), &cfg(), &Calibration::nominal()).is_err());
         // degenerate geometry (all points equal) counts as lost
-        let z = LandmarkStream {
-            frames: vec![LandmarkFrame {
-                t: 0.0,
-                face: Some([Vec2::new(1.0, 1.0); N]),
-            }],
-            ..Default::default()
-        };
+        let z = LandmarkStream { frames: vec![LandmarkFrame { t: 0.0, face: Some([Vec2::new(1.0, 1.0); N]) }], ..Default::default() };
         assert!(events(&z, &cfg(), &Calibration::nominal()).is_err());
         // after a long gap the filter restarts instead of gliding
         let mut tr = FaceTracker::new(cfg(), cal()).unwrap();
         tr.process(0.0, &face(&NEUTRAL)).unwrap();
-        let e = tr
-            .process(
-                5.0,
-                &face(&Pose {
-                    gap: 0.5,
-                    ..NEUTRAL
-                }),
-            )
-            .unwrap();
+        let e = tr.process(5.0, &face(&Pose { gap: 0.5, ..NEUTRAL })).unwrap();
         assert!(last_values(&e)["mouth_open"] > 0.95);
     }
 
@@ -1664,19 +1217,10 @@ mod tests {
 
     #[test]
     fn layouts_68_468_478_and_23_give_the_same_face() {
-        let p = Pose {
-            yaw: 10.0,
-            eye: 0.07,
-            ..NEUTRAL
-        };
+        let p = Pose { yaw: 10.0, eye: 0.07, ..NEUTRAL };
         let f23: Vec<[f32; 2]> = face(&p).iter().map(|q| [q.x, q.y]).collect();
         let want = face(&p);
-        for (pts, name) in [
-            (f23, "23"),
-            (frame68(&p), "68"),
-            (frame468(&p, 468), "468"),
-            (frame468(&p, 478), "478"),
-        ] {
+        for (pts, name) in [(f23, "23"), (frame68(&p), "68"), (frame468(&p, 468), "468"), (frame468(&p, 478), "478")] {
             let s = parse_ndjson(&line(0.0, &pts), 30.0, None).unwrap();
             assert_eq!(s.frames[0].face.unwrap(), want, "layout {name}");
         }
@@ -1685,11 +1229,7 @@ mod tests {
         let s = parse_ndjson(&format!("{hdr}\n{}", line(0.5, &frame68(&p))), 30.0, None).unwrap();
         assert_eq!(s.fps, Some(25.0));
         let short = &frame68(&p)[..60];
-        assert!(
-            parse_ndjson(&format!("{hdr}\n{}", line(0.5, short)), 30.0, None)
-                .unwrap_err()
-                .contains("needs at least 67")
-        );
+        assert!(parse_ndjson(&format!("{hdr}\n{}", line(0.5, short)), 30.0, None).unwrap_err().contains("needs at least 67"));
     }
 
     #[test]
@@ -1697,14 +1237,8 @@ mod tests {
         let p = Pose::clone(&NEUTRAL);
         let pts = frame68(&p);
         let flat: Vec<f32> = pts.iter().flat_map(|q| [q[0], q[1]]).collect();
-        let objs: Vec<Value> = pts
-            .iter()
-            .map(|q| serde_json::json!({"x": q[0], "y": q[1]}))
-            .collect();
-        let tri: Vec<Value> = pts
-            .iter()
-            .map(|q| serde_json::json!([q[0], q[1], 0.3]))
-            .collect();
+        let objs: Vec<Value> = pts.iter().map(|q| serde_json::json!({"x": q[0], "y": q[1]})).collect();
+        let tri: Vec<Value> = pts.iter().map(|q| serde_json::json!([q[0], q[1], 0.3])).collect();
         let mut named = serde_json::Map::new();
         for (i, n) in NAMES.iter().enumerate() {
             let q = face(&p)[i];
@@ -1728,30 +1262,15 @@ mod tests {
         let s = parse_ndjson(&text, 10.0, None).unwrap();
         assert_eq!(s.frames.len(), 6, "{:?}", s.warnings);
         assert!(s.warnings.len() >= 4, "{:?}", s.warnings);
-        assert!(
-            s.warnings.iter().any(|w| w.contains("not JSON"))
-                && s.warnings.iter().any(|w| w.contains("needs p or named"))
-        );
+        assert!(s.warnings.iter().any(|w| w.contains("not JSON")) && s.warnings.iter().any(|w| w.contains("needs p or named")));
         let t: Vec<f32> = s.frames.iter().map(|f| f.t).collect();
         assert!(s.warnings.iter().any(|w| w.contains("sorted")), "{t:?}");
-        assert!(
-            (t[0] - 0.0).abs() < 1e-6 || t.windows(2).all(|w| w[0] <= w[1]),
-            "sorted by time"
-        );
-        assert!(
-            s.frames.iter().any(|f| (f.t - 0.3).abs() < 1e-5),
-            "frame 3 at 10 fps = 0.3 s"
-        );
-        assert_eq!(
-            s.frames.iter().filter(|f| f.face.is_none()).count(),
-            1,
-            "null = lost"
-        );
+        assert!((t[0] - 0.0).abs() < 1e-6 || t.windows(2).all(|w| w[0] <= w[1]), "sorted by time");
+        assert!(s.frames.iter().any(|f| (f.t - 0.3).abs() < 1e-5), "frame 3 at 10 fps = 0.3 s");
+        assert_eq!(s.frames.iter().filter(|f| f.face.is_none()).count(), 1, "null = lost");
         // NaN as a string-free JSON cannot occur; a null coordinate is a lost frame
         let lost = r#"{"t":0,"p":[[null,1],[2,3]]}"#;
-        assert!(parse_ndjson(lost, 30.0, None).unwrap().frames[0]
-            .face
-            .is_none());
+        assert!(parse_ndjson(lost, 30.0, None).unwrap().frames[0].face.is_none());
     }
 
     #[test]
@@ -1770,16 +1289,10 @@ mod tests {
             ("garbage", "no usable"),
             (r#"{"format":"other"}"#, "unknown format"),
             (r#"{"format":"osatura-landmarks","version":2}"#, "version"),
-            (
-                r#"{"format":"osatura-landmarks","layout":"zzz"}"#,
-                "unknown layout",
-            ),
+            (r#"{"format":"osatura-landmarks","layout":"zzz"}"#, "unknown layout"),
             (r#"{"format":"osatura-landmarks","size":[0,5]}"#, "size"),
             (r#"{"format":"osatura-landmarks","fps":-1}"#, "fps"),
-            (
-                r#"{"format":"osatura-landmarks","layout":{"points":{"nose_tip":1}}}"#,
-                "missing index",
-            ),
+            (r#"{"format":"osatura-landmarks","layout":{"points":{"nose_tip":1}}}"#, "missing index"),
             (r#"{"t":0,"p":[[1,2],[3,4],[5,6]]}"#, "infer"),
         ] {
             let e = parse_ndjson(txt, 30.0, None).unwrap_err();
@@ -1792,8 +1305,7 @@ mod tests {
             pts.insert(n.to_string(), serde_json::json!(N - 1 - i));
         }
         let rev: Vec<[f32; 2]> = f.iter().rev().map(|q| [q.x, q.y]).collect();
-        let hdr =
-            serde_json::json!({"format":"osatura-landmarks","layout":{"points":pts}}).to_string();
+        let hdr = serde_json::json!({"format":"osatura-landmarks","layout":{"points":pts}}).to_string();
         let s = parse_ndjson(&format!("{hdr}\n{}", line(0.0, &rev)), 30.0, None).unwrap();
         assert_eq!(s.frames[0].face.unwrap(), f);
     }
@@ -1820,19 +1332,14 @@ mod tests {
         let (m, c) = parse_mapfile(MAP).unwrap();
         assert_eq!(c.mincutoff, 3.0);
         let s = performance();
-        let c = FaceConfig {
-            geometry: cfg().geometry,
-            ..c
-        };
+        let c = FaceConfig { geometry: cfg().geometry, ..c };
         let cal = calibrate(&s, &c, 25).unwrap();
         let mut p = proj();
         let r = bake(&mut p, &s, &m, &c, &cal, 0.05).unwrap();
         assert_eq!(r.channels, 1);
         assert_eq!(r.events, 2, "two blinks: {:?}", p.events);
         assert!(p.events.iter().all(|e| e.name == "blink"));
-        let Source::Keys { track } = &p.channels[0].source else {
-            panic!()
-        };
+        let Source::Keys { track } = &p.channels[0].source else { panic!() };
         assert!(track.keys.len() >= 3);
         crate::engine::Engine::new(p.clone()).unwrap();
         let (mid, rest) = (track.eval(45.0).unwrap(), track.eval(5.0).unwrap());
@@ -1843,36 +1350,18 @@ mod tests {
     fn bake_respects_locks_and_rejects_bad_maps() {
         let (m, c) = parse_mapfile(MAP).unwrap();
         let s = performance();
-        let c = FaceConfig {
-            geometry: cfg().geometry,
-            ..c
-        };
+        let c = FaceConfig { geometry: cfg().geometry, ..c };
         let cal = calibrate(&s, &c, 25).unwrap();
         let mut p = proj();
-        p.channels.push(crate::project::Channel::keys(
-            "jaw",
-            Prop::BoneAngle,
-            crate::anim::Track::with_keys(&[(0.0, 0.0, crate::anim::Ease::Linear)]),
-        ));
-        crate::chanmeta::set_meta(
-            &mut p,
-            "jaw",
-            Some(Prop::BoneAngle),
-            &crate::chanmeta::Change {
-                lock: Some(true),
-                ..Default::default()
-            },
-        )
-        .unwrap();
+        p.channels.push(crate::project::Channel::keys("jaw", Prop::BoneAngle, crate::anim::Track::with_keys(&[(0.0, 0.0, crate::anim::Ease::Linear)])));
+        crate::chanmeta::set_meta(&mut p, "jaw", Some(Prop::BoneAngle), &crate::chanmeta::Change { lock: Some(true), ..Default::default() }).unwrap();
         let before = p.clone();
         let e = bake(&mut p, &s, &m, &c, &cal, 0.05).unwrap_err();
         assert!(e.to_lowercase().contains("lock"), "{e}");
         assert_eq!(p, before, "untouched on error");
         let bad = MAP.replace("mouth_open", "mouth_opn");
         assert!(parse_mapfile(&bad).unwrap_err().contains("mouth_opn"));
-        assert!(parse_mapfile(&MAP.replace("eye_r_open", "eyeopen"))
-            .unwrap_err()
-            .contains("trigger"));
+        assert!(parse_mapfile(&MAP.replace("eye_r_open", "eyeopen")).unwrap_err().contains("trigger"));
         assert!(parse_mapfile("{").is_err());
         assert!(parse_mapfile(r#"{"face":{"deadzone":3}}"#).is_err());
         assert!(parse_mapfile(r#"{"face":{"mincutoff":"x"}}"#).is_err());

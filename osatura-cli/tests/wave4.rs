@@ -12,19 +12,8 @@ use std::process::Command;
 const BIN: &str = env!("CARGO_BIN_EXE_osatura");
 
 fn run_in(dir: &Path, args: &[&str]) -> (bool, String) {
-    let o = Command::new(BIN)
-        .current_dir(dir)
-        .args(args)
-        .output()
-        .expect("cannot start osatura");
-    (
-        o.status.success(),
-        format!(
-            "{}{}",
-            String::from_utf8_lossy(&o.stdout),
-            String::from_utf8_lossy(&o.stderr)
-        ),
-    )
+    let o = Command::new(BIN).current_dir(dir).args(args).output().expect("cannot start osatura");
+    (o.status.success(), format!("{}{}", String::from_utf8_lossy(&o.stdout), String::from_utf8_lossy(&o.stderr)))
 }
 
 fn write_png(path: &Path) {
@@ -43,10 +32,7 @@ fn image_project(dir: &Path) {
     let mut p = osatura_core::Project::new("img", 64.0, 64.0, 24.0, 12);
     p.layers.push(osatura_core::project::Layer::image(
         "pic",
-        osatura_core::project::ImageSource {
-            file: Some("img.png".into()),
-            png_base64: None,
-        },
+        osatura_core::project::ImageSource { file: Some("img.png".into()), png_base64: None },
         osatura_core::math::Vec2::ZERO,
     ));
     fs::write(dir.join("pr/p.json"), p.to_json_pretty()).unwrap();
@@ -58,10 +44,7 @@ fn h1_mirror_from_the_parent_directory_keeps_working() {
     let s = ScratchDir::new("osatura-w4-h1");
     image_project(&s);
     let (ok, t) = run_in(&s, &["mirror", "pr/p.json", "pr/o.json"]);
-    assert!(
-        ok,
-        "old behaviour: 'output would be invalid: ... img.png' -- {t}"
-    );
+    assert!(ok, "old behaviour: 'output would be invalid: ... img.png' -- {t}");
     assert!(run_in(&s, &["check", "pr/o.json"]).0);
 }
 
@@ -72,10 +55,7 @@ fn h1_output_in_a_parent_directory_gets_rewritten_paths() {
     let (ok, t) = run_in(&s, &["mirror", "pr/p.json", "o.json"]);
     assert!(ok, "{t}");
     let text = fs::read_to_string(s.join("o.json")).unwrap();
-    assert!(
-        text.contains("pr/img.png"),
-        "asset path not rewritten: {text}"
-    );
+    assert!(text.contains("pr/img.png"), "asset path not rewritten: {text}");
     let (ok, t) = run_in(&s, &["check", "o.json"]);
     assert!(ok, "rewritten output must not dangle: {t}");
 }
@@ -87,19 +67,13 @@ fn h1_output_in_a_sibling_directory_warns() {
     fs::create_dir_all(s.join("other")).unwrap();
     let (ok, t) = run_in(&s.join("pr"), &["mirror", "p.json", "../other/o.json"]);
     assert!(ok, "{t}");
-    assert!(
-        t.contains("warning") && t.contains("img.png") && t.contains("will not find it"),
-        "no warning about the dangling asset: {t}"
-    );
+    assert!(t.contains("warning") && t.contains("img.png") && t.contains("will not find it"), "no warning about the dangling asset: {t}");
 }
 
 /// A tiny project (no bones: `ci init` is fast on it) at `<dir>/d.json`.
 fn tiny(dir: &Path) -> String {
     let mut p = osatura_core::Project::new("tiny", 32.0, 32.0, 24.0, 4);
-    p.layers.push(osatura_core::project::Layer::vector(
-        "sq",
-        vec![osatura_core::path::VPath::rect("r", 2.0, 2.0, 20.0, 20.0).with_fill("#336699")],
-    ));
+    p.layers.push(osatura_core::project::Layer::vector("sq", vec![osatura_core::path::VPath::rect("r", 2.0, 2.0, 20.0, 20.0).with_fill("#336699")]));
     let path = dir.join("d.json");
     fs::write(&path, p.to_json_pretty()).unwrap();
     path.to_string_lossy().into_owned()
@@ -113,10 +87,7 @@ fn h3_ci_run_prune_as_last_argument() {
     let (ok, t) = run_in(&s, &["ci", "init", "d.json"]);
     assert!(ok, "{t}");
     let (ok, t) = run_in(&s, &["ci", "run", "--prune"]);
-    assert!(
-        !t.contains("needs a value"),
-        "old behaviour: --prune needs a value -- {t}"
-    );
+    assert!(!t.contains("needs a value"), "old behaviour: --prune needs a value -- {t}");
     assert!(ok, "{t}");
     let (ok, t) = run_in(&s, &["ci", "run", "--prune", "--quiet"]);
     assert!(ok, "{t}");
@@ -133,10 +104,7 @@ fn ci_accepts_global_flags_and_eq_form_after_the_subcommand() {
     assert!(ok, "{t}");
     assert!(s.join("j.xml").exists());
     let (ok, t) = run_in(&s, &["ci", "run", "--prune=yes"]);
-    assert!(
-        !ok && t.contains("--prune is a flag and takes no value"),
-        "{t}"
-    );
+    assert!(!ok && t.contains("--prune is a flag and takes no value"), "{t}");
 }
 
 #[test]
@@ -149,10 +117,7 @@ fn eq_form_and_subcommand_help() {
     let (ok, t) = run_in(&s, &["render", "d.json", "3", "o.png", "--bones=1"]);
     assert!(!ok && t.contains("--bones is a flag"), "{t}");
     let (ok, t) = run_in(&s, &["render", "--help"]);
-    assert!(
-        ok && t.starts_with("USAGE:") && t.contains("osatura render"),
-        "{t}"
-    );
+    assert!(ok && t.starts_with("USAGE:") && t.contains("osatura render"), "{t}");
     let (ok, t) = run_in(&s, &["render", "--version"]);
     assert!(ok && t.starts_with("osatura "), "{t}");
 }
@@ -161,11 +126,7 @@ fn eq_form_and_subcommand_help() {
 
 #[cfg(unix)]
 fn is_root() -> bool {
-    Command::new("id")
-        .arg("-u")
-        .output()
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim() == "0")
-        .unwrap_or(false)
+    Command::new("id").arg("-u").output().map(|o| String::from_utf8_lossy(&o.stdout).trim() == "0").unwrap_or(false)
 }
 
 /// The binary run as an unprivileged user (`nobody` through setpriv when the tests run as root); `None` when that is
@@ -177,27 +138,11 @@ fn unprivileged(dir: &Path, args: &[&str]) -> Option<(bool, String)> {
             eprintln!("setpriv missing: unprivileged test skipped");
             return None;
         }
-        Command::new("setpriv")
-            .args(["--reuid=65534", "--regid=65534", "--clear-groups", BIN])
-            .args(args)
-            .current_dir(dir)
-            .output()
-            .ok()?
+        Command::new("setpriv").args(["--reuid=65534", "--regid=65534", "--clear-groups", BIN]).args(args).current_dir(dir).output().ok()?
     } else {
-        Command::new(BIN)
-            .args(args)
-            .current_dir(dir)
-            .output()
-            .ok()?
+        Command::new(BIN).args(args).current_dir(dir).output().ok()?
     };
-    Some((
-        o.status.success(),
-        format!(
-            "{}{}",
-            String::from_utf8_lossy(&o.stdout),
-            String::from_utf8_lossy(&o.stderr)
-        ),
-    ))
+    Some((o.status.success(), format!("{}{}", String::from_utf8_lossy(&o.stdout), String::from_utf8_lossy(&o.stderr))))
 }
 
 #[cfg(unix)]
@@ -219,14 +164,8 @@ fn m5_write_into_a_read_only_directory_falls_back_to_overwriting_the_writable_fi
     let r = unprivileged(&s, &["mirror", &input, &out.to_string_lossy()]);
     chmod(&s, 0o755);
     let Some((ok, t)) = r else { return };
-    assert!(
-        ok,
-        "old behaviour: 'cannot create temporary file: Permission denied' -- {t}"
-    );
-    assert!(
-        fs::read_to_string(&out).unwrap().contains("\"name\""),
-        "file was rewritten in place"
-    );
+    assert!(ok, "old behaviour: 'cannot create temporary file: Permission denied' -- {t}");
+    assert!(fs::read_to_string(&out).unwrap().contains("\"name\""), "file was rewritten in place");
     // a file that is not writable either still fails with a clear message
     chmod(&out, 0o444);
     chmod(&s, 0o555);
@@ -245,20 +184,11 @@ fn m5_symbolic_link_outputs_are_refused_with_the_opt_in_named() {
     fs::write(&real, "old").unwrap();
     std::os::unix::fs::symlink(&real, s.join("link.json")).unwrap();
     let (ok, t) = run_in(&s, &["mirror", &input, "link.json"]);
-    assert!(
-        !ok && t.contains("--follow-symlinks") && t.contains("real.json"),
-        "{t}"
-    );
+    assert!(!ok && t.contains("--follow-symlinks") && t.contains("real.json"), "{t}");
     assert_eq!(fs::read_to_string(&real).unwrap(), "old");
     let (ok, t) = run_in(&s, &["mirror", &input, "link.json", "--follow-symlinks"]);
     assert!(ok, "{t}");
-    assert!(
-        fs::symlink_metadata(s.join("link.json"))
-            .unwrap()
-            .file_type()
-            .is_symlink(),
-        "the link itself is kept"
-    );
+    assert!(fs::symlink_metadata(s.join("link.json")).unwrap().file_type().is_symlink(), "the link itself is kept");
     assert!(fs::read_to_string(&real).unwrap().contains("\"name\""));
 }
 
@@ -270,22 +200,10 @@ fn h1_other_commands_resolve_assets_against_the_input_directory() {
     for args in [
         vec!["size-report", "pr/p.json"],
         vec!["export-oca", "pr/p.json", "oca"],
-        vec![
-            "lod",
-            "pr/p.json",
-            "--tolerance-px",
-            "1",
-            "--levels",
-            "2",
-            "--out-dir",
-            "lodo",
-        ],
+        vec!["lod", "pr/p.json", "--tolerance-px", "1", "--levels", "2", "--out-dir", "lodo"],
     ] {
         let (ok, t) = run_in(&s, &args);
-        assert!(
-            ok && !t.contains("img.png"),
-            "old behaviour: asset looked up in the current directory: {args:?} -- {t}"
-        );
+        assert!(ok && !t.contains("img.png"), "old behaviour: asset looked up in the current directory: {args:?} -- {t}");
     }
 }
 
@@ -316,21 +234,10 @@ fn pick_tolerance_must_be_a_finite_non_negative_number() {
     let s = ScratchDir::new("osatura-w4-pick");
     let d = tiny(&s);
     for bad in ["-1", "NaN"] {
-        let (ok, t) = run_in(
-            &s,
-            &[
-                "pick", &d, "--frame", "0", "--x", "5", "--y", "5", "--tol", bad,
-            ],
-        );
+        let (ok, t) = run_in(&s, &["pick", &d, "--frame", "0", "--x", "5", "--y", "5", "--tol", bad]);
         assert!(!ok && t.contains("--tol"), "{bad}: {t}");
     }
-    assert!(
-        run_in(
-            &s,
-            &["pick", &d, "--frame", "0", "--x", "5", "--y", "5", "--tol", "2"]
-        )
-        .0
-    );
+    assert!(run_in(&s, &["pick", &d, "--frame", "0", "--x", "5", "--y", "5", "--tol", "2"]).0);
 }
 
 #[test]
@@ -338,15 +245,9 @@ fn fuzz_rejects_unknown_bones_and_frames_out_of_range() {
     let s = ScratchDir::new("osatura-w4-fuzz");
     let p = s.join("d.json").to_string_lossy().into_owned();
     assert!(run_in(&s, &["demo", &p]).0);
-    let (ok, t) = run_in(
-        &s,
-        &["fuzz", "d.json", "--samples", "2", "--only", "no_such_bone"],
-    );
+    let (ok, t) = run_in(&s, &["fuzz", "d.json", "--samples", "2", "--only", "no_such_bone"]);
     assert!(!ok && t.contains("no_such_bone"), "{t}");
-    let (ok, t) = run_in(
-        &s,
-        &["fuzz", "d.json", "--samples", "2", "--frame", "99999"],
-    );
+    let (ok, t) = run_in(&s, &["fuzz", "d.json", "--samples", "2", "--frame", "99999"]);
     assert!(!ok && t.contains("frame"), "{t}");
 }
 
@@ -359,14 +260,7 @@ fn m1_studio_accepts_https_origin_of_an_allowed_host_only() {
     let d = tiny(&s);
     let mut child = Command::new(BIN)
         .current_dir(&s)
-        .args([
-            "studio",
-            &d,
-            "--port",
-            "0",
-            "--allow-host",
-            "studio.example.org",
-        ])
+        .args(["studio", &d, "--port", "0", "--allow-host", "studio.example.org"])
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()
@@ -379,13 +273,7 @@ fn m1_studio_accepts_https_origin_of_an_allowed_host_only() {
             break;
         }
         if let Some(i) = l.find("127.0.0.1:") {
-            port = l[i + 10..]
-                .trim()
-                .split(|c: char| !c.is_ascii_digit())
-                .next()
-                .unwrap()
-                .parse()
-                .unwrap_or(0);
+            port = l[i + 10..].trim().split(|c: char| !c.is_ascii_digit()).next().unwrap().parse().unwrap_or(0);
             if port != 0 {
                 break;
             }
@@ -404,10 +292,7 @@ fn m1_studio_accepts_https_origin_of_an_allowed_host_only() {
     let other = ask("https://evil.example.com");
     let _ = child.kill();
     let _ = child.wait();
-    assert!(
-        !https.contains("403"),
-        "old behaviour: https origin refused -- {https}"
-    );
+    assert!(!https.contains("403"), "old behaviour: https origin refused -- {https}");
     assert!(other.contains("403"), "{other}");
 }
 

@@ -20,29 +20,16 @@ pub fn triangulate(pts: &[Vec2]) -> Vec<[usize; 3]> {
     if !(3..=MAX_TRIANGULATE_POINTS).contains(&n) {
         return vec![];
     }
-    let area: f32 = (0..n)
-        .map(|i| pts[i].x * pts[(i + 1) % n].y - pts[(i + 1) % n].x * pts[i].y)
-        .sum::<f32>()
-        * 0.5;
-    let order: Vec<usize> = if area >= 0.0 {
-        (0..n).collect()
-    } else {
-        (0..n).rev().collect()
-    };
+    let area: f32 = (0..n).map(|i| pts[i].x * pts[(i + 1) % n].y - pts[(i + 1) % n].x * pts[i].y).sum::<f32>() * 0.5;
+    let order: Vec<usize> = if area >= 0.0 { (0..n).collect() } else { (0..n).rev().collect() };
     // f64: with f32 the cross product of neighbouring points of a fine polygon is rounding noise and half of its
     // convex corners would look reflex
-    let cross = |a: Vec2, b: Vec2, c: Vec2| {
-        (b.x as f64 - a.x as f64) * (c.y as f64 - a.y as f64)
-            - (b.y as f64 - a.y as f64) * (c.x as f64 - a.x as f64)
-    };
-    let inside = |p: Vec2, a: Vec2, b: Vec2, c: Vec2| {
-        cross(a, b, p) >= 0.0 && cross(b, c, p) >= 0.0 && cross(c, a, p) >= 0.0
-    };
+    let cross = |a: Vec2, b: Vec2, c: Vec2| (b.x as f64 - a.x as f64) * (c.y as f64 - a.y as f64) - (b.y as f64 - a.y as f64) * (c.x as f64 - a.x as f64);
+    let inside = |p: Vec2, a: Vec2, b: Vec2, c: Vec2| cross(a, b, p) >= 0.0 && cross(b, c, p) >= 0.0 && cross(c, a, p) >= 0.0;
     let at = |k: usize| pts[order[k]];
     let mut prev: Vec<usize> = (0..n).map(|k| (k + n - 1) % n).collect();
     let mut next: Vec<usize> = (0..n).map(|k| (k + 1) % n).collect();
-    let convex =
-        |k: usize, prev: &[usize], next: &[usize]| cross(at(prev[k]), at(k), at(next[k])) > 1e-12;
+    let convex = |k: usize, prev: &[usize], next: &[usize]| cross(at(prev[k]), at(k), at(next[k])) > 1e-12;
     let mut is_reflex: Vec<bool> = (0..n).map(|k| !convex(k, &prev, &next)).collect();
     // The reflex vertices sit in a uniform grid, so an ear is tested only against the few that are near it. (Even a
     // finely subdivided circle has many reflex corners in f32: coordinate rounding is larger than its sagitta.)
@@ -54,12 +41,7 @@ pub fn triangulate(pts: &[Vec2]) -> Vec<[usize; 3]> {
     }
     let g = ((nr as f32).sqrt().ceil() as usize).clamp(1, 1024);
     let (w, h) = ((hi.x - lo.x).max(1e-9), (hi.y - lo.y).max(1e-9));
-    let cell_of = |p: Vec2| -> (usize, usize) {
-        (
-            (((p.x - lo.x) / w * g as f32) as usize).min(g - 1),
-            (((p.y - lo.y) / h * g as f32) as usize).min(g - 1),
-        )
-    };
+    let cell_of = |p: Vec2| -> (usize, usize) { ((((p.x - lo.x) / w * g as f32) as usize).min(g - 1), (((p.y - lo.y) / h * g as f32) as usize).min(g - 1)) };
     let mut cells: Vec<Vec<u32>> = vec![Vec::new(); g * g];
     // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
     #[allow(clippy::needless_range_loop)]
@@ -77,14 +59,8 @@ pub fn triangulate(pts: &[Vec2]) -> Vec<[usize; 3]> {
         let (a, c) = (prev[cur], next[cur]);
         let ear = !is_reflex[cur] && {
             let (pa, pb, pc) = (at(a), at(cur), at(c));
-            let (x0, y0) = cell_of(Vec2::new(
-                pa.x.min(pb.x).min(pc.x),
-                pa.y.min(pb.y).min(pc.y),
-            ));
-            let (x1, y1) = cell_of(Vec2::new(
-                pa.x.max(pb.x).max(pc.x),
-                pa.y.max(pb.y).max(pc.y),
-            ));
+            let (x0, y0) = cell_of(Vec2::new(pa.x.min(pb.x).min(pc.x), pa.y.min(pb.y).min(pc.y)));
+            let (x1, y1) = cell_of(Vec2::new(pa.x.max(pb.x).max(pc.x), pa.y.max(pb.y).max(pc.y)));
             let mut blocked = false;
             'scan: for cy in y0..=y1 {
                 for cx in x0..=x1 {
@@ -92,13 +68,7 @@ pub fn triangulate(pts: &[Vec2]) -> Vec<[usize; 3]> {
                     work += cell.len() + 1;
                     for &j in cell {
                         let j = j as usize;
-                        if !removed[j]
-                            && is_reflex[j]
-                            && j != a
-                            && j != cur
-                            && j != c
-                            && inside(at(j), pa, pb, pc)
-                        {
+                        if !removed[j] && is_reflex[j] && j != a && j != cur && j != c && inside(at(j), pa, pb, pc) {
                             blocked = true;
                             break 'scan;
                         }
@@ -163,20 +133,11 @@ impl Bin {
         }
         let off = self.data.len();
         self.data.extend_from_slice(bytes);
-        self.views
-            .push(json!({"buffer": 0, "byteOffset": off, "byteLength": bytes.len()}));
+        self.views.push(json!({"buffer": 0, "byteOffset": off, "byteLength": bytes.len()}));
         self.views.len() - 1
     }
 
-    pub(super) fn add(
-        &mut self,
-        bytes: &[u8],
-        component: u32,
-        count: usize,
-        ty: &str,
-        min_max: Option<(Vec<f32>, Vec<f32>)>,
-        target: Option<u32>,
-    ) -> usize {
+    pub(super) fn add(&mut self, bytes: &[u8], component: u32, count: usize, ty: &str, min_max: Option<(Vec<f32>, Vec<f32>)>, target: Option<u32>) -> usize {
         while !self.data.len().is_multiple_of(4) {
             self.data.push(0);
         }
@@ -211,28 +172,13 @@ pub(super) fn trs(m: Affine2, parent: Option<Affine2>) -> ([f32; 3], [f32; 4], [
     let sx = l.a.hypot(l.b).max(1e-6);
     let sy = (l.a * l.d - l.b * l.c) / sx;
     let half = -rot * 0.5; // y flip negates the angle
-    (
-        [l.tx, -l.ty, 0.0],
-        [0.0, 0.0, half.sin(), half.cos()],
-        [sx, sy, 1.0],
-    )
+    ([l.tx, -l.ty, 0.0], [0.0, 0.0, half.sin(), half.cos()], [sx, sy, 1.0])
 }
 
-pub(super) fn collect_shapes<'a>(
-    ls: &'a [Layer],
-    prefix: &str,
-    out: &mut Vec<(&'a Layer, String)>,
-) {
+pub(super) fn collect_shapes<'a>(ls: &'a [Layer], prefix: &str, out: &mut Vec<(&'a Layer, String)>) {
     for l in ls {
-        let path = if prefix.is_empty() {
-            l.name.clone()
-        } else {
-            format!("{prefix}/{}", l.name)
-        };
-        if matches!(
-            l.kind,
-            LayerKind::Vector { .. } | LayerKind::Boolean { .. } | LayerKind::Image { .. }
-        ) {
+        let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
+        if matches!(l.kind, LayerKind::Vector { .. } | LayerKind::Boolean { .. } | LayerKind::Image { .. }) {
             out.push((l, path.clone()));
         }
         if let LayerKind::Group { layers } | LayerKind::Selector { layers, .. } = &l.kind {
@@ -285,11 +231,7 @@ pub(super) fn add_mix(mix: &mut Vec<(usize, f32)>, bi: usize, w: f32) {
 }
 
 /// Skin mix per flattened point of `wp` (the source path): weights interpolated along the segment.
-pub(super) fn skin_table(
-    wp: &VPath,
-    tp: &[(Vec2, usize, f32)],
-    bone_ix: &HashMap<&str, usize>,
-) -> Vec<Mix> {
+pub(super) fn skin_table(wp: &VPath, tp: &[(Vec2, usize, f32)], bone_ix: &HashMap<&str, usize>) -> Vec<Mix> {
     tp.iter()
         .map(|&(_, seg, t)| {
             let a0 = &wp.anchors[seg % wp.anchors.len()];
@@ -325,11 +267,7 @@ impl Soup {
     }
     /// Adds a triangle, wound counter-clockwise in layer space (positive cross).
     pub(super) fn tri(&mut self, a: u32, b: u32, c: u32) {
-        let (pa, pb, pc) = (
-            self.pos[a as usize],
-            self.pos[b as usize],
-            self.pos[c as usize],
-        );
+        let (pa, pb, pc) = (self.pos[a as usize], self.pos[b as usize], self.pos[c as usize]);
         let z = cr(pb - pa, pc - pa);
         if z.abs() < 1e-12 {
             return;
@@ -345,14 +283,7 @@ const MITER_LIMIT: f32 = 4.0;
 
 pub(super) const MAX_DASHES: f32 = 20_000.0;
 
-pub(super) fn dash_runs(
-    pts: &[Vec2],
-    cum: &[f32],
-    total: f32,
-    closed: bool,
-    dash: &[f32],
-    offset: f32,
-) -> Vec<(Vec<Pt>, bool)> {
+pub(super) fn dash_runs(pts: &[Vec2], cum: &[f32], total: f32, closed: bool, dash: &[f32], offset: f32) -> Vec<(Vec<Pt>, bool)> {
     let n = pts.len();
     let ne = if closed { n } else { n - 1 };
     let cycle: f32 = dash.iter().sum();
@@ -385,13 +316,7 @@ pub(super) fn dash_runs(
         if len < 1e-9 {
             continue;
         }
-        let at = |u: f32| -> Pt {
-            (
-                pts[a].lerp(pts[b], u / len),
-                (cum[a] + u).min(total),
-                if u < len * 0.5 { a } else { b },
-            )
-        };
+        let at = |u: f32| -> Pt { (pts[a].lerp(pts[b], u / len), (cum[a] + u).min(total), if u < len * 0.5 { a } else { b }) };
         let mut u = 0.0f32;
         while u < len - 1e-7 {
             let step = rem.min(len - u);
@@ -419,27 +344,16 @@ pub(super) fn dash_runs(
 /// Triangulate a stroke of `style` along the polyline `pts` (layer space).
 pub(super) fn build_stroke(pts: &[Vec2], closed: bool, style: &StrokeStyle) -> Option<Soup> {
     let n = pts.len();
-    if n < 2
-        || (style.width.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater))
-        || !style.width.is_finite()
-    {
+    if n < 2 || (style.width.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)) || !style.width.is_finite() {
         return None;
     }
     let mut cum = vec![0.0f32; n];
     for i in 1..n {
         cum[i] = cum[i - 1] + pts[i].distance(pts[i - 1]);
     }
-    let total = (cum[n - 1]
-        + if closed {
-            pts[n - 1].distance(pts[0])
-        } else {
-            0.0
-        })
-    .max(1e-6);
+    let total = (cum[n - 1] + if closed { pts[n - 1].distance(pts[0]) } else { 0.0 }).max(1e-6);
     let mut soup = Soup::default();
-    let dash_ok = style.dash.len() >= 2
-        && style.dash.len().is_multiple_of(2)
-        && style.dash.iter().all(|d| *d > 0.0 && d.is_finite());
+    let dash_ok = style.dash.len() >= 2 && style.dash.len().is_multiple_of(2) && style.dash.iter().all(|d| *d > 0.0 && d.is_finite());
     let cycle: f32 = style.dash.iter().sum();
     let mut runs: Vec<(Vec<Pt>, bool)> = Vec::new();
     if dash_ok && total / cycle * (style.dash.len() / 2) as f32 <= MAX_DASHES {
@@ -456,13 +370,7 @@ pub(super) fn build_stroke(pts: &[Vec2], closed: bool, style: &StrokeStyle) -> O
     Some(soup)
 }
 
-pub(super) fn add_run(
-    out: &mut Soup,
-    mut q: Vec<Pt>,
-    mut wrap: bool,
-    style: &StrokeStyle,
-    total: f32,
-) {
+pub(super) fn add_run(out: &mut Soup, mut q: Vec<Pt>, mut wrap: bool, style: &StrokeStyle, total: f32) {
     q.dedup_by(|a, b| a.0.distance(b.0) < 1e-4);
     if wrap {
         if q.len() >= 2 && q[0].0.distance(q[q.len() - 1].0) < 1e-4 {
@@ -478,8 +386,7 @@ pub(super) fn add_run(
     let dir_of = |q: &[Pt], a: usize, b: usize| (q[b].0 - q[a].0).normalized();
     if wrap {
         let m = q.len();
-        let corner =
-            |k: usize| dir_of(&q, (k + m - 1) % m, k).dot(dir_of(&q, k, (k + 1) % m)) < COS_SMOOTH;
+        let corner = |k: usize| dir_of(&q, (k + m - 1) % m, k).dot(dir_of(&q, k, (k + 1) % m)) < COS_SMOOTH;
         if let Some(k0) = (0..m).find(|&k| corner(k)) {
             q.rotate_left(k0);
         }
@@ -505,10 +412,8 @@ pub(super) fn add_run(
             None
         }
     };
-    let is_corner =
-        |j: usize| matches!((d_in(j), d_out(j)), (Some(a), Some(b)) if a.dot(b) < COS_SMOOTH);
-    let hw =
-        |j: usize| 0.5 * style.width * profile_at(&style.width_profile, q[j].1 / total).max(0.0);
+    let is_corner = |j: usize| matches!((d_in(j), d_out(j)), (Some(a), Some(b)) if a.dot(b) < COS_SMOOTH);
+    let hw = |j: usize| 0.5 * style.width * profile_at(&style.width_profile, q[j].1 / total).max(0.0);
     let mut splits = vec![0usize];
     splits.extend((1..last).filter(|&j| is_corner(j)));
     splits.push(last);
@@ -555,9 +460,7 @@ pub(super) fn add_run(
         if !is_corner(j) {
             continue;
         }
-        let (Some(di), Some(dout)) = (d_in(j), d_out(j)) else {
-            continue;
-        };
+        let (Some(di), Some(dout)) = (d_in(j), d_out(j)) else { continue };
         let (v, h, src) = (q[j].0, hw(j), q[j].2);
         let sigma = if cr(di, dout) > 0.0 { -1.0 } else { 1.0 };
         let (n0, n1) = (nrm(di) * sigma, nrm(dout) * sigma);
@@ -582,14 +485,7 @@ pub(super) fn add_run(
                 let steps = ((delta.abs() / (std::f32::consts::PI / 12.0)).ceil() as usize).max(1);
                 let mut prev = va;
                 for s in 1..=steps {
-                    let cur = if s == steps {
-                        vb
-                    } else {
-                        out.vert(
-                            v + Vec2::from_angle(a0 + delta * s as f32 / steps as f32) * h,
-                            src,
-                        )
-                    };
+                    let cur = if s == steps { vb } else { out.vert(v + Vec2::from_angle(a0 + delta * s as f32 / steps as f32) * h, src) };
                     out.tri(vc, prev, cur);
                     prev = cur;
                 }
@@ -606,10 +502,7 @@ pub(super) fn add_run(
                 Cap::Butt => {}
                 Cap::Square => {
                     let (a, b) = (out.vert(v + n * h, src), out.vert(v - n * h, src));
-                    let (c, e) = (
-                        out.vert(v + n * h + d * h, src),
-                        out.vert(v - n * h + d * h, src),
-                    );
+                    let (c, e) = (out.vert(v + n * h + d * h, src), out.vert(v - n * h + d * h, src));
                     out.tri(a, b, c);
                     out.tri(b, e, c);
                 }
@@ -619,12 +512,7 @@ pub(super) fn add_run(
                     let steps = 12;
                     let mut prev = out.vert(v + n * h, src);
                     for s in 1..=steps {
-                        let cur = out.vert(
-                            v + Vec2::from_angle(
-                                a0 - std::f32::consts::PI * s as f32 / steps as f32,
-                            ) * h,
-                            src,
-                        );
+                        let cur = out.vert(v + Vec2::from_angle(a0 - std::f32::consts::PI * s as f32 / steps as f32) * h, src);
                         out.tri(vc, prev, cur);
                         prev = cur;
                     }

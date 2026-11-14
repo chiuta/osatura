@@ -118,53 +118,24 @@ pub fn tri_affine(from: [Vec2; 3], to: [Vec2; 3]) -> Option<Affine2> {
 }
 
 impl Affine2 {
-    pub const IDENTITY: Affine2 = Affine2 {
-        a: 1.0,
-        b: 0.0,
-        c: 0.0,
-        d: 1.0,
-        tx: 0.0,
-        ty: 0.0,
-    };
+    pub const IDENTITY: Affine2 = Affine2 { a: 1.0, b: 0.0, c: 0.0, d: 1.0, tx: 0.0, ty: 0.0 };
 
     pub fn translate(v: Vec2) -> Self {
-        Affine2 {
-            tx: v.x,
-            ty: v.y,
-            ..Self::IDENTITY
-        }
+        Affine2 { tx: v.x, ty: v.y, ..Self::IDENTITY }
     }
     pub fn rotate(radians: f32) -> Self {
         let (s, c) = radians.sin_cos();
-        Affine2 {
-            a: c,
-            b: s,
-            c: -s,
-            d: c,
-            tx: 0.0,
-            ty: 0.0,
-        }
+        Affine2 { a: c, b: s, c: -s, d: c, tx: 0.0, ty: 0.0 }
     }
     pub fn scale(s: f32) -> Self {
-        Affine2 {
-            a: s,
-            d: s,
-            ..Self::IDENTITY
-        }
+        Affine2 { a: s, d: s, ..Self::IDENTITY }
     }
     pub fn scale_xy(sx: f32, sy: f32) -> Self {
-        Affine2 {
-            a: sx,
-            d: sy,
-            ..Self::IDENTITY
-        }
+        Affine2 { a: sx, d: sy, ..Self::IDENTITY }
     }
     /// Horizontal shear: `x' = x + tan(radians)·y`.
     pub fn shear_x(radians: f32) -> Self {
-        Affine2 {
-            c: radians.tan(),
-            ..Self::IDENTITY
-        }
+        Affine2 { c: radians.tan(), ..Self::IDENTITY }
     }
 
     /// Composition: `self ∘ rhs` — `rhs` is applied first, then `self`.
@@ -182,10 +153,7 @@ impl Affine2 {
     }
 
     pub fn apply(&self, p: Vec2) -> Vec2 {
-        Vec2::new(
-            self.a * p.x + self.c * p.y + self.tx,
-            self.b * p.x + self.d * p.y + self.ty,
-        )
+        Vec2::new(self.a * p.x + self.c * p.y + self.tx, self.b * p.x + self.d * p.y + self.ty)
     }
 
     /// Rotation of the transformed x axis, in radians (exact for uniform scale).
@@ -238,8 +206,7 @@ mod tests {
     #[test]
     fn composition_order() {
         // rotate 90° first, then translate: (1,0) -> (0,1) -> (5,1)
-        let m = Affine2::translate(Vec2::new(5.0, 0.0))
-            .mul(Affine2::rotate(std::f32::consts::FRAC_PI_2));
+        let m = Affine2::translate(Vec2::new(5.0, 0.0)).mul(Affine2::rotate(std::f32::consts::FRAC_PI_2));
         assert!(close(m.apply(Vec2::new(1.0, 0.0)), Vec2::new(5.0, 1.0)));
     }
 

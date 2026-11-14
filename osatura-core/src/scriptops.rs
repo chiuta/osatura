@@ -105,13 +105,8 @@ fn vec_at<'a>(root: &'a mut Vec<Layer>, parent: &str) -> Result<&'a mut Vec<Laye
     }
     let mut cur = root;
     for seg in parent.split('/') {
-        let i = cur
-            .iter()
-            .position(|l| l.name == seg)
-            .ok_or_else(|| format!("no layer '{parent}'"))?;
-        cur = cur[i]
-            .children_mut()
-            .ok_or_else(|| format!("layer '{parent}' is not a group or switch"))?;
+        let i = cur.iter().position(|l| l.name == seg).ok_or_else(|| format!("no layer '{parent}'"))?;
+        cur = cur[i].children_mut().ok_or_else(|| format!("layer '{parent}' is not a group or switch"))?;
     }
     Ok(cur)
 }
@@ -130,21 +125,14 @@ pub fn find_layer<'a>(ls: &'a [Layer], path: &str) -> Option<&'a Layer> {
 fn find_layer_mut<'a>(ls: &'a mut Vec<Layer>, path: &str) -> Result<&'a mut Layer, String> {
     let (parent, name) = split_path(path);
     let v = vec_at(ls, parent)?;
-    v.iter_mut()
-        .find(|l| l.name == name)
-        .ok_or_else(|| format!("no layer '{path}'"))
+    v.iter_mut().find(|l| l.name == name).ok_or_else(|| format!("no layer '{path}'"))
 }
 
 /// Create a group (or switch) holding the existing layers `members` (paths in one container, adjacent
 /// to each other). The wrapper replaces them at the position of the first one, so the draw order
 /// is unchanged; it has an identity transform so every member keeps its world transform. Members keep
 /// their own relative order (not the order of the list).
-pub fn wrap_layers(
-    p: &mut Project,
-    name: &str,
-    members: &[String],
-    kind: Wrap,
-) -> Result<(), String> {
+pub fn wrap_layers(p: &mut Project, name: &str, members: &[String], kind: Wrap) -> Result<(), String> {
     if name.is_empty() || name.contains('/') || name.contains("::") {
         return Err(format!("bad layer name '{name}'"));
     }
@@ -165,10 +153,7 @@ pub fn wrap_layers(
     for m in members {
         let (pp, n) = split_path(m);
         if pp != parent {
-            return Err(format!(
-                "'{m}' is not in the same container as '{}'",
-                members[0]
-            ));
+            return Err(format!("'{m}' is not in the same container as '{}'", members[0]));
         }
         if names.contains(&n) {
             return Err(format!("layer '{m}' listed twice"));
@@ -179,22 +164,13 @@ pub fn wrap_layers(
     let v = vec_at(&mut p.layers, &parent)?;
     let mut idx: Vec<usize> = Vec::new();
     for n in &names {
-        idx.push(
-            v.iter()
-                .position(|l| l.name == *n)
-                .ok_or_else(|| format!("no layer '{}'", join(&parent, n)))?,
-        );
+        idx.push(v.iter().position(|l| l.name == *n).ok_or_else(|| format!("no layer '{}'", join(&parent, n)))?);
     }
     idx.sort_unstable();
     if idx.windows(2).any(|w| w[1] != w[0] + 1) {
-        return Err(
-            "the layers must be adjacent in the draw order (other layers lie between them)".into(),
-        );
+        return Err("the layers must be adjacent in the draw order (other layers lie between them)".into());
     }
-    if v.iter()
-        .enumerate()
-        .any(|(i, l)| l.name == name && !idx.contains(&i))
-    {
+    if v.iter().enumerate().any(|(i, l)| l.name == name && !idx.contains(&i)) {
         return Err(format!("a layer named '{name}' already exists there"));
     }
     let children: Vec<Layer> = v.drain(idx[0]..=idx[idx.len() - 1]).collect();
@@ -243,10 +219,7 @@ pub fn move_layer(p: &mut Project, path: &str, new_parent: &str) -> Result<(), S
     }
     let (parent, name) = split_path(path);
     let v = vec_at(&mut p.layers, parent)?;
-    let i = v
-        .iter()
-        .position(|l| l.name == name)
-        .ok_or_else(|| format!("no layer '{path}'"))?;
+    let i = v.iter().position(|l| l.name == name).ok_or_else(|| format!("no layer '{path}'"))?;
     let l = v.remove(i);
     let dest = vec_at(&mut p.layers, new_parent)?;
     if dest.iter().any(|x| x.name == name) {
@@ -262,10 +235,7 @@ trait ChildProbe {
 }
 impl ChildProbe for Layer {
     fn children_mut_probe(&self) -> bool {
-        matches!(
-            self.kind,
-            LayerKind::Group { .. } | LayerKind::Selector { .. }
-        )
+        matches!(self.kind, LayerKind::Group { .. } | LayerKind::Selector { .. })
     }
 }
 
@@ -274,10 +244,7 @@ impl ChildProbe for Layer {
 pub fn delete_layer(p: &mut Project, path: &str) -> Result<(), String> {
     let (parent, name) = split_path(path);
     let v = vec_at(&mut p.layers, parent)?;
-    let i = v
-        .iter()
-        .position(|l| l.name == name)
-        .ok_or_else(|| format!("no layer '{path}'"))?;
+    let i = v.iter().position(|l| l.name == name).ok_or_else(|| format!("no layer '{path}'"))?;
     v.remove(i);
     let gone = |s: &str| rw(s, path, "").is_some();
     p.channels.retain(|c| !gone(&c.target));
@@ -306,18 +273,11 @@ fn rides(ls: &[Layer], bone: &str) -> Option<String> {
 /// Delete a bone that nothing else needs: no child bones, IK chains, constraints, springs or layers
 /// riding it. Its own channels and overlay ranges are removed with it.
 pub fn delete_bone(p: &mut Project, name: &str) -> Result<(), String> {
-    let i = p
-        .bones
-        .iter()
-        .position(|b| b.name == name)
-        .ok_or_else(|| format!("no bone '{name}'"))?;
+    let i = p.bones.iter().position(|b| b.name == name).ok_or_else(|| format!("no bone '{name}'"))?;
     if let Some(c) = p.bones.iter().find(|b| b.parent.as_deref() == Some(name)) {
         return Err(format!("bone '{name}' is the parent of '{}'", c.name));
     }
-    if let Some(c) =
-        p.ik.iter()
-            .find(|c| c.target == name || c.bones.iter().any(|b| b == name))
-    {
+    if let Some(c) = p.ik.iter().find(|c| c.target == name || c.bones.iter().any(|b| b == name)) {
         return Err(format!("bone '{name}' is used by IK chain '{}'", c.name));
     }
     use crate::project::ConstraintKind as K;
@@ -337,9 +297,7 @@ pub fn delete_bone(p: &mut Project, name: &str) -> Result<(), String> {
         return Err(format!("layer '{l}' rides bone '{name}'"));
     }
     p.bones.remove(i);
-    p.channels.retain(|c| {
-        !(c.prop.target_kind() == crate::project::TargetKind::Bone && c.target == name)
-    });
+    p.channels.retain(|c| !(c.prop.target_kind() == crate::project::TargetKind::Bone && c.target == name));
     p.channel_meta.retain(|m| m.target != name);
     p.bone_vis.retain(|b| b.bone != name);
     Ok(())
@@ -396,11 +354,7 @@ pub fn set_layer_prop(p: &mut Project, path: &str, prop: &str, v: &Val) -> Resul
 
 /// Set a static bone property (rest pose in the parent's space; children follow).
 pub fn set_bone_prop(p: &mut Project, name: &str, prop: &str, v: &Val) -> Result<(), String> {
-    let b = p
-        .bones
-        .iter_mut()
-        .find(|b| b.name == name)
-        .ok_or_else(|| format!("no bone '{name}'"))?;
+    let b = p.bones.iter_mut().find(|b| b.name == name).ok_or_else(|| format!("no bone '{name}'"))?;
     match prop {
         "length" => {
             let x = v.num(prop)?;
@@ -425,11 +379,7 @@ pub fn set_bone_prop(p: &mut Project, name: &str, prop: &str, v: &Val) -> Result
             }
             b.angle_limits = Some(lim);
         }
-        _ => {
-            return Err(format!(
-                "unknown bone property '{prop}' (length, x, y, angle, angle_min, angle_max)"
-            ))
-        }
+        _ => return Err(format!("unknown bone property '{prop}' (length, x, y, angle, angle_min, angle_max)")),
     }
     Ok(())
 }

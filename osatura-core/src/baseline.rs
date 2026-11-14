@@ -37,23 +37,11 @@ pub struct Member {
 impl Member {
     /// A baseline member without margins.
     pub fn on_baseline(height: f64, baseline: Option<f64>) -> Member {
-        Member {
-            height,
-            margin_start: 0.0,
-            margin_end: 0.0,
-            mode: CrossMode::Baseline,
-            baseline,
-        }
+        Member { height, margin_start: 0.0, margin_end: 0.0, mode: CrossMode::Baseline, baseline }
     }
     /// A member of another mode, without margins.
     pub fn other(height: f64, mode: CrossMode) -> Member {
-        Member {
-            height,
-            margin_start: 0.0,
-            margin_end: 0.0,
-            mode,
-            baseline: None,
-        }
+        Member { height, margin_start: 0.0, margin_end: 0.0, mode, baseline: None }
     }
     fn outer(&self) -> f64 {
         self.margin_start + self.height + self.margin_end
@@ -83,9 +71,7 @@ pub fn align_line(members: &[Member], cross_size: Option<f64>, row: bool) -> Res
         }
         if let Some(b) = m.baseline {
             if !b.is_finite() || b < 0.0 {
-                return Err(format!(
-                    "member {i}: the baseline distance must be finite and >= 0, got {b}"
-                ));
+                return Err(format!("member {i}: the baseline distance must be finite and >= 0, got {b}"));
             }
         }
     }
@@ -97,21 +83,9 @@ pub fn align_line(members: &[Member], cross_size: Option<f64>, row: bool) -> Res
     let on_baseline = |m: &Member| row && m.mode == CrossMode::Baseline;
     // distance from the start margin edge to the baseline; `after` is the rest of the margin box
     let before = |m: &Member| m.margin_start + m.baseline.unwrap_or(m.height);
-    let max_before = members
-        .iter()
-        .filter(|m| on_baseline(m))
-        .map(before)
-        .fold(0.0f64, f64::max);
-    let max_after = members
-        .iter()
-        .filter(|m| on_baseline(m))
-        .map(|m| m.outer() - before(m))
-        .fold(0.0f64, f64::max);
-    let others = members
-        .iter()
-        .filter(|m| !on_baseline(m))
-        .map(Member::outer)
-        .fold(0.0f64, f64::max);
+    let max_before = members.iter().filter(|m| on_baseline(m)).map(before).fold(0.0f64, f64::max);
+    let max_after = members.iter().filter(|m| on_baseline(m)).map(|m| m.outer() - before(m)).fold(0.0f64, f64::max);
+    let others = members.iter().filter(|m| !on_baseline(m)).map(Member::outer).fold(0.0f64, f64::max);
     let size = cross_size.unwrap_or_else(|| (max_before + max_after).max(others));
     let offsets = members
         .iter()
@@ -135,11 +109,7 @@ mod tests {
     use super::*;
 
     fn abc() -> Vec<Member> {
-        vec![
-            Member::on_baseline(20.0, Some(15.0)),
-            Member::on_baseline(30.0, Some(10.0)),
-            Member::on_baseline(10.0, Some(10.0)),
-        ]
+        vec![Member::on_baseline(20.0, Some(15.0)), Member::on_baseline(30.0, Some(10.0)), Member::on_baseline(10.0, Some(10.0))]
     }
 
     #[test]
@@ -167,15 +137,7 @@ mod tests {
 
     #[test]
     fn synthesised_baseline_is_the_bottom_edge() {
-        let l = align_line(
-            &[
-                Member::on_baseline(30.0, Some(10.0)),
-                Member::on_baseline(12.0, None),
-            ],
-            None,
-            true,
-        )
-        .unwrap();
+        let l = align_line(&[Member::on_baseline(30.0, Some(10.0)), Member::on_baseline(12.0, None)], None, true).unwrap();
         assert_eq!(l.offsets, vec![2.0, 0.0]);
         assert_eq!(l.size, 32.0);
     }
@@ -204,15 +166,7 @@ mod tests {
         assert_eq!(l.offsets[5], 0.0);
         assert_eq!(&l.offsets[..3], &[0.0, 5.0, 5.0]);
         // a tall member of another mode can make the line larger
-        let l = align_line(
-            &[
-                Member::on_baseline(10.0, None),
-                Member::other(50.0, CrossMode::Start),
-            ],
-            None,
-            true,
-        )
-        .unwrap();
+        let l = align_line(&[Member::on_baseline(10.0, None), Member::other(50.0, CrossMode::Start)], None, true).unwrap();
         assert_eq!(l.size, 50.0);
     }
 
@@ -237,26 +191,10 @@ mod tests {
 
     #[test]
     fn equal_distances_give_zero_offsets_and_far_baselines_are_accepted() {
-        let l = align_line(
-            &[
-                Member::on_baseline(10.0, Some(5.0)),
-                Member::on_baseline(20.0, Some(5.0)),
-            ],
-            None,
-            true,
-        )
-        .unwrap();
+        let l = align_line(&[Member::on_baseline(10.0, Some(5.0)), Member::on_baseline(20.0, Some(5.0))], None, true).unwrap();
         assert_eq!(l.offsets, vec![0.0, 0.0]);
         // baseline below the box: allowed
-        let l = align_line(
-            &[
-                Member::on_baseline(10.0, Some(25.0)),
-                Member::on_baseline(10.0, None),
-            ],
-            None,
-            true,
-        )
-        .unwrap();
+        let l = align_line(&[Member::on_baseline(10.0, Some(25.0)), Member::on_baseline(10.0, None)], None, true).unwrap();
         assert_eq!(l.offsets, vec![0.0, 15.0]);
     }
 }

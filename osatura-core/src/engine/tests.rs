@@ -42,10 +42,7 @@ fn ik_reaches_reachable_target() {
     let e = Engine::new(arm_with_target(120.0, 80.0)).unwrap();
     let f = e.evaluate(0.0);
     let tip = tip_of(&e, &f, "b");
-    assert!(
-        tip.distance(Vec2::new(120.0, 80.0)) < 0.05,
-        "tip at {tip:?}"
-    );
+    assert!(tip.distance(Vec2::new(120.0, 80.0)) < 0.05, "tip at {tip:?}");
     let joint = f.world[1].apply(Vec2::ZERO);
     assert!((joint.length() - 100.0).abs() < 0.05);
 }
@@ -62,13 +59,9 @@ fn ik_clamps_unreachable_target_in_a_straight_line() {
 fn ik_bend_flips_the_joint_side() {
     let mut p = arm_with_target(120.0, 0.0);
     p.ik[0].bend = -1.0;
-    let down = Engine::new(p.clone()).unwrap().evaluate(0.0).world[1]
-        .apply(Vec2::ZERO)
-        .y;
+    let down = Engine::new(p.clone()).unwrap().evaluate(0.0).world[1].apply(Vec2::ZERO).y;
     p.ik[0].bend = 1.0;
-    let up = Engine::new(p).unwrap().evaluate(0.0).world[1]
-        .apply(Vec2::ZERO)
-        .y;
+    let up = Engine::new(p).unwrap().evaluate(0.0).world[1].apply(Vec2::ZERO).y;
     assert!(down * up < 0.0, "elbows on opposite sides: {down} vs {up}");
 }
 
@@ -77,14 +70,8 @@ fn full_weight_anchor_follows_its_bone() {
     let mut p = empty_project();
     p.bones = vec![bone("a", None, 50.0, Vec2::new(10.0, 10.0), 0.0)];
     let mut anchor = Anchor::corner(Vec2::new(60.0, 10.0));
-    anchor.weights = vec![BoneWeight {
-        bone: "a".into(),
-        weight: 3.0,
-    }];
-    p.layers = vec![Layer::vector(
-        "L",
-        vec![VPath::new("p", false, vec![anchor])],
-    )];
+    anchor.weights = vec![BoneWeight { bone: "a".into(), weight: 3.0 }];
+    p.layers = vec![Layer::vector("L", vec![VPath::new("p", false, vec![anchor])])];
     p.channels = vec![Channel::keys("a", Prop::BoneAngle, two(0.0, 90.0))];
     let e = Engine::new(p).unwrap();
     let rest = e.evaluate(0.0).nodes[0].paths[0].anchors[0].pos;
@@ -102,22 +89,11 @@ fn auto_skin_binds_to_the_nearest_bone_and_recurses_into_groups() {
     ];
     p.layers = vec![Layer::group(
         "G",
-        vec![Layer::vector(
-            "L",
-            vec![VPath::new(
-                "p",
-                false,
-                vec![Anchor::corner(Vec2::new(20.0, 2.0))],
-            )],
-        )],
+        vec![Layer::vector("L", vec![VPath::new("p", false, vec![Anchor::corner(Vec2::new(20.0, 2.0))])])],
     )];
     p.auto_skin("G", 2).unwrap();
-    let LayerKind::Group { layers } = &p.layers[0].kind else {
-        panic!()
-    };
-    let LayerKind::Vector { paths } = &layers[0].kind else {
-        panic!()
-    };
+    let LayerKind::Group { layers } = &p.layers[0].kind else { panic!() };
+    let LayerKind::Vector { paths } = &layers[0].kind else { panic!() };
     let w = &paths[0].anchors[0].weights;
     assert_eq!(w.len(), 2);
     assert_eq!(w[0].bone, "left");
@@ -139,10 +115,7 @@ fn validation_reports_all_problems() {
 #[test]
 fn child_listed_before_parent_is_rejected() {
     let mut p = empty_project();
-    p.bones = vec![
-        bone("c", Some("p"), 1.0, Vec2::ZERO, 0.0),
-        bone("p", None, 1.0, Vec2::ZERO, 0.0),
-    ];
+    p.bones = vec![bone("c", Some("p"), 1.0, Vec2::ZERO, 0.0), bone("p", None, 1.0, Vec2::ZERO, 0.0)];
     assert!(Engine::new(p).is_err());
 }
 
@@ -150,10 +123,7 @@ fn child_listed_before_parent_is_rejected() {
 fn bad_layer_references_are_rejected() {
     let mut p = empty_project();
     let mut a = Layer::vector("a", vec![]);
-    a.mask = Some(MaskRef {
-        layer: "missing".into(),
-        invert: false,
-    });
+    a.mask = Some(MaskRef { layer: "missing".into(), invert: false });
     let mut b = Layer::vector("b", vec![]);
     b.bone = Some("nobone".into());
     p.layers = vec![a, b, Layer::vector("b", vec![])];
@@ -167,20 +137,11 @@ fn bad_layer_references_are_rejected() {
 fn mask_cycles_and_self_masks_are_rejected() {
     let mut p = empty_project();
     let mut a = Layer::vector("a", vec![]);
-    a.mask = Some(MaskRef {
-        layer: "b".into(),
-        invert: false,
-    });
+    a.mask = Some(MaskRef { layer: "b".into(), invert: false });
     let mut b = Layer::vector("b", vec![]);
-    b.mask = Some(MaskRef {
-        layer: "a".into(),
-        invert: false,
-    });
+    b.mask = Some(MaskRef { layer: "a".into(), invert: false });
     let mut c = Layer::vector("c", vec![]);
-    c.mask = Some(MaskRef {
-        layer: "c".into(),
-        invert: false,
-    });
+    c.mask = Some(MaskRef { layer: "c".into(), invert: false });
     p.layers = vec![a, b, c];
     let errs = Engine::new(p).err().unwrap();
     assert!(errs.iter().any(|e| e.contains("cycle")), "{errs:?}");
@@ -200,18 +161,8 @@ fn bad_expressions_and_get_references_are_rejected() {
     let mut p = arm_with_target(0.0, 0.0);
     p.channels = vec![
         Channel::expr("a", Prop::BoneAngle, "1 +", Mode::Replace),
-        Channel::expr(
-            "a",
-            Prop::BoneAngle,
-            "get(\"zzz\", \"bone_angle\")",
-            Mode::Replace,
-        ),
-        Channel::expr(
-            "a",
-            Prop::BoneAngle,
-            "get(\"a\", \"nonsense\")",
-            Mode::Replace,
-        ),
+        Channel::expr("a", Prop::BoneAngle, "get(\"zzz\", \"bone_angle\")", Mode::Replace),
+        Channel::expr("a", Prop::BoneAngle, "get(\"a\", \"nonsense\")", Mode::Replace),
     ];
     let errs = Engine::new(p).err().unwrap();
     assert_eq!(errs.len(), 3, "{errs:?}");
@@ -227,22 +178,12 @@ fn rect_layer(name: &str) -> Layer {
 fn group_transform_is_inherited_by_children() {
     let mut p = empty_project();
     let mut g = Layer::group("g", vec![rect_layer("c")]);
-    g.transform = Transform2D {
-        position: Vec2::new(30.0, 0.0),
-        scale: Vec2::new(2.0, 2.0),
-        ..Default::default()
-    };
+    g.transform = Transform2D { position: Vec2::new(30.0, 0.0), scale: Vec2::new(2.0, 2.0), ..Default::default() };
     p.layers = vec![g];
     let e = Engine::new(p).unwrap();
     let f = e.evaluate(0.0);
     let child = &f.nodes[e.node_index("g/c").unwrap()];
-    assert!(
-        child
-            .world
-            .apply(Vec2::new(5.0, 5.0))
-            .distance(Vec2::new(40.0, 10.0))
-            < 1e-4
-    );
+    assert!(child.world.apply(Vec2::new(5.0, 5.0)).distance(Vec2::new(40.0, 10.0)) < 1e-4);
 }
 
 #[test]
@@ -260,13 +201,7 @@ fn layer_channels_animate_transform_and_opacity() {
     assert!((n.opacity - 0.5).abs() < 1e-5);
     // rotate 45° then move +25 in x: (1,0) -> (cos45, sin45) + (25,0)
     let w = n.world.apply(Vec2::new(1.0, 0.0));
-    assert!(
-        w.distance(Vec2::new(
-            25.0 + std::f32::consts::FRAC_1_SQRT_2,
-            std::f32::consts::FRAC_1_SQRT_2
-        )) < 1e-3,
-        "{w:?}"
-    );
+    assert!(w.distance(Vec2::new(25.0 + std::f32::consts::FRAC_1_SQRT_2, std::f32::consts::FRAC_1_SQRT_2)) < 1e-3, "{w:?}");
 }
 
 #[test]
@@ -305,50 +240,25 @@ fn bone_attach_under_a_transformed_group_composes_bone_after_the_group() {
     };
     let (with, without) = (build(true), build(false));
     let q = Vec2::new(60.0, 10.0);
-    let node = |e: &Engine, f: f32| {
-        e.evaluate(f)
-            .nodes
-            .iter()
-            .find(|n| n.name == "g/c")
-            .unwrap()
-            .world
-    };
+    let node = |e: &Engine, f: f32| e.evaluate(f).nodes.iter().find(|n| n.name == "g/c").unwrap().world;
     // at rest: identical (the bone adds nothing)
-    assert!(
-        node(&with, 0.0)
-            .apply(q)
-            .distance(node(&without, 0.0).apply(q))
-            < 1e-4
-    );
+    assert!(node(&with, 0.0).apply(q).distance(node(&without, 0.0).apply(q)) < 1e-4);
     // posed: the skin matrix is applied to the child's stage position, once
     let skin = with.evaluate(10.0).world[0].mul(with.inv_rest[0]);
     let group = node(&without, 10.0);
     let expected = skin.apply(group.apply(q));
-    assert!(
-        node(&with, 10.0).apply(q).distance(expected) < 1e-3,
-        "world = skin * parent_stage * local"
-    );
+    assert!(node(&with, 10.0).apply(q).distance(expected) < 1e-3, "world = skin * parent_stage * local");
     // the travel equals the travel of the same point attached with an identity group: not doubled
-    let travel = node(&with, 10.0)
-        .apply(q)
-        .distance(node(&with, 0.0).apply(q));
-    let direct = skin
-        .apply(node(&with, 0.0).apply(q))
-        .distance(node(&with, 0.0).apply(q));
-    assert!(
-        (travel - direct).abs() < 1e-3,
-        "travel {travel} vs bone motion {direct}"
-    );
+    let travel = node(&with, 10.0).apply(q).distance(node(&with, 0.0).apply(q));
+    let direct = skin.apply(node(&with, 0.0).apply(q)).distance(node(&with, 0.0).apply(q));
+    assert!((travel - direct).abs() < 1e-3, "travel {travel} vs bone motion {direct}");
 }
 
 /// A layer without a bone follows its bone-attached ancestor; a layer's own bone replaces the ancestor's.
 #[test]
 fn bone_attach_is_inherited_and_a_child_bone_replaces_the_parents() {
     let mut p = empty_project();
-    p.bones = vec![
-        bone("a", None, 50.0, Vec2::new(10.0, 10.0), 0.0),
-        bone("b", None, 50.0, Vec2::new(10.0, 80.0), 0.0),
-    ];
+    p.bones = vec![bone("a", None, 50.0, Vec2::new(10.0, 10.0), 0.0), bone("b", None, 50.0, Vec2::new(10.0, 80.0), 0.0)];
     let mut inner = Layer::group("inner", vec![rect_layer("x")]);
     inner.bone = Some("b".into());
     let plain = rect_layer("y");
@@ -357,47 +267,23 @@ fn bone_attach_is_inherited_and_a_child_bone_replaces_the_parents() {
     p.layers = vec![outer];
     p.channels = vec![Channel::keys("a", Prop::BoneAngle, two(0.0, 90.0))];
     let e = Engine::new(p).unwrap();
-    let w = |name: &str, f: f32| {
-        e.evaluate(f)
-            .nodes
-            .iter()
-            .find(|n| n.name == name)
-            .unwrap()
-            .world
-    };
+    let w = |name: &str, f: f32| e.evaluate(f).nodes.iter().find(|n| n.name == name).unwrap().world;
     let q = Vec2::new(60.0, 10.0);
     let skin_a = e.evaluate(10.0).world[0].mul(e.inv_rest[0]);
     // y has no bone of its own: follows a
-    assert!(
-        w("outer/y", 10.0)
-            .apply(q)
-            .distance(skin_a.apply(w("outer/y", 0.0).apply(q)))
-            < 1e-3
-    );
+    assert!(w("outer/y", 10.0).apply(q).distance(skin_a.apply(w("outer/y", 0.0).apply(q))) < 1e-3);
     // x sits under inner (bone b, which does not move): it does not also take a's motion
-    assert!(
-        w("outer/inner/x", 10.0)
-            .apply(q)
-            .distance(w("outer/inner/x", 0.0).apply(q))
-            < 1e-3
-    );
+    assert!(w("outer/inner/x", 10.0).apply(q).distance(w("outer/inner/x", 0.0).apply(q)) < 1e-3);
 }
 
 #[test]
 fn switch_layer_selects_one_child_with_step_keys() {
     let mut p = empty_project();
-    p.layers = vec![Layer::switch(
-        "mouth",
-        vec![rect_layer("a"), rect_layer("b"), rect_layer("c")],
-    )];
+    p.layers = vec![Layer::switch("mouth", vec![rect_layer("a"), rect_layer("b"), rect_layer("c")])];
     p.channels = vec![Channel::keys(
         "mouth",
         Prop::LayerSwitch,
-        Track::with_keys(&[
-            (0.0, 0.0, Ease::Step),
-            (4.0, 2.0, Ease::Step),
-            (8.0, 1.0, Ease::Step),
-        ]),
+        Track::with_keys(&[(0.0, 0.0, Ease::Step), (4.0, 2.0, Ease::Step), (8.0, 1.0, Ease::Step)]),
     )];
     let e = Engine::new(p).unwrap();
     let shown = |f: f32| {
@@ -423,21 +309,10 @@ fn camera_pan_zoom_and_parallax() {
     p.channels = vec![Channel::keys("", Prop::CameraX, two(50.0, 70.0))];
     let e = Engine::new(p).unwrap();
     let f = e.evaluate(10.0); // camera moved +20 in x
-    let sx = |name: &str| {
-        f.nodes[e.node_index(name).unwrap()]
-            .world
-            .apply(Vec2::ZERO)
-            .x
-    };
+    let sx = |name: &str| f.nodes[e.node_index(name).unwrap()].world.apply(Vec2::ZERO).x;
     assert!((sx("near") - -20.0).abs() < 1e-4, "near scrolls fully");
-    assert!(
-        (sx("far") - -10.0).abs() < 1e-4,
-        "far scrolls at half speed"
-    );
-    assert!(
-        (sx("hud") - 0.0).abs() < 1e-4,
-        "hud is pinned to the screen"
-    );
+    assert!((sx("far") - -10.0).abs() < 1e-4, "far scrolls at half speed");
+    assert!((sx("hud") - 0.0).abs() < 1e-4, "hud is pinned to the screen");
 
     let mut p2 = empty_project();
     p2.layers = vec![rect_layer("r")];
@@ -445,11 +320,7 @@ fn camera_pan_zoom_and_parallax() {
     let e2 = Engine::new(p2).unwrap();
     // zoom about the stage centre: stage centre stays put, origin goes to -50
     let w = &e2.evaluate(0.0).nodes[0].world;
-    assert!(
-        w.apply(Vec2::new(50.0, 50.0))
-            .distance(Vec2::new(50.0, 50.0))
-            < 1e-4
-    );
+    assert!(w.apply(Vec2::new(50.0, 50.0)).distance(Vec2::new(50.0, 50.0)) < 1e-4);
     assert!(w.apply(Vec2::ZERO).distance(Vec2::new(-50.0, -50.0)) < 1e-4);
 }
 
@@ -462,22 +333,14 @@ fn expression_channels_see_time_and_other_values() {
     p.channels = vec![
         Channel::keys("a", Prop::BoneAngle, two(0.0, 40.0)),
         // b mirrors a at half strength, driven by an expression reading a's current angle
-        Channel::expr(
-            "b",
-            Prop::BoneAngle,
-            "get(\"a\", \"bone_angle\") * -0.5",
-            Mode::Replace,
-        ),
+        Channel::expr("b", Prop::BoneAngle, "get(\"a\", \"bone_angle\") * -0.5", Mode::Replace),
         Channel::expr("t", Prop::BoneOffsetY, "10 * sin(pi * t)", Mode::Replace),
     ];
     let e = Engine::new(p).unwrap();
     let f = e.evaluate(10.0);
     assert!((f.world[1].rotation().to_degrees() - (40.0 - 20.0)).abs() < 1e-3);
     let f5 = e.evaluate(1.0); // 10 frames → t = 0.1 → sin(0.1π)·10
-    assert!(
-        (f5.world[2].apply(Vec2::ZERO).y - 10.0 * (0.1f32 * std::f32::consts::PI).sin()).abs()
-            < 1e-3
-    );
+    assert!((f5.world[2].apply(Vec2::ZERO).y - 10.0 * (0.1f32 * std::f32::consts::PI).sin()).abs() < 1e-3);
 }
 
 #[test]
@@ -490,18 +353,10 @@ fn noise_adds_on_top_of_keys_and_is_deterministic() {
     ];
     let e = Engine::new(p.clone()).unwrap();
     let ang = |f: f32| e.evaluate(f).world[0].rotation().to_degrees();
-    assert!(
-        (0..10).any(|f| ang(f as f32).abs() > 0.5),
-        "noise moves the bone"
-    );
+    assert!((0..10).any(|f| ang(f as f32).abs() > 0.5), "noise moves the bone");
     assert!((0..10).all(|f| ang(f as f32).abs() <= 10.0 + 1e-3));
     assert_eq!(ang(3.0), ang(3.0));
-    assert_eq!(
-        ang(3.0),
-        Engine::new(p).unwrap().evaluate(3.0).world[0]
-            .rotation()
-            .to_degrees()
-    );
+    assert_eq!(ang(3.0), Engine::new(p).unwrap().evaluate(3.0).world[0].rotation().to_degrees());
 }
 
 #[test]
@@ -540,10 +395,7 @@ fn channel_modes_and_weight() {
     let e = Engine::new(p).unwrap();
     let f = e.evaluate(0.0);
     assert!((f.world[0].x_scale() - 6.0).abs() < 1e-4, "2 × 3");
-    assert!(
-        (f.world[0].apply(Vec2::ZERO).x - 9.0).abs() < 1e-4,
-        "0→5 (50% toward 10) then +4"
-    );
+    assert!((f.world[0].apply(Vec2::ZERO).x - 9.0).abs() < 1e-4, "0→5 (50% toward 10) then +4");
 }
 
 #[test]
@@ -561,14 +413,7 @@ fn evaluate_is_a_pure_function_of_frame() {
 
 fn one_anchor_project() -> Project {
     let mut p = empty_project();
-    p.layers = vec![Layer::vector(
-        "L",
-        vec![VPath::new(
-            "p",
-            false,
-            vec![Anchor::corner(Vec2::new(5.0, 5.0))],
-        )],
-    )];
+    p.layers = vec![Layer::vector("L", vec![VPath::new("p", false, vec![Anchor::corner(Vec2::new(5.0, 5.0))])])];
     p
 }
 
@@ -576,18 +421,8 @@ fn one_anchor_project() -> Project {
 fn channel_expressions_with_absurd_nesting_are_rejected_not_fatal() {
     let mut p = arm_with_target(0.0, 0.0);
     p.channels = vec![
-        Channel::expr(
-            "a",
-            Prop::BoneAngle,
-            &format!("{}1{}", "(".repeat(20_000), ")".repeat(20_000)),
-            Mode::Replace,
-        ),
-        Channel::expr(
-            "a",
-            Prop::BoneAngle,
-            &format!("{}1", "-".repeat(200_000)),
-            Mode::Replace,
-        ),
+        Channel::expr("a", Prop::BoneAngle, &format!("{}1{}", "(".repeat(20_000), ")".repeat(20_000)), Mode::Replace),
+        Channel::expr("a", Prop::BoneAngle, &format!("{}1", "-".repeat(200_000)), Mode::Replace),
     ];
     let errs = Engine::new(p).err().unwrap();
     assert_eq!(errs.len(), 2, "{errs:?}");
@@ -599,10 +434,7 @@ fn huge_but_finite_numbers_are_refused_with_the_place() {
     let mut p = empty_project();
     p.camera.zoom = 3.0e38;
     let err = Engine::new(p).err().unwrap().join("; ");
-    assert!(
-        err.contains("/camera/zoom") && err.contains("outside the supported range"),
-        "{err}"
-    );
+    assert!(err.contains("/camera/zoom") && err.contains("outside the supported range"), "{err}");
 
     let mut p = one_anchor_project();
     p.layers[0].transform.scale = Vec2::new(3.0e38, 1.0);
@@ -613,14 +445,7 @@ fn huge_but_finite_numbers_are_refused_with_the_place() {
     assert!(Engine::new(p).is_err());
 
     let mut p = empty_project();
-    p.layers = vec![Layer::vector(
-        "L",
-        vec![VPath::new(
-            "p",
-            false,
-            vec![Anchor::corner(Vec2::new(3.0e38, 0.0))],
-        )],
-    )];
+    p.layers = vec![Layer::vector("L", vec![VPath::new("p", false, vec![Anchor::corner(Vec2::new(3.0e38, 0.0))])])];
     let err = Engine::new(p).err().unwrap().join("; ");
     assert!(err.contains("anchors"), "{err}");
 
@@ -636,14 +461,8 @@ fn huge_literals_in_json_are_refused_at_load_not_turned_into_infinity() {
     let cases: [(&str, serde_json::Value); 4] = [
         ("/camera/zoom", serde_json::json!(1e300)),
         ("/layers/0/transform/scale", serde_json::json!([1e300, 1.0])),
-        (
-            "/layers/0/paths/0/anchors/0/pos",
-            serde_json::json!([1e300, 0.0]),
-        ),
-        (
-            "/bones",
-            serde_json::json!([{"name": "a", "parent": null, "length": 5.0, "rest_offset": [1e308, 0.0], "rest_angle": 0.0}]),
-        ),
+        ("/layers/0/paths/0/anchors/0/pos", serde_json::json!([1e300, 0.0])),
+        ("/bones", serde_json::json!([{"name": "a", "parent": null, "length": 5.0, "rest_offset": [1e308, 0.0], "rest_angle": 0.0}])),
     ];
     for (ptr, val) in cases {
         let mut v = base.clone();
@@ -652,14 +471,10 @@ fn huge_literals_in_json_are_refused_at_load_not_turned_into_infinity() {
             Some(t) => t["bones"] = val,
             None => {
                 // layers/0/paths is only valid for vector layers: set through the pointer
-                *v.pointer_mut(ptr)
-                    .unwrap_or_else(|| panic!("{ptr} missing in {base}")) = val;
+                *v.pointer_mut(ptr).unwrap_or_else(|| panic!("{ptr} missing in {base}")) = val;
             }
         }
-        let err = Project::from_json(&v.to_string())
-            .err()
-            .unwrap_or_else(|| panic!("{ptr} was accepted"))
-            .to_string();
+        let err = Project::from_json(&v.to_string()).err().unwrap_or_else(|| panic!("{ptr} was accepted")).to_string();
         assert!(err.contains("outside the supported range"), "{ptr}: {err}");
     }
     assert!(Project::from_json(&serde_json::to_string(&base).unwrap()).is_ok());
@@ -676,14 +491,7 @@ fn ordinary_large_numbers_still_load() {
 #[test]
 fn overflow_through_nested_scales_is_reported_not_exported_as_nan() {
     // every number is within range, the product of six nested scales is not an f32
-    let mut inner = Layer::vector(
-        "L",
-        vec![VPath::new(
-            "p",
-            false,
-            vec![Anchor::corner(Vec2::new(5.0, 5.0))],
-        )],
-    );
+    let mut inner = Layer::vector("L", vec![VPath::new("p", false, vec![Anchor::corner(Vec2::new(5.0, 5.0))])]);
     inner.transform.scale = Vec2::new(1e7, 1e7);
     let mut cur = inner;
     for i in 0..6 {
@@ -698,25 +506,11 @@ fn overflow_through_nested_scales_is_reported_not_exported_as_nan() {
     assert!(f.nonfinite.is_some());
     for n in &f.nodes {
         let m = n.world;
-        assert!(
-            [m.a, m.b, m.c, m.d, m.tx, m.ty]
-                .iter()
-                .all(|v| v.is_finite()),
-            "repaired frames carry no NaN"
-        );
+        assert!([m.a, m.b, m.c, m.d, m.tx, m.ty].iter().all(|v| v.is_finite()), "repaired frames carry no NaN");
     }
     let err = e.evaluate_checked(0.0).err().unwrap();
-    assert!(
-        err.starts_with("non-finite value in ") && err.contains("at frame 0"),
-        "{err}"
-    );
-    assert!(e
-        .check_all_frames_finite()
-        .unwrap_err()
-        .starts_with("non-finite value in "));
+    assert!(err.starts_with("non-finite value in ") && err.contains("at frame 0"), "{err}");
+    assert!(e.check_all_frames_finite().unwrap_err().starts_with("non-finite value in "));
     // a normal project passes
-    assert!(Engine::new(one_anchor_project())
-        .unwrap()
-        .check_all_frames_finite()
-        .is_ok());
+    assert!(Engine::new(one_anchor_project()).unwrap().check_all_frames_finite().is_ok());
 }

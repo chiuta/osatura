@@ -98,17 +98,11 @@ pub fn load(text: &str) -> Result<Loaded, String> {
         let last = n + 1 == lines.len();
         let complete = raw.ends_with('\n');
         let line = raw.trim_end_matches('\n');
-        let bad = |why: String| -> Result<Loaded, String> {
-            Err(format!(
-                "collaboration log is damaged at line {lineno}: {why}"
-            ))
-        };
+        let bad = |why: String| -> Result<Loaded, String> { Err(format!("collaboration log is damaged at line {lineno}: {why}")) };
         let parsed = (|| -> Result<(String, Value), String> {
             let (h, json) = line.split_once(' ').ok_or("no checksum")?;
             if h.len() != 64 || link(&prev, json) != h {
-                return Err(
-                    "checksum does not match (the file was changed, truncated or damaged)".into(),
-                );
+                return Err("checksum does not match (the file was changed, truncated or damaged)".into());
             }
             let v: Value = serde_json::from_str(json).map_err(|e| format!("not JSON: {e}"))?;
             Ok((h.to_string(), v))
@@ -125,9 +119,7 @@ pub fn load(text: &str) -> Result<Loaded, String> {
         if let Some(live) = hub.as_mut() {
             let i = v["i"].as_u64().ok_or("entry lacks 'i'");
             let env: Result<Envelope, _> = serde_json::from_value(v["env"].clone());
-            let (Ok(i), Ok(env)) = (i, env) else {
-                return bad("entry is not {i, by, env}".into());
-            };
+            let (Ok(i), Ok(env)) = (i, env) else { return bad("entry is not {i, by, env}".into()) };
             if v["by"].as_u64() != Some(env.replica as u64) {
                 return bad("entry 'by' differs from the envelope's replica".into());
             }
@@ -137,32 +129,16 @@ pub fn load(text: &str) -> Result<Loaded, String> {
             entries += 1;
         } else {
             if v["osatura_collab_log"].as_u64() != Some(VERSION) {
-                return bad(format!(
-                    "not a version {VERSION} collaboration log (found {})",
-                    v["osatura_collab_log"]
-                ));
+                return bad(format!("not a version {VERSION} collaboration log (found {})", v["osatura_collab_log"]));
             }
-            let snap: Snapshot = serde_json::from_value(v["snapshot"].clone())
-                .map_err(|e| format!("collaboration log checkpoint has a bad snapshot: {e}"))?;
-            let base = v["log_base"]
-                .as_u64()
-                .ok_or("collaboration log checkpoint lacks log_base")?
-                as usize;
-            let next = v["next_id"]
-                .as_u64()
-                .filter(|x| *x < u32::MAX as u64)
-                .ok_or("collaboration log checkpoint lacks a valid next_id")?
-                as ReplicaId;
-            let hb = Hub::restore(snap, base, next)
-                .map_err(|e| format!("collaboration log checkpoint: {e}"))?;
+            let snap: Snapshot = serde_json::from_value(v["snapshot"].clone()).map_err(|e| format!("collaboration log checkpoint has a bad snapshot: {e}"))?;
+            let base = v["log_base"].as_u64().ok_or("collaboration log checkpoint lacks log_base")? as usize;
+            let next = v["next_id"].as_u64().filter(|x| *x < u32::MAX as u64).ok_or("collaboration log checkpoint lacks a valid next_id")? as ReplicaId;
+            let hb = Hub::restore(snap, base, next).map_err(|e| format!("collaboration log checkpoint: {e}"))?;
             if v["doc_digest"].as_str() != Some(digest(&hb.doc_json()).as_str()) {
                 return bad("the checkpoint document does not match its recorded digest".into());
             }
-            origin = v["origin"]
-                .as_str()
-                .filter(|o| o.len() == 64)
-                .ok_or("collaboration log checkpoint lacks an origin digest")?
-                .to_string();
+            origin = v["origin"].as_str().filter(|o| o.len() == 64).ok_or("collaboration log checkpoint lacks an origin digest")?.to_string();
             hub = Some(hb);
         }
         prev = h;
@@ -172,15 +148,7 @@ pub fn load(text: &str) -> Result<Loaded, String> {
     let mut hub = hub.ok_or("the collaboration log has no checkpoint line")?;
     hub.finish_restore();
     let current = digest(&hub.doc_json());
-    Ok(Loaded {
-        hub,
-        origin,
-        current,
-        entries,
-        valid_len,
-        last_hash: prev,
-        torn_tail: torn,
-    })
+    Ok(Loaded { hub, origin, current, entries, valid_len, last_hash: prev, torn_tail: torn })
 }
 
 #[cfg(test)]
@@ -200,10 +168,7 @@ mod tests {
         |_| Ok(())
     }
     fn set(p: &str, v: Value) -> Op {
-        Op::Set {
-            path: p.into(),
-            value: v,
-        }
+        Op::Set { path: p.into(), value: v }
     }
 
     /// Run a session while writing the log the way the server does; return the hub and the file text.
@@ -212,35 +177,14 @@ mod tests {
         let (mut text, mut prev) = encode_header(&h, &digest(&base_hub_doc()));
         let a = h.join("ana", Mode::Thin, 0).unwrap().replica;
         let b = h.join("bo", Mode::Thin, 0).unwrap().replica;
-        let mut ops = vec![
-            (a, set("/frames", json!(30))),
-            (
-                b,
-                Op::Insert {
-                    path: "/layers/0".into(),
-                    value: json!({"name": "front"}),
-                },
-            ),
-            (a, set("/layers/1/visible", json!(false))),
-            (
-                b,
-                Op::Remove {
-                    path: "/layers/2".into(),
-                },
-            ),
-        ];
+        let mut ops = vec![(a, set("/frames", json!(30))), (b, Op::Insert { path: "/layers/0".into(), value: json!({"name": "front"}) }), (a, set("/layers/1/visible", json!(false))), (b, Op::Remove { path: "/layers/2".into() })];
         ops.push((a, set("/meta/k", json!(2))));
         for (now, (who, op)) in (1..).zip(ops) {
             h.submit_ops(who, None, &[op], &mut ok(), now).unwrap();
         }
         h.undo_redo(a, true, &mut ok(), 9).unwrap();
         for e in h.take_events() {
-            if let crate::collabhub::Event::Ops {
-                index,
-                by,
-                envelope,
-            } = e
-            {
+            if let crate::collabhub::Event::Ops { index, by, envelope } = e {
                 let (l, nh) = encode_entry(&prev, index, by, &envelope);
                 text.push_str(&l);
                 prev = nh;
@@ -253,36 +197,21 @@ mod tests {
     fn a_resumed_hub_has_the_same_state_clock_and_index_and_keeps_working() {
         let (h, text) = session();
         let l = load(&text).unwrap();
-        assert_eq!(
-            (l.entries, l.torn_tail, l.valid_len),
-            (6, false, text.len())
-        );
+        assert_eq!((l.entries, l.torn_tail, l.valid_len), (6, false, text.len()));
         assert_eq!(l.hub.doc_json(), h.doc_json());
-        assert_eq!(
-            (l.hub.clock().clone(), l.hub.lamport(), l.hub.index()),
-            (h.clock().clone(), h.lamport(), h.index())
-        );
+        assert_eq!((l.hub.clock().clone(), l.hub.lamport(), l.hub.index()), (h.clock().clone(), h.lamport(), h.index()));
         assert_eq!(l.origin, digest(&Hub::new(&base()).doc_json()));
         assert_eq!(l.current, digest(&h.doc_json()));
         // new participants never reuse an id whose envelopes are in the log, and edits go on from the same clock
         let mut r = l.hub;
         let c = r.join("cy", Mode::Thin, 0).unwrap();
         assert!(c.replica >= h.next_id() && c.index == h.index());
-        let s = r
-            .submit_ops(c.replica, None, &[set("/frames", json!(99))], &mut ok(), 1)
-            .unwrap();
-        assert_eq!(
-            (s.index, r.doc_json()["frames"].clone()),
-            (h.index() + 1, json!(99))
-        );
+        let s = r.submit_ops(c.replica, None, &[set("/frames", json!(99))], &mut ok(), 1).unwrap();
+        assert_eq!((s.index, r.doc_json()["frames"].clone()), (h.index() + 1, json!(99)));
         // the host's own editing path is intact too
         let mut d = r.doc_json();
         d["meta"]["k"] = json!(7);
-        assert!(r
-            .submit_doc(crate::collabhub::LOCAL_ID, &d, &mut ok(), 2)
-            .unwrap()
-            .envelope
-            .is_some());
+        assert!(r.submit_doc(crate::collabhub::LOCAL_ID, &d, &mut ok(), 2).unwrap().envelope.is_some());
         let _ = Presence::new(1, "x");
     }
 
@@ -332,10 +261,7 @@ mod tests {
         assert!(l.torn_tail && l.entries == 5);
         // appending after the valid prefix continues the chain
         let mut fixed = text[..l.valid_len].to_string();
-        let (line, _) = encode_line(
-            &l.last_hash,
-            &json!({"i": l.hub.index(), "by": 9, "env": null}),
-        );
+        let (line, _) = encode_line(&l.last_hash, &json!({"i": l.hub.index(), "by": 9, "env": null}));
         fixed.push_str(&line);
         assert!(load(&fixed).err().unwrap().contains("not {i, by, env}"));
         assert!(load(&text[..40]).is_err());
@@ -368,11 +294,7 @@ mod tests {
         let mut out = String::new();
         for (n, line) in ls2.iter().enumerate() {
             let body: Value = serde_json::from_str(line.split_once(' ').unwrap().1).unwrap();
-            let body = if n >= 2 {
-                json!({"i": n - 1, "by": body["by"], "env": body["env"]})
-            } else {
-                body
-            };
+            let body = if n >= 2 { json!({"i": n - 1, "by": body["by"], "env": body["env"]}) } else { body };
             let (t, h) = encode_line(&prev, &body);
             out.push_str(&t);
             prev = h;
@@ -389,15 +311,9 @@ mod tests {
         assert_eq!(st["purged"], json!(true));
         let (mut text, mut prev) = encode_header(&h, &digest(&base_hub_doc()));
         let a = h.join("dee", Mode::Thin, 0).unwrap().replica;
-        h.submit_ops(a, None, &[set("/frames", json!(48))], &mut ok(), 1)
-            .unwrap();
+        h.submit_ops(a, None, &[set("/frames", json!(48))], &mut ok(), 1).unwrap();
         for e in h.take_events() {
-            if let crate::collabhub::Event::Ops {
-                index,
-                by,
-                envelope,
-            } = e
-            {
+            if let crate::collabhub::Event::Ops { index, by, envelope } = e {
                 let (l, nh) = encode_entry(&prev, index, by, &envelope);
                 text.push_str(&l);
                 prev = nh;
@@ -405,17 +321,10 @@ mod tests {
         }
         let r = load(&text).unwrap();
         assert_eq!(r.hub.doc_json(), h.doc_json());
-        assert_eq!(
-            (r.hub.index(), r.hub.log_base(), r.entries),
-            (h.index(), h.index() - 1, 1)
-        );
+        assert_eq!((r.hub.index(), r.hub.log_base(), r.entries), (h.index(), h.index() - 1, 1));
         assert_eq!(r.hub.clock(), h.clock());
         assert_eq!(r.hub.lamport(), h.lamport());
-        assert_eq!(
-            r.origin,
-            digest(&base_hub_doc()),
-            "compaction keeps the original origin"
-        );
+        assert_eq!(r.origin, digest(&base_hub_doc()), "compaction keeps the original origin");
         assert_ne!(r.current, r.origin);
     }
 }

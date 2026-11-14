@@ -79,13 +79,9 @@ impl Measure {
 /// Parse "500KB", "1.5MB", "64000", "200 kib" (K = 1000, KiB = 1024).
 pub fn parse_size(s: &str) -> Result<usize, String> {
     let t = s.trim().to_ascii_lowercase().replace(' ', "");
-    let split = t
-        .find(|c: char| !(c.is_ascii_digit() || c == '.'))
-        .unwrap_or(t.len());
+    let split = t.find(|c: char| !(c.is_ascii_digit() || c == '.')).unwrap_or(t.len());
     let (num, unit) = t.split_at(split);
-    let n: f64 = num
-        .parse()
-        .map_err(|_| format!("cannot read a size from '{s}' (try 500KB)"))?;
+    let n: f64 = num.parse().map_err(|_| format!("cannot read a size from '{s}' (try 500KB)"))?;
     let mult = match unit {
         "" | "b" => 1.0,
         "k" | "kb" => 1000.0,
@@ -128,18 +124,7 @@ pub struct Settings {
 
 impl Settings {
     pub fn full() -> Settings {
-        Settings {
-            decimals: 6,
-            path_eps: 0.0,
-            key_tol: 0.0,
-            drop_dead: true,
-            frame_step: 1,
-            scale: 1.0,
-            colors: 256,
-            dither: false,
-            delta_tol: 0,
-            crf: 24,
-        }
+        Settings { decimals: 6, path_eps: 0.0, key_tol: 0.0, drop_dead: true, frame_step: 1, scale: 1.0, colors: 256, dither: false, delta_tol: 0, crf: 24 }
     }
     pub fn to_json(&self) -> Value {
         json!({"decimals": self.decimals, "path_eps": self.path_eps, "key_tol": self.key_tol, "drop_dead": self.drop_dead,
@@ -159,21 +144,11 @@ pub struct Axis {
 }
 
 pub(super) fn ax(name: &'static str, values: &[f64], set: fn(&mut Settings, f64)) -> Axis {
-    Axis {
-        name,
-        values: values.to_vec(),
-        set,
-        in_chain: true,
-    }
+    Axis { name, values: values.to_vec(), set, in_chain: true }
 }
 
 pub(super) fn ax_free(name: &'static str, values: &[f64], set: fn(&mut Settings, f64)) -> Axis {
-    Axis {
-        name,
-        values: values.to_vec(),
-        set,
-        in_chain: false,
-    }
+    Axis { name, values: values.to_vec(), set, in_chain: false }
 }
 
 pub(super) const SCALES: [f64; 8] = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3];
@@ -181,9 +156,7 @@ pub(super) const SCALES: [f64; 8] = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3];
 /// The knobs of a format, in tie-break order (least visible first).
 pub fn axes(f: Format) -> Vec<Axis> {
     let dec = |v: &[f64]| ax("decimals", v, |s, x| s.decimals = x as u8);
-    let eps = ax("path_eps", &[0.0, 0.05, 0.1, 0.2, 0.4, 0.8, 1.5], |s, x| {
-        s.path_eps = x as f32
-    });
+    let eps = ax("path_eps", &[0.0, 0.05, 0.1, 0.2, 0.4, 0.8, 1.5], |s, x| s.path_eps = x as f32);
     let kt = |v: &[f64]| ax("key_tol", v, |s, x| s.key_tol = x as f32);
     let step = |v: &[f64]| ax("frame_step", v, |s, x| s.frame_step = x as u32);
     let scale = ax("scale", &SCALES, |s, x| s.scale = x as f32);
@@ -194,42 +167,22 @@ pub fn axes(f: Format) -> Vec<Axis> {
             kt(&[0.0, 0.02, 0.05, 0.1, 0.2, 0.4, 0.8, 1.5, 3.0]),
             step(&[1.0, 2.0, 3.0, 4.0, 6.0]),
         ],
-        Format::Html => vec![
-            dec(&[2.0, 1.0, 0.0]),
-            eps,
-            step(&[1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0]),
-        ],
+        Format::Html => vec![dec(&[2.0, 1.0, 0.0]), eps, step(&[1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0])],
         Format::Gif => vec![
-            ax(
-                "colors",
-                &[256.0, 192.0, 128.0, 96.0, 64.0, 48.0, 32.0, 24.0, 16.0, 8.0],
-                |s, x| s.colors = x as u16,
-            ),
+            ax("colors", &[256.0, 192.0, 128.0, 96.0, 64.0, 48.0, 32.0, 24.0, 16.0, 8.0], |s, x| s.colors = x as u16),
             ax_free("dither", &[0.0, 1.0], |s, x| s.dither = x > 0.5),
-            ax("delta_tol", &[0.0, 2.0, 4.0, 8.0, 16.0], |s, x| {
-                s.delta_tol = x as u8
-            }),
+            ax("delta_tol", &[0.0, 2.0, 4.0, 8.0, 16.0], |s, x| s.delta_tol = x as u8),
             step(&[1.0, 2.0, 3.0, 4.0, 6.0]),
             scale,
         ],
         Format::Apng => vec![
-            ax(
-                "colors",
-                &[0.0, 256.0, 128.0, 64.0, 32.0, 16.0, 8.0],
-                |s, x| s.colors = x as u16,
-            ),
+            ax("colors", &[0.0, 256.0, 128.0, 64.0, 32.0, 16.0, 8.0], |s, x| s.colors = x as u16),
             ax_free("dither", &[0.0, 1.0], |s, x| s.dither = x > 0.5),
             step(&[1.0, 2.0, 3.0, 4.0, 6.0]),
             scale,
         ],
         Format::Webm => vec![
-            ax(
-                "crf",
-                &[
-                    24.0, 28.0, 32.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0, 63.0,
-                ],
-                |s, x| s.crf = x as u8,
-            ),
+            ax("crf", &[24.0, 28.0, 32.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0, 63.0], |s, x| s.crf = x as u8),
             step(&[1.0, 2.0, 3.0, 4.0, 6.0]),
             scale,
         ],

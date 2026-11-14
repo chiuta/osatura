@@ -175,11 +175,7 @@ pub fn stroke_tris(pts: &[Vec2], closed: bool, spec: &StrokeSpec, m: &Affine2) -
         return out;
     }
     let v = dedupe(pts, closed);
-    let mut s = Sink {
-        out: &mut out,
-        m,
-        px_scale: px_scale(m),
-    };
+    let mut s = Sink { out: &mut out, m, px_scale: px_scale(m) };
     match v.len() {
         0 => {}
         1 => match spec.cap {
@@ -203,15 +199,7 @@ pub fn stroke_tris(pts: &[Vec2], closed: bool, spec: &StrokeSpec, m: &Affine2) -
                 // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
                 #[allow(clippy::needless_range_loop)]
                 for i in 0..n {
-                    join_at(
-                        &mut s,
-                        v[i],
-                        dir((i + n - 1) % n),
-                        dir(i),
-                        hw,
-                        spec.join,
-                        lim,
-                    );
+                    join_at(&mut s, v[i], dir((i + n - 1) % n), dir(i), hw, spec.join, lim);
                 }
             } else {
                 // the index is a coordinate/identifier used beyond one slice (parallel arrays, offsets, neighbours); an iterator would obscure it
@@ -237,12 +225,7 @@ pub fn dash_valid(d: &[f32]) -> bool {
 
 /// Split a polyline into the "on" pieces of a dash pattern. A closed ring is treated as an open polyline that
 /// returns to its start. Errors if the pattern would produce more than [`MAX_DASHES`] pieces.
-pub fn dash(
-    pts: &[Vec2],
-    closed: bool,
-    pattern: &[f32],
-    offset: f32,
-) -> Result<Vec<Vec<Vec2>>, String> {
+pub fn dash(pts: &[Vec2], closed: bool, pattern: &[f32], offset: f32) -> Result<Vec<Vec<Vec2>>, String> {
     let mut path = dedupe(pts, closed);
     if closed && path.len() > 1 {
         path.push(path[0]);
@@ -260,11 +243,7 @@ pub fn dash(
         idx = (idx + 1) % pattern.len();
     }
     let mut left = pattern[idx] - o; // length remaining in the current entry
-    let mut cur: Vec<Vec2> = if idx.is_multiple_of(2) {
-        vec![path[0]]
-    } else {
-        Vec::new()
-    };
+    let mut cur: Vec<Vec2> = if idx.is_multiple_of(2) { vec![path[0]] } else { Vec::new() };
     for w in path.windows(2) {
         let (a, b) = (w[0], w[1]);
         let seg = a.distance(b);
@@ -276,9 +255,7 @@ pub fn dash(
                 cur.push(p);
                 pieces.push(std::mem::take(&mut cur));
                 if pieces.len() > MAX_DASHES {
-                    return Err(format!(
-                        "dash pattern produces more than {MAX_DASHES} pieces"
-                    ));
+                    return Err(format!("dash pattern produces more than {MAX_DASHES} pieces"));
                 }
             } else {
                 cur = vec![p];
@@ -303,9 +280,7 @@ mod tests {
 
     fn area_by_sampling(tris: &Tris, lo: f32, hi: f32, step: f32) -> f32 {
         let inside = |p: [f32; 2], t: &[[f32; 2]]| {
-            let s = |a: [f32; 2], b: [f32; 2]| {
-                (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
-            };
+            let s = |a: [f32; 2], b: [f32; 2]| (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
             let (d1, d2, d3) = (s(t[0], t[1]), s(t[1], t[2]), s(t[2], t[0]));
             (d1 >= 0.0 && d2 >= 0.0 && d3 >= 0.0) || (d1 <= 0.0 && d2 <= 0.0 && d3 <= 0.0)
         };
@@ -323,22 +298,12 @@ mod tests {
     }
 
     fn spec(cap: Cap, join: Join) -> StrokeSpec {
-        StrokeSpec {
-            width: 2.0,
-            cap,
-            join,
-            miter_limit: 4.0,
-        }
+        StrokeSpec { width: 2.0, cap, join, miter_limit: 4.0 }
     }
 
     #[test]
     fn fan_of_square_is_two_triangles() {
-        let sq = [
-            Vec2::new(0.0, 0.0),
-            Vec2::new(4.0, 0.0),
-            Vec2::new(4.0, 4.0),
-            Vec2::new(0.0, 4.0),
-        ];
+        let sq = [Vec2::new(0.0, 0.0), Vec2::new(4.0, 0.0), Vec2::new(4.0, 4.0), Vec2::new(0.0, 4.0)];
         let t = fill_fan(&sq);
         assert_eq!(t.len(), 6);
         assert!((area_by_sampling(&t, -1.0, 5.0, 0.05) - 16.0).abs() < 0.3);
@@ -347,63 +312,26 @@ mod tests {
 
     #[test]
     fn butt_line_area_is_length_times_width() {
-        let t = stroke_tris(
-            &[Vec2::new(1.0, 5.0), Vec2::new(11.0, 5.0)],
-            false,
-            &spec(Cap::Butt, Join::Miter),
-            &Affine2::IDENTITY,
-        );
+        let t = stroke_tris(&[Vec2::new(1.0, 5.0), Vec2::new(11.0, 5.0)], false, &spec(Cap::Butt, Join::Miter), &Affine2::IDENTITY);
         assert!((area_by_sampling(&t, 0.0, 12.0, 0.05) - 20.0).abs() < 0.4);
     }
 
     #[test]
     fn square_and_round_caps_extend_the_line() {
         let line = [Vec2::new(2.0, 5.0), Vec2::new(10.0, 5.0)];
-        let sq = stroke_tris(
-            &line,
-            false,
-            &spec(Cap::Square, Join::Miter),
-            &Affine2::IDENTITY,
-        );
-        assert!(
-            (area_by_sampling(&sq, 0.0, 12.0, 0.05) - 20.0).abs() < 0.5,
-            "8 + 2*1 long, 2 wide"
-        );
-        let rd = stroke_tris(
-            &line,
-            false,
-            &spec(Cap::Round, Join::Miter),
-            &Affine2::IDENTITY,
-        );
+        let sq = stroke_tris(&line, false, &spec(Cap::Square, Join::Miter), &Affine2::IDENTITY);
+        assert!((area_by_sampling(&sq, 0.0, 12.0, 0.05) - 20.0).abs() < 0.5, "8 + 2*1 long, 2 wide");
+        let rd = stroke_tris(&line, false, &spec(Cap::Round, Join::Miter), &Affine2::IDENTITY);
         let want = 16.0 + std::f32::consts::PI;
         assert!((area_by_sampling(&rd, 0.0, 12.0, 0.05) - want).abs() < 0.4);
     }
 
     #[test]
     fn miter_join_fills_the_corner_and_bevel_does_not() {
-        let l = [
-            Vec2::new(1.0, 1.0),
-            Vec2::new(8.0, 1.0),
-            Vec2::new(8.0, 8.0),
-        ];
-        let miter = area_by_sampling(
-            &stroke_tris(&l, false, &spec(Cap::Butt, Join::Miter), &Affine2::IDENTITY),
-            0.0,
-            10.0,
-            0.05,
-        );
-        let bevel = area_by_sampling(
-            &stroke_tris(&l, false, &spec(Cap::Butt, Join::Bevel), &Affine2::IDENTITY),
-            0.0,
-            10.0,
-            0.05,
-        );
-        let round = area_by_sampling(
-            &stroke_tris(&l, false, &spec(Cap::Butt, Join::Round), &Affine2::IDENTITY),
-            0.0,
-            10.0,
-            0.05,
-        );
+        let l = [Vec2::new(1.0, 1.0), Vec2::new(8.0, 1.0), Vec2::new(8.0, 8.0)];
+        let miter = area_by_sampling(&stroke_tris(&l, false, &spec(Cap::Butt, Join::Miter), &Affine2::IDENTITY), 0.0, 10.0, 0.05);
+        let bevel = area_by_sampling(&stroke_tris(&l, false, &spec(Cap::Butt, Join::Bevel), &Affine2::IDENTITY), 0.0, 10.0, 0.05);
+        let round = area_by_sampling(&stroke_tris(&l, false, &spec(Cap::Butt, Join::Round), &Affine2::IDENTITY), 0.0, 10.0, 0.05);
         // Two 7x2 bars overlap in a 1x1 block (centre half-width 1): 14 + 14 - 1 + outer corner.
         assert!((miter - 28.0).abs() < 0.5, "miter {miter}");
         assert!((bevel - 27.5).abs() < 0.5, "bevel {bevel}");
@@ -412,11 +340,7 @@ mod tests {
 
     #[test]
     fn miter_limit_falls_back_to_bevel_on_sharp_angles() {
-        let l = [
-            Vec2::new(1.0, 1.0),
-            Vec2::new(9.0, 1.2),
-            Vec2::new(1.0, 1.4),
-        ];
+        let l = [Vec2::new(1.0, 1.0), Vec2::new(9.0, 1.2), Vec2::new(1.0, 1.4)];
         let a = stroke_tris(&l, false, &spec(Cap::Butt, Join::Miter), &Affine2::IDENTITY);
         let far = a.iter().map(|p| p[0]).fold(0.0f32, f32::max);
         assert!(far < 10.5, "no long spike beyond the limit, got x={far}");
@@ -424,12 +348,7 @@ mod tests {
 
     #[test]
     fn closed_stroke_has_no_gap_at_the_start() {
-        let sq = [
-            Vec2::new(2.0, 2.0),
-            Vec2::new(8.0, 2.0),
-            Vec2::new(8.0, 8.0),
-            Vec2::new(2.0, 8.0),
-        ];
+        let sq = [Vec2::new(2.0, 2.0), Vec2::new(8.0, 2.0), Vec2::new(8.0, 8.0), Vec2::new(2.0, 8.0)];
         let t = stroke_tris(&sq, true, &spec(Cap::Butt, Join::Miter), &Affine2::IDENTITY);
         // Ring between 1..9 and 3..7: 64 - 16 = 48.
         assert!((area_by_sampling(&t, 0.0, 10.0, 0.05) - 48.0).abs() < 0.6);
@@ -438,106 +357,46 @@ mod tests {
     #[test]
     fn transform_maps_vertices_and_degenerate_input_is_empty() {
         let m = Affine2::translate(Vec2::new(100.0, 0.0));
-        let t = stroke_tris(
-            &[Vec2::new(0.0, 0.0), Vec2::new(4.0, 0.0)],
-            false,
-            &spec(Cap::Butt, Join::Miter),
-            &m,
-        );
+        let t = stroke_tris(&[Vec2::new(0.0, 0.0), Vec2::new(4.0, 0.0)], false, &spec(Cap::Butt, Join::Miter), &m);
         assert!(t.iter().all(|p| p[0] >= 100.0 - 1e-3));
-        let none = StrokeSpec {
-            width: 0.0,
-            ..spec(Cap::Butt, Join::Miter)
-        };
-        assert!(stroke_tris(
-            &[Vec2::new(0.0, 0.0), Vec2::new(4.0, 0.0)],
-            false,
-            &none,
-            &m
-        )
-        .is_empty());
+        let none = StrokeSpec { width: 0.0, ..spec(Cap::Butt, Join::Miter) };
+        assert!(stroke_tris(&[Vec2::new(0.0, 0.0), Vec2::new(4.0, 0.0)], false, &none, &m).is_empty());
         assert!(stroke_tris(&[], false, &spec(Cap::Round, Join::Round), &m).is_empty());
-        assert!(
-            stroke_tris(
-                &[Vec2::new(f32::NAN, 0.0), Vec2::new(1.0, 1.0)],
-                false,
-                &spec(Cap::Butt, Join::Miter),
-                &m
-            )
-            .is_empty(),
-            "non-finite points are dropped"
-        );
+        assert!(stroke_tris(&[Vec2::new(f32::NAN, 0.0), Vec2::new(1.0, 1.0)], false, &spec(Cap::Butt, Join::Miter), &m).is_empty(), "non-finite points are dropped");
     }
 
     #[test]
     fn dot_stroke_for_a_single_point() {
-        let t = stroke_tris(
-            &[Vec2::new(5.0, 5.0), Vec2::new(5.0, 5.0)],
-            false,
-            &spec(Cap::Round, Join::Round),
-            &Affine2::IDENTITY,
-        );
+        let t = stroke_tris(&[Vec2::new(5.0, 5.0), Vec2::new(5.0, 5.0)], false, &spec(Cap::Round, Join::Round), &Affine2::IDENTITY);
         assert!((area_by_sampling(&t, 0.0, 10.0, 0.05) - std::f32::consts::PI).abs() < 0.2);
-        let b = stroke_tris(
-            &[Vec2::new(5.0, 5.0)],
-            false,
-            &spec(Cap::Butt, Join::Round),
-            &Affine2::IDENTITY,
-        );
+        let b = stroke_tris(&[Vec2::new(5.0, 5.0)], false, &spec(Cap::Butt, Join::Round), &Affine2::IDENTITY);
         assert!(b.is_empty());
     }
 
     #[test]
     fn dashes_split_by_arc_length() {
-        let pieces = dash(
-            &[Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0)],
-            false,
-            &[10.0, 10.0],
-            0.0,
-        )
-        .unwrap();
+        let pieces = dash(&[Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0)], false, &[10.0, 10.0], 0.0).unwrap();
         assert_eq!(pieces.len(), 2);
         assert_eq!((pieces[0][0].x, pieces[0][1].x), (0.0, 10.0));
         assert_eq!((pieces[1][0].x, pieces[1][1].x), (20.0, 30.0));
         // An offset of 5 shifts the pattern: first piece is 5 long.
-        let shifted = dash(
-            &[Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0)],
-            false,
-            &[10.0, 10.0],
-            5.0,
-        )
-        .unwrap();
+        let shifted = dash(&[Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0)], false, &[10.0, 10.0], 5.0).unwrap();
         assert_eq!((shifted[0][0].x, shifted[0].last().unwrap().x), (0.0, 5.0));
         assert_eq!(shifted[1][0].x, 15.0);
         // Negative offsets wrap.
-        let neg = dash(
-            &[Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0)],
-            false,
-            &[10.0, 10.0],
-            -15.0,
-        )
-        .unwrap();
+        let neg = dash(&[Vec2::new(0.0, 0.0), Vec2::new(40.0, 0.0)], false, &[10.0, 10.0], -15.0).unwrap();
         assert_eq!(neg[0][0].x, 0.0);
     }
 
     #[test]
     fn dashes_follow_corners_and_reject_bad_patterns() {
-        let l = [
-            Vec2::new(0.0, 0.0),
-            Vec2::new(10.0, 0.0),
-            Vec2::new(10.0, 10.0),
-        ];
+        let l = [Vec2::new(0.0, 0.0), Vec2::new(10.0, 0.0), Vec2::new(10.0, 10.0)];
         let pieces = dash(&l, false, &[15.0, 100.0], 0.0).unwrap();
         assert_eq!(pieces.len(), 1);
         assert_eq!(pieces[0].len(), 3, "the dash bends around the corner");
         assert!(dash(&l, false, &[0.0, 1.0], 0.0).unwrap().is_empty());
         assert!(dash(&l, false, &[1.0], 0.0).unwrap().is_empty());
-        let err = dash(
-            &[Vec2::new(0.0, 0.0), Vec2::new(1.0e6, 0.0)],
-            false,
-            &[1.0, 1.0],
-            0.0,
-        );
+        let err = dash(&[Vec2::new(0.0, 0.0), Vec2::new(1.0e6, 0.0)], false, &[1.0, 1.0], 0.0);
         assert!(err.is_err());
     }
 
