@@ -21,7 +21,7 @@ Conteúdo: [Todos os documentos](#todos-os-documentos) - [Trilhas de leitura por
 | [COMPARISON.md](../../COMPARISON.md) | Uma comparação honesta e datada com outras ferramentas de animação 2D | avaliadores |
 | [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | Verificação dos arquivos de release: assinaturas Sigstore, proveniência do build, somas SHA-256 | todos que instalam |
 | [UNINSTALL.md](../../UNINSTALL.md) | Remoção do OSATURA e de todos os arquivos que ele pode criar | todos que instalam |
-| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Política de assinatura de código (SignPath Foundation), papéis da equipe, privacidade | todos que instalam, mantenedores |
+| [../CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [../PRIVACY.md](PRIVACY.md) | Política de assinatura de código (SignPath Foundation), papéis da equipe, privacidade | todos que instalam, mantenedores |
 | [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Pequenas tarefas para uma primeira contribuição | novos colaboradores |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | O formato de projeto JSON, campo por campo | construtores de ferramentas, riggers que editam JSON |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | O que cada formato de exportação e de importação preserva e descarta | construtores de pipelines, integradores |

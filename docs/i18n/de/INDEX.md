@@ -21,7 +21,7 @@ Inhalt: [Alle Dokumente](#alle-dokumente) - [Lesepfade nach Zielgruppe](#lesepfa
 | [COMPARISON.md](../../COMPARISON.md) | Ein ehrlicher, datierter Vergleich mit anderen 2D-Animationswerkzeugen | Evaluierende |
 | [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | Release-Dateien prüfen: Sigstore-Signaturen, Build-Provenienz, SHA-256-Summen | alle, die installieren |
 | [UNINSTALL.md](../../UNINSTALL.md) | OSATURA und alle Dateien entfernen, die es anlegen kann | alle, die installieren |
-| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Code-Signing-Richtlinie (SignPath Foundation), Rollen im Team, Datenschutz | alle, die installieren, Maintainer |
+| [../CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [../PRIVACY.md](PRIVACY.md) | Code-Signing-Richtlinie (SignPath Foundation), Rollen im Team, Datenschutz | alle, die installieren, Maintainer |
 | [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Kleine Aufgaben für einen ersten Beitrag | neue Mitwirkende |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | Das JSON-Projektformat Feld für Feld | Werkzeugentwickler, Rigger, die JSON bearbeiten |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Was jedes Export- und Importformat enthält und weglässt | Pipeline-Entwickler, Integratoren |
