@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<!--fff:kit:start v=1 modules=core,store,view,a11y-->
+<!--fff:kit:start v=1 modules=core,store,view,a11y,share-->
 <meta name="fff-app" content="osatura">
-<meta name="fff-modules" content="core,store,view,a11y">
+<meta name="fff-modules" content="core,store,view,a11y,share">
 <style id="fff-style">/* fff-kit · stil comun (prefix fff-). Nu modifică stilul aplicației gazdă. */
 [data-fff-label]{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
 [data-fff-label]:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:3px}
@@ -92,7 +92,7 @@
        :root:not([data-fff-viewoff]) table:not([role=presentation]):not([role=none]):not(:has(> thead)) > tbody > tr:first-child > th,
        :root:not([data-fff-viewoff]) table:not([role=presentation]):not([role=none]):not(:has(> thead)) > tr:first-child > th){position:sticky;top:0;z-index:3}
 .fff-view{position:fixed;z-index:2147483590;margin:0;padding:0;pointer-events:none;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transition:opacity .4s;
-  top:30%;display:flex;flex-direction:column;gap:6px}
+  top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
 .fff-view[hidden]{display:none}
 .fff-view-r{right:calc(8px + env(safe-area-inset-right,0px))}
 .fff-view-l{left:calc(8px + env(safe-area-inset-left,0px))}
@@ -160,8 +160,31 @@ html.fff-rf body{font-family:Verdana,Tahoma,"Trebuchet MS","DejaVu Sans",sans-se
 
 /* Linkuri subliniate, focus accentuat. */
 html.fff-ul body a{text-decoration:underline!important;text-underline-offset:3px}
-html.fff-ul :focus-visible{outline:4px solid #ffd54a!important;outline-offset:3px!important}</style>
-<script id="fff-kit">/* fff-kit 1.6.0 */
+html.fff-ul :focus-visible{outline:4px solid #ffd54a!important;outline-offset:3px!important}
+/* fff-kit · FFF.share — bară verticală de distribuire, marginea din stânga, centrată pe verticală; compensează zoom-ul paginii (FFF.view) prin --fff-zinv. */
+.fff-share{position:fixed;z-index:2147483590;left:calc(8px + env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);margin:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;
+  pointer-events:none;font:700 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transition:opacity .4s;max-height:calc(100vh * var(--fff-zinv,1) - 16px);overflow:visible}
+.fff-share *{box-sizing:border-box}
+.fff-share[hidden]{display:none}
+.fff-share-list{display:flex;flex-direction:column;gap:6px}
+.fff-share-closed .fff-share-list{display:none}
+.fff-share-btn{pointer-events:auto;box-sizing:border-box;width:40px;height:40px;min-width:40px;min-height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(18,20,26,.72);color:#fff;
+  display:inline-grid;place-items:center;padding:0;margin:0;cursor:pointer;text-decoration:none;opacity:.88;-webkit-tap-highlight-color:transparent;transition:opacity .4s,transform .15s,border-color .15s;box-shadow:0 1px 6px rgba(0,0,0,.45)}
+.fff-share-btn:hover{border-color:#ffd54a;opacity:1}
+.fff-share-btn:active{transform:scale(.92)}
+.fff-share-btn:focus-visible{outline:3px solid #ffd54a;outline-offset:2px}
+.fff-share-btn svg{display:block;pointer-events:none}
+.fff-share-txt{pointer-events:none;font:800 15px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:-.02em}
+.fff-share-tog{width:32px;height:32px;min-width:32px;min-height:32px}
+.fff-share-tog svg{width:18px;height:18px}
+.fff-share-idle .fff-share-btn{opacity:.4}
+.fff-share-ok{background:#1f7a3a;border-color:#7fe3a0}.fff-share-no{background:#8a2a2a;border-color:#ff9a9a}
+.fff-share-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (pointer:coarse){.fff-share-btn{width:44px;height:44px;min-width:44px;min-height:44px}}
+@media (max-height:420px){.fff-share-btn{width:34px;height:34px;min-width:34px;min-height:34px}.fff-share-list,.fff-share{gap:4px}}
+@media (prefers-reduced-motion:reduce){.fff-share,.fff-share-btn{transition:none}}
+@media print{.fff-share{display:none!important}}</style>
+<script id="fff-kit">/* fff-kit 1.7.0 */
 /* ---- fff-kit/core ---- */
 /* fff-kit · core · v1.2.0 — fără rețea, fără dependențe. Definește window.FFF. */
 (function () {
@@ -217,7 +240,7 @@ html.fff-ul :focus-visible{outline:4px solid #ffd54a!important;outline-offset:3p
       }
     }
   } catch (e3) {}
-  var KIT_VERSION = '1.6.0';
+  var KIT_VERSION = '1.7.0';
   var F = (window.FFF = window.FFF || {});
   if (F.core && F.core.version) return; // idempotent la dublă încărcare
   var SUP = ['ro', 'en', 'fr', 'it', 'es', 'pt', 'hu', 'de'];
@@ -811,12 +834,62 @@ html.fff-ul :focus-visible{outline:4px solid #ffd54a!important;outline-offset:3p
     } catch (e) { /* ignorat */ }
   }
 
+
+  /* ---------- unități de viewport sub zoom ----------
+   * `zoom` pe <html> mărește tot, dar vh/vw rămân măsurate pe fereastra reală: un panou cu height:calc(100vh - 60px) iese cu (zoom−1)·100% din ecran și se suprapune
+   * peste subsol. Copiem regulile care folosesc vh/vw/vmin/vmax într-o foaie de stil proprie, cu unitatea înmulțită cu --fff-zinv (= 1/zoom). */
+  var UNIT = /(-?\d*\.?\d+)(vh|dvh|svh|lvh|vw|dvw|svw|lvw|vmin|dvmin|svmin|lvmin|vmax|dvmax|svmax|lvmax)\b/g;
+  var VPROPS = /^(height|min-height|max-height|width|min-width|max-width|top|bottom|left|right|inset(-block|-inline)?(-start|-end)?|block-size|inline-size|min-block-size|max-block-size|min-inline-size|max-inline-size|flex-basis)$/;
+  var vhSheet = null, vhT = 0;
+  function hasUnit(v) { UNIT.lastIndex = 0; var r = UNIT.test(v); UNIT.lastIndex = 0; return r; }
+  function wrapUnits(v) { return v.replace(UNIT, 'calc($1$2 * var(--fff-zinv,1))'); }
+  function collectUnits(list, out) {
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      try {
+        if (r.type === 1 && r.style) {
+          var decl = '';
+          for (var j = 0; j < r.style.length; j++) {
+            var p = r.style[j]; if (!VPROPS.test(p)) continue;
+            var v = r.style.getPropertyValue(p); if (!hasUnit(v) || v.indexOf('--fff-zinv') >= 0) continue;
+            decl += p + ':' + wrapUnits(v) + (r.style.getPropertyPriority(p) ? '!important' : '') + ';';
+          }
+          if (decl && r.selectorText) out.push(r.selectorText + '{' + decl + '}');
+        } else if ((r.type === 4 || r.type === 12) && r.cssRules) {
+          var inner = []; collectUnits(r.cssRules, inner);
+          if (inner.length) out.push((r.type === 4 ? '@media ' : '@supports ') + r.conditionText + '{' + inner.join('') + '}');
+        }
+      } catch (e) { /* ignorat */ }
+    }
+  }
+  function fixUnits() {
+    if (Math.abs(total - 1) < 0.005 || !doc.head) return;
+    var out = [];
+    for (var i = 0; i < doc.styleSheets.length; i++) {
+      var ss = doc.styleSheets[i]; if (ss.ownerNode && ss.ownerNode.id === 'fff-vhfix') continue;
+      try { if (ss.cssRules) collectUnits(ss.cssRules, out); } catch (e) { /* foaie din alt domeniu */ }
+    }
+    if (!vhSheet) { vhSheet = doc.createElement('style'); vhSheet.id = 'fff-vhfix'; doc.head.appendChild(vhSheet); }
+    else if (vhSheet.nextSibling) doc.head.appendChild(vhSheet);                                   // rămâne ultima, ca să bată regulile aplicației
+    var css = out.join('\n'); if (vhSheet.textContent !== css) vhSheet.textContent = css;
+    var els = doc.querySelectorAll('[style*="vh"],[style*="vw"],[style*="vmin"],[style*="vmax"]');
+    for (var k = 0; k < els.length; k++) {
+      var st = els[k].style;
+      for (var m = 0; m < st.length; m++) {
+        var pp = st[m]; if (!VPROPS.test(pp)) continue;
+        var vv = st.getPropertyValue(pp); if (hasUnit(vv) && vv.indexOf('--fff-zinv') < 0) st.setProperty(pp, wrapUnits(vv), st.getPropertyPriority(pp));
+      }
+    }
+  }
+  function scheduleUnits() { clearTimeout(vhT); vhT = setTimeout(function () { try { fixUnits(); } catch (e) { /* ignorat */ } }, 120); }
+
   /* ---------- zoom ---------- */
   function applyZoom(z) {
     total = clamp(z);
     if (Math.abs(total - 1) < 0.005) { de.style.removeProperty('zoom'); de.style.removeProperty('--fff-zinv'); }
     else { de.style.zoom = String(round2(total)); de.style.setProperty('--fff-zinv', String(Math.round(1e4 / total) / 1e4)); }
     if (root) root.style.zoom = total === 1 ? '' : String(Math.round(1e4 / total) / 1e4);
+    scheduleUnits();
     state();
   }
   function state() {
@@ -931,31 +1004,12 @@ html.fff-ul :focus-visible{outline:4px solid #ffd54a!important;outline-offset:3p
     }
     return out;
   }
-  function place(again) {
+  function place() {                                                               // bara de zoom stă mereu pe marginea din DREAPTA, centrată pe verticală (CSS: top:50% + translateY)
     if (!root) return;
-    var prev = root.style.visibility; root.style.visibility = 'hidden';
-    var w = innerWidth, h = innerHeight, H = 144, W = 44, best = null, score = 1e9, rects = ctrlRects();
-    var minY = 76 + H / 2, maxY = h - 12 - H / 2, M = 8;
-    if (!again) de.classList.remove('fff-vpad-r', 'fff-vpad-l');
-    ['l'].forEach(function (c) {                                                  // bara de zoom stă mereu pe marginea din STÂNGA (dreapta e a panoului de accesibilitate, FFF.a11y)
-      var x0 = c === 'r' ? w - M - W : M, x1 = x0 + W;
-      for (var k = 0; k <= 14; k++) {
-        var f = 0.5 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.05, cy = Math.min(Math.max(h * f, minY), maxY), t0 = cy - H / 2, t1 = cy + H / 2, sc = 0, ov = 0;
-        for (var i = 0; i < rects.length; i++) { var r = rects[i]; if (Math.min(x1, r.right) - Math.max(x0, r.left) > 1 && Math.min(t1, r.bottom) - Math.max(t0, r.top) > 1) { sc += 1; ov += 1; } }
-        for (var d = -H / 2 + 22; d <= H / 2 - 22; d += 50) sc += busy(c === 'r' ? w - 30 : 30, cy + d) * 0.2;
-        sc = sc * 10 + k * 0.1;
-        if (sc < score) { score = sc; best = {c: c, y: cy, ov: ov}; }
-      }
-    });
-    root.style.visibility = prev;
-    if (best && best.ov > 0 && !again) {                                           // nicio înălțime liberă: rezervăm o gutieră pe margine, conținutul se strânge
-      de.classList.remove('fff-vpad-r', 'fff-vpad-l'); de.classList.add('fff-vpad-' + best.c);
-      void de.offsetWidth; return place(true);
-    }
-    if (best && best.ov > 0 && again) { de.classList.remove('fff-vpad-r', 'fff-vpad-l'); }   // nu a ajutat: revenim
-    side = 'l';
+    de.classList.remove('fff-vpad-r', 'fff-vpad-l');
+    side = 'r';
     root.className = root.className.replace(/\bfff-view-(r|l|c)\b/g, '').replace(/\s+/g, ' ').trim() + ' fff-view-' + side;
-    root.style.top = Math.round(best ? best.y - H / 2 : 80) + 'px';
+    root.style.top = '';
   }
   function icon(kind) {
     var NS = 'http://www.w3.org/2000/svg', s = doc.createElementNS(NS, 'svg');
@@ -1113,7 +1167,7 @@ html.fff-ul :focus-visible{outline:4px solid #ffd54a!important;outline-offset:3p
   window.addEventListener('resize', scheduleSticky, {passive: true});
   ['pointerdown', 'touchstart', 'scroll'].forEach(function (ev) { doc.addEventListener(ev, wake, {passive: true, capture: true}); });
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init); else init();
-  window.addEventListener('load', function () { scheduleSticky(); setTimeout(function () { if (root && !root.hidden) refit(); }, 700); });
+  window.addEventListener('load', function () { scheduleUnits(); scheduleSticky(); setTimeout(function () { if (root && !root.hidden) refit(); }, 700); });
   setTimeout(function () { if (root && !root.hidden) refit(); }, 2500);
 })();
 /* ---- fff-kit/a11y ---- */
@@ -1573,14 +1627,146 @@ html.fff-ul :focus-visible{outline:4px solid #ffd54a!important;outline-offset:3p
   F.onLang && F.onLang(labels);
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init); else init();
 })();
+/* ---- fff-kit/share ---- */
+/* fff-kit · FFF.share — bară verticală de distribuire pe rețele sociale, pe marginea din STÂNGA, centrată pe verticală.
+ * Fără scripturi sau pixeli de la rețele: fiecare buton e un simplu link către adresa oficială de „share”, deschis doar la clic (target=_blank, rel=noopener noreferrer);
+ * pe telefon apare și „Distribuie…” din sistem (navigator.share). Nu trimite nimic înainte de clic și nu reține nimic în afară de starea strânsă/desfăcută (fff.<slug>.share).
+ * Distribuie adresa canonică a aplicației (<link rel=canonical> / og:url, altfel adresa paginii, altfel https://chiuta.ro/) și titlul paginii.
+ * Elementul stă sub <html> (ca FFF.a11y) și compensează zoom-ul paginii (FFF.view) prin --fff-zinv. Nu apare în iframe, în modul chioșc/încorporat (?kiosk=1, ?embed=1, ?noshare=1),
+ * la tipărire și în browsere automatizate (navigator.webdriver; se forțează cu ?fffshare=1). Se oprește cu <meta name="fff-share" content="off">.
+ * API: FFF.share.{show, hide, toggle, collapse, expand, url, element}. */
+(function () {
+  'use strict';
+  var F = window.FFF;
+  if (!F || F.share) return;
+  var doc = document, de = doc.documentElement;
+  var root = null, list = null, tog = null, live = null, idleT = 0, copyT = 0, OFF = false, wanted = true, forced = false, collapsed = false, moZ = null;
+  function T(k) { return F.t('share', k); }
+  function meta(n) { var m = doc.querySelector('meta[name="' + n + '"]'); return m ? (m.getAttribute('content') || '') : ''; }
+  function RAW() { return F.store && F.store.raw ? F.store.raw : null; }
+  function KEY() { return ((F.store && F.store.prefix) || ('fff.' + (F.slug || 'app') + '.')) + 'share'; }
+
+  function eligible() {
+    if (OFF) return false;
+    if (forced) return true;
+    if (!wanted) return false;
+    if (window.top !== window.self) return false;
+    if (navigator.webdriver && !/[?&]fffshare=1\b/.test(location.search)) return false;
+    if (/[?&](kiosk|embed|noshare)=(1|true)\b/.test(location.search) || de.classList.contains('kiosk') || (doc.body && doc.body.classList.contains('kiosk'))) return false;
+    return true;
+  }
+  function pageUrl() {
+    var c = doc.querySelector('link[rel="canonical"]'), u = c && c.getAttribute('href') || meta('og:url') || (doc.querySelector('meta[property="og:url"]') || {getAttribute: function () { return ''; }}).getAttribute('content');
+    try { if (u) return new URL(u, location.href).href; } catch (e) { /* ignorat */ }
+    if (/^https?:$/.test(location.protocol)) return location.href.split('#')[0];
+    return 'https://chiuta.ro/';
+  }
+  function pageTitle() { return (doc.title || '').trim() || 'chiuta.ro'; }
+  function enc(x) { return encodeURIComponent(x); }
+  var NETS = [
+    {id: 'wa', label: 'WA', href: function (u, t) { return 'https://wa.me/?text=' + enc(t + ' ' + u); }},
+    {id: 'tg', icon: 'M21.5 3.2 2.6 10.6c-.9.4-.9 1.1-.2 1.3l4.8 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.2-.4-1.7-1.2-1.4zM8.3 13.1l9.5-6c.4-.3.9-.1.5.2l-7.9 7.1-.3 3.3z', href: function (u, t) { return 'https://t.me/share/url?url=' + enc(u) + '&text=' + enc(t); }},
+    {id: 'fb', label: 'f', href: function (u) { return 'https://www.facebook.com/sharer/sharer.php?u=' + enc(u); }},
+    {id: 'x', label: 'X', href: function (u, t) { return 'https://x.com/intent/post?url=' + enc(u) + '&text=' + enc(t); }},
+    {id: 'in', label: 'in', href: function (u) { return 'https://www.linkedin.com/sharing/share-offsite/?url=' + enc(u); }},
+    {id: 'mail', icon: 'M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1.6 2 7.4 5.6L19.4 7zM4 9.1V17h16V9.1l-8 6.1z', href: function (u, t) { return 'mailto:?subject=' + enc(t) + '&body=' + enc(t + '\n' + u); }}
+  ];
+  function svg(d, extra) {
+    var s = doc.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', '20'); s.setAttribute('height', '20'); s.setAttribute('aria-hidden', 'true'); s.setAttribute('focusable', 'false');
+    var p = doc.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); p.setAttribute('fill', extra === 'stroke' ? 'none' : 'currentColor'); if (extra === 'stroke') { p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '2'); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); }
+    s.appendChild(p); return s;
+  }
+  function netName(id) { return T('n_' + id); }
+  function mkItem(tag, cls) { var e = doc.createElement(tag); e.className = 'fff-share-btn' + (cls ? ' ' + cls : ''); return e; }
+  function say(msg) { if (live) { live.textContent = ''; setTimeout(function () { if (live) live.textContent = msg; }, 30); } }
+
+  function build() {
+    root = doc.createElement('div'); root.className = 'fff-share'; root.setAttribute('data-fff-share', ''); root.setAttribute('role', 'toolbar'); root.hidden = true;
+    live = doc.createElement('span'); live.className = 'fff-share-sr'; live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite');
+    tog = mkItem('button', 'fff-share-tog'); tog.type = 'button'; tog.addEventListener('click', function () { api.toggle(); });
+    list = doc.createElement('div'); list.className = 'fff-share-list';
+    root.appendChild(tog); root.appendChild(list); root.appendChild(live);
+    ['pointerdown', 'click', 'touchstart'].forEach(function (ev) { root.addEventListener(ev, function (e) { e.stopPropagation(); }, {passive: true}); });
+    fill();
+  }
+  function fill() {
+    if (!list) return;
+    while (list.firstChild) list.removeChild(list.firstChild);
+    var u = pageUrl(), t = pageTitle();
+    if (typeof navigator.share === 'function') {
+      var n = mkItem('button', 'fff-share-native'); n.type = 'button'; n.setAttribute('data-net', 'native'); n.appendChild(svg('M18 8a3 3 0 1 0-2.8-4M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4', 'stroke'));
+      n.addEventListener('click', function () { try { navigator.share({title: pageTitle(), text: pageTitle(), url: pageUrl()}).catch(function () { /* anulat */ }); } catch (e) { /* ignorat */ } });
+      list.appendChild(n);
+    }
+    NETS.forEach(function (net) {
+      var a = mkItem('a'); a.setAttribute('data-net', net.id); a.target = '_blank'; a.rel = 'noopener noreferrer'; a.href = net.href(u, t);
+      if (net.icon) a.appendChild(svg(net.icon)); else { var sp = doc.createElement('span'); sp.className = 'fff-share-txt'; sp.textContent = net.label; a.appendChild(sp); }
+      list.appendChild(a);
+    });
+    var c = mkItem('button'); c.type = 'button'; c.setAttribute('data-net', 'copy'); c.appendChild(svg('M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1', 'stroke'));
+    c.addEventListener('click', function () { copy(c); });
+    list.appendChild(c);
+    labels();
+  }
+  function copy(btn) {
+    var u = pageUrl(), done = function (ok) { say(ok ? T('copied') : T('copyfail')); btn.classList.add(ok ? 'fff-share-ok' : 'fff-share-no'); clearTimeout(copyT); copyT = setTimeout(function () { btn.classList.remove('fff-share-ok', 'fff-share-no'); }, 1600); };
+    var fallback = function () { try { var ta = doc.createElement('textarea'); ta.value = u; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0'; doc.body.appendChild(ta); ta.select(); var ok = doc.execCommand && doc.execCommand('copy'); doc.body.removeChild(ta); done(!!ok); } catch (e) { done(false); } };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(function () { done(true); }, fallback); else fallback(); } catch (e) { fallback(); }
+  }
+  function labels() {
+    if (!root) return;
+    root.setAttribute('aria-label', T('bar'));
+    var items = list.querySelectorAll('[data-net]');
+    for (var i = 0; i < items.length; i++) {
+      var id = items[i].getAttribute('data-net'), nm = id === 'native' ? T('native') : id === 'copy' ? T('copy') : id === 'mail' ? T('n_mail') : T('share').replace('{n}', netName(id));
+      if (id === 'mail') nm = T('share').replace('{n}', T('n_mail'));
+      items[i].setAttribute('aria-label', nm); items[i].title = nm;
+    }
+    if (tog) { tog.setAttribute('aria-expanded', collapsed ? 'false' : 'true'); tog.setAttribute('aria-label', collapsed ? T('open') : T('close')); tog.title = collapsed ? T('open') : T('close'); }
+  }
+  function paintTog() {
+    if (!tog) return; while (tog.firstChild) tog.removeChild(tog.firstChild);
+    tog.appendChild(collapsed ? svg('M18 8a3 3 0 1 0-2.8-4M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4', 'stroke') : svg('M15 6l-6 6 6 6', 'stroke'));
+    root.classList.toggle('fff-share-closed', collapsed); labels();
+  }
+  function load() { try { var R = RAW(), v = R ? R.get(KEY()) : null; if (v === '1') collapsed = true; else if (v === '0') collapsed = false; else collapsed = (innerHeight || 800) < 520; } catch (e) { /* ignorat */ } }
+  function save() { try { var R = RAW(); if (R) R.set(KEY(), collapsed ? '1' : '0'); } catch (e) { /* ignorat */ } }
+  function zoomFix() { if (!root) return; var z = parseFloat(de.style.zoom); root.style.zoom = (z && Math.abs(z - 1) > 0.005) ? String(Math.round(1e4 / z) / 1e4) : ''; }
+  function wake() { if (!root) return; root.classList.remove('fff-share-idle'); clearTimeout(idleT); idleT = setTimeout(function () { if (root) root.classList.add('fff-share-idle'); }, 5000); }
+  function mount() {
+    if (!root) { build(); load(); }
+    if (!root.isConnected) de.appendChild(root);
+    paintTog(); zoomFix(); root.hidden = false; wake();
+    if (!moZ && typeof MutationObserver === 'function') { try { moZ = new MutationObserver(zoomFix); moZ.observe(de, {attributes: true, attributeFilter: ['style']}); } catch (e) { /* ignorat */ } }
+    return true;
+  }
+  var api = {
+    show: function () { wanted = true; if (eligible()) mount(); },
+    hide: function () { wanted = false; if (root) root.hidden = true; },
+    toggle: function () { collapsed = !collapsed; save(); paintTog(); wake(); },
+    collapse: function () { collapsed = true; save(); paintTog(); },
+    expand: function () { collapsed = false; save(); paintTog(); },
+    url: pageUrl,
+    element: function () { return root; }
+  };
+  F.share = api;
+  function init() {
+    if (meta('fff-share').toLowerCase() === 'off' || /[?&]noshare=(1|true)\b/.test(location.search)) { OFF = true; return; }
+    if (eligible()) mount();
+  }
+  F.onLang && F.onLang(function () { if (root) { fill(); paintTog(); } });
+  ['pointerdown', 'touchstart', 'scroll', 'mousemove'].forEach(function (ev) { doc.addEventListener(ev, wake, {passive: true, capture: true}); });
+  window.addEventListener('load', function () { if (root && !root.hidden) { fill(); paintTog(); } });
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init); else init();
+})();
 </script>
-<script type="application/json" id="fff-i18n">{"view":{"ro":{"bar":"Zoom și dimensiunea textului","in":"Mărește","out":"Micșorează","fit":"Zoom automat","zoom":"Zoom"},"en":{"bar":"Zoom and text size","in":"Zoom in","out":"Zoom out","fit":"Automatic zoom","zoom":"Zoom"},"fr":{"bar":"Zoom et taille du texte","in":"Agrandir","out":"Réduire","fit":"Zoom automatique","zoom":"Zoom"},"it":{"bar":"Zoom e dimensione del testo","in":"Ingrandisci","out":"Riduci","fit":"Zoom automatico","zoom":"Zoom"},"es":{"bar":"Zoom y tamaño del texto","in":"Ampliar","out":"Reducir","fit":"Zoom automático","zoom":"Zoom"},"pt":{"bar":"Zoom e tamanho do texto","in":"Ampliar","out":"Reduzir","fit":"Zoom automático","zoom":"Zoom"},"de":{"bar":"Zoom und Textgröße","in":"Vergrößern","out":"Verkleinern","fit":"Automatischer Zoom","zoom":"Zoom"},"hu":{"bar":"Nagyítás és szövegméret","in":"Nagyítás","out":"Kicsinyítés","fit":"Automatikus nagyítás","zoom":"Nagyítás"}},"a11y":{"ro":{"skip":"Sari la conținut","btn":"Accesibilitate","up":"Înapoi sus","t":"Opțiuni de accesibilitate","sz":"Mărimea textului","sm":"Mai mic","lg":"Mai mare","pc":"{n}%","hc":"Contrast ridicat","rm":"Fără animații","rf":"Text lizibil (spațiere mărită)","ul":"Linkuri subliniate, focus accentuat","tts":"🔊 Citește textul","tts2":"■ Oprește citirea","tth":"Citește textul selectat sau pe cel vizibil pe ecran.","tt0":"Citirea cu voce nu e disponibilă în acest browser.","ttn":"Nu am găsit text de citit pe ecran.","rs":"Resetează tot","cl":"Închide"},"en":{"skip":"Skip to content","btn":"Accessibility","up":"Back to top","t":"Accessibility options","sz":"Text size","sm":"Smaller","lg":"Larger","pc":"{n}%","hc":"High contrast","rm":"No animations","rf":"Readable text (wider spacing)","ul":"Underlined links, strong focus","tts":"🔊 Read the text","tts2":"■ Stop reading","tth":"Reads the selected text, or the text visible on screen.","tt0":"Speech is not available in this browser.","ttn":"No text to read on screen.","rs":"Reset all","cl":"Close"},"fr":{"skip":"Aller au contenu","btn":"Accessibilité","up":"Retour en haut","t":"Options d’accessibilité","sz":"Taille du texte","sm":"Plus petit","lg":"Plus grand","pc":"{n}%","hc":"Contraste élevé","rm":"Sans animations","rf":"Texte lisible (espacement élargi)","ul":"Liens soulignés, focus renforcé","tts":"🔊 Lire le texte","tts2":"■ Arrêter la lecture","tth":"Lit le texte sélectionné ou celui visible à l’écran.","tt0":"La lecture vocale n’est pas disponible dans ce navigateur.","ttn":"Aucun texte à lire à l’écran.","rs":"Tout réinitialiser","cl":"Fermer"},"it":{"skip":"Vai al contenuto","btn":"Accessibilità","up":"Torna su","t":"Opzioni di accessibilità","sz":"Dimensione del testo","sm":"Più piccolo","lg":"Più grande","pc":"{n}%","hc":"Contrasto elevato","rm":"Senza animazioni","rf":"Testo leggibile (spaziatura ampia)","ul":"Link sottolineati, focus marcato","tts":"🔊 Leggi il testo","tts2":"■ Ferma la lettura","tth":"Legge il testo selezionato o quello visibile sullo schermo.","tt0":"La lettura vocale non è disponibile in questo browser.","ttn":"Nessun testo da leggere sullo schermo.","rs":"Ripristina tutto","cl":"Chiudi"},"es":{"skip":"Saltar al contenido","btn":"Accesibilidad","up":"Volver arriba","t":"Opciones de accesibilidad","sz":"Tamaño del texto","sm":"Más pequeño","lg":"Más grande","pc":"{n}%","hc":"Contraste alto","rm":"Sin animaciones","rf":"Texto legible (espaciado amplio)","ul":"Enlaces subrayados, foco marcado","tts":"🔊 Leer el texto","tts2":"■ Detener la lectura","tth":"Lee el texto seleccionado o el visible en pantalla.","tt0":"La lectura en voz alta no está disponible en este navegador.","ttn":"No hay texto que leer en pantalla.","rs":"Restablecer todo","cl":"Cerrar"},"pt":{"skip":"Saltar para o conteúdo","btn":"Acessibilidade","up":"Voltar ao topo","t":"Opções de acessibilidade","sz":"Tamanho do texto","sm":"Mais pequeno","lg":"Maior","pc":"{n}%","hc":"Contraste elevado","rm":"Sem animações","rf":"Texto legível (espaçamento maior)","ul":"Ligações sublinhadas, foco reforçado","tts":"🔊 Ler o texto","tts2":"■ Parar a leitura","tth":"Lê o texto selecionado ou o visível no ecrã.","tt0":"A leitura em voz alta não está disponível neste navegador.","ttn":"Não há texto para ler no ecrã.","rs":"Repor tudo","cl":"Fechar"},"de":{"skip":"Zum Inhalt springen","btn":"Barrierefreiheit","up":"Nach oben","t":"Barrierefreiheits-Optionen","sz":"Textgröße","sm":"Kleiner","lg":"Größer","pc":"{n} %","hc":"Hoher Kontrast","rm":"Keine Animationen","rf":"Gut lesbarer Text (weiter Abstand)","ul":"Unterstrichene Links, starker Fokus","tts":"🔊 Text vorlesen","tts2":"■ Vorlesen beenden","tth":"Liest den markierten oder den sichtbaren Text vor.","tt0":"Sprachausgabe ist in diesem Browser nicht verfügbar.","ttn":"Kein Text zum Vorlesen auf dem Bildschirm.","rs":"Alles zurücksetzen","cl":"Schließen"},"hu":{"skip":"Ugrás a tartalomra","btn":"Hozzáférhetőség","up":"Vissza a tetejére","t":"Hozzáférhetőségi beállítások","sz":"Szövegméret","sm":"Kisebb","lg":"Nagyobb","pc":"{n}%","hc":"Magas kontraszt","rm":"Animációk nélkül","rf":"Olvasható szöveg (tágabb térköz)","ul":"Aláhúzott linkek, erős fókusz","tts":"🔊 Szöveg felolvasása","tts2":"■ Felolvasás leállítása","tth":"Felolvassa a kijelölt vagy a képernyőn látható szöveget.","tt0":"A hangfelolvasás nem érhető el ebben a böngészőben.","ttn":"Nincs felolvasható szöveg a képernyőn.","rs":"Minden visszaállítása","cl":"Bezárás"}}}</script>
+<script type="application/json" id="fff-i18n">{"view":{"ro":{"bar":"Zoom și dimensiunea textului","in":"Mărește","out":"Micșorează","fit":"Zoom automat","zoom":"Zoom"},"en":{"bar":"Zoom and text size","in":"Zoom in","out":"Zoom out","fit":"Automatic zoom","zoom":"Zoom"},"fr":{"bar":"Zoom et taille du texte","in":"Agrandir","out":"Réduire","fit":"Zoom automatique","zoom":"Zoom"},"it":{"bar":"Zoom e dimensione del testo","in":"Ingrandisci","out":"Riduci","fit":"Zoom automatico","zoom":"Zoom"},"es":{"bar":"Zoom y tamaño del texto","in":"Ampliar","out":"Reducir","fit":"Zoom automático","zoom":"Zoom"},"pt":{"bar":"Zoom e tamanho do texto","in":"Ampliar","out":"Reduzir","fit":"Zoom automático","zoom":"Zoom"},"de":{"bar":"Zoom und Textgröße","in":"Vergrößern","out":"Verkleinern","fit":"Automatischer Zoom","zoom":"Zoom"},"hu":{"bar":"Nagyítás és szövegméret","in":"Nagyítás","out":"Kicsinyítés","fit":"Automatikus nagyítás","zoom":"Nagyítás"}},"a11y":{"ro":{"skip":"Sari la conținut","btn":"Accesibilitate","up":"Înapoi sus","t":"Opțiuni de accesibilitate","sz":"Mărimea textului","sm":"Mai mic","lg":"Mai mare","pc":"{n}%","hc":"Contrast ridicat","rm":"Fără animații","rf":"Text lizibil (spațiere mărită)","ul":"Linkuri subliniate, focus accentuat","tts":"🔊 Citește textul","tts2":"■ Oprește citirea","tth":"Citește textul selectat sau pe cel vizibil pe ecran.","tt0":"Citirea cu voce nu e disponibilă în acest browser.","ttn":"Nu am găsit text de citit pe ecran.","rs":"Resetează tot","cl":"Închide"},"en":{"skip":"Skip to content","btn":"Accessibility","up":"Back to top","t":"Accessibility options","sz":"Text size","sm":"Smaller","lg":"Larger","pc":"{n}%","hc":"High contrast","rm":"No animations","rf":"Readable text (wider spacing)","ul":"Underlined links, strong focus","tts":"🔊 Read the text","tts2":"■ Stop reading","tth":"Reads the selected text, or the text visible on screen.","tt0":"Speech is not available in this browser.","ttn":"No text to read on screen.","rs":"Reset all","cl":"Close"},"fr":{"skip":"Aller au contenu","btn":"Accessibilité","up":"Retour en haut","t":"Options d’accessibilité","sz":"Taille du texte","sm":"Plus petit","lg":"Plus grand","pc":"{n}%","hc":"Contraste élevé","rm":"Sans animations","rf":"Texte lisible (espacement élargi)","ul":"Liens soulignés, focus renforcé","tts":"🔊 Lire le texte","tts2":"■ Arrêter la lecture","tth":"Lit le texte sélectionné ou celui visible à l’écran.","tt0":"La lecture vocale n’est pas disponible dans ce navigateur.","ttn":"Aucun texte à lire à l’écran.","rs":"Tout réinitialiser","cl":"Fermer"},"it":{"skip":"Vai al contenuto","btn":"Accessibilità","up":"Torna su","t":"Opzioni di accessibilità","sz":"Dimensione del testo","sm":"Più piccolo","lg":"Più grande","pc":"{n}%","hc":"Contrasto elevato","rm":"Senza animazioni","rf":"Testo leggibile (spaziatura ampia)","ul":"Link sottolineati, focus marcato","tts":"🔊 Leggi il testo","tts2":"■ Ferma la lettura","tth":"Legge il testo selezionato o quello visibile sullo schermo.","tt0":"La lettura vocale non è disponibile in questo browser.","ttn":"Nessun testo da leggere sullo schermo.","rs":"Ripristina tutto","cl":"Chiudi"},"es":{"skip":"Saltar al contenido","btn":"Accesibilidad","up":"Volver arriba","t":"Opciones de accesibilidad","sz":"Tamaño del texto","sm":"Más pequeño","lg":"Más grande","pc":"{n}%","hc":"Contraste alto","rm":"Sin animaciones","rf":"Texto legible (espaciado amplio)","ul":"Enlaces subrayados, foco marcado","tts":"🔊 Leer el texto","tts2":"■ Detener la lectura","tth":"Lee el texto seleccionado o el visible en pantalla.","tt0":"La lectura en voz alta no está disponible en este navegador.","ttn":"No hay texto que leer en pantalla.","rs":"Restablecer todo","cl":"Cerrar"},"pt":{"skip":"Saltar para o conteúdo","btn":"Acessibilidade","up":"Voltar ao topo","t":"Opções de acessibilidade","sz":"Tamanho do texto","sm":"Mais pequeno","lg":"Maior","pc":"{n}%","hc":"Contraste elevado","rm":"Sem animações","rf":"Texto legível (espaçamento maior)","ul":"Ligações sublinhadas, foco reforçado","tts":"🔊 Ler o texto","tts2":"■ Parar a leitura","tth":"Lê o texto selecionado ou o visível no ecrã.","tt0":"A leitura em voz alta não está disponível neste navegador.","ttn":"Não há texto para ler no ecrã.","rs":"Repor tudo","cl":"Fechar"},"de":{"skip":"Zum Inhalt springen","btn":"Barrierefreiheit","up":"Nach oben","t":"Barrierefreiheits-Optionen","sz":"Textgröße","sm":"Kleiner","lg":"Größer","pc":"{n} %","hc":"Hoher Kontrast","rm":"Keine Animationen","rf":"Gut lesbarer Text (weiter Abstand)","ul":"Unterstrichene Links, starker Fokus","tts":"🔊 Text vorlesen","tts2":"■ Vorlesen beenden","tth":"Liest den markierten oder den sichtbaren Text vor.","tt0":"Sprachausgabe ist in diesem Browser nicht verfügbar.","ttn":"Kein Text zum Vorlesen auf dem Bildschirm.","rs":"Alles zurücksetzen","cl":"Schließen"},"hu":{"skip":"Ugrás a tartalomra","btn":"Hozzáférhetőség","up":"Vissza a tetejére","t":"Hozzáférhetőségi beállítások","sz":"Szövegméret","sm":"Kisebb","lg":"Nagyobb","pc":"{n}%","hc":"Magas kontraszt","rm":"Animációk nélkül","rf":"Olvasható szöveg (tágabb térköz)","ul":"Aláhúzott linkek, erős fókusz","tts":"🔊 Szöveg felolvasása","tts2":"■ Felolvasás leállítása","tth":"Felolvassa a kijelölt vagy a képernyőn látható szöveget.","tt0":"A hangfelolvasás nem érhető el ebben a böngészőben.","ttn":"Nincs felolvasható szöveg a képernyőn.","rs":"Minden visszaállítása","cl":"Bezárás"}},"share":{"ro":{"bar":"Distribuie pe rețele","share":"Distribuie pe {n}","native":"Distribuie…","copy":"Copiază linkul","copied":"Link copiat","copyfail":"Nu am putut copia linkul","close":"Ascunde butoanele de distribuire","open":"Arată butoanele de distribuire","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"en":{"bar":"Share on social networks","share":"Share on {n}","native":"Share…","copy":"Copy link","copied":"Link copied","copyfail":"Could not copy the link","close":"Hide share buttons","open":"Show share buttons","n_mail":"Email","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"fr":{"bar":"Partager sur les réseaux","share":"Partager sur {n}","native":"Partager…","copy":"Copier le lien","copied":"Lien copié","copyfail":"Impossible de copier le lien","close":"Masquer les boutons de partage","open":"Afficher les boutons de partage","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"it":{"bar":"Condividi sui social","share":"Condividi su {n}","native":"Condividi…","copy":"Copia il link","copied":"Link copiato","copyfail":"Impossibile copiare il link","close":"Nascondi i pulsanti di condivisione","open":"Mostra i pulsanti di condivisione","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"es":{"bar":"Compartir en redes","share":"Compartir en {n}","native":"Compartir…","copy":"Copiar el enlace","copied":"Enlace copiado","copyfail":"No se pudo copiar el enlace","close":"Ocultar los botones de compartir","open":"Mostrar los botones de compartir","n_mail":"Correo electrónico","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"pt":{"bar":"Partilhar nas redes","share":"Partilhar no {n}","native":"Partilhar…","copy":"Copiar a ligação","copied":"Ligação copiada","copyfail":"Não foi possível copiar a ligação","close":"Ocultar os botões de partilha","open":"Mostrar os botões de partilha","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"de":{"bar":"In sozialen Netzwerken teilen","share":"Auf {n} teilen","native":"Teilen…","copy":"Link kopieren","copied":"Link kopiert","copyfail":"Link konnte nicht kopiert werden","close":"Teilen-Schaltflächen ausblenden","open":"Teilen-Schaltflächen anzeigen","n_mail":"E-Mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"hu":{"bar":"Megosztás a közösségi oldalakon","share":"Megosztás: {n}","native":"Megosztás…","copy":"Hivatkozás másolása","copied":"Hivatkozás másolva","copyfail":"A hivatkozás másolása nem sikerült","close":"Megosztó gombok elrejtése","open":"Megosztó gombok megjelenítése","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"}}}</script>
 <!--fff:kit:end-->
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OSATURA — 2D vector rigging and animation in Rust</title>
 <meta name="description" content="OSATURA: a 2D vector rigging and animation engine in Rust. Bones, IK, skinning, deformers, state-machine runtime, CLI, browser studio and libraries.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9mhAEIYdxxNBHvX+ImDOSkMiDq3d1ueo0a0vS9qgKm4=' 'sha256-RgODV8DRxdNOJRfkoYkTtCdyzzm4lV7rbOft9JWXzDU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X0DSixZnVaTIcwF5gZ3/C6pfEvoT8AUZMpqPriLgFM0=' 'sha256-RgODV8DRxdNOJRfkoYkTtCdyzzm4lV7rbOft9JWXzDU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <link rel="alternate" hreflang="en" href="https://osatura.chiuta.ro/">
 <link rel="alternate" hreflang="de" href="https://osatura.chiuta.ro/de/">
 <link rel="alternate" hreflang="es" href="https://osatura.chiuta.ro/es/">
