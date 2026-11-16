@@ -10,6 +10,23 @@ Kapcsolódó verziók, amelyek **valódiak**, és függetlenek a fentiektől: a 
 
 ## [Unreleased]
 
+### Hozzáadva
+- **Fraktáltextúrák** (`osatura_core::fractal`, CLI `texture` és `texture-add`): determinisztikus, varrat nélkül csempézhető felülettextúrák 4096x4096-ig, megvilágított színes képpel, lapos albedóval, 16 bites magasságtérképpel és érintőtéri normáltérképpel. Zajcsalád: fBm, ridged multifraktál, billow, tartományelhajlítás, cellás repedések, márványerek, minden oktáva a Nyquist-frekvenciára korlátozva, hogy a nagy méretek valódi részletet nyerjenek. Szökési idős család: Mandelbrot, Julia és Burning Ship sima színezéssel és túlmintavételezéssel. 14 előbeállítás (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). A `texture-add` az eredményt normáltérképével együtt képrétegként ágyazza be, így minden meglévő exportban és az `fx --layer-normals` parancsban is működik. A parancsok miatt nem változik a projektformátum.
+- **`texture` rétegeffektus**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` varrat nélküli fraktáltextúrával tölti ki a réteget; az `amount` animálható (`fx_amount`). A vászonhoz rögzített; csak a raszteres megjelenítők (az SVG és a Lottie kihagyja).
+
+### Javítva
+- (a textúrakód kiadás előtti ellenséges auditja találta) a 2^24 feletti seedek már nem kerekednek, a szomszédos seedek oktávái már nem korrelálnak, a cellás pontok már nem sorakoznak oszlopokba, és a márványminta most már bármilyen cellaszámnál varrat nélkül ismétlődik.
+
+### Módosítva (a stúdió használhatósága)
+
+- **Az eszköztár két sorba rendezve**, a kapcsolók tablettaként rajzolva (bekapcsolva kitöltöttek), elsődleges Save gomb, gyorsbillentyű-tippek a buborékokban, amelyek a saját kiosztásodat követik, és egy **Export** menü (GIF, HTML player, Lottie) mindegyikhez egy magyarázó sorral. Keskeny képernyőn az eszköztár egyetlen sor, amelyet oldalra görgetsz.
+- **A nem mentett módosítások láthatók**: narancssárga pont a Save gombon, pont a lap címében, és megerősítés, mielőtt az oldalt nem mentett szerkesztésekkel bezárnád vagy újratöltenéd (megosztott munkamenetben vagy a vezetett demó alatt nem). A mentett állapotig visszavonva a jelzés eltűnik.
+- **A Save megmondja, mi történt** („saved 17:52”), és ha sikertelen, azt is, miért. Új, választható **autosave** (az utolsó szerkesztésed után 3 másodperccel, böngészőnként megjegyezve).
+- **Megszakadt kapcsolat szalagja**: ha a stúdió szervere már nem válaszol, piros szalag jelenik meg, az oldal 3 másodpercenként újra próbálkozik, majd újratölti a projektet, amikor a szerver visszatér (korábban az oldal szó nélkül egyszerűen leállt).
+- **Gyorsindítási sáv** az első látogatáskor (kattintás a kijelöléshez, Space, Ctrl+K, `?`, vezetett demó). A `?` megnyitja a gyorsbillentyűk listáját.
+- A képkockaszámláló a másodperceket is mutatja (`12 / 47 · 0.50 s`); a Selection panel hosszú súgószövege összecsukódik, az üres kijelölés pedig megmondja, mit kell tenni; látható billentyűzetes fókuszkeretek; nagyobb érintési célpontok az érintőképernyőkön; a képnek hasznos `alt` szövege van; a csökkentett mozgás beállítása érvényesül.
+- Új smoke-teszt: `osatura-cli/tests/studio_ux_smoke.js` (32 ellenőrzés). A projektformátum, a HTTP API és a parancssor nem változott.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Előzetes kiadás, 2026. nov. 10-én közzétéve a `main` ágból (commit `96e790a`, címke `v0.1.0-alpha.5`). A crate-verziók `0.1.0` maradnak; a kiadás verziója az `OSATURA_VERSION`-ből jön, amelyet a `release.yml` állít be.*

@@ -48,6 +48,19 @@ pub enum EffectKind {
     Tint { black: Rgba, white: Rgba, #[serde(default = "one")] amount: f32 },
     /// Replace the colour; `opacity` 0..1 is the share of the new colour.
     Fill { color: Rgba, #[serde(default = "one")] opacity: f32 },
+    /// Replace the colour with a seamless fractal texture (a tileable preset of [`crate::fractal`], such as
+    /// `rock`, `lava` or `marble`). `tile` is the size of one repeat in stage units; `amount` 0..1 is the share of the
+    /// texture. The texture is anchored to the canvas (like paper grain), not to the layer, and only the layer's
+    /// own alpha shows it. Not drawn in SVG or Lottie output.
+    Texture { preset: String, #[serde(default = "one_seed")] seed: u32, #[serde(default = "default_tile")] tile: f32, #[serde(default = "one")] amount: f32 },
+}
+
+fn one_seed() -> u32 {
+    1
+}
+
+fn default_tile() -> f32 {
+    256.0
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -80,12 +93,16 @@ impl LayerEffect {
         LayerEffect::new(EffectKind::Fill { color, opacity })
     }
 
+    pub fn texture(preset: &str, seed: u32, tile: f32, amount: f32) -> LayerEffect {
+        LayerEffect::new(EffectKind::Texture { preset: preset.to_string(), seed, tile, amount })
+    }
+
     /// The animatable numbers of this effect (channel properties).
     pub fn props(&self) -> &'static [Prop] {
         match self.kind {
             EffectKind::Blur { .. } => &[Prop::FxBlur],
             EffectKind::DropShadow { .. } => &[Prop::FxDx, Prop::FxDy, Prop::FxSoft, Prop::FxAmount],
-            EffectKind::Tint { .. } | EffectKind::Fill { .. } => &[Prop::FxAmount],
+            EffectKind::Tint { .. } | EffectKind::Fill { .. } | EffectKind::Texture { .. } => &[Prop::FxAmount],
         }
     }
 
@@ -98,6 +115,7 @@ impl LayerEffect {
             (EffectKind::DropShadow { opacity, .. }, Prop::FxAmount) => *opacity,
             (EffectKind::Tint { amount, .. }, Prop::FxAmount) => *amount,
             (EffectKind::Fill { opacity, .. }, Prop::FxAmount) => *opacity,
+            (EffectKind::Texture { amount, .. }, Prop::FxAmount) => *amount,
             _ => return None,
         })
     }
@@ -115,6 +133,7 @@ impl LayerEffect {
             (EffectKind::DropShadow { opacity, .. }, Prop::FxAmount) => *opacity = v.clamp(0.0, 1.0),
             (EffectKind::Tint { amount, .. }, Prop::FxAmount) => *amount = v.clamp(0.0, 1.0),
             (EffectKind::Fill { opacity, .. }, Prop::FxAmount) => *opacity = v.clamp(0.0, 1.0),
+            (EffectKind::Texture { amount, .. }, Prop::FxAmount) => *amount = v.clamp(0.0, 1.0),
             _ => {}
         }
     }
@@ -129,6 +148,9 @@ impl LayerEffect {
             }
             EffectKind::Tint { black, white, amount } => col(black) && col(white) && fin(*amount) && (0.0..=1.0).contains(amount),
             EffectKind::Fill { color, opacity } => col(color) && fin(*opacity) && (0.0..=1.0).contains(opacity),
+            EffectKind::Texture { preset, tile, amount, .. } => {
+                crate::fractal::preset(preset).is_some_and(|p| !p.kind.is_escape()) && fin(*tile) && (4.0..=8192.0).contains(tile) && fin(*amount) && (0.0..=1.0).contains(amount)
+            }
         };
         if ok {
             Ok(())
@@ -247,10 +269,84 @@ pub fn apply_premul(buf: &mut Vec<f32>, w: usize, h: usize, effects: &[LayerEffe
                 let shadow = crate::postfx::solid_from_alpha(&crate::postfx::alpha_of(&moved), rgb(color), opacity * color.a.clamp(0.0, 1.0));
                 *buf = crate::postfx::over(buf, &shadow);
             }
+            EffectKind::Texture { preset, seed, tile, amount } => apply_texture(buf, w, h, preset, *seed, *tile, *amount, scale),
             k => {
                 if let Some(m) = color_matrix(k) {
                     apply_matrix(buf, &m);
                 }
+            }
+        }
+    }
+}
+
+type TileCache = std::collections::HashMap<(String, u32, usize), std::sync::Arc<Vec<u8>>>;
+
+/// One repeat of a texture as RGBA8, generated once per (preset, seed, side) and kept (at most 12 are held).
+fn texture_tile(preset: &str, seed: u32, side: usize) -> Option<std::sync::Arc<Vec<u8>>> {
+    use std::sync::{Arc, Mutex, OnceLock};
+    static CACHE: OnceLock<Mutex<TileCache>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new(TileCache::new()));
+    let key = (preset.to_string(), seed, side);
+    if let Some(t) = cache.lock().ok()?.get(&key) {
+        return Some(t.clone());
+    }
+    let mut p = crate::fractal::preset(preset)?;
+    p.size = side as u32;
+    p.seed = seed;
+    p.ssaa = 1;
+    let t = Arc::new(crate::fractal::generate(&p).ok()?.color);
+    let mut c = cache.lock().ok()?;
+    if c.len() >= 12 {
+        c.clear();
+    }
+    c.insert(key, t.clone());
+    Some(t)
+}
+
+#[allow(clippy::too_many_arguments, clippy::needless_range_loop)]
+fn apply_texture(
+    buf: &mut [f32],
+    w: usize,
+    h: usize,
+    preset: &str,
+    seed: u32,
+    tile: f32,
+    amount: f32,
+    scale: f32,
+) {
+    let amt = amount.clamp(0.0, 1.0);
+    let repeat_px = (tile * scale).max(1.0);
+    // a tile side of the next power of two keeps one texel per output pixel or more
+    let side = (repeat_px.ceil() as usize)
+        .next_power_of_two()
+        .clamp(64, 1024);
+    let Some(t) = texture_tile(preset, seed, side) else {
+        return;
+    };
+    let texel =
+        |x: usize, y: usize, c: usize| t[(y % side * side + x % side) * 4 + c] as f32 / 255.0;
+    for y in 0..h {
+        for x in 0..w {
+            let p = &mut buf[(y * w + x) * 4..(y * w + x) * 4 + 4];
+            let a = p[3];
+            if a <= 0.0 {
+                continue;
+            }
+            // bilinear sample of the wrapping tile at this pixel's place on the canvas
+            let fx = (x as f32 + 0.5) / repeat_px * side as f32 - 0.5;
+            let fy = (y as f32 + 0.5) / repeat_px * side as f32 - 0.5;
+            let (x0, y0) = (fx.floor(), fy.floor());
+            let (tx, ty) = (fx - x0, fy - y0);
+            let (ix, iy) = (
+                (x0 as i64).rem_euclid(side as i64) as usize,
+                (y0 as i64).rem_euclid(side as i64) as usize,
+            );
+            for c in 0..3 {
+                let top = texel(ix, iy, c) * (1.0 - tx) + texel(ix + 1, iy, c) * tx;
+                let bot = texel(ix, iy + 1, c) * (1.0 - tx) + texel(ix + 1, iy + 1, c) * tx;
+                let tv = top * (1.0 - ty) + bot * ty;
+                let orig = p[c] / a;
+                p[c] = (orig * (1.0 - amt) + tv * amt).clamp(0.0, 1.0) * a;
             }
         }
     }
@@ -777,5 +873,59 @@ mod tests {
         assert!(!crate::svg::render_frame(&plain, 0.0, &Default::default()).contains("filter"));
         // deterministic
         assert_eq!(svg, crate::svg::render_frame(&e, 0.0, &Default::default()));
+    }
+
+    #[test]
+    fn texture_effect_validates_serialises_and_paints_only_inside_the_alpha() {
+        let e = LayerEffect::texture("rock", 3, 128.0, 1.0);
+        assert!(e.validate().is_ok());
+        let j = serde_json::to_string(&e).unwrap();
+        assert!(j.contains(r#""type":"texture""#), "{j}");
+        let back: LayerEffect = serde_json::from_str(&j).unwrap();
+        assert_eq!(e, back);
+        let d: LayerEffect = serde_json::from_str(r#"{"type":"texture","preset":"lava"}"#).unwrap();
+        assert!(d.validate().is_ok() && d.get(Prop::FxAmount) == Some(1.0));
+        for bad in [
+            LayerEffect::texture("nope", 1, 128.0, 1.0),
+            LayerEffect::texture("mandelbrot", 1, 128.0, 1.0),
+            LayerEffect::texture("rock", 1, 1.0, 1.0),
+            LayerEffect::texture("rock", 1, f32::NAN, 1.0),
+            LayerEffect::texture("rock", 1, 128.0, 1.5),
+        ] {
+            assert!(bad.validate().is_err(), "{bad:?}");
+        }
+        // left half opaque grey, right half transparent
+        let (w, h) = (64usize, 64usize);
+        let mut buf = vec![0.0f32; w * h * 4];
+        for y in 0..h {
+            for x in 0..w / 2 {
+                buf[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[0.5, 0.5, 0.5, 1.0]);
+            }
+        }
+        let before = buf.clone();
+        apply_premul(&mut buf, w, h, std::slice::from_ref(&e), 1.0);
+        assert_ne!(buf, before, "the texture changes the colours");
+        for y in 0..h {
+            for x in 0..w {
+                let p = &buf[(y * w + x) * 4..(y * w + x) * 4 + 4];
+                assert_eq!(p[3], before[(y * w + x) * 4 + 3], "alpha is untouched");
+                if x >= w / 2 {
+                    assert_eq!(p, [0.0; 4], "nothing is painted outside the layer");
+                }
+            }
+        }
+        // amount 0 is a no-op, and the result is deterministic
+        let mut z = before.clone();
+        apply_premul(
+            &mut z,
+            w,
+            h,
+            &[LayerEffect::texture("rock", 3, 128.0, 0.0)],
+            1.0,
+        );
+        assert_eq!(z, before);
+        let mut again = before.clone();
+        apply_premul(&mut again, w, h, &[e], 1.0);
+        assert_eq!(again, buf);
     }
 }

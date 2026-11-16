@@ -107,11 +107,20 @@ változatod forráskódját. A `/source` ez az ajánlat; állítsd a `--source-u
 
 ### Eszköztár
 
-Visszavonás, Újra, **Save**; jelölőnégyzetek: `bones` (a csontváz rajzolása), `auto-key`, `grid` (térköz vászonegységben, 0 = ki), `snap` (más rétegekhez és a vászonhoz),
-`whole groups` (egy csoport egy részére kattintva a legfelső szintű csoportot jelöli ki), `points` (a kijelölt rétegek horgonyainak, fogantyúinak, cage/lattice/pin pontjainak és mesh-csúcsainak mutatása);
-egy `box` választó arra, mit jelöl ki a húzott doboz (`touches`, `contains`, `bounds touch`; alapértéke `touches`); **Lock**; valamint a **Overlays**, **Suggest**, **Layout**,
-**Commands** (paletta) és **Keys** (gyorsbillentyű-szerkesztő) gombok. A második sorban a neved és a **Collab** található, valamint az exportgombok: **GIF**, **HTML player** és **Lottie**,
-amelyek letöltik azt, amit az `osatura export` írna ki (a HTML-lejátszó tartalmazza a kevert hangot, ha van hang, és az `ffmpeg` elő tudja állítani az mp3-at). A **Simple view** gomb elrejti a szerkesztési jelölőnégyzeteket, az Overlays és a Suggest gombot, valamint a parancspaletta gombját, így csak a visszavonás, a mentés, a panelek és az exportok maradnak; a választást ez a böngésző (vagy ablak) megjegyzi, és a teljes eszköztár a **Full view** gombbal tér vissza.
+Az eszköztárnak két sora van. **Első sor**: Visszavonás, Újra és **Save** (a Save gombon egy kis narancssárga pont azt jelenti, hogy a projektnek vannak a lemezen nem szereplő módosításai), egy **autosave** kapcsoló, valamint a szerkesztési kapcsolók: `bones` (a csontváz rajzolása), `auto-key`, `grid` (térköz vászonegységben, 0 = ki), `snap` (más rétegekhez és a vászonhoz),
+`whole groups` (egy csoport egy részére kattintva a legfelső szintű csoportot jelöli ki) és `points` (a kijelölt rétegek horgonyainak, fogantyúinak, cage/lattice/pin pontjainak és mesh-csúcsainak mutatása);
+egy `box` választó arra, mit jelöl ki a húzott doboz (`touches`, `contains`, `bounds touch`; alapértéke `touches`); és **Lock**. A kapcsolók tablettára hasonlítanak, és bekapcsolt állapotban kitöltöttek. **Második sor**: a neved és a **Collab**, majd az **Overlays**, **Demo**, **Suggest**, **Layout**,
+**Commands** (paletta), **Keys** (gyorsbillentyű-szerkesztő) és **Simple view** gombok, majd az utolsó mentés ideje és az **Export** menü a **GIF**, **HTML player** és **Lottie** pontokkal,
+amelyek letöltik azt, amit az `osatura export` írna ki (a HTML-lejátszó tartalmazza a kevert hangot, ha van hang, és az `ffmpeg` elő tudja állítani az mp3-at). A **Simple view** gomb elrejti a szerkesztési kapcsolókat, az Overlays és a Suggest gombot, valamint a parancspaletta gombját, így csak a visszavonás, a mentés, a panelek és az exportok maradnak; a választást ez a böngésző (vagy ablak) megjegyzi, és a teljes eszköztár a **Full view** gombbal tér vissza. Tartsd az egeret egy gomb fölé, hogy lásd az aktuális gyorsbillentyűjét (a saját kiosztásodat követi). Keskeny képernyőn (700 px alatt) az eszköztár egyetlen sorrá válik, amelyet oldalra görgetsz.
+
+### Mentés, nem mentett módosítások és kapcsolat
+
+* A **Save** kiírja a projektfájlt, és jelzi is („saved 17:52” az Export mellett). Ha a mentés sikertelen, az ok néhány másodpercig látható üzenetben jelenik meg.
+* **Nem mentett módosítások.** Bármilyen szerkesztés után a Save gomb narancssárga pontot mutat, és a böngészőlap címe ponttal kezdődik. A mentett állapotig visszavonva mindkettő eltűnik. Az oldal bezárása vagy újratöltése nem mentett módosításokkal megerősítést kér (megosztott munkamenetben nem, és nem akkor, amikor a vezetett demó be van töltve, amelynek saját figyelmeztetése van).
+* Az **Autosave** (alapértelmezés szerint ki, ebben a böngészőben megjegyezve) az utolsó szerkesztésed után 3 másodperccel ment. Megosztott munkamenetben vagy a demó alatt nem csinál semmit.
+* **Megszakadt kapcsolat.** Ha az oldal már nem éri el a stúdiót (a program bezárult, vagy a gép elaludt), felül piros szalag jelenik meg, és az oldal 3 másodpercenként újra próbálkozik. Amint a szerver visszatér, a szalag eltűnik, és az oldal újratölti róla a projektet.
+* **Gyorsindítás.** Az első látogatáskor az eszköztár alatti sáv megnevezi a három tudnivalót (kattintás a kijelöléshez, **Space** a lejátszáshoz, **Ctrl+K** minden parancshoz, **?** a gyorsbillentyűk listájához), és felkínálja a vezetett demót. Eltűnik, ha a *Got it* gombot nyomod, elindítod a demót vagy elvégzed az első szerkesztést, és ebben a böngészőben nem tér vissza.
+* A képkockaszámláló az időt is mutatja: `12 / 47 · 0.50 s`.
 
 ### Panelek és elrendezések
 
@@ -456,9 +465,9 @@ A Web MIDI-hez olyan böngésző kell, amely megvalósítja (a Chromium igen); a
 megosztott munkamenethez. A húzáshoz pointer eseményeket használ; az érintőképernyőket nem teszteltem.
 
 **Hozzáférhetőség, őszintén.** A stúdiót nem auditáltam képernyőolvasóval vagy csak billentyűzettel végzett munkamenettel. Ami van: `lang` attribútum és viewport meta tag, címkézett jelölőnégyzetek, egy
-`role="status"` toast, néhány ARIA-attribútum, **a gyorsbillentyűk teljes készlete és egy parancspaletta**, amelyek minden parancsot elérnek, átköthető gyorsbillentyűk, valamint az `osatura` parancssor, amely
+`role="status"` toast és mentési állapot, `role="alert"` a megszakadt kapcsolat szalagjához, eszköztár-szerepkör, látható billentyűzetes fókuszkeretek minden vezérlőn, nagyobb érintési célpontok az érintőképernyőkön, az új átmeneteknél figyelembe vett `prefers-reduced-motion`, gyorsbillentyű-tippek a buborékokban, **a gyorsbillentyűk teljes készlete és egy parancspaletta**, amelyek minden parancsot elérnek, átköthető gyorsbillentyűk, valamint az `osatura` parancssor, amely
 mindent megtesz, amit a szerkesztő, mutató nélkül. Ami hiányzik: a vászon egy kép, és a vásznon végzett szerkesztés nagy része mutatóval történik (a nyílbillentyűs léptetés létezik), nincs világos téma, és nincs
-`prefers-reduced-motion` vagy `prefers-color-scheme` kezelés, a fókuszkeretek a böngésző alapértelmezettjei, és nem ellenőriztem őket, a színkontrasztot pedig nem mértem meg. Ha segítő technológiára vagy utalva,
+`prefers-color-scheme` kezelés, a régebbi animációk (a vezetett demó villanása) az egyetlen olyan mozgás, amelyet a csökkentett mozgás szabálya a böngésző saját működésén túl még nem fed le, a színkontrasztot pedig nem mértem meg. Ha segítő technológiára vagy utalva,
 inkább a CLI-t és a JSON panelt használd, és jelezd a projektnek, ha valami nem működik.
 
 ## 12. Ismert esetlenségek

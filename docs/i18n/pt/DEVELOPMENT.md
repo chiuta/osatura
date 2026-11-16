@@ -85,7 +85,7 @@ Total: 1343 testes nos binários de unidade e de integração e 19 doc-tests, co
 
 Suítes fora do `cargo test`:
 
-* **Smoke tests do studio (Chromium).** Cinco scripts Node controlam o studio real em Chromium headless com `playwright-core`: `studio_ui_smoke.js` (128 verificações), `studio_collab_smoke.js` (60, duas páginas em uma máquina), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35) e `studio_demo_smoke.js` (25: a demonstração guiada carrega os 13 passos, nunca grava, restaura o projeto byte a byte e recupera uma aba fechada); os cinco passaram em 24 out 2026 (contagens conforme impressas pelos scripts). Eles **não** são executados por `cargo test` e não fazem parte do CI por padrão. Execução:
+* **Smoke tests do studio (Chromium).** Seis scripts Node controlam o studio real em Chromium headless com `playwright-core`: `studio_ui_smoke.js` (129 verificações), `studio_collab_smoke.js` (60, duas páginas em uma máquina), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35), `studio_demo_smoke.js` (25: a demonstração guiada carrega os 13 passos, nunca grava, restaura o projeto byte a byte e recupera uma aba fechada) e `studio_ux_smoke.js` (32: dicas de atalhos, marca de alterações não salvas e aviso ao sair, resultado do salvamento, autosave, menu Export, `?`, faixa de início rápido, banner de conexão perdida); os seis passaram em 13 nov 2026 (contagens conforme impressas pelos scripts). Eles **não** são executados por `cargo test` e não fazem parte do CI por padrão. Execução:
 
   ```sh
   cargo build -p osatura-cli

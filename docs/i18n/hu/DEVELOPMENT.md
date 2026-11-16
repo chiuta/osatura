@@ -85,7 +85,7 @@ A számok a `ROADMAP.md` 9. szakaszából és egy teljes `cargo test --workspace
 
 A `cargo test`-en kívüli csomagok:
 
-* **Stúdió-smoke-tesztek (Chromium).** Öt Node-szkript hajtja a valódi stúdiót headless Chromiumban a `playwright-core` segítségével: `studio_ui_smoke.js` (128 ellenőrzés), `studio_collab_smoke.js` (60, két oldal egy gépen), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35) és `studio_demo_smoke.js` (25: a vezetett demó betölti mind a 13 lépést, soha nem ír, bájtra pontosan visszaállítja a projektet, és helyreáll egy bezárt lapból); mind az ötöt 2026. okt. 24-én futtattuk, és lefutottak (a számok a szkriptek kimenete szerintiek). A `cargo test` **nem** futtatja őket, és alapértelmezés szerint nem részei a CI-nek. Futtatás:
+* **Stúdió-smoke-tesztek (Chromium).** Hat Node-szkript hajtja a valódi stúdiót headless Chromiumban a `playwright-core` segítségével: `studio_ui_smoke.js` (129 ellenőrzés), `studio_collab_smoke.js` (60, két oldal egy gépen), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35), `studio_demo_smoke.js` (25: a vezetett demó betölti mind a 13 lépést, soha nem ír, bájtra pontosan visszaállítja a projektet, és helyreáll egy bezárt lapból) és `studio_ux_smoke.js` (32: gyorsbillentyű-tippek, a nem mentett módosítások jelzése és a kilépési figyelmeztetés, a mentés eredménye, autosave, Export menü, `?`, gyorsindítási sáv, megszakadt kapcsolat szalagja); mind a hatot 2026. nov. 13-án futtattuk, és lefutottak (a számok a szkriptek kimenete szerintiek). A `cargo test` **nem** futtatja őket, és alapértelmezés szerint nem részei a CI-nek. Futtatás:
 
   ```sh
   cargo build -p osatura-cli

@@ -429,8 +429,11 @@ target di canale `fxN` indicizza l'array includendo gli effetti disattivati.
 | `drop_shadow` | `dx`, `dy`, `blur`, `color`, `opacity` (1) | offset al massimo 1024; blur 0..64; opacity 0..1 |
 | `tint` | `black`, `white`, `amount` (1) | amount 0..1 |
 | `fill` | `color`, `opacity` (1) | opacity 0..1 |
+| `texture` | `preset`, `seed` (1), `tile` (256), `amount` (1) | `preset` è un preset ripetibile di `osatura texture list` (non mandelbrot, julia, burning-ship); tile 4..8192 unità di scena per ripetizione; amount 0..1 |
 
 Si anima con `fx_blur`, `fx_dx`, `fx_dy`, `fx_soft`, `fx_amount` sul target `layer::fxN`.
+
+`texture` dipinge una texture frattale continua sull'alfa del livello stesso. La texture è fissata alla tela, come la grana della carta, quindi un livello in movimento scorre sopra di essa. Viene disegnata dai renderer raster (PNG, GIF, APNG, video) e non fa parte dell'output SVG o Lottie.
 
 ### 7.3 `normal_map`
 
