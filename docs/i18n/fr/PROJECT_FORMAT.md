@@ -429,8 +429,11 @@ cible de canal `fxN` indexe le tableau en comptant les effets désactivés.
 | `drop_shadow` | `dx`, `dy`, `blur`, `color`, `opacity` (1) | décalages au plus 1024 ; blur 0..64 ; opacity 0..1 |
 | `tint` | `black`, `white`, `amount` (1) | amount 0..1 |
 | `fill` | `color`, `opacity` (1) | opacity 0..1 |
+| `texture` | `preset`, `seed` (1), `tile` (256), `amount` (1) | `preset` est un préréglage répétable de `osatura texture list` (pas mandelbrot, julia, burning-ship) ; tile 4..8192 unités de scène par répétition ; amount 0..1 |
 
 Animez avec `fx_blur`, `fx_dx`, `fx_dy`, `fx_soft`, `fx_amount` sur la cible `layer::fxN`.
+
+`texture` peint une texture fractale continue sur l'alpha propre du calque. La texture est fixée au canevas, comme le grain du papier : un calque en mouvement glisse donc dessus. Elle est dessinée par les moteurs raster (PNG, GIF, APNG, vidéo) et ne fait pas partie de la sortie SVG ou Lottie.
 
 ### 7.3 `normal_map`
 

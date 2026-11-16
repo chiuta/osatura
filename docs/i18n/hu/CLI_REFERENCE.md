@@ -2042,6 +2042,27 @@ unknown colour space 'p3' (srgb or linear)
 ```
 **Korlátok:** a 8 bites renderelő lineáris projektekhez a lebegőpontos kompozitorra vált (saját lefedettség-rasztererrel, így az élsimított élek kissé eltérnek az sRGB-kimenettől); a rétegeffektek színeit (árnyék, glow, tint) úgy használja, ahogy meg vannak adva, nem alakítja át; a `dof` és az utófeldolgozó lánc (`fx`) sRGB marad; az SVG, a Lottie és a GPU-renderelő figyelmen kívül hagyja a beállítást; a képek újramintavételezése az átalakítás előtt sRGB-ben történik. A keverési módokat a lineáris értékeken alkalmazza.
 
+### `texture`
+
+**Szintaxis:** `osatura texture <preset|kind|list> <out.png> [--size N=1024] [--seed S=1] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--normal-out n.png] [--height-out h.png] [--albedo-out a.png] [--no-tile]`
+
+Varrat nélküli, determinisztikus fraktáltextúrát állít elő, és PNG-ként írja ki. A `<preset>` kész megjelenés (`rock`, `granite`, `lava`, `marble`, `moss`, `terrain`, `clouds`, `ice`, `sand`, `bark`, `nebula`, `mandelbrot`, `julia`, `burning-ship`), a `<kind>` pedig egyszerű minta (`fbm`, `ridged`, `billow`, `warp`, `cellular`, `marble`, `mandelbrot`, `julia`, `burning-ship`); a `texture list` mindkettőt kiírja. A fő kép megvilágított (Lambert + csillanás, kétléptékű üregárnyékolás, kibocsátás az alacsony részeken, ha a `--glow` meg van adva). A `--normal-out` az érintőtér normáltérképét írja (+Y felfelé), a `--height-out` 16 bites magasságtérképet, az `--albedo-out` pedig a megvilágítatlan színt. A zajtípusok mind a négy szélen varrat nélkül ismétlődnek, kivéve a `--no-tile` esetén; a méret Nyquist-határa feletti oktávokat kihagyja, így a nagyobb textúrák valódi részletet nyernek (`--size` 8-tól 4096-ig; egy 4096²-es `rock` kb. 45 s két magon). A `--zoom` és a `--seed` a szökési idős típusok (Mandelbrot, Julia, Burning Ship) nézetét választja, a `--ssaa N` N×N-es túlmintavételezést végez. Ugyanazok a beállítások tetszőleges számú szálon ugyanazt a képet adják (a C könyvtár szinusza, hatványozása és logaritmusa platformonként eltérhet az utolsó bitben).
+
+```
+$ osatura texture rock rock.png --size 2048 --seed 7 --normal-out rock-n.png
+$ osatura texture mandelbrot m.png --size 2048 --zoom 4000 --ssaa 3
+```
+
+### `texture-add`
+
+**Szintaxis:** `osatura texture-add <project.json> <out.json> <layer> <preset|kind> [--size N] [--seed S] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--no-tile] [--x X] [--y Y] [--front] [--no-normal]`
+
+A `texture` parancshoz hasonlóan előállítja a textúrát, és `<layer>` nevű képrétegként beágyazza a projektbe (a többi mögé, vagy a `--front` megadásával elé), a normáltérképével együtt, így az `fx ... --layer-normals` újravilágítja. Ilyen nevű réteg még nem létezhet.
+
+```
+$ osatura texture-add demo.json demo-tex.json backdrop granite --size 1024 --x -200 --y -200
+```
+
 ### `layer-normal`
 
 **Szintaxis:** `osatura layer-normal <project.json> <out.json> <layer> <normal.png|none> [--strength S] [--fit stretch|tile|exact] [--green-down]`
@@ -2855,6 +2876,7 @@ Minden parancs egysoros összefoglalóval és a dokumentáló szakasszal. Az alp
 | `import-svg` | SVG-részhalmaz -> vektorréteg | [9](#9-import) |
 | `keyedit` | dope sheet szerkesztések egyetlen, visszavonásbiztos kötegként | [6](#6-animáció-kulcsok-idővonal-és-generátorok) |
 | `keys` | tömeges kulcsműveletek az összes kulcsolt csatornán | [6](#6-animáció-kulcsok-idővonal-és-generátorok) |
+| `texture`, `texture-add` | fraktáltextúrák (PNG vagy képréteg normáltérképpel) | [12](#12-effektek-mélységélesség-onion-skin-nyomvonalak-és-kamera) |
 | `layer-normal` | normáltérkép csatolása egy réteghez | [12](#12-effektek-mélységélesség-onion-skin-nyomvonalak-és-kamera) |
 | `layer-pivot` | egy réteg pivotjának mozgatása a kép megváltoztatása nélkül | [7](#7-fizika-ruha-és-deformerek) |
 | `layout-preview` | renderelés másik vászonmérethez újramegoldott elrendezéssel | [11](#11-állapotgépek-adatkötések-konténerek-és-görgetési-területek) |

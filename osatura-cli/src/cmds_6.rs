@@ -129,6 +129,17 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
         }
         ["texture", what, out] => {
             let p = texture_params(a, what)?;
+            let mut outs: Vec<&str> = vec![out];
+            for k in ["--normal-out", "--albedo-out", "--height-out"] {
+                if let Some(f) = a.opts.get(k) {
+                    outs.push(f.as_str());
+                }
+            }
+            for (i, o) in outs.iter().enumerate() {
+                if outs[..i].contains(o) {
+                    return Err(format!("{o} is named twice; each output needs its own file"));
+                }
+            }
             let t = osatura_core::fractal::generate(&p)?;
             fwrite(out, osatura_core::fractal::rgba_png(&t.color, t.size)?)?;
             if let Some(f) = a.opts.get("--normal-out") {

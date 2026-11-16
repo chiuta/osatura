@@ -2045,6 +2045,27 @@ unknown colour space 'p3' (srgb or linear)
 ```
 **Limites:** o renderizador de 8 bits passa para o compositor em ponto flutuante nos projetos lineares (rasterizador de cobertura próprio, de modo que as bordas com antialiasing diferem ligeiramente da saída sRGB); as cores dos efeitos de camada (sombra, glow, tint) são usadas como escritas, sem conversão; `dof` e a cadeia de pós-efeitos (`fx`) permanecem em sRGB; SVG, Lottie e o renderizador por GPU ignoram a configuração; a reamostragem de imagens ocorre em sRGB antes da conversão. Os modos de mesclagem são aplicados aos valores lineares.
 
+### `texture`
+
+**Sinopse:** `osatura texture <preset|kind|list> <out.png> [--size N=1024] [--seed S=1] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--normal-out n.png] [--height-out h.png] [--albedo-out a.png] [--no-tile]`
+
+Gera uma textura fractal contínua (sem emendas) e determinística e escreve-a como PNG. `<preset>` é um aspeto já pronto (`rock`, `granite`, `lava`, `marble`, `moss`, `terrain`, `clouds`, `ice`, `sand`, `bark`, `nebula`, `mandelbrot`, `julia`, `burning-ship`) e `<kind>` um padrão simples (`fbm`, `ridged`, `billow`, `warp`, `cellular`, `marble`, `mandelbrot`, `julia`, `burning-ship`); `texture list` mostra ambos. A imagem principal é iluminada (Lambert + especular, oclusão de cavidades a duas escalas, emissão nas zonas baixas quando se indica `--glow`). `--normal-out` escreve o mapa de normais no espaço tangente (+Y para cima), `--height-out` um mapa de altura de 16 bits e `--albedo-out` a cor sem iluminação. Os tipos de ruído repetem-se sem emendas nas quatro margens, exceto com `--no-tile`; as oitavas acima do limite de Nyquist do tamanho são ignoradas, pelo que as texturas maiores ganham detalhe real (`--size` de 8 a 4096; um `rock` de 4096² demora cerca de 45 s em dois núcleos). `--zoom` e `--seed` escolhem a vista dos tipos de tempo de escape (Mandelbrot, Julia, Burning Ship), e `--ssaa N` sobreamostra N×N. As mesmas opções dão a mesma imagem com qualquer número de threads (o seno, a potência e o logaritmo da biblioteca C podem diferir no último bit entre plataformas).
+
+```
+$ osatura texture rock rock.png --size 2048 --seed 7 --normal-out rock-n.png
+$ osatura texture mandelbrot m.png --size 2048 --zoom 4000 --ssaa 3
+```
+
+### `texture-add`
+
+**Sinopse:** `osatura texture-add <project.json> <out.json> <layer> <preset|kind> [--size N] [--seed S] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--no-tile] [--x X] [--y Y] [--front] [--no-normal]`
+
+Gera a textura como `texture` e incorpora-a no projeto como camada de imagem chamada `<layer>` (atrás das outras, ou à frente com `--front`), juntamente com o seu mapa de normais, de modo que `fx ... --layer-normals` a reilumina. Não pode já existir uma camada com esse nome.
+
+```
+$ osatura texture-add demo.json demo-tex.json backdrop granite --size 1024 --x -200 --y -200
+```
+
 ### `layer-normal`
 
 **Sinopse:** `osatura layer-normal <project.json> <out.json> <layer> <normal.png|none> [--strength S] [--fit stretch|tile|exact] [--green-down]`
@@ -2867,6 +2888,7 @@ Cada comando com um resumo de uma linha e a seção que o documenta. Os subcoman
 | `import-svg` | subconjunto de SVG -> camada vetorial | [9](#9-importação) |
 | `keyedit` | edições de dope sheet como um único lote seguro para desfazer | [6](#6-animação-keys-timeline-e-geradores) |
 | `keys` | operações de chaves em massa sobre todos os canais com chaves | [6](#6-animação-keys-timeline-e-geradores) |
+| `texture`, `texture-add` | texturas fractais (PNG ou camada de imagem com mapa de normais) | [12](#12-efeitos-profundidade-de-campo-onion-skin-trilhas-e-câmera) |
 | `layer-normal` | anexa um mapa de normais a uma camada | [12](#12-efeitos-profundidade-de-campo-onion-skin-trilhas-e-câmera) |
 | `layer-pivot` | move o pivô de uma camada sem alterar a imagem | [7](#7-física-tecido-e-deformadores) |
 | `layout-preview` | renderiza com o layout resolvido novamente para outro tamanho de tela | [11](#11-máquinas-de-estados-vinculações-de-dados-contêineres-e-regiões-de-rolagem) |
