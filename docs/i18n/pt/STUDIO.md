@@ -107,11 +107,20 @@ da sua versão. `/source` é essa oferta; defina `--source-url` com o local onde
 
 ### Barra de ferramentas
 
-Undo, Redo, **Save**; caixas de seleção `bones` (desenhar o esqueleto), `auto-key`, `grid` (espaçamento em unidades do canvas, 0 = desligado), `snap` (às outras camadas e ao canvas),
-`whole groups` (um clique em parte de um grupo seleciona o grupo de nível superior), `points` (mostra âncoras, alças, pontos de cage/lattice/pin e vértices de malha das
-camadas selecionadas); um seletor `box` para o que uma caixa arrastada seleciona (`touches`, `contains`, `bounds touch`; começa em `touches`); **Lock**; e os botões **Overlays**, **Suggest**, **Layout**,
-**Commands** (paleta) e **Keys** (editor de atalhos). Uma segunda linha tem o seu nome e **Collab**, e os botões de exportação **GIF**, **HTML player** e **Lottie**,
-que baixam o que `osatura export` gravaria (o player HTML inclui o som mixado quando há som e o `ffmpeg` consegue gerar o mp3). O botão **Simple view** oculta as caixas de seleção de edição, Overlays, Suggest e o botão da paleta de comandos, de modo que restam apenas desfazer, salvar, painéis e exportações; a escolha fica lembrada neste navegador (ou janela) e a barra completa volta com **Full view**.
+A barra de ferramentas tem duas linhas. **Primeira linha**: Undo, Redo e **Save** (um pequeno ponto laranja em Save significa que o projeto tem alterações que não estão no disco), um interruptor **autosave** e os interruptores de edição `bones` (desenhar o esqueleto), `auto-key`, `grid` (espaçamento em unidades do canvas, 0 = desligado), `snap` (às outras camadas e ao canvas),
+`whole groups` (um clique em parte de um grupo seleciona o grupo de nível superior) e `points` (mostra âncoras, alças, pontos de cage/lattice/pin e vértices de malha das
+camadas selecionadas); um seletor `box` para o que uma caixa arrastada seleciona (`touches`, `contains`, `bounds touch`; começa em `touches`); e **Lock**. Os interruptores parecem pílulas e ficam preenchidos quando ativos. **Segunda linha**: o seu nome e **Collab**, depois os botões **Overlays**, **Demo**, **Suggest**, **Layout**,
+**Commands** (paleta), **Keys** (editor de atalhos) e **Simple view**, depois a hora do último salvamento e o menu **Export** com **GIF**, **HTML player** e **Lottie**,
+que baixam o que `osatura export` gravaria (o player HTML inclui o som mixado quando há som e o `ffmpeg` consegue gerar o mp3). O botão **Simple view** oculta os interruptores de edição, Overlays, Suggest e o botão da paleta de comandos, de modo que restam apenas desfazer, salvar, painéis e exportações; a escolha fica lembrada neste navegador (ou janela) e a barra completa volta com **Full view**. Passe o cursor sobre um botão para ver o atalho atual dele (ele segue as suas próprias associações). Em uma tela estreita (abaixo de 700 px) a barra vira uma única linha que você rola para o lado.
+
+### Salvamento, alterações não salvas e conexão
+
+* **Save** grava o arquivo do projeto e avisa ("saved 17:52" ao lado de Export). Se o salvamento falhar, o motivo aparece em uma mensagem que fica visível por vários segundos.
+* **Alterações não salvas.** Depois de qualquer edição, o botão Save mostra um ponto laranja e o título da aba do navegador começa com um ponto. Desfazer até o estado salvo remove ambos. Fechar ou recarregar a página com alterações não salvas pede confirmação (não em uma sessão compartilhada, nem enquanto a demonstração guiada está carregada, que tem o seu próprio aviso).
+* **Autosave** (desligado por padrão, lembrado neste navegador) salva 3 segundos depois da sua última edição. Não faz nada em uma sessão compartilhada nem durante a demonstração.
+* **Conexão perdida.** Se a página não consegue mais alcançar o studio (o programa foi fechado ou o computador entrou em repouso), um banner vermelho aparece no topo e a página tenta de novo a cada 3 segundos. Quando o servidor volta, o banner some e a página recarrega o projeto a partir dele.
+* **Início rápido.** Na primeira visita, uma faixa abaixo da barra de ferramentas nomeia as três coisas que vale saber (clique para selecionar, **Space** para reproduzir, **Ctrl+K** para todos os comandos, **?** para a lista de atalhos) e oferece a demonstração guiada. Ela some quando você pressiona *Got it*, inicia a demonstração ou faz a primeira edição, e não volta neste navegador.
+* O contador de quadros também mostra o tempo: `12 / 47 · 0.50 s`.
 
 ### Painéis e layouts
 
@@ -456,9 +465,9 @@ O Web MIDI exige um navegador que o implemente (o Chromium implementa); a câmer
 sessão compartilhada. Eventos de ponteiro são usados para arrastar; telas sensíveis ao toque não foram testadas.
 
 **Acessibilidade, com honestidade.** Não auditei o estúdio com um leitor de tela nem em uma sessão apenas com teclado. O que existe: um atributo `lang` e a meta tag viewport, caixas de seleção com rótulo, um
-toast com `role="status"`, alguns atributos ARIA, **um conjunto completo de atalhos de teclado e uma paleta de comandos** que alcançam todos os comandos, atalhos reconfiguráveis, e a linha de comando `osatura`, que faz
+toast com `role="status"` e estado do salvamento, `role="alert"` para o banner de conexão perdida, um papel para a barra de ferramentas, anéis de foco de teclado visíveis em todos os controles, alvos de toque maiores em telas sensíveis ao toque, `prefers-reduced-motion` respeitado nas novas transições, dicas de atalhos nas dicas de ferramenta, **um conjunto completo de atalhos de teclado e uma paleta de comandos** que alcançam todos os comandos, atalhos reconfiguráveis, e a linha de comando `osatura`, que faz
 tudo o que o editor faz sem um ponteiro. O que falta: o canvas é uma imagem e a maior parte da edição no canvas é feita com o ponteiro (existe deslocamento com as teclas de seta), não há tema claro e nenhum
-tratamento de `prefers-reduced-motion` ou `prefers-color-scheme`, os contornos de foco são os padrões do navegador e não os verifiquei, e não medi o contraste de cores. Se você depende de tecnologia assistiva,
+tratamento de `prefers-color-scheme`, as animações mais antigas (o flash da demonstração guiada) são o único movimento ainda não coberto pela regra de movimento reduzido, além do que o navegador faz, e não medi o contraste de cores. Se você depende de tecnologia assistiva,
 prefira a CLI e o painel JSON, e informe ao projeto o que não funciona.
 
 ## 12. Arestas conhecidas

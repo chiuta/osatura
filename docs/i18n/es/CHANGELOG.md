@@ -10,6 +10,16 @@ Las versiones relacionadas que **sí** son reales e independientes de lo anterio
 
 ## [Unreleased]
 
+### Cambiado (usabilidad del estudio)
+
+- **Barra de herramientas reagrupada en dos filas**, interruptores dibujados como píldoras (rellenos cuando están activos), un botón Save principal, pistas de atajos en las descripciones emergentes que siguen tus propias asignaciones y un menú **Export** (GIF, HTML player, Lottie) con una línea de explicación para cada uno. En pantallas estrechas la barra es una sola fila que se desplaza hacia los lados.
+- **Los cambios sin guardar se ven**: un punto naranja en Save, un punto en el título de la pestaña y una confirmación antes de cerrar o recargar la página con ediciones sin guardar (no en una sesión compartida ni durante la demo guiada). Deshacer hasta el estado guardado borra la marca.
+- **Save dice lo que pasó** («saved 17:52») y, cuando falla, por qué. Nuevo **autosave** opcional (3 segundos después de tu última edición, recordado por navegador).
+- **Banner de conexión perdida**: cuando el servidor del estudio deja de responder aparece un banner rojo y la página reintenta cada 3 segundos, y luego recarga el proyecto cuando el servidor vuelve (antes la página simplemente dejaba de funcionar sin decir nada).
+- **Franja de inicio rápido** en la primera visita (clic para seleccionar, Space, Ctrl+K, `?`, demo guiada). `?` abre la lista de atajos.
+- El contador de fotogramas muestra también los segundos (`12 / 47 · 0.50 s`); el largo texto de ayuda del panel Selection se pliega y una selección vacía dice qué hacer; anillos de foco de teclado visibles; objetivos táctiles más grandes en pantallas táctiles; la imagen tiene un `alt` útil; se respeta el movimiento reducido.
+- Nueva prueba de humo `osatura-cli/tests/studio_ux_smoke.js` (32 comprobaciones). Sin cambios en el formato del proyecto, la API HTTP ni la línea de comandos.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Prelanzamiento publicado el 10 nov 2026 desde `main` (commit `96e790a`, etiqueta `v0.1.0-alpha.5`). Las versiones de los crates siguen siendo `0.1.0`; la versión de lanzamiento proviene de `OSATURA_VERSION`, fijada por `release.yml`.*

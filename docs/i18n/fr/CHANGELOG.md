@@ -10,6 +10,16 @@ Versions associées qui **sont** réelles et indépendantes de ce qui précède 
 
 ## [Unreleased]
 
+### Modifié (ergonomie du studio)
+
+- **Barre d'outils regroupée en deux rangées**, interrupteurs dessinés en pilules (remplis lorsqu'ils sont actifs), un bouton Save principal, des indications de raccourcis dans les infobulles qui suivent vos propres associations, et un menu **Export** (GIF, HTML player, Lottie) avec une ligne d'explication pour chacun. Sur les écrans étroits, la barre d'outils est une seule rangée que l'on fait défiler latéralement.
+- **Les modifications non enregistrées se voient** : un point orange sur Save, un point dans le titre de l'onglet et une confirmation avant que la page soit fermée ou rechargée avec des modifications non enregistrées (pas dans une session partagée ni pendant la démo guidée). Revenir par annulation à l'état enregistré efface la marque.
+- **Save dit ce qui s'est passé** (« saved 17:52 ») et, en cas d'échec, pourquoi. Nouvel **autosave** facultatif (3 secondes après votre dernière modification, mémorisé par navigateur).
+- **Bannière de connexion perdue** : lorsque le serveur du studio ne répond plus, une bannière rouge apparaît et la page réessaie toutes les 3 secondes, puis recharge le projet quand le serveur revient (auparavant, la page cessait simplement de fonctionner sans un mot).
+- **Bandeau de démarrage rapide** à la première visite (clic pour sélectionner, Space, Ctrl+K, `?`, démo guidée). `?` ouvre la liste des raccourcis.
+- Le compteur d'images affiche aussi les secondes (`12 / 47 · 0.50 s`) ; le long texte d'aide du panneau Selection se replie et une sélection vide dit quoi faire ; anneaux de focus clavier visibles ; cibles tactiles plus grandes sur les écrans tactiles ; l'image a un `alt` utile ; le mouvement réduit est respecté.
+- Nouveau test de fumée `osatura-cli/tests/studio_ux_smoke.js` (32 vérifications). Aucun changement du format de projet, de l'API HTTP ni de la ligne de commande.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Préversion publiée le 10 nov. 2026 depuis `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Les versions des crates restent `0.1.0` ; la version de publication provient de `OSATURA_VERSION`, définie par `release.yml`.*

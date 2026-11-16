@@ -85,7 +85,7 @@ Total: 1343 de teste în binarele de unit și de integrare și 19 doc-tests, num
 
 Suite în afara `cargo test`:
 
-* **Teste smoke ale studioului (Chromium).** Cinci scripturi Node controlează studioul real în Chromium headless cu `playwright-core`: `studio_ui_smoke.js` (128 de verificări), `studio_collab_smoke.js` (60, două pagini pe aceeași mașină), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35) și `studio_demo_smoke.js` (25: demo-ul ghidat încarcă toți cei 13 pași, nu scrie niciodată, restaurează proiectul octet cu octet și recuperează o filă închisă); toate cinci au trecut pe 24 oct. 2026 (numerele sunt cele afișate de scripturi). **Nu** sunt rulate de `cargo test` și, implicit, nu fac parte din CI. Rulare:
+* **Teste smoke ale studioului (Chromium).** Șase scripturi Node controlează studioul real în Chromium headless cu `playwright-core`: `studio_ui_smoke.js` (129 de verificări), `studio_collab_smoke.js` (60, două pagini pe aceeași mașină), `studio_overlays_smoke.js` (89), `studio_suggest_smoke.js` (35), `studio_demo_smoke.js` (25: demo-ul ghidat încarcă toți cei 13 pași, nu scrie niciodată, restaurează proiectul octet cu octet și recuperează o filă închisă) și `studio_ux_smoke.js` (32: indicii de scurtături, marcajul de modificări nesalvate și avertismentul la plecare, rezultatul salvării, autosave, meniul Export, `?`, banda de start rapid, bannerul de conexiune pierdută); toate cele șase au trecut pe 13 nov. 2026 (numerele sunt cele afișate de scripturi). **Nu** sunt rulate de `cargo test` și, implicit, nu fac parte din CI. Rulare:
 
   ```sh
   cargo build -p osatura-cli

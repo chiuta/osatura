@@ -10,6 +10,16 @@ Kapcsolódó verziók, amelyek **valódiak**, és függetlenek a fentiektől: a 
 
 ## [Unreleased]
 
+### Módosítva (a stúdió használhatósága)
+
+- **Az eszköztár két sorba rendezve**, a kapcsolók tablettaként rajzolva (bekapcsolva kitöltöttek), elsődleges Save gomb, gyorsbillentyű-tippek a buborékokban, amelyek a saját kiosztásodat követik, és egy **Export** menü (GIF, HTML player, Lottie) mindegyikhez egy magyarázó sorral. Keskeny képernyőn az eszköztár egyetlen sor, amelyet oldalra görgetsz.
+- **A nem mentett módosítások láthatók**: narancssárga pont a Save gombon, pont a lap címében, és megerősítés, mielőtt az oldalt nem mentett szerkesztésekkel bezárnád vagy újratöltenéd (megosztott munkamenetben vagy a vezetett demó alatt nem). A mentett állapotig visszavonva a jelzés eltűnik.
+- **A Save megmondja, mi történt** („saved 17:52”), és ha sikertelen, azt is, miért. Új, választható **autosave** (az utolsó szerkesztésed után 3 másodperccel, böngészőnként megjegyezve).
+- **Megszakadt kapcsolat szalagja**: ha a stúdió szervere már nem válaszol, piros szalag jelenik meg, az oldal 3 másodpercenként újra próbálkozik, majd újratölti a projektet, amikor a szerver visszatér (korábban az oldal szó nélkül egyszerűen leállt).
+- **Gyorsindítási sáv** az első látogatáskor (kattintás a kijelöléshez, Space, Ctrl+K, `?`, vezetett demó). A `?` megnyitja a gyorsbillentyűk listáját.
+- A képkockaszámláló a másodperceket is mutatja (`12 / 47 · 0.50 s`); a Selection panel hosszú súgószövege összecsukódik, az üres kijelölés pedig megmondja, mit kell tenni; látható billentyűzetes fókuszkeretek; nagyobb érintési célpontok az érintőképernyőkön; a képnek hasznos `alt` szövege van; a csökkentett mozgás beállítása érvényesül.
+- Új smoke-teszt: `osatura-cli/tests/studio_ux_smoke.js` (32 ellenőrzés). A projektformátum, a HTTP API és a parancssor nem változott.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Előzetes kiadás, 2026. nov. 10-én közzétéve a `main` ágból (commit `96e790a`, címke `v0.1.0-alpha.5`). A crate-verziók `0.1.0` maradnak; a kiadás verziója az `OSATURA_VERSION`-ből jön, amelyet a `release.yml` állít be.*
