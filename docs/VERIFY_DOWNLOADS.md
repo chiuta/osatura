@@ -39,7 +39,7 @@ cosign verify-blob osatura-windows-x86_64.zip \
 
 ## Quick check: checksums
 
-Every release carries `SHA256SUMS.txt` next to the archives (`osatura-linux-x86_64.tar.gz`, `osatura-linux-x86_64-musl.tar.gz`, `osatura-macos-arm64.tar.gz`, `osatura-windows-x86_64.zip`, `osatura-web.tar.gz`) and `osatura.spdx.json`, a software bill of materials (SPDX 2.3 JSON, every crate in `Cargo.lock` with its licence), signed and attested like the archives. **v0.1.0-alpha.4 has neither the musl archive nor the SBOM**; they start with the next release. Download the archive and the sums file into the same folder. Each command below ends with a non-zero exit status (or an error) when the file does not match.
+Every release carries `SHA256SUMS.txt` next to the archives (`osatura-linux-x86_64.tar.gz`, `osatura-linux-x86_64-musl.tar.gz`, `osatura-linux-x86_64-glibc217.tar.gz`, `osatura-linux-arm64-glibc217.tar.gz`, `osatura-linux-arm64-musl.tar.gz`, `osatura-macos-arm64.tar.gz`, `osatura-windows-x86_64.zip`, `osatura-web.tar.gz`) and `osatura.spdx.json`, a software bill of materials (SPDX 2.3 JSON, every crate in `Cargo.lock` with its licence), signed and attested like the archives. **v0.1.0-alpha.4 has neither the musl archive nor the SBOM**; they start with the next release. Download the archive and the sums file into the same folder. Each command below ends with a non-zero exit status (or an error) when the file does not match.
 
 **Linux:**
 

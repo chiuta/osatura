@@ -2044,6 +2044,27 @@ unknown colour space 'p3' (srgb or linear)
 ```
 **Grenzen:** Der 8-Bit-Renderer wechselt für lineare Projekte auf den Float-Compositor (eigener Coverage-Rasterizer, daher weichen geglättete Kanten leicht von der sRGB-Ausgabe ab); Farben von Ebeneneffekten (Schatten, Glow, Tönung) werden wie angegeben verwendet und nicht umgerechnet; `dof` und die Post-Effekt-Kette (`fx`) bleiben sRGB; SVG, Lottie und der GPU-Renderer ignorieren die Einstellung; die Bild-Neuabtastung geschieht vor der Umrechnung in sRGB. Mischmodi werden auf die linearen Werte angewendet.
 
+### `texture`
+
+**Synopsis:** `osatura texture <preset|kind|list> <out.png> [--size N=1024] [--seed S=1] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--normal-out n.png] [--height-out h.png] [--albedo-out a.png] [--no-tile]`
+
+Erzeugt eine nahtlose, deterministische fraktale Textur und schreibt sie als PNG. `<preset>` ist ein fertiger Look (`rock`, `granite`, `lava`, `marble`, `moss`, `terrain`, `clouds`, `ice`, `sand`, `bark`, `nebula`, `mandelbrot`, `julia`, `burning-ship`) und `<kind>` ein einfaches Muster (`fbm`, `ridged`, `billow`, `warp`, `cellular`, `marble`, `mandelbrot`, `julia`, `burning-ship`); `texture list` listet beides auf. Das Hauptbild ist beleuchtet (Lambert + Glanzlicht, Hohlraum-Verdeckung in zwei Maßstäben, Emission in den tiefen Bereichen, wenn `--glow` gesetzt ist). `--normal-out` schreibt die Normal-Map im Tangentenraum (+Y nach oben), `--height-out` eine 16-Bit-Höhenkarte und `--albedo-out` die unbeleuchtete Farbe. Rauschtypen wiederholen sich an allen vier Rändern nahtlos, außer mit `--no-tile`; Oktaven oberhalb der Nyquist-Grenze der Größe werden übersprungen, sodass größere Texturen echtes Detail gewinnen (`--size` von 8 bis 4096; ein `rock` mit 4096² braucht etwa 45 s auf zwei Kernen). `--zoom` und `--seed` wählen die Ansicht der Fluchtzeit-Typen (Mandelbrot, Julia, Burning Ship), `--ssaa N` tastet N×N-fach über. Dieselben Optionen liefern auf beliebig vielen Threads dasselbe Bild (Sinus, Potenz und Logarithmus der C-Bibliothek können sich zwischen Plattformen im letzten Bit unterscheiden).
+
+```
+$ osatura texture rock rock.png --size 2048 --seed 7 --normal-out rock-n.png
+$ osatura texture mandelbrot m.png --size 2048 --zoom 4000 --ssaa 3
+```
+
+### `texture-add`
+
+**Synopsis:** `osatura texture-add <project.json> <out.json> <layer> <preset|kind> [--size N] [--seed S] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--no-tile] [--x X] [--y Y] [--front] [--no-normal]`
+
+Erzeugt die Textur wie `texture` und bettet sie als Bildebene mit dem Namen `<layer>` in das Projekt ein (hinter den anderen oder mit `--front` davor), zusammen mit ihrer Normal-Map, sodass `fx ... --layer-normals` sie neu beleuchtet. Eine Ebene dieses Namens darf noch nicht existieren.
+
+```
+$ osatura texture-add demo.json demo-tex.json backdrop granite --size 1024 --x -200 --y -200
+```
+
 ### `layer-normal`
 
 **Synopsis:** `osatura layer-normal <project.json> <out.json> <layer> <normal.png|none> [--strength S] [--fit stretch|tile|exact] [--green-down]`
@@ -2866,6 +2887,7 @@ Jeder Befehl mit einer einzeiligen Zusammenfassung und dem Abschnitt, der ihn do
 | `import-svg` | SVG-Teilmenge -> Vektor-Ebene | [9](#9-import) |
 | `keyedit` | Dope-Sheet-Bearbeitungen als ein Undo-sicherer Stapel | [6](#6-animation-keys-timeline-und-generatoren) |
 | `keys` | Massenoperationen auf Keys über alle Key-Kanäle | [6](#6-animation-keys-timeline-und-generatoren) |
+| `texture`, `texture-add` | Fraktale Texturen (PNG oder Bildebene mit Normal-Map) | [12](#12-effekte-tiefenunschärfe-onion-skin-trails-und-kamera) |
 | `layer-normal` | hängt eine Normal-Map an eine Ebene an | [12](#12-effekte-tiefenunschärfe-onion-skin-trails-und-kamera) |
 | `layer-pivot` | verschiebt den Pivot einer Ebene, ohne das Bild zu ändern | [7](#7-physik-cloth-und-deformer) |
 | `layout-preview` | rendert mit neu berechnetem Layout für eine andere Canvas-Größe | [11](#11-zustandsautomaten-datenbindungen-container-und-scroll-bereiche) |

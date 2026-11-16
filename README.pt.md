@@ -65,6 +65,9 @@ Os arquivos pré-compilados, depois que o dono publicar o rascunho do lançament
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (somente Apple silicon), biblioteca C e cabeçalho, licenças, avisos |
 | `osatura-linux-x86_64.tar.gz` | `osatura`, biblioteca C e cabeçalho, licenças, avisos (sem aplicativo de janela: use `osatura studio` e um navegador); requer glibc 2.35+ (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
 | `osatura-linux-x86_64-musl.tar.gz` | `osatura` estático (musl libc, sem necessidade de bibliotecas do sistema) para distribuições mais antigas, como RHEL/Rocky/Alma 8 e 9, Debian 10 e 11, Ubuntu 20.04; sem biblioteca C; cerca de 5-50 % mais lento que o build com glibc. **Não está no alpha.4**: começa no próximo lançamento |
+| `osatura-linux-x86_64-glibc217.tar.gz` | `osatura`, biblioteca C e cabeçalho, licenças, avisos; precisa apenas de glibc 2.17+ (RHEL/CentOS 7+, Debian 8+, Ubuntu 14.04+). **Novo após alpha.5** |
+| `osatura-linux-arm64-glibc217.tar.gz` | o mesmo para ARM de 64 bits (Raspberry Pi OS de 64 bits, AWS Graviton e similares), glibc 2.17+. **Novo após alpha.5** |
+| `osatura-linux-arm64-musl.tar.gz` | `osatura` estático para ARM de 64 bits (musl libc, sem bibliotecas do sistema); sem biblioteca C. **Novo após alpha.5** |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demo `index.html` (executado apenas em Chromium headless, veja [docs/WASM.md](docs/i18n/pt/WASM.md)) |
 | `SHA256SUMS.txt` | confira cada download com ele |
 | `*.sigstore.json` | assinatura Sigstore de cada arquivo ([docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md)) |

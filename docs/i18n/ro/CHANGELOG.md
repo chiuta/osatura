@@ -10,6 +10,24 @@ Versiuni înrudite care **sunt** reale și independente de cele de mai sus: `API
 
 ## [Nepublicat]
 
+### Adăugat
+- **Texturi fractale** (`osatura_core::fractal`, CLI `texture` și `texture-add`): texturi de suprafață deterministe, repetabile fără cusătură, până la 4096x4096, cu imagine color iluminată, albedo plat, hartă de înălțime pe 16 biți și hartă de normale în spațiul tangent. Familia de zgomot: fBm, multifractal ridged, billow, deformare de domeniu, crăpături celulare, vene de marmură, cu fiecare octavă limitată la frecvența Nyquist, astfel încât dimensiunile mari câștigă detaliu real. Familia cu timp de scăpare: Mandelbrot, Julia și Burning Ship, cu colorare netedă și supraeșantionare. 14 preseturi (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` încorporează rezultatul ca strat-imagine cu harta lui de normale, deci funcționează în toate exporturile existente și în `fx --layer-normals`. Fără modificarea formatului de proiect pentru comenzi.
+- **Efectul de strat `texture`**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` umple stratul cu o textură fractală continuă; `amount` poate fi animat (`fx_amount`). Ancorat de canevas; doar randatoarele raster (SVG și Lottie îl omit).
+- **Mai multe build-uri Linux pentru sisteme vechi**: `osatura-linux-x86_64-glibc217.tar.gz` și `osatura-linux-arm64-glibc217.tar.gz` (construite cu glibc 2.17 și zig ca linker; CLI, studio și biblioteca C; rulează pe RHEL/CentOS 7, Debian 8, Ubuntu 14.04 și mai noi) și `osatura-linux-arm64-musl.tar.gz` (static, doar CLI și studio). Jobul CI nou `linux compat` și jobul de release `cli-compat` verifică pragul glibc (sau că binarul este static) și rulează un test smoke, pentru arm64 sub emulare qemu. `scripts/linux-static-check.sh` acceptă `QEMU=` pentru altă arhitectură.
+
+### Remediat
+- (găsit printr-un audit advers al codului de texturi, înainte de lansare) seed-urile peste 2^24 nu mai sunt rotunjite, octavele seed-urilor vecine nu mai sunt corelate, punctele celulare nu mai sunt aliniate în coloane, iar modelul de marmură se repetă acum fără cusătură pentru orice număr de celule.
+
+### Modificat (utilizabilitatea studioului)
+
+- **Bara de instrumente regrupată pe două rânduri**, comutatoare desenate ca pastile (pline când sunt active), un buton Save principal, indicii de scurtături în tooltipuri care urmează asocierile tale și un meniu **Export** (GIF, HTML player, Lottie) cu o linie de explicație pentru fiecare. Pe ecranele înguste bara este un singur rând pe care îl derulezi lateral.
+- **Modificările nesalvate se văd**: un punct portocaliu pe Save, un punct în titlul filei și o confirmare înainte ca pagina să fie închisă sau reîncărcată cu editări nesalvate (nu într-o sesiune partajată sau în timpul demo-ului ghidat). Revenirea prin undo la starea salvată șterge marcajul.
+- **Save spune ce s-a întâmplat** („saved 17:52”) și, când eșuează, de ce. Nou **autosave** opțional (la 3 secunde după ultima ta editare, reținut per browser).
+- **Banner de conexiune pierdută**: când serverul studioului nu mai răspunde, apare un banner roșu, iar pagina reîncearcă la fiecare 3 secunde, apoi reîncarcă proiectul când serverul revine (înainte, pagina înceta pur și simplu să funcționeze, fără un cuvânt).
+- **Bandă de start rapid** la prima vizită (clic pentru a selecta, Space, Ctrl+K, `?`, demo ghidat). `?` deschide lista de scurtături.
+- Contorul de cadre arată și secundele (`12 / 47 · 0.50 s`); textul lung de ajutor al panoului Selection se strânge, iar o selecție goală spune ce trebuie făcut; inele de focus vizibile la tastatură; ținte tactile mai mari pe ecranele tactile; imaginea are un `alt` util; mișcarea redusă este respectată.
+- Test smoke nou `osatura-cli/tests/studio_ux_smoke.js` (32 de verificări). Nicio schimbare a formatului proiectului, a API-ului HTTP sau a liniei de comandă.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Pre-lansare publicată la 10 noi 2026 din `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Versiunile crate-urilor rămân `0.1.0`; versiunea lansării provine din `OSATURA_VERSION`, setată de `release.yml`.*

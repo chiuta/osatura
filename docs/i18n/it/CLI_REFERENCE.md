@@ -2045,6 +2045,27 @@ unknown colour space 'p3' (srgb or linear)
 ```
 **Limiti:** il renderer a 8 bit passa al compositore float per i progetti lineari (rasterizzatore di copertura proprio, quindi i bordi con anti-aliasing differiscono leggermente dall'output sRGB); i colori degli effetti di livello (ombra, bagliore, tinta) sono usati come scritti, non convertiti; `dof` e la catena di post-effetti (`fx`) restano in sRGB; SVG, Lottie e il renderer GPU ignorano l'impostazione; il ricampionamento delle immagini avviene in sRGB prima della conversione. Le modalità di fusione sono applicate ai valori lineari.
 
+### `texture`
+
+**Sintassi:** `osatura texture <preset|kind|list> <out.png> [--size N=1024] [--seed S=1] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--normal-out n.png] [--height-out h.png] [--albedo-out a.png] [--no-tile]`
+
+Genera una texture frattale continua (senza giunture) e deterministica e la scrive come PNG. `<preset>` è un aspetto già pronto (`rock`, `granite`, `lava`, `marble`, `moss`, `terrain`, `clouds`, `ice`, `sand`, `bark`, `nebula`, `mandelbrot`, `julia`, `burning-ship`) e `<kind>` un motivo di base (`fbm`, `ridged`, `billow`, `warp`, `cellular`, `marble`, `mandelbrot`, `julia`, `burning-ship`); `texture list` li elenca entrambi. L'immagine principale è illuminata (Lambert + speculare, occlusione di cavità su due scale, emissione nelle parti basse quando è dato `--glow`). `--normal-out` scrive la mappa delle normali nello spazio tangente (+Y verso l'alto), `--height-out` una mappa di altezza a 16 bit e `--albedo-out` il colore non illuminato. I tipi di rumore si ripetono senza giunture sui quattro bordi, salvo con `--no-tile`; le ottave oltre il limite di Nyquist della dimensione vengono saltate, quindi le texture più grandi guadagnano dettaglio reale (`--size` da 8 a 4096; un `rock` da 4096² richiede circa 45 s su due core). `--zoom` e `--seed` scelgono la vista dei tipi a tempo di fuga (Mandelbrot, Julia, Burning Ship), `--ssaa N` esegue un sovracampionamento N×N. Le stesse opzioni producono la stessa immagine con qualsiasi numero di thread (seno, potenza e logaritmo della libreria C possono differire nell'ultimo bit tra le piattaforme).
+
+```
+$ osatura texture rock rock.png --size 2048 --seed 7 --normal-out rock-n.png
+$ osatura texture mandelbrot m.png --size 2048 --zoom 4000 --ssaa 3
+```
+
+### `texture-add`
+
+**Sintassi:** `osatura texture-add <project.json> <out.json> <layer> <preset|kind> [--size N] [--seed S] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--no-tile] [--x X] [--y Y] [--front] [--no-normal]`
+
+Genera la texture come `texture` e la incorpora nel progetto come livello immagine di nome `<layer>` (dietro agli altri, oppure davanti con `--front`), insieme alla sua mappa delle normali, così `fx ... --layer-normals` la rilumina. Un livello con quel nome non deve esistere già.
+
+```
+$ osatura texture-add demo.json demo-tex.json backdrop granite --size 1024 --x -200 --y -200
+```
+
 ### `layer-normal`
 
 **Sintassi:** `osatura layer-normal <project.json> <out.json> <layer> <normal.png|none> [--strength S] [--fit stretch|tile|exact] [--green-down]`
@@ -2865,6 +2886,7 @@ Ogni comando con un riepilogo di una riga e la sezione che lo documenta. I sotto
 | `import-svg` | sottoinsieme SVG -> livello vettoriale | [9](#9-import) |
 | `keyedit` | modifiche del dope sheet come un unico batch sicuro per l'annullamento | [6](#6-animazione-chiavi-timeline-e-generatori) |
 | `keys` | operazioni di massa sulle chiavi di tutti i canali con chiavi | [6](#6-animazione-chiavi-timeline-e-generatori) |
+| `texture`, `texture-add` | texture frattali (PNG o livello immagine con mappa delle normali) | [12](#12-effetti-profondità-di-campo-onion-skin-scie-e-camera) |
 | `layer-normal` | associa una normal map a un livello | [12](#12-effetti-profondità-di-campo-onion-skin-scie-e-camera) |
 | `layer-pivot` | sposta il pivot di un livello senza cambiare l'immagine | [7](#7-fisica-cloth-e-deformatori) |
 | `layout-preview` | renderizza con il layout risolto di nuovo per un'altra dimensione di canvas | [11](#11-state-machine-data-binding-container-e-regioni-di-scorrimento) |

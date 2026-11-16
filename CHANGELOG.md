@@ -10,6 +10,24 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Added
+- **Fractal textures** (`osatura_core::fractal`, CLI `texture` and `texture-add`): deterministic, seamlessly tileable surface textures up to 4096x4096 with a lit colour image, a flat albedo, a 16-bit height map and a tangent-space normal map. Noise family: fBm, ridged multifractal, billow, domain warp, cellular cracks, marble veins, with every octave limited to the Nyquist frequency so large sizes gain real detail. Escape-time family: Mandelbrot, Julia and Burning Ship with smooth colouring and supersampling. 14 presets (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` embeds the result as an image layer with its normal map, so it works in every existing export and in `fx --layer-normals`. No project-format change for the commands.
+- **`texture` layer effect**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` fills the layer with a seamless fractal texture; `amount` is animatable (`fx_amount`). Canvas-anchored; raster renderers only (SVG and Lottie skip it).
+- **More Linux builds for older systems**: `osatura-linux-x86_64-glibc217.tar.gz` and `osatura-linux-arm64-glibc217.tar.gz` (built against glibc 2.17 with zig as the linker; CLI, studio and C library; they run on RHEL/CentOS 7, Debian 8, Ubuntu 14.04 and newer) and `osatura-linux-arm64-musl.tar.gz` (static, CLI and studio only). New CI job `linux compat` and release job `cli-compat` check the glibc floor (or that the binary is static) and run a smoke test, for arm64 under qemu emulation. `scripts/linux-static-check.sh` accepts `QEMU=` for another architecture.
+
+### Fixed
+- (found by an adversarial audit of the texture code before release) seeds above 2^24 are no longer rounded, octaves of neighbouring seeds are no longer correlated, cellular points are no longer aligned in columns, and the marble pattern now tiles for every cell count.
+
+### Changed (studio usability)
+
+- **Toolbar regrouped into two rows**, switches drawn as pills (filled when on), a primary Save button, shortcut hints in tooltips that follow your own bindings, and an **Export** menu (GIF, HTML player, Lottie) with a line of explanation for each. On narrow screens the toolbar is one row you scroll sideways.
+- **Unsaved changes are visible**: an orange dot on Save, a dot in the tab title, and a confirmation before the page is closed or reloaded with unsaved edits (not in a shared session or during the guided demo). Undoing back to the saved state clears the mark.
+- **Save says what happened** ("saved 17:52") and, when it fails, why. New opt-in **autosave** (3 seconds after your last edit, remembered per browser).
+- **Lost connection banner**: when the studio server stops answering, a red banner appears and the page retries every 3 seconds, then reloads the project when the server is back (before, the page just stopped working without a word).
+- **Quick-start strip** on the first visit (click to select, Space, Ctrl+K, `?`, guided demo). `?` opens the shortcut list.
+- The frame counter also shows seconds (`12 / 47 · 0.50 s`); the Selection panel's long help text folds away and an empty selection says what to do; visible keyboard focus rings; larger touch targets on touch screens; the image has a useful `alt`; reduced-motion respected.
+- New smoke test `osatura-cli/tests/studio_ux_smoke.js` (32 checks). No change to the project format, the HTTP API or the command line.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Pre-release published on 10 Nov 2026 from `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Crate versions stay `0.1.0`; the release version comes from `OSATURA_VERSION` set by `release.yml`.*

@@ -107,11 +107,20 @@ versiunii tale. `/source` este acea ofertă; setează `--source-url` la locul un
 
 ### Bara de instrumente
 
-Undo, Redo, **Save**; casete de bifat `bones` (desenează scheletul), `auto-key`, `grid` (spațiere în unități de canvas, 0 = oprit), `snap` (la celelalte straturi și la canvas),
-`whole groups` (un clic pe o parte dintr-un grup selectează grupul de nivel superior), `points` (arată ancorele, mânerele, punctele de cage/lattice/pin și vârfurile de mesh ale
-straturilor selectate); un selector `box` pentru ceea ce selectează o casetă trasă (`touches`, `contains`, `bounds touch`; pornește cu `touches`); **Lock**; și butoanele **Overlays**, **Suggest**, **Layout**,
-**Commands** (paleta) și **Keys** (editorul de scurtături). Un al doilea rând conține numele tău și **Collab**, precum și butoanele de export **GIF**, **HTML player** și **Lottie**,
-care descarcă ceea ce ar scrie `osatura export` (playerul HTML include sunetul mixat când există sunet și `ffmpeg` poate produce mp3-ul). Butonul **Simple view** ascunde casetele de editare, Overlays, Suggest și butonul paletei de comenzi, astfel încât rămân doar undo, save, panourile și exporturile; alegerea este reținută în acest browser (sau fereastră), iar bara completă revine cu **Full view**.
+Bara de instrumente are două rânduri. **Primul rând**: Undo, Redo și **Save** (un mic punct portocaliu pe Save înseamnă că proiectul are modificări care nu sunt pe disc), un comutator **autosave** și comutatoarele de editare `bones` (desenează scheletul), `auto-key`, `grid` (spațiere în unități de canvas, 0 = oprit), `snap` (la celelalte straturi și la canvas),
+`whole groups` (un clic pe o parte dintr-un grup selectează grupul de nivel superior) și `points` (arată ancorele, mânerele, punctele de cage/lattice/pin și vârfurile de mesh ale
+straturilor selectate); un selector `box` pentru ceea ce selectează o casetă trasă (`touches`, `contains`, `bounds touch`; pornește cu `touches`); și **Lock**. Comutatoarele arată ca niște pastile și sunt pline când sunt active. **Al doilea rând**: numele tău și **Collab**, apoi butoanele **Overlays**, **Demo**, **Suggest**, **Layout**,
+**Commands** (paleta), **Keys** (editorul de scurtături) și **Simple view**, apoi ora ultimei salvări și meniul **Export** cu **GIF**, **HTML player** și **Lottie**,
+care descarcă ceea ce ar scrie `osatura export` (playerul HTML include sunetul mixat când există sunet și `ffmpeg` poate produce mp3-ul). Butonul **Simple view** ascunde comutatoarele de editare, Overlays, Suggest și butonul paletei de comenzi, astfel încât rămân doar undo, save, panourile și exporturile; alegerea este reținută în acest browser (sau fereastră), iar bara completă revine cu **Full view**. Ține cursorul peste un buton ca să vezi scurtătura lui curentă (urmează asocierile tale). Pe un ecran îngust (sub 700 px) bara devine un singur rând pe care îl derulezi lateral.
+
+### Salvare, modificări nesalvate și conexiune
+
+* **Save** scrie fișierul proiectului și o spune („saved 17:52” lângă Export). Dacă salvarea eșuează, motivul apare într-un mesaj care rămâne câteva secunde.
+* **Modificări nesalvate.** După orice editare, butonul Save arată un punct portocaliu, iar titlul filei din browser începe cu un punct. Revenirea prin undo la starea salvată le șterge. Închiderea sau reîncărcarea paginii cu modificări nesalvate cere confirmare (nu într-o sesiune partajată și nu cât timp este încărcat demo-ul ghidat, care are propriul avertisment).
+* **Autosave** (oprit implicit, reținut în acest browser) salvează la 3 secunde după ultima ta editare. Nu face nimic într-o sesiune partajată sau în timpul demo-ului.
+* **Conexiune pierdută.** Dacă pagina nu mai poate ajunge la studio (programul a fost închis sau calculatorul a intrat în repaus), apare sus un banner roșu, iar pagina reîncearcă la fiecare 3 secunde. Când serverul revine, bannerul dispare și pagina reîncarcă proiectul de la el.
+* **Start rapid.** La prima vizită, o bandă sub bara de instrumente numește cele trei lucruri de știut (clic pentru a selecta, **Space** pentru a reda, **Ctrl+K** pentru orice comandă, **?** pentru lista de scurtături) și oferă demo-ul ghidat. Dispare când apeși *Got it*, pornești demo-ul sau faci prima editare, și nu mai revine în acest browser.
+* Contorul de cadre arată și timpul: `12 / 47 · 0.50 s`.
 
 ### Panouri și layouturi
 
@@ -454,9 +463,9 @@ Web MIDI necesită un browser care îl implementează (Chromium îl are); camera
 sesiunea partajată. Pentru tragere se folosesc evenimente de pointer; ecranele tactile nu au fost testate.
 
 **Accesibilitatea, pe față.** Nu am auditat studioul cu un cititor de ecran și nici cu o sesiune doar de la tastatură. Ce există: un atribut `lang` și eticheta meta viewport, casete de bifare etichetate, un
-toast cu `role="status"`, câteva atribute ARIA, **un set complet de scurtături de tastatură și o paletă de comenzi** care ajung la orice comandă, scurtături reasociabile, precum și linia de comandă `osatura`, care face
+toast cu `role="status"` și starea salvării, `role="alert"` pentru bannerul de conexiune pierdută, un rol pentru bara de instrumente, inele de focus vizibile la tastatură pe fiecare control, ținte tactile mai mari pe ecranele tactile, `prefers-reduced-motion` respectat pentru tranzițiile noi, indicii de scurtături în tooltipuri, **un set complet de scurtături de tastatură și o paletă de comenzi** care ajung la orice comandă, scurtături reasociabile, precum și linia de comandă `osatura`, care face
 tot ce face editorul, fără pointer. Ce lipsește: canvasul este o imagine și cea mai mare parte a editării pe canvas se face cu pointerul (există deplasare cu tastele săgeți), nu există temă luminoasă și nu există
-tratare pentru `prefers-reduced-motion` sau `prefers-color-scheme`, conturele de focus sunt cele implicite ale browserului și nu le-am verificat, iar contrastul culorilor nu l-am măsurat. Dacă depinzi de tehnologii asistive,
+tratare pentru `prefers-color-scheme`, animațiile mai vechi (clipirea demo-ului ghidat) sunt singura mișcare care nu este încă acoperită de regula de mișcare redusă, dincolo de ce face browserul, iar contrastul culorilor nu l-am măsurat. Dacă depinzi de tehnologii asistive,
 preferă CLI-ul și panoul JSON și spune proiectului ce nu funcționează.
 
 ## 12. Neajunsuri cunoscute

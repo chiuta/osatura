@@ -107,11 +107,20 @@ deiner Version anbieten. `/source` ist dieses Angebot; setze `--source-url` auf 
 
 ### Werkzeugleiste
 
-Rückgängig, Wiederholen, **Speichern**; die Kontrollkästchen `bones` (das Skelett zeichnen), `auto-key`, `grid` (Abstand in Einheiten der Zeichenfläche, 0 = aus), `snap` (an anderen Ebenen und der Zeichenfläche),
-`whole groups` (ein Klick auf einen Teil einer Gruppe wählt die Gruppe der obersten Ebene), `points` (Anker, Handles, Cage-/Lattice-/Pin-Punkte und Mesh-Eckpunkte der
-ausgewählten Ebenen anzeigen); eine Auswahl `box`, was ein Aufziehen eines Rahmens auswählt (`touches`, `contains`, `bounds touch`; sie beginnt bei `touches`); **Lock**; und die Schaltflächen **Overlays**, **Suggest**, **Layout**,
-**Commands** (Palette) und **Keys** (Tastenkürzel-Editor). Eine zweite Zeile enthält deinen Namen und **Collab** sowie die Export-Schaltflächen **GIF**, **HTML player** und **Lottie**,
-die herunterladen, was `osatura export` schreiben würde (der HTML-Player enthält den gemischten Ton, wenn es Ton gibt und `ffmpeg` das mp3 erzeugen kann). Die Schaltfläche **Simple view** blendet die Bearbeitungs-Checkboxen, Overlays, Suggest und die Schaltfläche der Befehlspalette aus, sodass nur Undo, Speichern, Panels und Exporte bleiben; die Wahl wird in diesem Browser (oder Fenster) gemerkt, und mit **Full view** kommt die volle Werkzeugleiste zurück.
+Die Werkzeugleiste hat zwei Zeilen. **Erste Zeile**: Rückgängig, Wiederholen und **Save** (ein kleiner orangefarbener Punkt auf Save bedeutet, dass das Projekt Änderungen hat, die nicht auf der Festplatte sind), ein **autosave**-Schalter und die Bearbeitungsschalter `bones` (das Skelett zeichnen), `auto-key`, `grid` (Abstand in Einheiten der Zeichenfläche, 0 = aus), `snap` (an anderen Ebenen und der Zeichenfläche),
+`whole groups` (ein Klick auf einen Teil einer Gruppe wählt die Gruppe der obersten Ebene) und `points` (Anker, Handles, Cage-/Lattice-/Pin-Punkte und Mesh-Eckpunkte der
+ausgewählten Ebenen anzeigen); eine Auswahl `box`, was ein Aufziehen eines Rahmens auswählt (`touches`, `contains`, `bounds touch`; sie beginnt bei `touches`); und **Lock**. Die Schalter sehen aus wie Pillen und sind gefüllt, wenn sie an sind. **Zweite Zeile**: dein Name und **Collab**, dann die Schaltflächen **Overlays**, **Demo**, **Suggest**, **Layout**,
+**Commands** (Palette), **Keys** (Tastenkürzel-Editor) und **Simple view**, dann die Uhrzeit der letzten Speicherung und das Menü **Export** mit **GIF**, **HTML player** und **Lottie**,
+die herunterladen, was `osatura export` schreiben würde (der HTML-Player enthält den gemischten Ton, wenn es Ton gibt und `ffmpeg` das mp3 erzeugen kann). Die Schaltfläche **Simple view** blendet die Bearbeitungsschalter, Overlays, Suggest und die Schaltfläche der Befehlspalette aus, sodass nur Undo, Speichern, Panels und Exporte bleiben; die Wahl wird in diesem Browser (oder Fenster) gemerkt, und mit **Full view** kommt die volle Werkzeugleiste zurück. Fahre mit der Maus über eine Schaltfläche, um ihr aktuelles Tastenkürzel zu sehen (es folgt deinen eigenen Belegungen). Auf einem schmalen Bildschirm (unter 700 px) wird die Werkzeugleiste zu einer Zeile, die du seitlich scrollst.
+
+### Speichern, ungespeicherte Änderungen und Verbindung
+
+* **Save** schreibt die Projektdatei und meldet es („saved 17:52“ neben Export). Schlägt das Speichern fehl, erscheint der Grund in einer Meldung, die mehrere Sekunden stehen bleibt.
+* **Ungespeicherte Änderungen.** Nach jeder Bearbeitung zeigt die Schaltfläche Save einen orangefarbenen Punkt, und der Browser-Tabtitel beginnt mit einem Punkt. Zurück zum gespeicherten Zustand per Undo löscht beides. Das Schließen oder Neuladen der Seite mit ungespeicherten Änderungen fragt nach (nicht in einer geteilten Sitzung und nicht, solange die geführte Demo geladen ist, die eine eigene Warnung hat).
+* **Autosave** (standardmäßig aus, in diesem Browser gemerkt) speichert 3 Sekunden nach deiner letzten Bearbeitung. In einer geteilten Sitzung oder während der Demo tut es nichts.
+* **Verbindung verloren.** Kann die Seite das Studio nicht mehr erreichen (das Programm wurde beendet oder der Rechner ging in den Ruhezustand), erscheint oben ein roter Banner, und die Seite versucht es alle 3 Sekunden erneut. Ist der Server wieder da, verschwindet der Banner, und die Seite lädt das Projekt von dort neu.
+* **Schnellstart.** Beim ersten Besuch nennt ein Streifen unter der Werkzeugleiste die drei wichtigsten Dinge (Klick zum Auswählen, **Space** zum Abspielen, **Ctrl+K** für jeden Befehl, **?** für die Liste der Tastenkürzel) und bietet die geführte Demo an. Er verschwindet, wenn du *Got it* drückst, die Demo startest oder deine erste Bearbeitung machst, und bleibt in diesem Browser weg.
+* Der Bildzähler zeigt auch die Zeit: `12 / 47 · 0.50 s`.
 
 ### Panels und Layouts
 
@@ -456,9 +465,9 @@ Web MIDI erfordert einen Browser, der es implementiert (Chromium tut das); die K
 gemeinsame Sitzung. Für das Ziehen werden Pointer-Events verwendet; Touchscreens wurden nicht getestet.
 
 **Barrierefreiheit, ehrlich gesagt.** Ich habe das Studio weder mit einem Screenreader noch in einer reinen Tastatursitzung geprüft. Vorhanden sind: ein `lang`-Attribut und ein Viewport-Meta-Tag, beschriftete Checkboxen, ein
-Toast mit `role="status"`, einige ARIA-Attribute, **ein vollständiger Satz an Tastenkürzeln und eine Befehlspalette**, die jeden Befehl erreichen, umbelegbare Tastenkürzel sowie die Kommandozeile `osatura`, die
+Toast mit `role="status"` und Speicherstatus, `role="alert"` für den Banner bei verlorener Verbindung, eine Rolle für die Werkzeugleiste, sichtbare Tastatur-Fokusrahmen an jedem Steuerelement, größere Touch-Ziele auf Touchscreens, bei den neuen Übergängen berücksichtigtes `prefers-reduced-motion`, Hinweise auf Tastenkürzel in Tooltips, **ein vollständiger Satz an Tastenkürzeln und eine Befehlspalette**, die jeden Befehl erreichen, umbelegbare Tastenkürzel sowie die Kommandozeile `osatura`, die
 alles kann, was der Editor kann, ohne Zeigegerät. Es fehlt: Die Canvas ist ein Bild, und das meiste Bearbeiten auf der Canvas erfolgt per Zeigegerät (Verschieben mit den Pfeiltasten gibt es), es gibt kein helles Theme und keine
-Behandlung von `prefers-reduced-motion` oder `prefers-color-scheme`, die Fokusumrandungen sind die Browser-Standards und ich habe sie nicht geprüft, und ich habe den Farbkontrast nicht gemessen. Wenn du auf assistive Technik angewiesen bist,
+Behandlung von `prefers-color-scheme`, die älteren Animationen (das Aufblitzen der geführten Demo) sind die einzige Bewegung, die von der Regel für reduzierte Bewegung noch nicht abgedeckt wird, über das hinaus, was der Browser tut, und ich habe den Farbkontrast nicht gemessen. Wenn du auf assistive Technik angewiesen bist,
 nutze bevorzugt die CLI und das JSON-Panel und melde dem Projekt, was nicht funktioniert.
 
 ## 12. Bekannte Ecken und Kanten

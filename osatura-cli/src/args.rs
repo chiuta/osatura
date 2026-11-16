@@ -12,6 +12,7 @@ pub(crate) struct Args {
 }
 
 pub(crate) const VALUE_OPTS: &[&str] = &[
+    "--octaves", "--cells", "--lacunarity", "--warp", "--zoom", "--ssaa", "--contrast", "--relief", "--light-az", "--light-elev", "--specular", "--shininess", "--ao", "--glow", "--color-speed", "--normal-out", "--height-out", "--albedo-out",
     "--map", "--thigh-l", "--thigh-r", "--shin-l", "--shin-r", "--arm-l", "--arm-r", "--hips", "--period", "--stride",
     "--knee", "--bob", "--swing", "--port", "--scale", "--columns", "--threshold", "--tolerance", "--min-area", "--fill",
     "--factor", "--influences", "--codec", "--pairs", "--tol", "--fps", "--frames", "--generations", "--seed",

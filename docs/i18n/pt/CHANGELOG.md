@@ -10,6 +10,24 @@ Versões relacionadas que **são** reais e independentes das acima: o `API_VERSI
 
 ## [Unreleased]
 
+### Adicionado
+- **Texturas fractais** (`osatura_core::fractal`, CLI `texture` e `texture-add`): texturas de superfície determinísticas, repetíveis sem emendas, até 4096x4096, com imagem a cores iluminada, albedo plano, mapa de altura de 16 bits e mapa de normais no espaço tangente. Família do ruído: fBm, multifractal ridged, billow, deformação de domínio, fissuras celulares, veios de mármore, com cada oitava limitada à frequência de Nyquist para que os tamanhos grandes ganhem detalhe real. Família de tempo de escape: Mandelbrot, Julia e Burning Ship com coloração suave e sobreamostragem. 14 predefinições (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` incorpora o resultado como camada de imagem com o seu mapa de normais, pelo que funciona em todas as exportações existentes e em `fx --layer-normals`. Sem alteração do formato de projeto para os comandos.
+- **Efeito de camada `texture`**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` preenche a camada com uma textura fractal contínua; `amount` pode ser animado (`fx_amount`). Ancorado à tela; apenas renderizadores raster (SVG e Lottie ignoram-no).
+- **Mais builds Linux para sistemas antigos**: `osatura-linux-x86_64-glibc217.tar.gz` e `osatura-linux-arm64-glibc217.tar.gz` (compilados contra glibc 2.17 com zig como linker; CLI, studio e biblioteca C; rodam em RHEL/CentOS 7, Debian 8, Ubuntu 14.04 e mais novos) e `osatura-linux-arm64-musl.tar.gz` (estático, apenas CLI e studio). O novo job de CI `linux compat` e o job de release `cli-compat` verificam o piso de glibc (ou que o binário é estático) e executam um smoke test, no arm64 sob emulação qemu. `scripts/linux-static-check.sh` aceita `QEMU=` para outra arquitetura.
+
+### Corrigido
+- (encontrado por uma auditoria adversarial do código de texturas antes do lançamento) as sementes acima de 2^24 já não são arredondadas, as oitavas de sementes vizinhas já não estão correlacionadas, os pontos celulares já não se alinham em colunas e o padrão de mármore passa a repetir-se sem emendas para qualquer número de células.
+
+### Alterado (usabilidade do studio)
+
+- **Barra de ferramentas reagrupada em duas linhas**, interruptores desenhados como pílulas (preenchidos quando ativos), um botão Save principal, dicas de atalhos nas dicas de ferramenta que seguem as suas próprias associações e um menu **Export** (GIF, HTML player, Lottie) com uma linha de explicação para cada um. Em telas estreitas a barra é uma única linha que você rola para o lado.
+- **As alterações não salvas ficam visíveis**: um ponto laranja em Save, um ponto no título da aba e uma confirmação antes de a página ser fechada ou recarregada com edições não salvas (não em uma sessão compartilhada nem durante a demonstração guiada). Desfazer até o estado salvo remove a marca.
+- **Save diz o que aconteceu** ("saved 17:52") e, quando falha, por quê. Novo **autosave** opcional (3 segundos depois da sua última edição, lembrado por navegador).
+- **Banner de conexão perdida**: quando o servidor do studio deixa de responder, aparece um banner vermelho e a página tenta de novo a cada 3 segundos, depois recarrega o projeto quando o servidor volta (antes, a página simplesmente deixava de funcionar sem uma palavra).
+- **Faixa de início rápido** na primeira visita (clique para selecionar, Space, Ctrl+K, `?`, demonstração guiada). `?` abre a lista de atalhos.
+- O contador de quadros também mostra os segundos (`12 / 47 · 0.50 s`); o longo texto de ajuda do painel Selection se recolhe e uma seleção vazia diz o que fazer; anéis de foco de teclado visíveis; alvos de toque maiores em telas sensíveis ao toque; a imagem tem um `alt` útil; o movimento reduzido é respeitado.
+- Novo smoke test `osatura-cli/tests/studio_ux_smoke.js` (32 verificações). Nenhuma mudança no formato do projeto, na API HTTP nem na linha de comando.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Pré-lançamento publicado em 10 nov 2026 a partir de `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). As versões dos crates continuam `0.1.0`; a versão de lançamento vem de `OSATURA_VERSION`, definida por `release.yml`.*

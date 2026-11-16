@@ -107,11 +107,20 @@ tua versione. `/source` è quell'offerta; imposta `--source-url` su dove si trov
 
 ### Barra degli strumenti
 
-Annulla, Ripeti, **Save**; caselle `bones` (disegna lo scheletro), `auto-key`, `grid` (spaziatura in unità del canvas, 0 = disattivata), `snap` (agli altri livelli e al canvas),
-`whole groups` (un clic su una parte di un gruppo seleziona il gruppo di primo livello), `points` (mostra ancore, maniglie, punti di cage/lattice/pin e vertici delle mesh dei
-livelli selezionati); un selettore `box` per ciò che seleziona un riquadro trascinato (`touches`, `contains`, `bounds touch`; parte da `touches`); **Lock**; e i pulsanti **Overlays**, **Suggest**, **Layout**,
-**Commands** (palette) e **Keys** (editor delle scorciatoie). Una seconda riga contiene il tuo nome e **Collab**, e i pulsanti di esportazione **GIF**, **HTML player** e **Lottie**,
-che scaricano ciò che scriverebbe `osatura export` (il player HTML include il suono mixato quando c'è audio e `ffmpeg` può produrre l'mp3). Il pulsante **Simple view** nasconde le caselle di modifica, Overlays, Suggest e il pulsante della palette dei comandi, così restano solo annulla, salva, pannelli ed esportazioni; la scelta viene ricordata in questo browser (o finestra) e la barra completa torna con **Full view**.
+La barra degli strumenti ha due righe. **Prima riga**: Annulla, Ripeti e **Save** (un piccolo punto arancione su Save indica che il progetto ha modifiche non presenti sul disco), un interruttore **autosave** e gli interruttori di modifica `bones` (disegna lo scheletro), `auto-key`, `grid` (spaziatura in unità del canvas, 0 = disattivata), `snap` (agli altri livelli e al canvas),
+`whole groups` (un clic su una parte di un gruppo seleziona il gruppo di primo livello) e `points` (mostra ancore, maniglie, punti di cage/lattice/pin e vertici delle mesh dei
+livelli selezionati); un selettore `box` per ciò che seleziona un riquadro trascinato (`touches`, `contains`, `bounds touch`; parte da `touches`); e **Lock**. Gli interruttori hanno l'aspetto di pillole e sono pieni quando sono attivi. **Seconda riga**: il tuo nome e **Collab**, poi i pulsanti **Overlays**, **Demo**, **Suggest**, **Layout**,
+**Commands** (palette), **Keys** (editor delle scorciatoie) e **Simple view**, poi l'ora dell'ultimo salvataggio e il menu **Export** con **GIF**, **HTML player** e **Lottie**,
+che scaricano ciò che scriverebbe `osatura export` (il player HTML include il suono mixato quando c'è audio e `ffmpeg` può produrre l'mp3). Il pulsante **Simple view** nasconde gli interruttori di modifica, Overlays, Suggest e il pulsante della palette dei comandi, così restano solo annulla, salva, pannelli ed esportazioni; la scelta viene ricordata in questo browser (o finestra) e la barra completa torna con **Full view**. Passa il cursore su un pulsante per vedere la sua scorciatoia attuale (segue le tue assegnazioni). Su uno schermo stretto (sotto i 700 px) la barra diventa una sola riga che scorri di lato.
+
+### Salvataggio, modifiche non salvate e connessione
+
+* **Save** scrive il file del progetto e lo dice (« saved 17:52 » accanto a Export). Se il salvataggio fallisce, il motivo compare in un messaggio che resta per diversi secondi.
+* **Modifiche non salvate.** Dopo qualsiasi modifica il pulsante Save mostra un punto arancione e il titolo della scheda del browser inizia con un punto. Tornare con annulla allo stato salvato li cancella. Chiudere o ricaricare la pagina con modifiche non salvate chiede conferma (non in una sessione condivisa e non mentre è caricata la demo guidata, che ha il proprio avviso).
+* **Autosave** (disattivato di default, ricordato in questo browser) salva 3 secondi dopo la tua ultima modifica. Non fa nulla in una sessione condivisa o durante la demo.
+* **Connessione persa.** Se la pagina non riesce più a raggiungere lo studio (il programma è stato chiuso o il computer è andato in stop), in alto compare un banner rosso e la pagina riprova ogni 3 secondi. Quando il server torna, il banner scompare e la pagina ricarica il progetto da esso.
+* **Avvio rapido.** Alla prima visita una striscia sotto la barra degli strumenti indica le tre cose da sapere (clic per selezionare, **Space** per riprodurre, **Ctrl+K** per ogni comando, **?** per l'elenco delle scorciatoie) e propone la demo guidata. Scompare quando premi *Got it*, avvii la demo o fai la prima modifica, e non ricompare in questo browser.
+* Il contatore dei fotogrammi mostra anche il tempo: `12 / 47 · 0.50 s`.
 
 ### Pannelli e layout
 
@@ -456,9 +465,9 @@ Il Web MIDI richiede un browser che lo implementi (Chromium lo fa); la fotocamer
 sessione condivisa. Per il trascinamento si usano i pointer event; gli schermi touch non sono stati testati.
 
 **Accessibilità, onestamente.** Non ho sottoposto lo studio a un audit con uno screen reader né con una sessione solo da tastiera. Ciò che esiste: un attributo `lang` e il meta tag viewport, checkbox con etichetta, un
-toast con `role="status"`, alcuni attributi ARIA, **un set completo di scorciatoie da tastiera e una palette dei comandi** che raggiungono ogni comando, scorciatoie riassegnabili e la riga di comando `osatura`, che fa
+toast con `role="status"` e stato del salvataggio, `role="alert"` per il banner di connessione persa, un ruolo per la barra degli strumenti, anelli di focus da tastiera visibili su ogni controllo, bersagli touch più grandi sugli schermi touch, `prefers-reduced-motion` rispettato per le nuove transizioni, suggerimenti delle scorciatoie nei tooltip, **un set completo di scorciatoie da tastiera e una palette dei comandi** che raggiungono ogni comando, scorciatoie riassegnabili e la riga di comando `osatura`, che fa
 tutto ciò che fa l'editor senza un puntatore. Ciò che manca: il canvas è un'immagine e la maggior parte della modifica sul canvas avviene con il puntatore (lo spostamento con i tasti freccia esiste), non c'è un tema chiaro e
-nessuna gestione di `prefers-reduced-motion` o `prefers-color-scheme`, i contorni del focus sono quelli predefiniti del browser e non li ho verificati, e non ho misurato il contrasto dei colori. Se dipendi da una tecnologia assistiva,
+gestione di `prefers-color-scheme`, le animazioni più vecchie (il lampo della demo guidata) sono l'unico movimento non ancora coperto dalla regola del movimento ridotto, oltre a ciò che fa il browser, e non ho misurato il contrasto dei colori. Se dipendi da una tecnologia assistiva,
 preferisci la CLI e il pannello JSON, e segnala al progetto che cosa non funziona.
 
 ## 12. Limiti noti

@@ -2045,6 +2045,27 @@ unknown colour space 'p3' (srgb or linear)
 ```
 **Limites :** le moteur de rendu 8 bits bascule vers le compositeur flottant pour les projets linéaires (rastériseur de couverture propre, donc les bords anticrénelés diffèrent légèrement de la sortie sRGB) ; les couleurs des effets de calque (ombre, lueur, teinte) sont utilisées telles qu'écrites, sans conversion ; `dof` et la chaîne de post-effets (`fx`) restent en sRGB ; SVG, Lottie et le moteur de rendu GPU ignorent ce réglage ; le rééchantillonnage des images s'effectue en sRGB avant la conversion. Les modes de fusion sont appliqués aux valeurs linéaires.
 
+### `texture`
+
+**Synopsis :** `osatura texture <preset|kind|list> <out.png> [--size N=1024] [--seed S=1] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--normal-out n.png] [--height-out h.png] [--albedo-out a.png] [--no-tile]`
+
+Génère une texture fractale continue (sans raccord) et déterministe, et l'écrit en PNG. `<preset>` est un rendu prêt à l'emploi (`rock`, `granite`, `lava`, `marble`, `moss`, `terrain`, `clouds`, `ice`, `sand`, `bark`, `nebula`, `mandelbrot`, `julia`, `burning-ship`) et `<kind>` un motif de base (`fbm`, `ridged`, `billow`, `warp`, `cellular`, `marble`, `mandelbrot`, `julia`, `burning-ship`) ; `texture list` affiche les deux. L'image principale est éclairée (Lambert + spéculaire, occlusion de cavité à deux échelles, émission dans les parties basses quand `--glow` est donné). `--normal-out` écrit la carte de normales dans l'espace tangent (+Y vers le haut), `--height-out` une carte de hauteur sur 16 bits et `--albedo-out` la couleur non éclairée. Les types de bruit se répètent sans raccord sur les quatre bords, sauf avec `--no-tile` ; les octaves au-dessus de la limite de Nyquist de la taille sont ignorées, de sorte que les grandes textures gagnent un vrai détail (`--size` de 8 à 4096 ; un `rock` de 4096² prend environ 45 s sur deux cœurs). `--zoom` et `--seed` choisissent la vue des types à temps d'échappement (Mandelbrot, Julia, Burning Ship), `--ssaa N` suréchantillonne N×N. Les mêmes options donnent la même image quel que soit le nombre de fils d'exécution (le sinus, la puissance et le logarithme de la bibliothèque C peuvent différer au dernier bit selon la plate-forme).
+
+```
+$ osatura texture rock rock.png --size 2048 --seed 7 --normal-out rock-n.png
+$ osatura texture mandelbrot m.png --size 2048 --zoom 4000 --ssaa 3
+```
+
+### `texture-add`
+
+**Synopsis :** `osatura texture-add <project.json> <out.json> <layer> <preset|kind> [--size N] [--seed S] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--no-tile] [--x X] [--y Y] [--front] [--no-normal]`
+
+Génère la texture comme `texture` et l'intègre au projet sous forme de calque image nommé `<layer>` (derrière les autres, ou devant avec `--front`), avec sa carte de normales, de sorte que `fx ... --layer-normals` la rééclaire. Un calque de ce nom ne doit pas déjà exister.
+
+```
+$ osatura texture-add demo.json demo-tex.json backdrop granite --size 1024 --x -200 --y -200
+```
+
 ### `layer-normal`
 
 **Synopsis :** `osatura layer-normal <project.json> <out.json> <layer> <normal.png|none> [--strength S] [--fit stretch|tile|exact] [--green-down]`
@@ -2867,6 +2888,7 @@ Chaque commande avec un résumé d'une ligne et la section qui la documente. Les
 | `import-svg` | sous-ensemble SVG -> calque vectoriel | [9](#9-import) |
 | `keyedit` | modifications de dope sheet en un seul lot annulable en une fois | [6](#6-animation-clés-timeline-et-générateurs) |
 | `keys` | opérations de clés en masse sur tous les canaux à clés | [6](#6-animation-clés-timeline-et-générateurs) |
+| `texture`, `texture-add` | textures fractales (PNG ou calque image avec carte de normales) | [12](#12-effets-profondeur-de-champ-onion-skin-trajectoires-et-caméra) |
 | `layer-normal` | associe une normal map à un calque | [12](#12-effets-profondeur-de-champ-onion-skin-trajectoires-et-caméra) |
 | `layer-pivot` | déplace le pivot d'un calque sans changer l'image | [7](#7-physique-tissu-et-déformateurs) |
 | `layout-preview` | rendu avec mise en page recalculée pour une autre taille de canevas | [11](#11-machines-à-états-liaisons-de-données-conteneurs-et-zones-de-défilement) |

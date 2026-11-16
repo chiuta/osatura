@@ -123,6 +123,74 @@ jobs:
           cargo build --locked -p osatura-cli --target x86_64-unknown-linux-musl
           bash scripts/linux-static-check.sh target/x86_64-unknown-linux-musl/debug/osatura
 
+  linux-compat:
+    # The older-Linux release builds (glibc 2.17 on x86_64 and arm64, static musl on arm64): built with zig, glibc floor
+    # or static check, then a smoke test (under qemu for arm64). Same steps as release.yml, debug profile.
+    name: linux compat (${{ matrix.name }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: x86_64-glibc217, arch: x86_64, target: x86_64-unknown-linux-gnu, zig: x86_64-unknown-linux-gnu.2.17, capi: true }
+          - { name: arm64-glibc217, arch: aarch64, target: aarch64-unknown-linux-gnu, zig: aarch64-unknown-linux-gnu.2.17, capi: true }
+          - { name: arm64-musl, arch: aarch64, target: aarch64-unknown-linux-musl, zig: aarch64-unknown-linux-musl, capi: false }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+        with:
+          targets: ${{ matrix.target }}
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install && rustup target add ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          key: compat-${{ matrix.name }}
+      - name: Zig and cargo-zigbuild (cross C toolchain that can target an old glibc)
+        run: pip install --user "ziglang==0.13.0" "cargo-zigbuild==0.24.1" && echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Emulator for the arm64 smoke tests
+        if: matrix.arch == 'aarch64'
+        run: sudo apt-get install -y -qq qemu-user-static libc6-arm64-cross >/dev/null
+      - name: Build
+        run: |
+          pkgs="-p osatura-cli"
+          if [ "${{ matrix.capi }}" = "true" ]; then pkgs="$pkgs -p osatura-capi"; fi
+          cargo zigbuild --locked $pkgs --target ${{ matrix.zig }}
+      - name: Check the glibc floor (2.17) or that the binary is static
+        run: |
+          set -euo pipefail
+          out=target/${{ matrix.target }}/debug
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
+            if readelf -lW $out/osatura | grep -q 'Requesting program interpreter'; then echo "::error::not static"; exit 1; fi
+            if readelf -dW $out/osatura | grep -q '(NEEDED)'; then echo "::error::needs shared libraries"; exit 1; fi
+          else
+            files="$out/osatura $out/libosatura_capi.so"
+            max=$(readelf -W --dyn-syms $files | grep -o 'GLIBC_[0-9][0-9.]*' | sed 's/GLIBC_//' | sort -V | tail -1)
+            echo "highest glibc symbol version needed: $max"
+            if [ "$(printf '%s\n' "$max" 2.17 | sort -V | tail -1)" != "2.17" ]; then
+              echo "::error title=glibc-floor::the binaries need glibc $max, newer than 2.17"
+              exit 1
+            fi
+          fi
+      - name: Smoke test (native, or under qemu for arm64)
+        run: |
+          set -euo pipefail
+          b=target/${{ matrix.target }}/debug/osatura
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
+              QEMU=/usr/bin/qemu-aarch64-static bash scripts/linux-static-check.sh $b
+              run() { qemu-aarch64-static $b "$@"; }
+            else
+              run() { qemu-aarch64-static -L /usr/aarch64-linux-gnu $b "$@"; }
+            fi
+          else
+            run() { $b "$@"; }
+          fi
+          run --version
+          run demo smoke.json
+          run check smoke.json
+          run render smoke.json 0 smoke.png
+          test -s smoke.png
+
   gpu-parity:
     # Linux runs the tests against Mesa's software Vulkan (lavapipe) and treats "no adapter" as a failure
     # (OSATURA_GPU_REQUIRE=1); the thresholds are in osatura-gpu/tests/parity.rs. macOS and Windows runners usually have

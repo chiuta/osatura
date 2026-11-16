@@ -10,6 +10,24 @@ Versions associées qui **sont** réelles et indépendantes de ce qui précède 
 
 ## [Unreleased]
 
+### Ajouté
+- **Textures fractales** (`osatura_core::fractal`, CLI `texture` et `texture-add`) : textures de surface déterministes, répétables sans raccord, jusqu'à 4096x4096, avec une image couleur éclairée, un albédo plat, une carte de hauteur 16 bits et une carte de normales dans l'espace tangent. Famille du bruit : fBm, multifractale ridged, billow, déformation de domaine, fissures cellulaires, veines de marbre, chaque octave étant limitée à la fréquence de Nyquist pour que les grandes tailles gagnent un vrai détail. Famille à temps d'échappement : Mandelbrot, Julia et Burning Ship avec coloration lisse et suréchantillonnage. 14 préréglages (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` intègre le résultat comme calque image avec sa carte de normales, donc il fonctionne dans tous les exports existants et dans `fx --layer-normals`. Pas de changement du format de projet pour les commandes.
+- **Effet de calque `texture`** : `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` remplit le calque d'une texture fractale continue ; `amount` est animable (`fx_amount`). Ancré au canevas ; moteurs raster uniquement (SVG et Lottie l'ignorent).
+- **Plus de builds Linux pour les anciens systèmes** : `osatura-linux-x86_64-glibc217.tar.gz` et `osatura-linux-arm64-glibc217.tar.gz` (compilés contre glibc 2.17 avec zig comme éditeur de liens ; CLI, studio et bibliothèque C ; ils fonctionnent sur RHEL/CentOS 7, Debian 8, Ubuntu 14.04 et plus récents) et `osatura-linux-arm64-musl.tar.gz` (statique, CLI et studio seulement). Le nouveau job CI `linux compat` et le job de publication `cli-compat` vérifient le plancher glibc (ou que le binaire est statique) et lancent un test de fumée, pour arm64 sous émulation qemu. `scripts/linux-static-check.sh` accepte `QEMU=` pour une autre architecture.
+
+### Corrigé
+- (trouvé par un audit adverse du code des textures avant la publication) les graines au-dessus de 2^24 ne sont plus arrondies, les octaves de graines voisines ne sont plus corrélées, les points cellulaires ne sont plus alignés en colonnes, et le motif de marbre se répète désormais sans raccord pour tout nombre de cellules.
+
+### Modifié (ergonomie du studio)
+
+- **Barre d'outils regroupée en deux rangées**, interrupteurs dessinés en pilules (remplis lorsqu'ils sont actifs), un bouton Save principal, des indications de raccourcis dans les infobulles qui suivent vos propres associations, et un menu **Export** (GIF, HTML player, Lottie) avec une ligne d'explication pour chacun. Sur les écrans étroits, la barre d'outils est une seule rangée que l'on fait défiler latéralement.
+- **Les modifications non enregistrées se voient** : un point orange sur Save, un point dans le titre de l'onglet et une confirmation avant que la page soit fermée ou rechargée avec des modifications non enregistrées (pas dans une session partagée ni pendant la démo guidée). Revenir par annulation à l'état enregistré efface la marque.
+- **Save dit ce qui s'est passé** (« saved 17:52 ») et, en cas d'échec, pourquoi. Nouvel **autosave** facultatif (3 secondes après votre dernière modification, mémorisé par navigateur).
+- **Bannière de connexion perdue** : lorsque le serveur du studio ne répond plus, une bannière rouge apparaît et la page réessaie toutes les 3 secondes, puis recharge le projet quand le serveur revient (auparavant, la page cessait simplement de fonctionner sans un mot).
+- **Bandeau de démarrage rapide** à la première visite (clic pour sélectionner, Space, Ctrl+K, `?`, démo guidée). `?` ouvre la liste des raccourcis.
+- Le compteur d'images affiche aussi les secondes (`12 / 47 · 0.50 s`) ; le long texte d'aide du panneau Selection se replie et une sélection vide dit quoi faire ; anneaux de focus clavier visibles ; cibles tactiles plus grandes sur les écrans tactiles ; l'image a un `alt` utile ; le mouvement réduit est respecté.
+- Nouveau test de fumée `osatura-cli/tests/studio_ux_smoke.js` (32 vérifications). Aucun changement du format de projet, de l'API HTTP ni de la ligne de commande.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Préversion publiée le 10 nov. 2026 depuis `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Les versions des crates restent `0.1.0` ; la version de publication provient de `OSATURA_VERSION`, définie par `release.yml`.*
