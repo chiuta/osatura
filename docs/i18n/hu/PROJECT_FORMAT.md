@@ -428,8 +428,11 @@ Rétegenként legfeljebb 16. Minden effektnek van `"type"` címkéje, `enabled` 
 | `drop_shadow` | `dx`, `dy`, `blur`, `color`, `opacity` (1) | az eltolások legfeljebb 1024; blur 0..64; opacity 0..1 |
 | `tint` | `black`, `white`, `amount` (1) | amount 0..1 |
 | `fill` | `color`, `opacity` (1) | opacity 0..1 |
+| `texture` | `preset`, `seed` (1), `tile` (256), `amount` (1) | a `preset` egy csempézhető előbeállítás az `osatura texture list` listájából (nem mandelbrot, julia, burning-ship); tile 4..8192 színpadegység ismétlésenként; amount 0..1 |
 
 Animáld az `fx_blur`, `fx_dx`, `fx_dy`, `fx_soft`, `fx_amount` tulajdonságokkal a `layer::fxN` célon.
+
+A `texture` varrat nélküli fraktáltextúrát fest a réteg saját alfájára. A textúra a vászonhoz van rögzítve, mint a papír szemcséi, ezért a mozgó réteg átcsúszik rajta. A raszteres megjelenítők (PNG, GIF, APNG, videó) rajzolják, az SVG- és a Lottie-kimenetnek nem része.
 
 ### 7.3 `normal_map`
 

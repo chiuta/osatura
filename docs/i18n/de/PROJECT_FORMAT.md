@@ -429,8 +429,11 @@ Höchstens 16 pro Ebene. Jeder Effekt hat `"type"`, `enabled` (Standard true) un
 | `drop_shadow` | `dx`, `dy`, `blur`, `color`, `opacity` (1) | Offsets höchstens 1024; blur 0..64; opacity 0..1 |
 | `tint` | `black`, `white`, `amount` (1) | amount 0..1 |
 | `fill` | `color`, `opacity` (1) | opacity 0..1 |
+| `texture` | `preset`, `seed` (1), `tile` (256), `amount` (1) | `preset` ist ein kachelbares Preset aus `osatura texture list` (nicht mandelbrot, julia, burning-ship); tile 4..8192 Bühneneinheiten pro Wiederholung; amount 0..1 |
 
 Animiere mit `fx_blur`, `fx_dx`, `fx_dy`, `fx_soft`, `fx_amount` auf dem Ziel `layer::fxN`.
+
+`texture` malt eine nahtlose fraktale Textur über den eigenen Alphakanal der Ebene. Die Textur ist an die Leinwand gebunden, wie das Korn von Papier, eine bewegte Ebene gleitet also darüber. Sie wird von den Raster-Renderern (PNG, GIF, APNG, Video) gezeichnet und ist nicht Teil der SVG- oder Lottie-Ausgabe.
 
 ### 7.3 `normal_map`
 

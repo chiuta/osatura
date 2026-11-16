@@ -10,6 +10,13 @@ Kapcsolódó verziók, amelyek **valódiak**, és függetlenek a fentiektől: a 
 
 ## [Unreleased]
 
+### Hozzáadva
+- **Fraktáltextúrák** (`osatura_core::fractal`, CLI `texture` és `texture-add`): determinisztikus, varrat nélkül csempézhető felülettextúrák 4096x4096-ig, megvilágított színes képpel, lapos albedóval, 16 bites magasságtérképpel és érintőtéri normáltérképpel. Zajcsalád: fBm, ridged multifraktál, billow, tartományelhajlítás, cellás repedések, márványerek, minden oktáva a Nyquist-frekvenciára korlátozva, hogy a nagy méretek valódi részletet nyerjenek. Szökési idős család: Mandelbrot, Julia és Burning Ship sima színezéssel és túlmintavételezéssel. 14 előbeállítás (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). A `texture-add` az eredményt normáltérképével együtt képrétegként ágyazza be, így minden meglévő exportban és az `fx --layer-normals` parancsban is működik. A parancsok miatt nem változik a projektformátum.
+- **`texture` rétegeffektus**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` varrat nélküli fraktáltextúrával tölti ki a réteget; az `amount` animálható (`fx_amount`). A vászonhoz rögzített; csak a raszteres megjelenítők (az SVG és a Lottie kihagyja).
+
+### Javítva
+- (a textúrakód kiadás előtti ellenséges auditja találta) a 2^24 feletti seedek már nem kerekednek, a szomszédos seedek oktávái már nem korrelálnak, a cellás pontok már nem sorakoznak oszlopokba, és a márványminta most már bármilyen cellaszámnál varrat nélkül ismétlődik.
+
 ### Módosítva (a stúdió használhatósága)
 
 - **Az eszköztár két sorba rendezve**, a kapcsolók tablettaként rajzolva (bekapcsolva kitöltöttek), elsődleges Save gomb, gyorsbillentyű-tippek a buborékokban, amelyek a saját kiosztásodat követik, és egy **Export** menü (GIF, HTML player, Lottie) mindegyikhez egy magyarázó sorral. Keskeny képernyőn az eszköztár egyetlen sor, amelyet oldalra görgetsz.

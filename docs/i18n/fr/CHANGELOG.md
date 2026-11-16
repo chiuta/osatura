@@ -10,6 +10,13 @@ Versions associées qui **sont** réelles et indépendantes de ce qui précède 
 
 ## [Unreleased]
 
+### Ajouté
+- **Textures fractales** (`osatura_core::fractal`, CLI `texture` et `texture-add`) : textures de surface déterministes, répétables sans raccord, jusqu'à 4096x4096, avec une image couleur éclairée, un albédo plat, une carte de hauteur 16 bits et une carte de normales dans l'espace tangent. Famille du bruit : fBm, multifractale ridged, billow, déformation de domaine, fissures cellulaires, veines de marbre, chaque octave étant limitée à la fréquence de Nyquist pour que les grandes tailles gagnent un vrai détail. Famille à temps d'échappement : Mandelbrot, Julia et Burning Ship avec coloration lisse et suréchantillonnage. 14 préréglages (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` intègre le résultat comme calque image avec sa carte de normales, donc il fonctionne dans tous les exports existants et dans `fx --layer-normals`. Pas de changement du format de projet pour les commandes.
+- **Effet de calque `texture`** : `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` remplit le calque d'une texture fractale continue ; `amount` est animable (`fx_amount`). Ancré au canevas ; moteurs raster uniquement (SVG et Lottie l'ignorent).
+
+### Corrigé
+- (trouvé par un audit adverse du code des textures avant la publication) les graines au-dessus de 2^24 ne sont plus arrondies, les octaves de graines voisines ne sont plus corrélées, les points cellulaires ne sont plus alignés en colonnes, et le motif de marbre se répète désormais sans raccord pour tout nombre de cellules.
+
 ### Modifié (ergonomie du studio)
 
 - **Barre d'outils regroupée en deux rangées**, interrupteurs dessinés en pilules (remplis lorsqu'ils sont actifs), un bouton Save principal, des indications de raccourcis dans les infobulles qui suivent vos propres associations, et un menu **Export** (GIF, HTML player, Lottie) avec une ligne d'explication pour chacun. Sur les écrans étroits, la barre d'outils est une seule rangée que l'on fait défiler latéralement.

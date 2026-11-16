@@ -429,8 +429,11 @@ Cel mult 16 pe strat. Fiecare efect are `"type"`, `enabled` (implicit true) și 
 | `drop_shadow` | `dx`, `dy`, `blur`, `color`, `opacity` (1) | offseturi de cel mult 1024; blur 0..64; opacity 0..1 |
 | `tint` | `black`, `white`, `amount` (1) | amount 0..1 |
 | `fill` | `color`, `opacity` (1) | opacity 0..1 |
+| `texture` | `preset`, `seed` (1), `tile` (256), `amount` (1) | `preset` este un preset tileabil din `osatura texture list` (nu mandelbrot, julia, burning-ship); tile 4..8192 unități de scenă per repetiție; amount 0..1 |
 
 Animează cu `fx_blur`, `fx_dx`, `fx_dy`, `fx_soft`, `fx_amount` pe ținta `layer::fxN`.
+
+`texture` pictează o textură fractală continuă peste propriul alfa al stratului. Textura este fixată de canevas, ca granulația hârtiei, deci un strat în mișcare alunecă peste ea. Este desenată de randatoarele raster (PNG, GIF, APNG, video) și nu face parte din ieșirea SVG sau Lottie.
 
 ### 7.3 `normal_map`
 

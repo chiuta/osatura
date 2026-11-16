@@ -10,6 +10,13 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Added
+- **Fractal textures** (`osatura_core::fractal`, CLI `texture` and `texture-add`): deterministic, seamlessly tileable surface textures up to 4096x4096 with a lit colour image, a flat albedo, a 16-bit height map and a tangent-space normal map. Noise family: fBm, ridged multifractal, billow, domain warp, cellular cracks, marble veins, with every octave limited to the Nyquist frequency so large sizes gain real detail. Escape-time family: Mandelbrot, Julia and Burning Ship with smooth colouring and supersampling. 14 presets (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` embeds the result as an image layer with its normal map, so it works in every existing export and in `fx --layer-normals`. No project-format change for the commands.
+- **`texture` layer effect**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` fills the layer with a seamless fractal texture; `amount` is animatable (`fx_amount`). Canvas-anchored; raster renderers only (SVG and Lottie skip it).
+
+### Fixed
+- (found by an adversarial audit of the texture code before release) seeds above 2^24 are no longer rounded, octaves of neighbouring seeds are no longer correlated, cellular points are no longer aligned in columns, and the marble pattern now tiles for every cell count.
+
 ### Changed (studio usability)
 
 - **Toolbar regrouped into two rows**, switches drawn as pills (filled when on), a primary Save button, shortcut hints in tooltips that follow your own bindings, and an **Export** menu (GIF, HTML player, Lottie) with a line of explanation for each. On narrow screens the toolbar is one row you scroll sideways.

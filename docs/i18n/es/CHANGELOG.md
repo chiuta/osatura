@@ -10,6 +10,13 @@ Las versiones relacionadas que **sí** son reales e independientes de lo anterio
 
 ## [Unreleased]
 
+### Añadido
+- **Texturas fractales** (`osatura_core::fractal`, CLI `texture` y `texture-add`): texturas de superficie deterministas, repetibles sin costuras, de hasta 4096x4096, con imagen en color iluminada, albedo plano, mapa de altura de 16 bits y mapa de normales en espacio tangente. Familia de ruido: fBm, multifractal ridged, billow, deformación de dominio, grietas celulares, vetas de mármol, con cada octava limitada a la frecuencia de Nyquist para que los tamaños grandes ganen detalle real. Familia de tiempo de escape: Mandelbrot, Julia y Burning Ship con coloreado suave y sobremuestreo. 14 preajustes (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` incorpora el resultado como capa de imagen con su mapa de normales, así que funciona en todas las exportaciones existentes y en `fx --layer-normals`. Sin cambios en el formato de proyecto para los comandos.
+- **Efecto de capa `texture`**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` rellena la capa con una textura fractal continua; `amount` se puede animar (`fx_amount`). Anclado al lienzo; solo renderizadores raster (SVG y Lottie lo omiten).
+
+### Corregido
+- (encontrado por una auditoría adversarial del código de texturas antes del lanzamiento) las semillas por encima de 2^24 ya no se redondean, las octavas de semillas vecinas ya no están correlacionadas, los puntos celulares ya no se alinean en columnas y el patrón de mármol ahora se repite sin costuras para cualquier número de celdas.
+
 ### Cambiado (usabilidad del estudio)
 
 - **Barra de herramientas reagrupada en dos filas**, interruptores dibujados como píldoras (rellenos cuando están activos), un botón Save principal, pistas de atajos en las descripciones emergentes que siguen tus propias asignaciones y un menú **Export** (GIF, HTML player, Lottie) con una línea de explicación para cada uno. En pantallas estrechas la barra es una sola fila que se desplaza hacia los lados.

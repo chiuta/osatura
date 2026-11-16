@@ -10,6 +10,13 @@ Versiuni înrudite care **sunt** reale și independente de cele de mai sus: `API
 
 ## [Nepublicat]
 
+### Adăugat
+- **Texturi fractale** (`osatura_core::fractal`, CLI `texture` și `texture-add`): texturi de suprafață deterministe, repetabile fără cusătură, până la 4096x4096, cu imagine color iluminată, albedo plat, hartă de înălțime pe 16 biți și hartă de normale în spațiul tangent. Familia de zgomot: fBm, multifractal ridged, billow, deformare de domeniu, crăpături celulare, vene de marmură, cu fiecare octavă limitată la frecvența Nyquist, astfel încât dimensiunile mari câștigă detaliu real. Familia cu timp de scăpare: Mandelbrot, Julia și Burning Ship, cu colorare netedă și supraeșantionare. 14 preseturi (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` încorporează rezultatul ca strat-imagine cu harta lui de normale, deci funcționează în toate exporturile existente și în `fx --layer-normals`. Fără modificarea formatului de proiect pentru comenzi.
+- **Efectul de strat `texture`**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` umple stratul cu o textură fractală continuă; `amount` poate fi animat (`fx_amount`). Ancorat de canevas; doar randatoarele raster (SVG și Lottie îl omit).
+
+### Remediat
+- (găsit printr-un audit advers al codului de texturi, înainte de lansare) seed-urile peste 2^24 nu mai sunt rotunjite, octavele seed-urilor vecine nu mai sunt corelate, punctele celulare nu mai sunt aliniate în coloane, iar modelul de marmură se repetă acum fără cusătură pentru orice număr de celule.
+
 ### Modificat (utilizabilitatea studioului)
 
 - **Bara de instrumente regrupată pe două rânduri**, comutatoare desenate ca pastile (pline când sunt active), un buton Save principal, indicii de scurtături în tooltipuri care urmează asocierile tale și un meniu **Export** (GIF, HTML player, Lottie) cu o linie de explicație pentru fiecare. Pe ecranele înguste bara este un singur rând pe care îl derulezi lateral.

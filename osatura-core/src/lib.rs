@@ -107,6 +107,7 @@ pub mod export;
 #[doc(hidden)]
 pub mod expr;
 #[doc(hidden)]
+pub mod fractal;
 pub mod fx;
 mod ik_modes_tests;
 #[doc(hidden)]

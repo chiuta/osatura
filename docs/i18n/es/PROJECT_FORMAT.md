@@ -429,8 +429,11 @@ destino de canal `fxN` indexa el array incluyendo los efectos desactivados.
 | `drop_shadow` | `dx`, `dy`, `blur`, `color`, `opacity` (1) | desplazamientos de como máximo 1024; blur 0..64; opacity 0..1 |
 | `tint` | `black`, `white`, `amount` (1) | amount 0..1 |
 | `fill` | `color`, `opacity` (1) | opacity 0..1 |
+| `texture` | `preset`, `seed` (1), `tile` (256), `amount` (1) | `preset` es un preajuste repetible de `osatura texture list` (no mandelbrot, julia, burning-ship); tile 4..8192 unidades de escena por repetición; amount 0..1 |
 
 Se anima con `fx_blur`, `fx_dx`, `fx_dy`, `fx_soft`, `fx_amount` sobre el destino `layer::fxN`.
+
+`texture` pinta una textura fractal continua sobre el alfa propio de la capa. La textura está fijada al lienzo, como el grano del papel, así que una capa en movimiento se desliza sobre ella. La dibujan los renderizadores raster (PNG, GIF, APNG, vídeo) y no forma parte de la salida SVG ni Lottie.
 
 ### 7.3 `normal_map`
 

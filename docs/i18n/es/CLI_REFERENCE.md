@@ -2045,6 +2045,27 @@ unknown colour space 'p3' (srgb or linear)
 ```
 **Límites:** el renderizador de 8 bits cambia al compositor de coma flotante en los proyectos lineales (rasterizador de cobertura propio, por lo que los bordes con antialiasing difieren ligeramente de la salida sRGB); los colores de los efectos de capa (sombra, glow, tinte) se usan tal como están escritos, sin convertir; `dof` y la cadena de postefectos (`fx`) siguen en sRGB; SVG, Lottie y el renderizador de GPU ignoran el ajuste; el remuestreo de imágenes se hace en sRGB antes de la conversión. Los modos de fusión se aplican a los valores lineales.
 
+### `texture`
+
+**Sinopsis:** `osatura texture <preset|kind|list> <out.png> [--size N=1024] [--seed S=1] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--normal-out n.png] [--height-out h.png] [--albedo-out a.png] [--no-tile]`
+
+Genera una textura fractal continua (sin costuras) y determinista y la escribe como PNG. `<preset>` es un aspecto ya preparado (`rock`, `granite`, `lava`, `marble`, `moss`, `terrain`, `clouds`, `ice`, `sand`, `bark`, `nebula`, `mandelbrot`, `julia`, `burning-ship`) y `<kind>` un patrón básico (`fbm`, `ridged`, `billow`, `warp`, `cellular`, `marble`, `mandelbrot`, `julia`, `burning-ship`); `texture list` muestra ambos. La imagen principal está iluminada (Lambert + especular, oclusión de cavidades a dos escalas, emisión en las zonas bajas cuando se da `--glow`). `--normal-out` escribe el mapa de normales en espacio tangente (+Y hacia arriba), `--height-out` un mapa de altura de 16 bits y `--albedo-out` el color sin iluminar. Los tipos de ruido se repiten sin costuras en los cuatro bordes, salvo con `--no-tile`; las octavas por encima del límite de Nyquist del tamaño se omiten, así que las texturas grandes ganan detalle real (`--size` de 8 a 4096; un `rock` de 4096² tarda unos 45 s en dos núcleos). `--zoom` y `--seed` eligen la vista de los tipos de tiempo de escape (Mandelbrot, Julia, Burning Ship), y `--ssaa N` sobremuestrea N×N. Las mismas opciones dan la misma imagen con cualquier número de hilos (el seno, la potencia y el logaritmo de la biblioteca C pueden diferir en el último bit entre plataformas).
+
+```
+$ osatura texture rock rock.png --size 2048 --seed 7 --normal-out rock-n.png
+$ osatura texture mandelbrot m.png --size 2048 --zoom 4000 --ssaa 3
+```
+
+### `texture-add`
+
+**Sinopsis:** `osatura texture-add <project.json> <out.json> <layer> <preset|kind> [--size N] [--seed S] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--no-tile] [--x X] [--y Y] [--front] [--no-normal]`
+
+Genera la textura como `texture` y la incorpora al proyecto como capa de imagen llamada `<layer>` (detrás de las demás, o delante con `--front`), junto con su mapa de normales, de modo que `fx ... --layer-normals` la reilumina. No puede existir ya una capa con ese nombre.
+
+```
+$ osatura texture-add demo.json demo-tex.json backdrop granite --size 1024 --x -200 --y -200
+```
+
 ### `layer-normal`
 
 **Sinopsis:** `osatura layer-normal <project.json> <out.json> <layer> <normal.png|none> [--strength S] [--fit stretch|tile|exact] [--green-down]`
@@ -2865,6 +2886,7 @@ Cada comando con un resumen de una línea y la sección que lo documenta. Los su
 | `import-svg` | subconjunto de SVG -> capa vectorial | [9](#9-importación) |
 | `keyedit` | ediciones de dope sheet como un único lote seguro para deshacer | [6](#6-animación-keys-línea-de-tiempo-y-generadores) |
 | `keys` | operaciones masivas de claves sobre todos los canales con claves | [6](#6-animación-keys-línea-de-tiempo-y-generadores) |
+| `texture`, `texture-add` | texturas fractales (PNG o capa de imagen con mapa de normales) | [12](#12-efectos-profundidad-de-campo-onion-skin-trayectorias-y-cámara) |
 | `layer-normal` | asocia un mapa de normales a una capa | [12](#12-efectos-profundidad-de-campo-onion-skin-trayectorias-y-cámara) |
 | `layer-pivot` | mueve el pivote de una capa sin cambiar la imagen | [7](#7-física-tela-y-deformadores) |
 | `layout-preview` | renderiza con la maquetación resuelta de nuevo para otro tamaño de lienzo | [11](#11-máquinas-de-estados-enlaces-de-datos-contenedores-y-regiones-de-desplazamiento) |
