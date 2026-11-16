@@ -628,7 +628,7 @@ $('ptmode').onchange=()=>selRefresh();
  let timer=0, shown='';
  function tmsg(t){ msg.textContent=t; }
  function seedOk(){ const v=seed.value.trim(); return /^[0-9]{1,10}$/.test(v)&&Number(v)<=4294967295; }
- function preview(){ if(!seedOk()){ tmsg('seed: a whole number from 0 to 4294967295'); return; } const u='/api/texture?preset='+encodeURIComponent(pre.value)+'&seed='+seed.value.trim()+'&size=192'; if(u===shown)return; shown=u; if(!msg.textContent)tmsg('generating…'); img.onload=()=>{ if(msg.textContent==='generating…')tmsg(''); }; img.onerror=()=>tmsg('could not generate this preview'); img.src=u; }
+ function preview(){ if(!seedOk()){ tmsg('seed: a whole number from 0 to 4294967295'); return; } const pn=/^[a-z][a-z0-9-]{0,31}$/.test(pre.value)?pre.value:'rock'; const u='/api/texture?preset='+encodeURIComponent(pn)+'&seed='+String(Number(seed.value.trim()))+'&size=192'; if(u===shown)return; shown=u; if(!msg.textContent)tmsg('generating…'); img.onload=()=>{ if(msg.textContent==='generating…')tmsg(''); }; img.onerror=()=>tmsg('could not generate this preview'); img.src=u; }
  function later(){ clearTimeout(timer); timer=setTimeout(preview,250); }
  async function loadPresets(){ let names=PRESETS; try{ const r=await fetch('/api/texture/presets'); if(r.ok){ const j=await r.json(); if(Array.isArray(j.presets)&&j.presets.length)names=j.presets; } }catch(e){} pre.textContent=''; for(const n of names){ const o=document.createElement('option'); o.value=n; o.textContent=n; pre.appendChild(o); } preview(); }
  pre.onchange=later; seed.oninput=later;
