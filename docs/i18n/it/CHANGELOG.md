@@ -10,6 +10,13 @@ Le versioni correlate che **sono** reali e indipendenti da quanto sopra: l'`API_
 
 ## [Unreleased]
 
+### Aggiunto
+- **Texture frattali** (`osatura_core::fractal`, CLI `texture` e `texture-add`): texture di superficie deterministiche, ripetibili senza giunture, fino a 4096x4096, con immagine a colori illuminata, albedo piatto, mappa di altezza a 16 bit e mappa delle normali nello spazio tangente. Famiglia del rumore: fBm, multifrattale ridged, billow, deformazione del dominio, crepe cellulari, venature di marmo, con ogni ottava limitata alla frequenza di Nyquist, così le dimensioni grandi guadagnano dettaglio reale. Famiglia a tempo di fuga: Mandelbrot, Julia e Burning Ship con colorazione continua e sovracampionamento. 14 preset (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` incorpora il risultato come livello immagine con la sua mappa delle normali, quindi funziona in tutte le esportazioni esistenti e in `fx --layer-normals`. Nessuna modifica del formato di progetto per i comandi.
+- **Effetto di livello `texture`**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` riempie il livello con una texture frattale continua; `amount` è animabile (`fx_amount`). Ancorato alla tela; solo renderer raster (SVG e Lottie lo saltano).
+
+### Corretto
+- (trovato da un audit avversariale del codice delle texture prima del rilascio) i seed oltre 2^24 non vengono più arrotondati, le ottave di seed vicini non sono più correlate, i punti cellulari non sono più allineati in colonne e il motivo di marmo ora si ripete senza giunture per qualsiasi numero di celle.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Pre-release pubblicata il 10 nov 2026 da `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Le versioni dei crate restano `0.1.0`; la versione di rilascio proviene da `OSATURA_VERSION`, impostata da `release.yml`.*

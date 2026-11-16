@@ -10,6 +10,13 @@ Kapcsolódó verziók, amelyek **valódiak**, és függetlenek a fentiektől: a 
 
 ## [Unreleased]
 
+### Hozzáadva
+- **Fraktáltextúrák** (`osatura_core::fractal`, CLI `texture` és `texture-add`): determinisztikus, varrat nélkül csempézhető felülettextúrák 4096x4096-ig, megvilágított színes képpel, lapos albedóval, 16 bites magasságtérképpel és érintőtéri normáltérképpel. Zajcsalád: fBm, ridged multifraktál, billow, tartományelhajlítás, cellás repedések, márványerek, minden oktáva a Nyquist-frekvenciára korlátozva, hogy a nagy méretek valódi részletet nyerjenek. Szökési idős család: Mandelbrot, Julia és Burning Ship sima színezéssel és túlmintavételezéssel. 14 előbeállítás (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). A `texture-add` az eredményt normáltérképével együtt képrétegként ágyazza be, így minden meglévő exportban és az `fx --layer-normals` parancsban is működik. A parancsok miatt nem változik a projektformátum.
+- **`texture` rétegeffektus**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` varrat nélküli fraktáltextúrával tölti ki a réteget; az `amount` animálható (`fx_amount`). A vászonhoz rögzített; csak a raszteres megjelenítők (az SVG és a Lottie kihagyja).
+
+### Javítva
+- (a textúrakód kiadás előtti ellenséges auditja találta) a 2^24 feletti seedek már nem kerekednek, a szomszédos seedek oktávái már nem korrelálnak, a cellás pontok már nem sorakoznak oszlopokba, és a márványminta most már bármilyen cellaszámnál varrat nélkül ismétlődik.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Előzetes kiadás, 2026. nov. 10-én közzétéve a `main` ágból (commit `96e790a`, címke `v0.1.0-alpha.5`). A crate-verziók `0.1.0` maradnak; a kiadás verziója az `OSATURA_VERSION`-ből jön, amelyet a `release.yml` állít be.*

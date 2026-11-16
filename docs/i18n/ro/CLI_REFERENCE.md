@@ -2045,6 +2045,27 @@ unknown colour space 'p3' (srgb or linear)
 ```
 **Limite:** randarea pe 8 biți trece la compozitorul în virgulă mobilă pentru proiectele liniare (rasterizator propriu de acoperire, deci marginile cu anti-aliasing diferă ușor de rezultatul sRGB); culorile efectelor de strat (shadow, glow, tint) sunt folosite așa cum sunt scrise, fără conversie; `dof` și lanțul de post-efecte (`fx`) rămân în sRGB; SVG, Lottie și randatorul GPU ignoră setarea; reeșantionarea imaginilor are loc în sRGB, înainte de conversie. Modurile de amestecare se aplică valorilor liniare.
 
+### `texture`
+
+**Sinopsis:** `osatura texture <preset|kind|list> <out.png> [--size N=1024] [--seed S=1] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--normal-out n.png] [--height-out h.png] [--albedo-out a.png] [--no-tile]`
+
+Generează o textură fractală continuă (fără cusătură), deterministă, și o scrie ca PNG. `<preset>` este un aspect gata făcut (`rock`, `granite`, `lava`, `marble`, `moss`, `terrain`, `clouds`, `ice`, `sand`, `bark`, `nebula`, `mandelbrot`, `julia`, `burning-ship`), iar `<kind>` un model simplu (`fbm`, `ridged`, `billow`, `warp`, `cellular`, `marble`, `mandelbrot`, `julia`, `burning-ship`); `texture list` le afișează pe amândouă. Imaginea principală este iluminată (Lambert + specular, ocluzie de cavitate la două scări, emisie în zonele joase când se dă `--glow`). `--normal-out` scrie harta de normale în spațiul tangent (+Y în sus), `--height-out` o hartă de înălțime pe 16 biți, iar `--albedo-out` culoarea neiluminată. Tipurile de zgomot se repetă fără cusătură pe toate cele patru margini, în afară de cazul în care se dă `--no-tile`; octavele peste limita Nyquist a dimensiunii sunt omise, deci texturile mai mari câștigă detaliu real (`--size` de la 8 la 4096; un `rock` de 4096² durează circa 45 s pe două nuclee). `--zoom` și `--seed` aleg vederea tipurilor cu timp de scăpare (Mandelbrot, Julia, Burning Ship), iar `--ssaa N` face supraeșantionare N×N. Aceleași opțiuni dau aceeași imagine pe orice număr de fire de execuție (sinusul, puterea și logaritmul bibliotecii C pot diferi în ultimul bit între platforme).
+
+```
+$ osatura texture rock rock.png --size 2048 --seed 7 --normal-out rock-n.png
+$ osatura texture mandelbrot m.png --size 2048 --zoom 4000 --ssaa 3
+```
+
+### `texture-add`
+
+**Sinopsis:** `osatura texture-add <project.json> <out.json> <layer> <preset|kind> [--size N] [--seed S] [--octaves N] [--cells N] [--gain G] [--lacunarity L] [--warp W] [--zoom Z] [--ssaa N] [--contrast C] [--relief R] [--light-az DEG] [--light-elev DEG] [--specular S] [--shininess N] [--ao A] [--glow G] [--color-speed K] [--no-tile] [--x X] [--y Y] [--front] [--no-normal]`
+
+Generează textura ca `texture` și o încorporează în proiect ca strat-imagine numit `<layer>` (în spatele celorlalte sau în față cu `--front`), împreună cu harta ei de normale, astfel încât `fx ... --layer-normals` o reiluminează. Un strat cu acest nume nu trebuie să existe deja.
+
+```
+$ osatura texture-add demo.json demo-tex.json backdrop granite --size 1024 --x -200 --y -200
+```
+
 ### `layer-normal`
 
 **Sinopsis:** `osatura layer-normal <project.json> <out.json> <layer> <normal.png|none> [--strength S] [--fit stretch|tile|exact] [--green-down]`
@@ -2867,6 +2888,7 @@ Fiecare comandă, cu un rezumat de o linie și secțiunea care o documentează. 
 | `import-svg` | subset SVG -> strat vectorial | [9](#9-import) |
 | `keyedit` | editări de dope sheet ca un singur lot sigur la anulare | [6](#6-animație-chei-timeline-și-generatoare) |
 | `keys` | operații de masă asupra cheilor din toate canalele cu chei | [6](#6-animație-chei-timeline-și-generatoare) |
+| `texture`, `texture-add` | texturi fractale (PNG sau strat-imagine cu hartă de normale) | [12](#12-efecte-profunzime-de-câmp-onion-skin-urme-și-cameră) |
 | `layer-normal` | atașează o hartă de normale unui strat | [12](#12-efecte-profunzime-de-câmp-onion-skin-urme-și-cameră) |
 | `layer-pivot` | mută pivotul unui strat fără a schimba imaginea | [7](#7-fizică-cloth-și-deformatoare) |
 | `layout-preview` | randare cu layout-ul rezolvat din nou pentru o altă dimensiune de canvas | [11](#11-mașini-de-stări-legări-de-date-containere-și-regiuni-de-derulare) |

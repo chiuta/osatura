@@ -427,8 +427,11 @@ alvo de canal `fxN` indexa o array incluindo os efeitos desativados.
 | `drop_shadow` | `dx`, `dy`, `blur`, `color`, `opacity` (1) | offsets de no máximo 1024; blur 0..64; opacity 0..1 |
 | `tint` | `black`, `white`, `amount` (1) | amount 0..1 |
 | `fill` | `color`, `opacity` (1) | opacity 0..1 |
+| `texture` | `preset`, `seed` (1), `tile` (256), `amount` (1) | `preset` é uma predefinição repetível de `osatura texture list` (não mandelbrot, julia, burning-ship); tile 4..8192 unidades de cena por repetição; amount 0..1 |
 
 Anime com `fx_blur`, `fx_dx`, `fx_dy`, `fx_soft`, `fx_amount` no alvo `layer::fxN`.
+
+`texture` pinta uma textura fractal contínua sobre o alfa da própria camada. A textura fica fixa à tela, como o grão do papel, por isso uma camada em movimento desliza sobre ela. É desenhada pelos renderizadores raster (PNG, GIF, APNG, vídeo) e não faz parte da saída SVG nem Lottie.
 
 ### 7.3 `normal_map`
 

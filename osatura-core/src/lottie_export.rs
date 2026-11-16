@@ -256,6 +256,8 @@ fn lottie_effects(evals: &[Frame], pars: &[Vec<Option<usize>>], id: usize) -> Ve
                     let a = per(&|e| if let K::Tint { amount, .. } = e { amount * 100.0 } else { 0.0 });
                     out.push(json!({"ty": 20, "nm": "Tint", "en": 1, "ef": [fx_param(2, col(*black)), fx_param(2, col(*white)), fx_param(0, fx_prop(&a))]}));
                 }
+                // Lottie has no procedural texture; the effect is simply not exported
+                K::Texture { .. } => {}
                 K::Fill { color, .. } => {
                     let o = per(&|e| if let K::Fill { opacity, .. } = e { *opacity } else { 0.0 });
                     let z = || fx_param(7, json!({"a": 0, "k": 0}));

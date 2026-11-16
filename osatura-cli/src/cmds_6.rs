@@ -118,6 +118,82 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
             println!("wrote {out} ({} effect(s))", chain.len());
             Ok(())
         }
+        ["texture", "list"] => {
+            for n in osatura_core::fractal::PRESETS {
+                println!("{n}");
+            }
+            for k in osatura_core::fractal::Kind::ALL {
+                println!("{} (kind)", k.name());
+            }
+            Ok(())
+        }
+        ["texture", what, out] => {
+            let p = texture_params(a, what)?;
+            let mut outs: Vec<&str> = vec![out];
+            for k in ["--normal-out", "--albedo-out", "--height-out"] {
+                if let Some(f) = a.opts.get(k) {
+                    outs.push(f.as_str());
+                }
+            }
+            for (i, o) in outs.iter().enumerate() {
+                if outs[..i].contains(o) {
+                    return Err(format!("{o} is named twice; each output needs its own file"));
+                }
+            }
+            let t = osatura_core::fractal::generate(&p)?;
+            fwrite(out, osatura_core::fractal::rgba_png(&t.color, t.size)?)?;
+            if let Some(f) = a.opts.get("--normal-out") {
+                fwrite(f, osatura_core::fractal::rgba_png(&t.normal, t.size)?)?;
+            }
+            if let Some(f) = a.opts.get("--albedo-out") {
+                fwrite(f, osatura_core::fractal::rgba_png(&t.albedo, t.size)?)?;
+            }
+            if let Some(f) = a.opts.get("--height-out") {
+                fwrite(f, osatura_core::fractal::height_png16(&t)?)?;
+            }
+            println!("wrote {out} ({0}x{0}, {1}, seed {2})", t.size, what, p.seed);
+            Ok(())
+        }
+        ["texture", ..] => Err(
+            "texture needs <preset|kind|list> <out.png> (osatura texture list shows the names)"
+                .into(),
+        ),
+        ["texture-add", path, out, layer, what] => {
+            let mut p = load_project(path)?;
+            if p.find_layer(layer).is_some() {
+                return Err(format!("a layer named '{layer}' already exists"));
+            }
+            let tp = texture_params(a, what)?;
+            let t = osatura_core::fractal::generate(&tp)?;
+            let png = osatura_core::fractal::rgba_png(&t.color, t.size)?;
+            let mut l = osatura_core::project::Layer::image_from_png(
+                layer,
+                &png,
+                Vec2::new(num(a, "--x", 0.0)?, num(a, "--y", 0.0)?),
+            );
+            if !a.flags.iter().any(|f| f == "--no-normal") {
+                let nm = osatura_core::fractal::rgba_png(&t.normal, t.size)?;
+                l.normal_map = Some(postfx::NormalMap {
+                    data: Some(osatura_core::base64::encode(&nm)),
+                    path: None,
+                    fit: postfx::NormalFit::Exact,
+                    strength: 1.0,
+                    green_down: false,
+                });
+            }
+            if a.flags.iter().any(|f| f == "--front") {
+                p.layers.push(l);
+            } else {
+                p.layers.insert(0, l);
+            }
+            compile(p.clone(), path)?;
+            write_json(&p, out)?;
+            println!("wrote {out} (layer '{layer}', {0}x{0})", t.size);
+            Ok(())
+        }
+        ["texture-add", ..] => {
+            Err("texture-add needs <project.json> <out.json> <layer> <preset|kind>".into())
+        }
         ["layer-normal", path, out, layer, map] => {
             let mut p = load_project(path)?;
             let l = p.find_layer_mut(layer).ok_or_else(|| format!("no layer '{layer}'"))?;
@@ -298,4 +374,56 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
         }
     })();
     handled.get().then_some(r)
+}
+
+/// Texture parameters from a preset or kind name plus the command-line overrides.
+fn texture_params(a: &Args, what: &str) -> Result<osatura_core::fractal::Params, String> {
+    use osatura_core::fractal as fr;
+    let mut p = match fr::preset(what) {
+        Some(p) => p,
+        None => {
+            let k = fr::Kind::parse(what)
+                .ok_or_else(|| format!("unknown texture '{what}' (osatura texture list)"))?;
+            fr::Params {
+                kind: k,
+                tile: !k.is_escape(),
+                ..fr::Params::default()
+            }
+        }
+    };
+    // parsed as integers, never through f32 (a seed above 2^24 would silently round)
+    let whole = |k: &str, d: u32| -> Result<u32, String> {
+        match a.opts.get(k) {
+            None => Ok(d),
+            Some(v) => v
+                .parse::<u32>()
+                .map_err(|_| format!("{k} needs a whole number from 0 to 4294967295, got '{v}'")),
+        }
+    };
+    p.size = whole("--size", p.size)?;
+    p.seed = whole("--seed", p.seed)?;
+    p.octaves = whole("--octaves", p.octaves)?;
+    p.cells = whole("--cells", p.cells)?;
+    p.ssaa = whole("--ssaa", p.ssaa)?;
+    p.gain = num(a, "--gain", p.gain)?;
+    p.lacunarity = num(a, "--lacunarity", p.lacunarity)?;
+    p.warp = num(a, "--warp", p.warp)?;
+    if let Some(v) = a.opts.get("--zoom") {
+        p.zoom = v
+            .parse::<f64>()
+            .map_err(|_| format!("--zoom needs a number, got '{v}'"))?;
+    }
+    p.contrast = num(a, "--contrast", p.contrast)?;
+    p.relief = num(a, "--relief", p.relief)?;
+    p.light_az = num(a, "--light-az", p.light_az)?;
+    p.light_elev = num(a, "--light-elev", p.light_elev)?;
+    p.specular = num(a, "--specular", p.specular)?;
+    p.shininess = num(a, "--shininess", p.shininess)?;
+    p.ao = num(a, "--ao", p.ao)?;
+    p.glow = num(a, "--glow", p.glow)?;
+    p.color_speed = num(a, "--color-speed", p.color_speed)?;
+    if a.flags.iter().any(|f| f == "--no-tile") {
+        p.tile = false;
+    }
+    Ok(p)
 }

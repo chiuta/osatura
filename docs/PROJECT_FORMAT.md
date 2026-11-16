@@ -429,8 +429,11 @@ At most 16 per layer. Each effect has `"type"`, `enabled` (default true) and the
 | `drop_shadow` | `dx`, `dy`, `blur`, `color`, `opacity` (1) | offsets at most 1024; blur 0..64; opacity 0..1 |
 | `tint` | `black`, `white`, `amount` (1) | amount 0..1 |
 | `fill` | `color`, `opacity` (1) | opacity 0..1 |
+| `texture` | `preset`, `seed` (1), `tile` (256), `amount` (1) | `preset` a tileable `osatura texture list` preset (not mandelbrot, julia, burning-ship); tile 4..8192 stage units per repeat; amount 0..1 |
 
 Animate with `fx_blur`, `fx_dx`, `fx_dy`, `fx_soft`, `fx_amount` on target `layer::fxN`.
+
+`texture` paints a seamless fractal texture over the layer's own alpha. The texture is fixed to the canvas, like paper grain, so a moving layer slides over it. It is drawn by the raster renderers (PNG, GIF, APNG, video) and is not part of SVG or Lottie output.
 
 ### 7.3 `normal_map`
 

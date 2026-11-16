@@ -10,6 +10,13 @@ Verwandte Versionen, die **echt** und von den obigen unabhängig sind: die `API_
 
 ## [Unreleased]
 
+### Hinzugefügt
+- **Fraktale Texturen** (`osatura_core::fractal`, CLI `texture` und `texture-add`): deterministische, nahtlos kachelbare Oberflächentexturen bis 4096x4096 mit beleuchtetem Farbbild, flachem Albedo, 16-Bit-Höhenkarte und Normal-Map im Tangentenraum. Rauschfamilie: fBm, Ridged-Multifraktal, Billow, Domain-Warp, zellulare Risse, Marmoradern, wobei jede Oktave auf die Nyquist-Frequenz begrenzt ist, sodass große Größen echtes Detail gewinnen. Fluchtzeit-Familie: Mandelbrot, Julia und Burning Ship mit glatter Färbung und Supersampling. 14 Presets (rock, granite, lava, marble, moss, terrain, clouds, ice, sand, bark, nebula, mandelbrot, julia, burning-ship). `texture-add` bettet das Ergebnis als Bildebene mit ihrer Normal-Map ein, daher funktioniert es in allen bestehenden Exporten und in `fx --layer-normals`. Keine Änderung des Projektformats für die Befehle.
+- **Ebeneneffekt `texture`**: `{"type": "texture", "preset": "rock", "seed": 1, "tile": 256, "amount": 1}` füllt die Ebene mit einer nahtlosen fraktalen Textur; `amount` ist animierbar (`fx_amount`). An die Leinwand gebunden; nur Raster-Renderer (SVG und Lottie überspringen ihn).
+
+### Behoben
+- (bei einem gegnerischen Audit des Textur-Codes vor der Veröffentlichung gefunden) Seeds über 2^24 werden nicht mehr gerundet, Oktaven benachbarter Seeds sind nicht mehr korreliert, zellulare Punkte liegen nicht mehr in Spalten, und das Marmormuster kachelt jetzt für jede Zellenzahl nahtlos.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Vorabversion, veröffentlicht am 10. Nov. 2026 von `main` (Commit `96e790a`, Tag `v0.1.0-alpha.5`). Die Crate-Versionen bleiben `0.1.0`; die Release-Version stammt aus `OSATURA_VERSION`, gesetzt von `release.yml`.*
