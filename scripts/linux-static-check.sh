@@ -4,6 +4,7 @@
 # Checks that a Linux build of `osatura` is fully static and works with no system libraries at all:
 # no ELF interpreter, no DT_NEEDED entries, and demo/check/render/export run inside an empty chroot
 # (no libc, no /etc, no /usr). Needs readelf and sudo (for chroot). Usage: scripts/linux-static-check.sh path/to/osatura
+# For another CPU architecture set QEMU to a statically linked user-mode emulator (e.g. QEMU=/usr/bin/qemu-aarch64-static): it is copied into the chroot and runs the binary.
 set -euo pipefail
 bin=${1:?usage: $0 path/to/osatura}
 if readelf -lW "$bin" | grep -q 'Requesting program interpreter'; then echo "not static: has an ELF interpreter" >&2; exit 1; fi
@@ -13,7 +14,9 @@ readelf -lW "$bin" | grep -qE 'GNU_RELRO' && echo "RELRO: yes"
 root=$(mktemp -d)
 trap 'sudo rm -rf "$root"' EXIT
 cp "$bin" "$root/osatura"
-run() { sudo chroot "$root" /osatura "$@"; }
+emu=()
+if [ -n "${QEMU:-}" ]; then cp "$QEMU" "$root/qemu"; emu=(/qemu); fi
+run() { sudo chroot "$root" "${emu[@]}" /osatura "$@"; }
 run --version | head -1
 run demo-person /p.json
 run check /p.json

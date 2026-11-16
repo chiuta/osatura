@@ -65,6 +65,9 @@ Az előre elkészített archívumok – miután a tulajdonos közzétette a váz
 | `osatura-macos-arm64.tar.gz` | `osatura`, `osatura-studio` (csak Apple silicon), C könyvtár és fejléc, licencek, közlemények |
 | `osatura-linux-x86_64.tar.gz` | `osatura`, C könyvtár és fejléc, licencek, közlemények (nincs ablakos alkalmazás: használd az `osatura studio` parancsot és egy böngészőt); glibc 2.35+ kell hozzá (Ubuntu 22.04+, Debian 12+, Fedora 36+) |
 | `osatura-linux-x86_64-musl.tar.gz` | statikus `osatura` (musl libc, rendszerkönyvtárak nélkül) régebbi disztribúciókhoz, például RHEL/Rocky/Alma 8 és 9, Debian 10 és 11, Ubuntu 20.04; nincs C könyvtár; kb. 5-50 %-kal lassabb a glibc buildnél. **Az alpha.4-ben nincs benne**: a következő kiadással jelenik meg |
+| `osatura-linux-x86_64-glibc217.tar.gz` | `osatura`, C könyvtár és fejléc, licencek, közlemények; csak glibc 2.17+ kell hozzá (RHEL/CentOS 7+, Debian 8+, Ubuntu 14.04+). **Új alpha.5 után** |
+| `osatura-linux-arm64-glibc217.tar.gz` | ugyanez 64 bites ARM-ra (64 bites Raspberry Pi OS, AWS Graviton és hasonlók), glibc 2.17+. **Új alpha.5 után** |
+| `osatura-linux-arm64-musl.tar.gz` | statikus `osatura` 64 bites ARM-ra (musl libc, rendszerkönyvtárak nélkül); nincs C könyvtár. **Új alpha.5 után** |
 | `osatura-web.tar.gz` | `osatura_wasm.wasm`, `osatura.js`, demó `index.html` (csak headless Chromiumban futtatva, lásd [docs/WASM.md](docs/i18n/hu/WASM.md)) |
 | `SHA256SUMS.txt` | minden letöltést ellenőrizz ezzel |
 | `*.sigstore.json` | az egyes fájlok Sigstore-aláírása ([docs/VERIFY_DOWNLOADS.md](docs/VERIFY_DOWNLOADS.md)) |
