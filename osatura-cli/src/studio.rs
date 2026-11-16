@@ -623,6 +623,37 @@ fn handle(ed: &mut Editor, live: &mut LiveSession, face: &mut FaceState, ui: &mu
             (Method::Get, "/export.lottie.json") => Ok(Resp::from_string(export::lottie_json(ed.engine()).to_string())
                 .with_header(hdr("Content-Type", "application/json"))
                 .with_header(hdr("Content-Disposition", "attachment; filename=\"animation.json\""))),
+            (Method::Get, "/api/texture/presets") => Ok(json_resp(json!({"ok": true, "presets": osatura_core::fractal::PRESETS}))),
+            // GET /api/texture?preset=rock&seed=1&size=192&map=color|albedo|normal|height: a small preview PNG of a
+            // procedural texture for the studio's texture section (the `texture` layer effect uses the same generator)
+            (Method::Get, "/api/texture") => {
+                use osatura_core::fractal as fr;
+                let name = qparam(query, "preset").unwrap_or("rock");
+                let mut p = fr::preset(name).ok_or_else(|| err(vec![format!("unknown texture preset '{name}' ({})", fr::PRESETS.join(", "))]))?;
+                p.seed = qparam(query, "seed").unwrap_or("1").parse().map_err(|_| err(vec!["seed must be a whole number from 0 to 4294967295".into()]))?;
+                let size: u32 = qparam(query, "size").unwrap_or("192").parse().map_err(|_| err(vec!["bad size".into()]))?;
+                if !(16..=512).contains(&size) {
+                    return Err(err(vec!["size must be between 16 and 512".into()]));
+                }
+                p.size = size;
+                p.ssaa = 1;
+                let t = fr::generate(&p).map_err(|e| err(vec![e]))?;
+                let png = match qparam(query, "map").unwrap_or("color") {
+                    "color" => fr::rgba_png(&t.color, size),
+                    "albedo" => fr::rgba_png(&t.albedo, size),
+                    "normal" => fr::rgba_png(&t.normal, size),
+                    "height" => {
+                        let g: Vec<u8> = t.height.iter().flat_map(|h| {
+                            let v = (h.clamp(0.0, 1.0) * 255.0 + 0.5) as u8;
+                            [v, v, v, 255]
+                        }).collect();
+                        fr::rgba_png(&g, size)
+                    }
+                    m => return Err(err(vec![format!("bad map '{m}' (color, albedo, normal, height)")])),
+                }
+                .map_err(|e| err(vec![e]))?;
+                Ok(Resp::from_data(png).with_header(hdr("Content-Type", "image/png")).with_header(hdr("Cache-Control", "private, max-age=300")))
+            }
             (Method::Post, "/api/op") => {
                 let op: Op = serde_json::from_value(parse(&body)?).map_err(|e| err(vec![format!("bad op: {e}")]))?;
                 if collab.active() {
