@@ -294,9 +294,14 @@ glTF 2.0 binario (magic `glTF`, versione 2, `"generator": "osatura"`), solo funz
   tratti, e solo per la forma della maschera al fotogramma 0. I **livelli immagine** diventano quad con texture o mesh di deformazione con PNG incorporato.
 * I **path morph** diventano morph target con pesi animati quando il controllo per fotogramma riproduce la geometria del motore; altrimenti
   il percorso resta una forma statica del fotogramma 0 e il motivo viene segnalato.
-* **Non esportato (segnalato con avvisi `[glb-limit]`):** modalità di fusione diverse da normal (disegnate come normal), opacità animata del livello (congelata al
-  fotogramma 0), animazione della trasformazione di livelli non legati a ossi, effetti dei livelli, deformatori oltre la loro forma al fotogramma 0, percorsi animati senza un morph
+* **Non esportato (segnalato con avvisi `[glb-limit]`):** modalità di fusione diverse da normale (disegnate come normale), opacità animata del livello (congelata al
+  fotogramma 0), animazione di trasformazione dei livelli senza osso (a meno che non si dia `--layer-anim`: vedi sotto), effetti di livello, deformatori oltre la loro forma al fotogramma 0, tracciati animati senza morph
   valido, forme di maschera animate, suono.
+* **Animazione di trasformazione dei livelli (facoltativa, `--layer-anim`):** ogni livello di forma rigido la cui posizione, rotazione o scala cambia riceve un nodo
+  padre con canali LINEAR campionati di traslazione, rotazione (un quaternione attorno a Z, mantenuto continuo oltre i mezzi giri) e scala, relativi
+  al posizionamento del livello al fotogramma 0 ed espressi nello spazio dell’osso che il livello segue (o della scena). I gruppi padre e la
+  camera fanno già parte del posizionamento campionato. Le forme skinnate e le forme con morph mantengono la propria animazione; i livelli che non
+  si muovono, e qualsiasi export senza l’opzione, sono scritti come prima. Lo skew viene scartato (segnalato).
 * **Coordinate:** y è negata (glTF ha y verso l'alto); le forme sono stratificate con un piccolo offset z (0.01 per forma) per l'ordine di disegno.
 * **Convalida:** l'intestazione è `glTF`, versione 2, e il campo lunghezza è uguale alla dimensione del file (one-liner `python3` nella sezione 16). Usa un validatore
   o un visualizzatore glTF a tua scelta per il controllo completo; nessuno è incluso e nessuno è stato eseguito per questo documento. L'esempio sopra ha 22 nodi,

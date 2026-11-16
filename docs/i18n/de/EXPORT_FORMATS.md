@@ -294,9 +294,14 @@ glTF 2.0 binär (Magic `glTF`, Version 2, `"generator": "osatura"`), nur Kernfun
   Striche, und nur für die Maskenform von Frame 0. **Bildebenen** werden zu texturierten Quads oder Deformationsnetzen mit eingebettetem PNG.
 * **Pfad-Morphs** werden zu Morph-Targets mit animierten Gewichten, wenn die Prüfung pro Frame die Geometrie der Engine reproduziert; andernfalls
   bleibt der Pfad eine statische Form von Frame 0, und der Grund wird gemeldet.
-* **Nicht exportiert (als `[glb-limit]`-Warnungen gemeldet):** andere Blend-Modi als normal (als normal gezeichnet), animierte Ebenen-Opacity (bei
-  Frame 0 eingefroren), Transformationsanimation von Ebenen ohne Bone, Ebeneneffekte, Deformer über ihre Form von Frame 0 hinaus, animierte Pfade ohne gültigen
-  Morph, animierte Maskenformen, Sound.
+* **Nicht exportiert (als `[glb-limit]`-Warnungen gemeldet):** andere Mischmodi als normal (als normal gezeichnet), animierte Ebenendeckkraft (eingefroren in
+  Frame 0), Transformationsanimation von Ebenen ohne Knochen (sofern `--layer-anim` nicht angegeben ist: siehe unten), Ebeneneffekte, Deformer über ihre Form in Frame 0 hinaus, animierte Pfade ohne gültigen Morph,
+  animierte Maskenformen, Ton.
+* **Transformationsanimation von Ebenen (optional, `--layer-anim`):** Jede starre Formebene, deren Position, Rotation oder Skalierung sich ändert, erhält einen
+  Elternknoten mit abgetasteten LINEAR-Kanälen für Translation, Rotation (ein Quaternion um Z, über halbe Drehungen hinaus kontinuierlich gehalten) und Skalierung, relativ
+  zur Platzierung der Ebene in Frame 0 und ausgedrückt im Raum des Knochens, dem die Ebene folgt (oder der Szene). Elterngruppen und die
+  Kamera sind bereits Teil der abgetasteten Platzierung. Skinned-Formen und Formen mit Morph behalten ihre eigene Animation; Ebenen, die sich nicht
+  bewegen, und jeder Export ohne die Option werden wie zuvor geschrieben. Skew wird verworfen (gemeldet).
 * **Koordinaten:** y wird negiert (glTF ist y-up); Formen werden mit einem kleinen z-Versatz (0.01 pro Form) für die Zeichenreihenfolge geschichtet.
 * **Validierung:** Der Header ist `glTF`, Version 2, und das Längenfeld entspricht der Dateigröße (`python3`-Einzeiler in Abschnitt 16). Verwende einen glTF-
   Validator oder Viewer deiner Wahl für die vollständige Prüfung; keiner ist mitgeliefert, und für dieses Dokument wurde keiner ausgeführt. Das obige Beispiel hat 22 Nodes,

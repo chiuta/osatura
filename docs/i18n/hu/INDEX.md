@@ -21,7 +21,7 @@ Tartalom: [Minden dokumentum](#minden-dokumentum) - [Olvasási útvonalak célk�
 | [COMPARISON.md](../../COMPARISON.md) | Őszinte, dátumozott összehasonlítás más 2D animációs eszközökkel | értékelők |
 | [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | A kiadási fájlok ellenőrzése: Sigstore-aláírások, build-eredet, SHA-256 összegek | mindenki, aki telepít |
 | [UNINSTALL.md](../../UNINSTALL.md) | Az OSATURA eltávolítása és minden fájlé, amelyet létrehozhat | mindenki, aki telepít |
-| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Kódaláírási szabályzat (SignPath Foundation), csapatszerepek, adatvédelem | mindenki, aki telepít, karbantartók |
+| [../CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [../PRIVACY.md](PRIVACY.md) | Kódaláírási szabályzat (SignPath Foundation), csapatszerepek, adatvédelem | mindenki, aki telepít, karbantartók |
 | [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Kis feladatok az első közreműködéshez | új közreműködők |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | A JSON projektformátum mezőről mezőre | eszközfejlesztők, JSON-t szerkesztő riggerek |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Mit visz és mit hagy el az egyes export- és importformátum | pipeline-építők, integrátorok |

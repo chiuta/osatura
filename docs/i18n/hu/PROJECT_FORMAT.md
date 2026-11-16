@@ -96,6 +96,8 @@ az élő bemenet konfigurációja, az átfedések és az arcparaméter-konfigur�
 A projekt az opcionális listákat `skip_serializing_if` szabállyal szerializálja. A kézzel írt fájl
 rövidebb lehet annál, amit az `osatura` visszaír; a kettő egyenértékű.
 
+A fájl JSON Schemáját (2020-12 dialektus) az `osatura schema [out.json] [--strict]` írja ki; a gyökeret, a `camera`-t, a `bones`-t és az `ik`-t mezőnként, a többi listát objektumtömbként írja le. Megengedi az ismeretlen tulajdonságokat, a betöltőhöz hasonlóan, hacsak nem adjuk meg a `--strict`-et.
+
 ## 3. Legfelső szintű mezők
 
 | JSON-név | Típus | Alapérték | Tartomány / szabály | Jelentés |
@@ -260,6 +262,8 @@ A közös mezők a kimenetben a fajta mezői után íródnak, de bemeneten a sor
 
 ### 5.4 `switch`
 
+
+Ennek a fajtának a Rust-típusa `Selector` (és `Metaball` a `liquid`-hoz), de a fájlformátum és a szkript-API (`layer_info(path).kind`) kompatibilitási okokból megtartja a `switch` és `liquid` nevet. Olvasáskor a `selector` és `metaball` aliasként elfogadott; a fájlok mindig `switch` / `liquid` névvel íródnak.
 | Mező | Típus | Alapérték | Jelentés |
 | --- | --- | --- | --- |
 | `layers` | rétegek tömbje | `[]` | Jelölt rajzok. |
@@ -677,8 +681,14 @@ céljait próbafordítással ellenőrzi a rendszer.
 Flexbox-stílusú 1D elrendezés. A container mezői: `id`, `members`, `axis` (`row`, `column`), `gap`,
 `cross_gap`, `padding` (4 szám), `justify`, `align`, `wrap`, `rect`. A `rect` egy `kind` mezővel rendelkezik:
 `fixed` (`x,y,w,h`), `pin`, `aspect` vagy `hug`. A tagnál pontosan egy szerepel a `layer`, `container` vagy
-`spacer` közül, továbbá `grow`, `shrink`, `width`, `height`, `align`, `resize`. Korlátok: 100000 tag,
-64 szint mély egymásba ágyazás. A scroll mezői: `id`, `viewport`, `content`, `axis`, `offset`, `elastic`, `snap_x`,
+`spacer`, továbbá `grow`, `shrink`, `width`, `height`, `align`, `resize` és opcionálisan `baseline`.
+Az `align` értéke `start`, `center`, `end`, `stretch` vagy `baseline`. Sor típusú tárolóban egy sor azon tagjai,
+amelyek a `baseline`-t választják (a tárolón vagy tagonként), úgy tolódnak el, hogy az alapvonalaik egybeessenek;
+a `baseline` a tag dobozának felső szélétől az alapvonaláig mért távolság (>= 0 szám, spacer
+esetén nem engedélyezett; nélküle az alapvonal a doboz alsó széle). A csoport a
+sor elején ül, és wrap-es tárolóban a sora magasságát is meghatározza. Oszlop típusú
+tárolóban a `baseline` `start`-ként viselkedik. A `baseline` nincs kiírva, ha nincs beállítva, így az a projekt, amely
+nem használja, változatlan marad. Korlátok: 100000 tag, 64 beágyazási mélység. Egy scrollnak van `id`, `viewport`, `content`, `axis`, `offset`, `elastic`, `snap_x`,
 `snap_y`, `fling`, `clip_layer`, `input`.
 
 ```json

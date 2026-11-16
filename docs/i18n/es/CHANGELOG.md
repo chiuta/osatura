@@ -10,6 +10,44 @@ Las versiones relacionadas que **sí** son reales e independientes de lo anterio
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - 2026-11-09
+
+*Prelanzamiento publicado el 10 nov 2026 desde `main` (commit `96e790a`, etiqueta `v0.1.0-alpha.5`). Las versiones de los crates siguen siendo `0.1.0`; la versión de lanzamiento proviene de `OSATURA_VERSION`, fijada por `release.yml`.*
+
+### Añadido (lote 1: las nueve especificaciones funcionales, todas opcionales)
+
+- **Sonido** (especificaciones 03 y 04): `SoundTrack` tiene un `pan` opcional (-1 a 1, potencia igual) y `filters` (biquad); `sound add` y `sound edit` aceptan `--pan P|none` y `--filter kind:freq[:q[:gain_db]][,...]`; los usan `sound mix`, los exports mp4/webm y el reproductor HTML. Las pistas sin ellos conservan el grafo de ffmpeg sin cambios; el esquema del proyecto describe ambos campos.
+- **Desenfoque de movimiento** (especificación 11): `--shutter DEG [--samples N] [--shutter-phase SEC]` en `frames --png` y en el export a `.gif`, `.apng`, `.mp4` y `.webm`. El ángulo 0 da los bytes simples; una secuencia está limitada a 100000 renders. `render-hdr`, el estudio y los demás exports no están conectados.
+- **Iluminación** (especificación 09): el efecto `relight` acepta un objeto `shading` opcional en una luz (atenuación, cono de foco estricto, especular Blinn); las luces sin él dan los mismos píxeles que antes.
+- **Física** (especificación 10): autocolisión opcional de las cadenas con cápsulas (`PhysicsOptions::self_collision`, palabra de física `selfcollide=R`); por defecto la simulación sigue siendo idéntica bit a bit.
+- **Easing** (especificación 05): `keys curve --curve piecewise:...|steps:N[:pos]` hornea una curva lineal a tramos o en escalones en claves ordinarias.
+- **Maquetación** (especificación 06): `Align::Baseline` y un `Member::baseline` opcional para contenedores de fila.
+- **glTF** (especificación 07): `export ... .glb --layer-anim` escribe canales muestreados de traslación, rotación y escala para las capas en movimiento (el skew se descarta y se informa).
+- Los decodificadores de secuencias GIF y APNG (especificaciones 01 y 02) están en `osatura-core` pero **no están conectados** a ningún comando.
+
+### Corregido (revisión del lote 1)
+
+- **Nombres de cable conservados**: las variantes de Rust son `Selector` y `Metaball`, pero los archivos de proyecto, `layer_info(path).kind` y los scripts conservan `switch` y `liquid`; `selector` y `metaball` también se aceptan al leer. El proyecto de demostración WebAssembly incluido vuelve a funcionar. Se añadió una prueba de regresión.
+- **`keys curve`**: el número total de claves de un proyecto está limitado a 2.000.000 (`MAX_PROJECT_KEYS_AFTER_BAKE`, comprobado durante el horneado); antes, `--curve steps:4096` en un proyecto con muchas pistas podía agotar la memoria.
+- **Memoria del desenfoque de movimiento**: las muestras se acumulan en una suma corriente, así que la memoria ya no crece con `--samples` (salida idéntica byte a byte).
+- **Tamaño de decodificación del sonido**: las pistas con `--pan` y `--filter` se comprueban contra el límite de 256 MiB antes de decodificar (se respeta el trim, se consulta primero ffprobe), con un error que nombra el sonido.
+- Avisos de rustdoc (URL desnudas), anotaciones `reuse lint` para `docs/clean-room` y `try/THIRD-PARTY-NOTICES.md`, clippy (`manual_is_multiple_of`), un enlace de índice muerto y una línea de documentación mal colocada.
+- `CLEANROOM.md` y `docs/clean-room` ahora dicen exactamente qué módulos están conectados y qué hizo el filtro clean-room (las tres casillas de filtro de las especificaciones están sin marcar; no se siguió la separación en tres etapas).
+
+### Notas conocidas
+
+- **Los filtros de sonido no tienen límite** (descubierto con pruebas adversariales antes de publicar): un archivo de proyecto hostil con alrededor de un millón de `filters` en una pista hace que `sound mix` se ejecute durante minutos. Abre solo archivos de proyecto de confianza; se planea un límite para el próximo prelanzamiento. `--shutter-phase` también acepta valores finitos muy grandes (inofensivo).
+- **Nombres de export de WebAssembly**: el módulo sigue exportando sus funciones con el antiguo prefijo `arm_` (versión de ABI 1); renombrarlas rompería el ABI.
+
+- **Nombres de cable**: `switch` y `liquid` siguen siendo los nombres en el archivo, en los scripts y en la línea de comandos aunque los tipos de Rust sean `Selector` y `Metaball` (véase «Notas para integradores» más abajo).
+- **Límite de claves**: `keys curve` se niega a hornear más de 2.000.000 de claves en total.
+- **Sign-off**: 9 commits en `main` desde `v0.1.0-alpha.4` no llevan la línea DCO `Signed-off-by` (el kit clean-room, la auditoría de procedencia, las declaraciones de procedencia, la redacción de implementación independiente, los avisos de terceros para `try/` y el lote de especificaciones clean-room; véase `git log --no-merges v0.1.0-alpha.4..main`). Se declaran aquí y no se reescriben.
+
+### Notas para integradores
+
+- API de Rust de `osatura-core`: las variantes `LayerKind` `Switch` y `Liquid` se llaman ahora `Selector` y `Metaball`, algunas structs públicas tienen nuevos campos opcionales (`SoundTrack::pan` y `filters`, `PhysicsOptions::self_collision`, `postfx::Light::shading`, `containers::Member::baseline`) y `Align` tiene una nueva variante `Baseline` (los literales de struct y las comparaciones de patrones exhaustivas en código Rust externo deben actualizarse). El formato del archivo de proyecto, la API de scripting (`layer_info(path).kind`) y la línea de comandos conservan los nombres `switch` y `liquid`; `selector` y `metaball` también se aceptan al leer. Los archivos escritos no cambian salvo que se usen los nuevos campos opcionales.
+
+
 ### Añadido
 
 - `osatura update-check`: pregunta a GitHub si existe una versión más reciente. Solo cuando lo ejecutas; no descarga ni instala nada; una única petición HTTPS anónima mediante el `curl` del sistema. Opciones de proxy gratuito y ético ocultan tu dirección a GitHub: `--proxy-preset tor|tor-browser|warp` (puntos locales `socks5h://`, así que el proxy resuelve el nombre) o el tuyo con `--proxy-url`; las listas de proxies públicos abiertos no se ofrecen a propósito. Comparación SemVer (`alpha.10` es más reciente que `alpha.9`); una compilación desde el código fuente no puede saber a qué versión corresponde y lo dice.

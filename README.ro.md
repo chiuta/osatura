@@ -39,6 +39,16 @@ Principiile proiectului:
   * `osatura demo` (demo de rig, 48 de cadre) și `osatura demo-fx` (lichid, booleene, particule) generează fișiere de proiect pe care le poți randa și exporta singur.
   * Alte exemple animate: încă neadăugate (planificat).
 
+## Maturitate: de unde să începi
+
+OSATURA are mult mai multe funcții decât poate valida o singură persoană. Tabelul arată unde pune autorul efortul mai întâi. **Este o intenție, nu o garanție de calitate: niciun animator în afară de autor nu a folosit încă nimic din ea** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+
+| Nivel | Ce | Ce înseamnă |
+|---|---|---|
+| Nucleu | Formatul de proiect, oase, IK, skinning, chei și atenuări, randare, export în GIF, PNG, SVG, Lottie și HTML, linia de comandă `osatura`, elementele de bază ale studioului | Reparat primul, cele mai multe teste, începe de aici ([tutorial](docs/TUTORIAL_SVG.md)) |
+| Susținut | Deformatoare, fizică, mașini de stare, import SVG și OpenRaster, biblioteca C, modulul WebAssembly | Funcționează în teste; mai puțini ochi pe el |
+| Experimental | Retargeting de mocap, sincronizare labială și vorbire, detecția fețelor, intrare în direct, colaborare, control al versiunilor, export la dimensiune țintă, niveluri de detaliu, randare GPU | Așteaptă-te la neregularități și schimbări; nu construi pe el încă |
+
 ## Descărcare
 
 Arhivele precompilate, după ce proprietarul publică lansarea ciornă, se găsesc pe [pagina Releases](https://github.com/chiuta/osatura/releases) a proiectului:

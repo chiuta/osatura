@@ -10,6 +10,44 @@ Verwandte Versionen, die **echt** und von den obigen unabhängig sind: die `API_
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - 2026-11-09
+
+*Vorabversion, veröffentlicht am 10. Nov. 2026 von `main` (Commit `96e790a`, Tag `v0.1.0-alpha.5`). Die Crate-Versionen bleiben `0.1.0`; die Release-Version stammt aus `OSATURA_VERSION`, gesetzt von `release.yml`.*
+
+### Hinzugefügt (Stapel 1: die neun funktionalen Spezifikationen, alle optional)
+
+- **Ton** (Spezifikationen 03 und 04): `SoundTrack` hat ein optionales `pan` (-1 bis 1, gleiche Leistung) und `filters` (Biquad); `sound add` und `sound edit` akzeptieren `--pan P|none` und `--filter kind:freq[:q[:gain_db]][,...]`; verwendet von `sound mix`, den mp4/webm-Exporten und dem HTML-Player. Spuren ohne sie behalten den unveränderten ffmpeg-Graphen; das Projektschema beschreibt beide Felder.
+- **Bewegungsunschärfe** (Spezifikation 11): `--shutter DEG [--samples N] [--shutter-phase SEC]` bei `frames --png` und beim Export nach `.gif`, `.apng`, `.mp4` und `.webm`. Winkel 0 liefert die einfachen Bytes; eine Sequenz ist auf 100000 Renderings begrenzt. `render-hdr`, das Studio und die übrigen Exporte sind nicht angeschlossen.
+- **Beleuchtung** (Spezifikation 09): Der Effekt `relight` akzeptiert ein optionales Objekt `shading` an einem Licht (Abschwächung, harter Spot-Kegel, Blinn-Glanzlicht); Lichter ohne es liefern dieselben Pixel wie zuvor.
+- **Physik** (Spezifikation 10): optionale Selbstkollision von Ketten mit Kapseln (`PhysicsOptions::self_collision`, Physikwort `selfcollide=R`); standardmäßig bleibt die Simulation bitgenau identisch.
+- **Easing** (Spezifikation 05): `keys curve --curve piecewise:...|steps:N[:pos]` bäckt eine stückweise lineare oder gestufte Kurve in gewöhnliche Keys.
+- **Layout** (Spezifikation 06): `Align::Baseline` und ein optionales `Member::baseline` für Zeilen-Container.
+- **glTF** (Spezifikation 07): `export ... .glb --layer-anim` schreibt abgetastete Kanäle für Translation, Rotation und Skalierung bewegter Ebenen (Skew wird verworfen und gemeldet).
+- Die GIF- und APNG-Sequenzdekoder (Spezifikationen 01 und 02) liegen in `osatura-core`, sind aber **an keinen Befehl angeschlossen**.
+
+### Behoben (Review von Stapel 1)
+
+- **Namen im Dateiformat bleiben erhalten**: Die Rust-Varianten heißen `Selector` und `Metaball`, aber Projektdateien, `layer_info(path).kind` und Skripte behalten `switch` und `liquid`; `selector` und `metaball` werden beim Lesen ebenfalls akzeptiert. Das mitgelieferte WebAssembly-Demoprojekt funktioniert wieder. Regressionstest hinzugefügt.
+- **`keys curve`**: Die Gesamtzahl der Keys eines Projekts ist auf 2.000.000 begrenzt (`MAX_PROJECT_KEYS_AFTER_BAKE`, beim Backen geprüft); zuvor konnte `--curve steps:4096` bei einem Projekt mit vielen Spuren den Speicher erschöpfen.
+- **Speicher der Bewegungsunschärfe**: Die Stichproben werden in einer laufenden Summe akkumuliert, der Speicher wächst also nicht mehr mit `--samples` (byteidentische Ausgabe).
+- **Dekodiergröße des Tons**: Spuren mit `--pan` und `--filter` werden vor dem Dekodieren gegen die Grenze von 256 MiB geprüft (Trim wird beachtet, ffprobe wird zuerst befragt), mit einem Fehler, der den Ton benennt.
+- rustdoc-Warnungen (nackte URLs), `reuse lint`-Annotationen für `docs/clean-room` und `try/THIRD-PARTY-NOTICES.md`, clippy (`manual_is_multiple_of`), ein toter Inhaltsverzeichnis-Link und eine falsch platzierte Dokumentationszeile.
+- `CLEANROOM.md` und `docs/clean-room` nennen jetzt genau, welche Module angeschlossen sind und was der Clean-Room-Filter getan hat (die drei Filter-Kästchen in den Spezifikationen sind nicht angehakt; die Trennung in drei Stufen wurde nicht eingehalten).
+
+### Bekannte Hinweise
+
+- **Tonfilter sind nicht begrenzt** (vor der Veröffentlichung durch Angriffstests entdeckt): Eine feindliche Projektdatei mit etwa einer Million `filters` auf einer Spur lässt `sound mix` minutenlang laufen. Öffne nur vertrauenswürdige Projektdateien; eine Grenze ist für die nächste Vorabversion geplant. `--shutter-phase` akzeptiert auch sehr große endliche Werte (harmlos).
+- **WebAssembly-Exportnamen**: Das Modul exportiert seine Funktionen weiterhin mit dem alten Präfix `arm_` (ABI-Version 1); sie umzubenennen würde die ABI brechen.
+
+- **Namen im Dateiformat**: `switch` und `liquid` bleiben die Namen in der Datei, in Skripten und auf der Kommandozeile, obwohl die Rust-Typen `Selector` und `Metaball` heißen (siehe „Hinweise für Integratoren“ unten).
+- **Key-Grenze**: `keys curve` weigert sich, insgesamt mehr als 2.000.000 Keys zu backen.
+- **Sign-off**: 9 Commits auf `main` seit `v0.1.0-alpha.4` tragen keine DCO-Zeile `Signed-off-by` (das Clean-Room-Kit, das Herkunfts-Audit, die Herkunftserklärungen, die Formulierung zur unabhängigen Implementierung, die Drittanbieter-Hinweise für `try/` und der Stapel Clean-Room-Spezifikationen; siehe `git log --no-merges v0.1.0-alpha.4..main`). Sie werden hier offengelegt und nicht umgeschrieben.
+
+### Hinweise für Integratoren
+
+- Rust-API von `osatura-core`: Die `LayerKind`-Varianten `Switch` und `Liquid` heißen jetzt `Selector` und `Metaball`, einige öffentliche Structs haben neue optionale Felder (`SoundTrack::pan` und `filters`, `PhysicsOptions::self_collision`, `postfx::Light::shading`, `containers::Member::baseline`), und `Align` hat eine neue Variante `Baseline` (Struct-Literale und erschöpfende Musterabgleiche in externem Rust-Code müssen angepasst werden). Das Projektdateiformat, die Skript-API (`layer_info(path).kind`) und die Kommandozeile behalten die Namen `switch` und `liquid`; `selector` und `metaball` werden beim Lesen ebenfalls akzeptiert. Geschriebene Dateien bleiben unverändert, sofern die neuen optionalen Felder nicht verwendet werden.
+
+
 ### Hinzugefügt
 
 - `osatura update-check`: fragt GitHub, ob eine neuere Version existiert. Nur wenn du ihn ausführst; lädt nichts herunter und installiert nichts; eine einzige anonyme HTTPS-Anfrage über das `curl` des Systems. Kostenlose, ethische Proxy-Optionen verbergen deine Adresse vor GitHub: `--proxy-preset tor|tor-browser|warp` (lokale `socks5h://`-Endpunkte, der Proxy löst also den Namen auf) oder dein eigener mit `--proxy-url`; Listen offener öffentlicher Proxys werden absichtlich nicht angeboten. SemVer-Vergleich (`alpha.10` ist neuer als `alpha.9`); ein Build aus dem Quelltext kann nicht wissen, welcher Version er entspricht, und sagt das.
