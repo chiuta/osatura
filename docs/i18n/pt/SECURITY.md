@@ -139,7 +139,7 @@ Lista honesta; veja [LIMITATIONS.md](LIMITATIONS.md) para a lista mais ampla de 
 * **Não abra uma issue pública** para uma vulnerabilidade. Envie um relatório privado ao mantenedor: **`alexio@trom.tf`** (o endereço do aviso de `--version` do programa e dos documentos de licença), ou use o relato privado de vulnerabilidades do GitHub, na aba *Security* do repositório, quando estiver ativado.
 * Inclua: a versão (`osatura --version`) e a plataforma, o projeto ou a requisição que provoca o problema (um arquivo mínimo é o melhor), o que você esperava e o que aconteceu, e se deseja receber crédito.
 * O que esperar *(intenção, não um contrato: este é um projeto de uma pessoa só)*: uma confirmação de recebimento em prazo razoável, uma correção desenvolvida em privado, um teste de regressão adicionado à suíte, uma nota em [CHANGELOG.md](CHANGELOG.md) e crédito, se você desejar. Por favor, dê tempo para uma correção antes de publicar detalhes.
-* Versões suportadas: apenas o pré-lançamento mais recente (atualmente `v0.1.0-alpha.4`) e a árvore atual em `main` são suportados.
+* Versões suportadas: apenas o pré-lançamento mais recente (atualmente `v0.1.0-alpha.5`) e a árvore atual em `main` são suportados.
 * Relatos sobre a exposição de rede do studio quando ele é deliberadamente colocado em um endereço público sem proxy reverso são, antes de tudo, problemas de documentação: veja a seção 11.
 
 ## 11. Checklist de endurecimento para quem implanta

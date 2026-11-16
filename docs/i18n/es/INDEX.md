@@ -21,7 +21,7 @@ Contenido: [Todos los documentos](#todos-los-documentos) - [Rutas de lectura por
 | [COMPARISON.md](../../COMPARISON.md) | Una comparación honesta y fechada con otras herramientas de animación 2D | evaluadores |
 | [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | Comprobación de los archivos de las versiones: firmas Sigstore, procedencia de la compilación, sumas SHA-256 | todos los que instalan |
 | [UNINSTALL.md](../../UNINSTALL.md) | Cómo quitar OSATURA y todos los archivos que puede crear | todos los que instalan |
-| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Política de firma de código (SignPath Foundation), roles del equipo, privacidad | todos los que instalan, mantenedores |
+| [../CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [../PRIVACY.md](PRIVACY.md) | Política de firma de código (SignPath Foundation), roles del equipo, privacidad | todos los que instalan, mantenedores |
 | [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Tareas pequeñas para una primera contribución | colaboradores nuevos |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | El formato de proyecto JSON campo por campo | creadores de herramientas, riggers que editan JSON |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Qué conserva y qué descarta cada formato de exportación e importación | creadores de pipelines, integradores |

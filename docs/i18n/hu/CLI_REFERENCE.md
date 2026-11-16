@@ -459,7 +459,7 @@ A `list` hiányzó könyvtáron nem ír ki semmit, és 0-val lép ki. **Kapcsol�
 
 ### `render`
 
-**Synopsis:** `osatura render <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N]`
+**Synopsis:** `osatura render <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N] [--shutter DEG] [--samples N] [--shutter-phase SEC]`
 
 A `--proxy N` görgetési proxyt renderel (N = 1..4): a `.png` bitkép 1/2^N felbontásban, az `.svg` egyszerűsített vektorgrafika; mindkettő eldobja a vékony vonalakat, az átmeneteket és a keverési módokat.
 
@@ -470,6 +470,11 @@ Egy képkockát renderel. A projekt hosszával megegyező vagy azt meghaladó `<
 | `--bones` | off | Kirajzolja a csontváz-overlayt (a fejek pontokként, a csontok vonalakként). |
 | `--scale N` | 1 | Kimeneti skála, a (0, 16] tartományba eső szám. A `.png` esetén a pixelméretet szorozza; az `.svg` dokumentum megtartja a viewBox értékét. |
 | `--proxy N` | off | Görgetési proxy, N = 1..4: `.png` = bitkép 1/2^N felbontásban, `.svg` = egyszerűsített vektorgrafika; mindkettő eldobja a vékony vonalakat, az átmeneteket és a keverési módokat. Interaktív görgetésre szolgál, nem leszállítandó anyagokhoz. |
+| `--shutter DEG` | ki | Mozgáselmosás (csak `.png` kimenet, `--proxy` mellett nem): a kép a jelenet `--samples` renderének átlaga, az `DEG / 360 / fps` másodperces expozíciós idő alatt egyenletesen elosztott időpontokban (zársebességi szög `0..360`; a 180 a szokásos fél képkockás expozíció; a 0 egyszerű render). Az alfa premultiplikáltan átlagolódik, és csak a végén kerekítődik egyszer. `--samples` rendernyibe kerül. |
+| `--samples N` | 8 | A `--shutter` számára átlagolt renderek száma (1..256). Minden minta az expozíció N egyenlő része valamelyikének közepén van. |
+| `--shutter-phase SEC` | 0 | Az expozíció kezdete a képkocka időpontjához képest, másodpercben (negatív = középre igazított vagy a képkocka előtti). Az időpontok a projekt hosszára korlátozódnak. |
+
+Ugyanezt a három kapcsolót elfogadja a `frames --png` (minden képkocka elmosva) és az `export` `.gif`, `.apng`, `.mp4` és `.webm` formátumra (az animáció minden képkockája elmosva; az 50 fps feletti GIF csak a megtartott képkockákat mossa el). Más formátumoknál és `.svg` képkockáknál elutasítja (`--shutter works with ...`). Egy sorozat legfeljebb 100000 renderből állhat (képkockák x minták); a `--shutter 0` az egyszerű rendereket írja. Nincs bekötve: `render-hdr`, a stúdió és a többi export.
 
 ```
 $ osatura render demo.json 12 f12.png --bones --scale 2
@@ -488,7 +493,7 @@ wrote px.png
 
 ### `frames`
 
-**Synopsis:** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N]`
+**Synopsis:** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]`
 
 **Minden** képkockát renderel egy könyvtárba (ha nem létezik, létrehozza) `frame_0000.svg` ... néven (vagy `.png`-ként a `--png` esetén). Előbb ellenőrzi, hogy minden képkocka pózai végesek-e.
 
@@ -505,14 +510,14 @@ frame_0001.png
 
 **Synopsis:**
 ```
-osatura export <project.json> <out.gif> [--scale N] [--report r.json]
+osatura export <project.json> <out.gif> [--scale N] [--report r.json] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.html|out.htm>
 osatura export <project.json> <out.json|out.lottie> [--report r.json]
-osatura export <project.json> <out.mp4> [--scale N]
-osatura export <project.json> <out.apng> [--scale N]
-osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1]
+osatura export <project.json> <out.mp4> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.apng> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.png> [--scale N] [--columns N]
-osatura export <project.json> <out.glb> [--report r.json]
+osatura export <project.json> <out.glb> [--report r.json] [--layer-anim]
 ```
 (formátumonként egy alak; a kimeneti fájl kiterjesztése, kis- és nagybetűre való tekintet nélkül, választja ki az alakot. Az olyan opciót, amelyet az alak nem sorol fel, elutasítja: `unknown option --scale for 'export .json' (applies to: export .gif, export .mp4, ...)`. Ismeretlen vagy hiányzó kiterjesztésnél helyette a formátumhibát jelzi.)
 
@@ -536,6 +541,7 @@ Opciók:
 |---|---|
 | `--scale N` | Raszterskála (0, 16] a `.gif .mp4 .apng .webm .png` formátumokhoz. Más formátumoknál elutasítja (`unknown option --scale for 'export .json'`); a 7. hullám előtt figyelmeztetés volt. |
 | `--report FILE` | JSON-ként kiírja azon dolgok listáját, amelyeket a formátum nem tudott átvinni (`.gif .json .lottie .glb`): `{"format","count","warnings":[{"code","layer","message"}]}`. Ugyanezek a figyelmeztetések mindig a stderrre is kikerülnek. A fájl nem lehet a bemeneti projekt. |
+| `--layer-anim` | csak `.glb`: a merev (skin nélküli) alakzatrétegek pozícióját, forgatását és méretezését is animálja. Minden mozgó réteg kap egy szülő csomópontot mintavételezett LINEAR csatornákkal az eltolásra, a forgatásra és a méretezésre, a 0. képkockabeli elhelyezéséhez viszonyítva, annak a csontnak (vagy a jelenetnek) a terében, amelyet követ, így az animált csoportok és a kamerával kompenzált jelenet is benne van; a nem mozgó rétegek pontosan úgy íródnak, mint a kapcsoló nélkül. A skew, az átlátszatlanság, a switchek, a wobble és a deformerek továbbra sem animáltak (`[glb-limit]` néven jelentve). |
 | `--codec vp9\|av1` | Csak `.webm` esetén (alapértelmezés `vp9`); bármely más érték: `unknown --codec 'foo' (vp9 or av1)`. |
 | `--columns N` | Csak a `.png` sprite sheethez: csempék száma soronként (alapértelmezés: közel négyzetes rács, ceil(sqrt(frames)): 8 képkockánál 3 oszlop). |
 
@@ -868,6 +874,7 @@ osatura keys shift <project.json> <out.json> --by N [--from F --to F --target NA
 osatura keys scale <project.json> <out.json> --factor X [--pivot F --from F --to F --target NAME --prop PROP]
 osatura keys ease <project.json> <out.json> --ease linear|step|ease_in|ease_out|ease_in_out|smooth [--from F --to F --target NAME --prop PROP]
 osatura keys reverse <project.json> <out.json> [--from F --to F --target NAME --prop PROP]
+osatura keys curve <project.json> <out.json> --curve piecewise:STOP,STOP,...|steps:N[:position] [--from F --to F --target NAME --prop PROP]
 ```
 Minden művelet csak a saját opcióit fogadja el (a `keys shift --factor 2` elutasításra kerül); a `--by`, `--factor` és `--ease` kötelező a hozzájuk tartozó műveletnél (a kihagyott `--by` vagy `--factor` korábban csendes üres művelet volt).
 
@@ -879,6 +886,9 @@ Tömeges kulcsműveletek **az összes kulcsolt csatornán** (a `--target` / `--p
 | `scale` | `--pivot F --factor X` | A kulcsidőket a pivot képkocka körül skálázza. |
 | `ease` | `--ease E` | Beállítja a kulcsok easingjét (elnevezett easingek; a `bezier:` alakhoz használd a `keyedit ease` parancsot). |
 | `reverse` | - | Megfordítja a kulcsok sorrendjét a tartományon belül. |
+| `curve` | `--curve C` | Szakaszonként lineáris vagy lépcsős easing görbét süt minden olyan szakaszba, amely a tartomány egy kulcsánál **kezdődik**. |
+
+**`keys curve`.** A `--curve piecewise:STOP,STOP,...` `output [input [input]]` alakú megállókat fogad (a bemenetek törtek vagy százalékok, így a `piecewise:0,0.25 75%,1` a szakasz háromnegyedénél emelkedik egynegyedre, majd a végértékig); a `--curve steps:N[:position]` a `jump-end` (alapértelmezett) vagy a `jump-none` értéket fogadja. A megállókra és bemenetekre vonatkozó szabályok (a hiányzó bemenetek egyenletesen elosztva, egy korábbinál kisebb bemenet arra emelve, két bemenet egy megállón, legalább 2 megálló) a nyilvános CSS Easing Functions Level 2 tervezetet követik. A görbe **be van sütve**: a kezdőkulcs megtartja az értékét, megkapja az első easinget (lineárisat, lépcsős görbénél lépcsőset), és kulcsok kerülnek beszúrásra, hogy a szokásos kulcsinterpoláció pontosan reprodukálja a görbét; magát a görbét nem tárolja, a projektformátum nem változik, a régi projektek a korábbiak szerint töltődnek be. Egy szakasz végkulcsa soha nem módosul, ezért a görbének 0-nál kell kezdődnie és 1-nél végződnie: az, amelyik ezt nem teszi (a `jump-start` és `jump-both` lépések, a 0 fölött induló szakaszonkénti görbe), valamint a függőleges ugrású szakaszonkénti görbe (két megálló azonos bemenettel és eltérő kimenettel) indoklással elutasításra kerül, és semmi sem íródik. Pályánként legfeljebb 200000 kulcs.
 
 ```
 $ osatura keys shift small.json k1.json --target arm_up --prop bone_angle --by 2
@@ -887,6 +897,7 @@ $ osatura keys scale small.json k2.json --pivot 0 --factor 0.5 --from 0 --to 48
 wrote k2.json (37 key(s) changed)
 $ osatura keys reverse small.json k4.json
 wrote k4.json (37 key(s) changed)
+$ osatura keys curve small.json k5.json --curve steps:4 --target arm_up --prop bone_angle --from 0 --to 12
 ```
 A `0..frames-1` tartományon kívülre mozgatott kulcsok a fájlban maradnak (a lint `L007`-et jelent); ez a parancs nem hosszabbítja meg a projekt hosszát. **Kapcsolódó:** `keyedit` (pontos, kijelölésalapú), `loop-solve`.
 
@@ -1187,7 +1198,7 @@ Bemenetük `<project.json> <out.json>` és `key=value` szavak (`--` nélkül).
 osatura physics <project.json> <out.json> <bone,bone,...> [gravity=900] [wind=x,y] [gust=0.5] [damping=0.985]
     [circle=x,y,r[@bone];...] [capsule=x1,y1,x2,y2,r[@bone];...] [follow=bone] [--allow-empty]
     [drive=bone:gain;...] [vortex=bone|x,y:swirl[:radial[:radius]];...] [preset=hair|tail|rope|antenna|cape]
-    [merge=keep|replace] [lateral=0..1]
+    [merge=keep|replace] [lateral=0..1] [selfcollide=R]
 ```
 Verlet-féle **lánc-szimulációt** (haj, farok, kötél, antenna, köpeny) éget be a felsorolt csontokra (a lánc gyökere elöl), `bone_angle` kulcsokként, képkockánként egyet.
 
@@ -1203,6 +1214,7 @@ Verlet-féle **lánc-szimulációt** (haj, farok, kötél, antenna, köpeny) ég
 | `preset=` | Kezdőértékek a `hair tail rope antenna cape` készletekhez; a `preset=` **után** írt szavak felülírják. |
 | `merge=keep\|replace` | A `keep` (alapértelmezés) érintetlenül hagyja azokat a csontokat, amelyeknek már van animációjuk; a `replace` felülírja őket. |
 | `lateral=0..1` | Több lánc esetén (`bone,bone/bone,bone`) összekapcsolja a szomszédos szálakat. |
+| `selfcollide=R` | Opcionális önütközés minden láncnál: minden szakasz egy `R` sugarú 2D kapszula, és a nem szomszédos szakaszok eltaszítják egymást (így a saját magára csavarodó farok nem megy át önmagán). `R` véges, > 0 és kisebb kell legyen a lánc legrövidebb csontjának felénél; lánconként legfeljebb 128 csont; a szálak nem ütköznek egymással. E szó nélkül a szimuláció pontosan olyan, mint korábban. |
 | `--allow-empty` | Elfogad olyan futást, amely semmit sem égetett be. |
 
 ```
@@ -1471,8 +1483,11 @@ osatura sound edit   <project.json> <out.json> <name> [--start F] [--gain G] [tr
 osatura sound remove <project.json> <out.json> <name>
 osatura sound mix    <project.json> <out.wav|out.ogg|out.mp3>
     trim/fade options (seconds, or frames with an f suffix such as 36f): --trim-in T --trim-out T --fade-in T --fade-out T
+    audio options: --pan P (-1 left .. 1 right, equal power) --filter kind:freq[:q[:gain_db]][,...] (biquad; kinds lowpass highpass bandpass notch allpass peaking lowshelf highshelf); edit: none clears
 ```
 A hangsávok **hivatkozások** (a projekthez viszonyított fájlútvonal, kezdő képkocka, gain 0..4, vágási ablak a fájlon belül, ki- és beúsztatás). A projektbe semmi sem ágyazódik be; a hangfájlnak együtt kell utaznia vele, és a projekt könyvtárán belül kell lennie, hacsak nincs megadva az `--allow-external-assets`. Az `edit` csak a megadott mezőket módosítja (a `0` törli a vágást). A `--trim-out 0` azt jelenti: „a végéig”. A `sound mix` csak az összekevert hangot rendereli a **projekt hosszára** (az ffmpegen keresztül: wav = 44,1 kHz PCM 16 bit, ogg = Vorbis q4, mp3 = 96 kb/s).
+**Pan és szűrők (opcionális).** A `--pan P` (-1 = bal, 0 = közép, 1 = jobb) egy állandó, egyenlő teljesítményű pant tárol a sávon (a mono fájl sztereóvá válik; a sztereó fájl a sztereó panner balansztörvényét használja; kettőnél több csatornát elutasít). A kettő nélküli sáv pontosan úgy keveredik, mint korábban, a változatlan ffmpeg-gráfon át. A pannel rendelkező sávot először 32 bites lebegőpontosra dekódolja, a mintatartományban panoramizálja, és az eredmény helyettesíti a fájlt ffmpeg-bemenetként; a start, a trim, a fade-ek és a gain ezután a panoramizált hangra vonatkoznak. A `sound edit ... --pan none` eltávolítja. A `--filter` másodrendű (biquad) szűrők listáját tárolja, amelyeket sorrendben, a pan előtt alkalmaz a teljes dekódolt fájlra: `kind:freq[:q[:gain_db]]`, típusok `lowpass`, `highpass`, `bandpass`, `notch`, `allpass`, `peaking`, `lowshelf`, `highshelf`; a `q` alapértelmezetten 0.7071 (0 < q <= 1000), a `gain_db` a peaking és a shelf esetén számít; több szűrő vesszővel elválasztva (`--filter lowpass:8000,peaking:1000:2:6`); a `--filter none` törli őket. A frekvenciának a fájl mintavételi frekvenciájának fele alatt kell lennie (keveréskor ellenőrzi; a frekvencia 0,45-szerese felett numerikus stabilitási figyelmeztetést ír ki), minden csatornát külön szűr nulla kezdőállapottal, és a kimenet -1..1 közé van vágva. A szűrőképletek az Audio EQ Cookbook nyilvános alakjai; a lista `filters` néven tárolódik a sávon (üresen hiányzik). A pannel vagy szűrőkkel rendelkező sávok a fent leírt mintatartománybeli utat követik; a sorrend szűrők, majd pan, majd trim, fade-ek, start és gain. A stúdió hullámforma-előnézete egyiket sem mutatja.
+
 Az összekevert hangot az `.mp4` (AAC) és a `.webm` (Opus) is muxolja, a `.html`-be pedig beágyazza; a `.gif`/`.apng` nem tudja hordozni.
 
 ```
@@ -1900,11 +1915,11 @@ osatura container solve  <project.json> [--size WxH --data out.json]
 
 A **konténer** egy flexbox-szerű elrendezési doboz: `id`, `members`, `axis` (`row`|`column`), `gap`, `cross_gap`, `padding`
 (`[left,top,right,bottom]`), `justify` (`start|center|end|space_between|space_around`), `align`
-(`start|center|end|stretch`), `wrap` (`none|wrap`) és `rect`, a saját téglalapjának szabálya a vásznon:
+(`start|center|end|stretch|baseline`), `wrap` (`none|wrap`) és `rect`, a saját téglalapjára vonatkozó szabály a vásznon:
 `{"kind":"fixed",...}`, `{"kind":"pin","left","right","top","bottom","width","height"}` (távolságok a vászon széleitől; tengelyenként bármely kettő),
 `{"kind":"aspect",...}` vagy `{"kind":"hug"}`. A **tag** pontosan az `{"layer":PATH}`,
 `{"container":ID}` vagy `{"spacer":true}` egyike, a `grow`, `shrink`, `width`, `height`, `min_w/max_w/min_h/max_h` mezőkkel és
-egy `align` felülbírálattal; a `"resize":true` engedi, hogy a megoldó a réteget a helyéhez méretezze.
+egy `align` felülbírálás és egy opcionális `baseline` (a tag felső szélétől az alapvonaláig mért távolság, amelyet az `align: baseline` használ a sor típusú tárolókban; lásd a PROJECT_FORMAT.md 11.5. szakaszát); a `"resize":true` engedi, hogy a megoldó a réteget a helyéhez méretezze.
 
 ```
 $ cat cont.json
@@ -1988,7 +2003,14 @@ Renderel egy képkockát, és **utófeldolgozó effektláncot** futtat rajta. A 
 `blur {radius}`, `drop_shadow {dx,dy,blur,color,opacity}`, `glow {radius,strength,color?}`, `outline {width,color}`,
 `posterize {levels}`, `pixelate {size}`, `levels {in_black,in_white,gamma,out_black?,out_white?}`, `fade {amount}` és
 `relight {ambient,bevel,height,lights:[{x,y,z,color?,intensity?,radius?,cast_shadow?,spot?,falloff?}],ground_shadow?,
-normal_map?,ambient_color?}`. `normal_map` nélkül a relight az elmosott alfacsatornából készült domborulatot árnyalja.
+normal_map?,ambient_color?}`. `normal_map` nélkül a relight az elmosott alfacsatornából képzett élletörést árnyékolja.
+Egy fény hordozhatja az opcionális `shading` objektumot `{attenuation?:[kc,kl,kq], cutoff?, direction?:[x,y,z], exponent?, specular?, shininess?}`,
+hogy más megvilágítási modellt használjon: `1/(kc + kl d + kq d^2)` csillapítás (alapértelmezett `[1,0,0]`, mindegyik >= 0, nem mind nulla), éles kúp
+`cutoff` fok félszöggel (0..90; hiányzó = nincs kúp, nincs lágy perem) a `direction` körül (a fénytől a kép felé, alapértelmezett
+`[0,0,-1]`) `cos(angle)^exponent` intenzitással (0..128, alapértelmezett 0), és Blinn-csillogás a kép felett közvetlenül álló megfigyelőnek
+(`specular` >= 0, alapértelmezett 0 = nincs; `shininess` >= 0, alapértelmezett 32). A csillogás a fény színe szorozva az intenzitásával, és azután adódik hozzá, hogy
+a felület színét megszorozták a diffúz fénnyel. A `shading`-gel rendelkező fénynél az adott fény `spot`, `radius` és `falloff` értéke figyelmen kívül marad;
+a `color`, `intensity` és `cast_shadow` továbbra is érvényes. A `shading` nélküli fények és a létezése előtt írt láncok pontosan úgy renderelődnek, mint korábban.
 
 ```
 $ cat chain.json
@@ -2242,6 +2264,17 @@ Info L007 [:CameraX] key at frame 24 lies outside the 0..8 timeline
 Info L007 [arm_low:BoneAngle] key at frame 12 lies outside the 0..8 timeline
 ```
 Az `L007` az idővonalon kívüli kulcs (itt azért, mert a `small.json` a demo 8 képkockára vágott változata).
+
+### `schema`
+
+**Synopsis:** `osatura schema [out.json] [--strict]`
+
+Közzéteszi a projektfájlok JSON Schemáját (2020-12 dialektus), hogy a szerkesztők és külső eszközök betöltés előtt ellenőrizhessék a projektet, és kiegészítést kínálhassanak. A gyökér, a `camera`, a `bones` és az `ik` mezőnként van leírva (típusok, kötelező mezők, alapértékek, a formátumverzió `const`-ként, a `color_space` felsorolásként); a többi listát objektumtömbként fogadja el. A kimenet determinisztikus (rendezett kulcsok, minden alkalommal ugyanazok a bájtok), és fájl megnevezése nélkül a szabványos kimenetre megy. Alapértelmezetten az ismeretlen tulajdonságok megengedettek, a betöltőhöz hasonlóan (jelenti őket, de nem utasítja el); a `--strict` `additionalProperties: false`-t ad a leírt objektumokhoz.
+```
+$ osatura schema project.schema.json
+wrote project.schema.json
+```
+**Kilépési kódok:** 0 siker esetén, 1, ha a fájl nem írható. **Kapcsolódó:** `check`, `lint`.
 
 ### `contracts`
 

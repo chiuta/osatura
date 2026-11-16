@@ -139,7 +139,7 @@ Maga az ffmpeg összetett médiaformátumokat dolgoz fel, és voltak saját sebe
 * **Sebezhetőség miatt ne nyiss nyilvános issue-t.** Küldj privát jelentést a karbantartónak: **`alexio@trom.tf`** (a program `--version` közleményében és a licencdokumentumokban szereplő cím), vagy használd a GitHub privát sebezhetőség-bejelentését a tároló *Security* fülén, ha engedélyezve van.
 * Tartalmazza: a verziót (`osatura --version`) és a platformot, a problémát kiváltó projektet vagy kérést (a minimális fájl a legjobb), hogy mit vártál és mi történt, és hogy kérsz-e említést.
 * Mire számíthatsz *(szándék, nem szerződés: ez egy egyszemélyes projekt)*: észszerű időn belüli visszaigazolás, privátban kidolgozott javítás, a csomaghoz hozzáadott regressziós teszt, egy megjegyzés a [CHANGELOG.md](CHANGELOG.md) fájlban, és kívánságra említés. Kérjük, hagyj időt a javításra, mielőtt részleteket közzéteszel.
-* Támogatott verziók: csak a legújabb előzetes kiadás (jelenleg a `v0.1.0-alpha.4`) és a `main` aktuális fája támogatott.
+* Támogatott verziók: csak a legújabb előzetes kiadás (jelenleg a `v0.1.0-alpha.5`) és a `main` aktuális fája támogatott.
 * A stúdió hálózati kitettségéről szóló jelentések, ha szándékosan nyilvános címhez van kötve reverse proxy nélkül, először dokumentációs problémák: lásd a 11. szakaszt.
 
 ## 11. Üzemeltetői keményítési ellenőrzőlista

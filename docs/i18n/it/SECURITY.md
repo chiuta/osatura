@@ -138,7 +138,7 @@ Elenco onesto; vedi [LIMITATIONS.md](LIMITATIONS.md) per l'elenco più ampio dei
 * **Non aprire una issue pubblica** per una vulnerabilità. Invia una segnalazione privata al maintainer: **`alexio@trom.tf`** (l'indirizzo dell'avviso di `--version` del programma e dei documenti di licenza), oppure usa la segnalazione privata delle vulnerabilità di GitHub nella scheda *Security* del repository, quando è abilitata.
 * Includi: versione (`osatura --version`) e piattaforma, il progetto o la richiesta che provoca il problema (un file minimo è la cosa migliore), cosa ti aspettavi e cosa è successo, e se vuoi essere citato.
 * Cosa aspettarsi *(un'intenzione, non un contratto: questo è un progetto di una sola persona)*: una conferma di ricezione in tempi ragionevoli, una correzione sviluppata in privato, un test di regressione aggiunto alla suite, una nota in [CHANGELOG.md](CHANGELOG.md) e un riconoscimento se lo desideri. Lascia il tempo per una correzione prima di pubblicare i dettagli.
-* Versioni supportate: solo l'ultima pre-release (attualmente `v0.1.0-alpha.4`) e l'albero attuale su `main` sono supportati.
+* Versioni supportate: solo l'ultima pre-release (attualmente `v0.1.0-alpha.5`) e l'albero attuale su `main` sono supportati.
 * Le segnalazioni sull'esposizione di rete dello studio quando è deliberatamente in bind su un indirizzo pubblico senza reverse proxy sono prima di tutto problemi di documentazione: vedi sezione 11.
 
 ## 11. Checklist di hardening per chi installa

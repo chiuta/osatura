@@ -139,7 +139,7 @@ Liste franche ; voir [LIMITATIONS.md](LIMITATIONS.md) pour la liste plus large d
 * **N'ouvrez pas de ticket public** pour une vulnérabilité. Envoyez un rapport privé au mainteneur : **`alexio@trom.tf`** (l'adresse de l'avis affiché par `--version` du programme et des documents de licence), ou utilisez le signalement privé de vulnérabilités de GitHub, dans l'onglet *Security* du dépôt, lorsqu'il est activé.
 * Indiquez : la version (`osatura --version`) et la plateforme, le projet ou la requête qui déclenche le problème (un fichier minimal est idéal), ce que vous attendiez et ce qui s'est passé, et si vous souhaitez être crédité.
 * À quoi s'attendre *(intention, pas contrat : c'est un projet mené par une seule personne)* : un accusé de réception dans un délai raisonnable, un correctif développé en privé, un test de régression ajouté à la suite, une note dans [CHANGELOG.md](CHANGELOG.md), et un crédit si vous le souhaitez. Laissez le temps d'un correctif avant de publier les détails.
-* Versions prises en charge : seules la dernière préversion (actuellement `v0.1.0-alpha.4`) et l'arborescence actuelle sur `main` sont prises en charge.
+* Versions prises en charge : seules la dernière préversion (actuellement `v0.1.0-alpha.5`) et l'arborescence actuelle sur `main` sont prises en charge.
 * Les signalements concernant l'exposition réseau du studio lorsqu'il est délibérément lié à une adresse publique sans proxy inverse relèvent d'abord de la documentation : voir la section 11.
 
 ## 11. Liste de durcissement pour le déployeur
