@@ -10,6 +10,16 @@ Versiuni înrudite care **sunt** reale și independente de cele de mai sus: `API
 
 ## [Nepublicat]
 
+### Modificat (utilizabilitatea studioului)
+
+- **Bara de instrumente regrupată pe două rânduri**, comutatoare desenate ca pastile (pline când sunt active), un buton Save principal, indicii de scurtături în tooltipuri care urmează asocierile tale și un meniu **Export** (GIF, HTML player, Lottie) cu o linie de explicație pentru fiecare. Pe ecranele înguste bara este un singur rând pe care îl derulezi lateral.
+- **Modificările nesalvate se văd**: un punct portocaliu pe Save, un punct în titlul filei și o confirmare înainte ca pagina să fie închisă sau reîncărcată cu editări nesalvate (nu într-o sesiune partajată sau în timpul demo-ului ghidat). Revenirea prin undo la starea salvată șterge marcajul.
+- **Save spune ce s-a întâmplat** („saved 17:52”) și, când eșuează, de ce. Nou **autosave** opțional (la 3 secunde după ultima ta editare, reținut per browser).
+- **Banner de conexiune pierdută**: când serverul studioului nu mai răspunde, apare un banner roșu, iar pagina reîncearcă la fiecare 3 secunde, apoi reîncarcă proiectul când serverul revine (înainte, pagina înceta pur și simplu să funcționeze, fără un cuvânt).
+- **Bandă de start rapid** la prima vizită (clic pentru a selecta, Space, Ctrl+K, `?`, demo ghidat). `?` deschide lista de scurtături.
+- Contorul de cadre arată și secundele (`12 / 47 · 0.50 s`); textul lung de ajutor al panoului Selection se strânge, iar o selecție goală spune ce trebuie făcut; inele de focus vizibile la tastatură; ținte tactile mai mari pe ecranele tactile; imaginea are un `alt` util; mișcarea redusă este respectată.
+- Test smoke nou `osatura-cli/tests/studio_ux_smoke.js` (32 de verificări). Nicio schimbare a formatului proiectului, a API-ului HTTP sau a liniei de comandă.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Pre-lansare publicată la 10 noi 2026 din `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Versiunile crate-urilor rămân `0.1.0`; versiunea lansării provine din `OSATURA_VERSION`, setată de `release.yml`.*

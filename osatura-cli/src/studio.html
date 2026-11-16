@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark"><meta name="theme-color" content="#1d2029">
 <title>OSATURA studio</title>
 <link rel="icon" href="/favicon.ico" type="image/svg+xml">
 <style>
@@ -172,29 +173,94 @@ kbd{font:11px ui-monospace,monospace;background:#0f1116;border:1px solid #3a4056
 @keyframes dmf{50%{outline-color:transparent}}
 @media(prefers-reduced-motion:reduce){.dm-flash{animation:none}}
 /*/demo:css*/
+</style>
+<style id="ux">
+/*ux:css  Interface polish layer: grouping, focus, feedback, accessibility. Colours reuse the existing dark palette.*/
+:root{--ux-accent:#6f9bff;--ux-accent-bg:#34406a;--ux-line:#2c3040;--ux-warn:#ffb454}
+*{scrollbar-width:thin;scrollbar-color:#3a4056 transparent}
+:where(button,a,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--ux-accent);outline-offset:2px}
+button,a.btn,summary.btn{transition:background-color .12s,box-shadow .12s,transform .06s}
+button:active:not(:disabled){transform:translateY(1px)}
+button:disabled{cursor:not-allowed}
+button.primary{background:#3b63d9}
+button.primary:hover:not(:disabled){background:#4d75ee}
+summary.btn{display:inline-block;background:#343b52;color:#fff;border-radius:5px;padding:5px 11px;cursor:pointer;user-select:none;list-style:none}
+summary.btn:hover{background:#46506f}
+summary.btn::-webkit-details-marker{display:none}
+summary.btn::after{content:"\25BE";margin-left:7px;font-size:10px;opacity:.8}
+header{gap:8px 6px}
+header .hgrp{display:inline-flex;flex:none;flex-wrap:nowrap;gap:4px;align-items:center;padding-right:10px;margin-right:4px;border-right:1px solid var(--ux-line)}
+header .tool{gap:6px}
+#undo::before{content:"\21B6\00a0"}
+#redo::before{content:"\21B7\00a0"}
+#save::after{content:"";display:inline-block;width:7px;height:7px;margin-left:7px;border-radius:50%;background:transparent;vertical-align:middle;transition:background-color .15s}
+body.dirty #save::after{background:var(--ux-warn)}
+#save.busy{opacity:.7;pointer-events:none}
+/* checkboxes in the toolbars read as toggle chips; the native checkbox stays visible and focusable */
+header label:has(>input[type=checkbox]),#dk-bar label:has(>input[type=checkbox]){display:inline-flex;gap:5px;align-items:center;padding:2px 8px 2px 6px;border:1px solid #343b52;border-radius:999px;background:#1a1d27;cursor:pointer;transition:background-color .12s,border-color .12s}
+header label:has(>input[type=checkbox]:checked),#dk-bar label:has(>input[type=checkbox]:checked){background:var(--ux-accent-bg);border-color:#5a68a6;color:#fff}
+header label:has(>input[type=checkbox]:hover),#dk-bar label:has(>input[type=checkbox]:hover){border-color:#5a68a6}
+input[type=checkbox]{accent-color:var(--ux-accent);margin:0}
+header label.auto{font-size:12px;color:#aab3d0}
+#ok{font-size:12px;color:#8ae68a;white-space:nowrap}
+#ok:empty{display:none}
+.menu{position:relative;display:inline-block}
+.menu-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:95;min-width:250px;background:#1d2029;border:1px solid #3a4056;border-radius:8px;padding:6px;box-shadow:0 10px 30px #000b;display:flex;flex-direction:column;gap:2px}
+.menu-pop a.btn{display:flex;flex-direction:column;gap:1px;padding:7px 10px;border-radius:5px;background:none;color:#e6e6ee}
+.menu-pop a.btn:hover,.menu-pop a.btn:focus-visible,.menu-pop a.btn.dm-flash{background:#2a3050}
+.menu-pop a small{color:#8b93ad;font-size:11px}
+#welcome{flex:none;display:none;gap:8px 10px;align-items:center;flex-wrap:wrap;padding:8px 14px;background:#232a45;border-bottom:1px solid #3a4580;font-size:12.5px;line-height:1.5}
+#welcome.on{display:flex}
+#welcome>span{flex:1 1 420px;min-width:0}
+#welcome b{color:#fff}
+#welcome .x{background:none;color:#aab3d0}
+#welcome .x:hover:not(:disabled){background:#2f3858;color:#fff}
+kbd{font:11px ui-monospace,monospace;background:#12141a;border:1px solid #343b52;border-bottom-width:2px;border-radius:4px;padding:0 5px;color:#cfd6ee}
+#netbar{position:fixed;left:0;right:0;top:0;z-index:400;display:none;padding:9px 14px;background:#8a2630;color:#fff;font-size:13px;text-align:center;box-shadow:0 4px 18px #0009}
+#netbar.on{display:block}
+#toast{box-shadow:0 6px 24px #000a;border:1px solid #3a4580}
+#toast.bad{border-color:#b84a56}
+#toast.bad::before{content:"\26A0\00a0"}
+#lab{font-variant-numeric:tabular-nums;white-space:nowrap;min-width:14ch}
+#lic{flex:none;white-space:nowrap}
+#keys{min-width:60px}
+footer #play{min-width:64px}
+@media (pointer:coarse){button,summary.btn,a.btn,select,input[type=number]{min-height:38px}header label:has(>input[type=checkbox]),#dk-bar label:has(>input[type=checkbox]){min-height:34px}#tl{height:28px}}
+@media (max-width:820px){header b{display:none}#welcome{font-size:12px}header .hgrp{border-right:0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+details.sm>summary{cursor:pointer;color:#aab3d0;margin-bottom:4px}
+#selinfo:empty::before{content:"Nothing selected. Click a layer on the canvas or in the Layers tab.";color:#8b93ad;font-family:system-ui,sans-serif}
+@media (max-width:700px){header{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}header>*{flex:none}header .brk{display:none}header .hgrp{border-right:0}.menu-pop{position:fixed;right:8px;top:48px}}
+/*/ux:css*/
 </style></head><body>
-<header><b>OSATURA</b>
-<button id="undo">Undo</button><button id="redo">Redo</button><button id="save">Save</button>
+<header role="toolbar" aria-label="Main toolbar"><b>OSATURA</b>
+<span class="hgrp"><button id="undo" title="Undo the last edit">Undo</button><button id="redo" title="Redo the edit you undid">Redo</button><button id="save" class="primary" title="Save the project to its file">Save</button><label class="auto" title="save by itself 3 seconds after your last edit; remembered in this browser"><input type="checkbox" id="autosave"> autosave</label></span>
 <label><input type="checkbox" id="bones"> bones</label>
 <span class="tool"><label title="a drag keys the edited properties at the current frame"><input type="checkbox" id="akey"> auto-key</label>
 <label title="grid spacing in canvas units, 0 = off">grid <input type="number" id="grid" min="0" value="0"></label>
 <label title="snap to other layers and the canvas edges"><input type="checkbox" id="snapobj" checked> snap</label>
 <label title="a click on part of a group selects the whole top-level group"><input type="checkbox" id="grproot"> whole groups</label>
 <label title="show and drag anchors, handles, cage/pin/lattice points and mesh vertices of the selected layers"><input type="checkbox" id="ptmode"> points</label>
-<label title="what a drag-box selects">box <select id="mqmode"><option value="intersect">touches</option><option value="contain">contains</option><option value="bbox">bounds touch</option></select></label>
+<label title="what a drag-box selects">box <select id="mqmode" aria-label="what a drag-box selects"><option value="intersect">touches</option><option value="contain">contains</option><option value="bbox">bounds touch</option></select></label>
 <button id="lockbtn" title="lock or unlock the selected layers: locked layers are skipped by clicks and boxes, and refuse edits">Lock</button></span>
+<span class="brk"></span>
+<span id="cb"><input id="cname" placeholder="your name" maxlength="40" aria-label="your name for the shared session"><button id="cjoin" title="join or leave the shared editing session of this studio">Collab</button><span id="cusers"></span></span>
 <span style="flex:1"></span>
 <button id="ovbtn" title="onion skin, motion trails and scrub proxy settings">Overlays</button><button id="demobtn" title="guided step-by-step demo: build a walking person with the real commands">Demo</button><button id="sgbtn" title="pose suggestions learned from this project's own poses">Suggest</button><button id="lmenubtn" title="panels, presets, reset layout">Layout</button><button id="palbtn" title="command palette (shortcut shown in the palette)">Commands</button><button id="keysbtn" title="view and change keyboard shortcuts">Keys</button>
 <button id="simplebtn" aria-pressed="false" title="show only the essential controls (undo, save, panels, exports); your choice is remembered in this browser">Simple view</button>
-<span class="brk"></span>
-<span id="cb"><input id="cname" placeholder="your name" maxlength="40" aria-label="your name for the shared session"><button id="cjoin" title="join or leave the shared editing session of this studio">Collab</button><span id="cusers"></span></span>
-<a class="btn" href="/export.gif">GIF</a><a class="btn" href="/export.html">HTML player</a><a class="btn" href="/export.lottie.json">Lottie</a>
-<span id="ok"></span></header>
+<span id="ok" role="status" aria-live="polite"></span>
+<details class="menu" id="expmenu"><summary class="btn" title="render the animation to a file">Export</summary><div class="menu-pop">
+<a class="btn" href="/export.gif">GIF<small>animated picture, plays anywhere</small></a>
+<a class="btn" href="/export.html">HTML player<small>one self-contained web page</small></a>
+<a class="btn" href="/export.lottie.json">Lottie<small>vector animation for the web and apps</small></a></div></details></header>
+<div id="welcome" role="region" aria-label="Quick start"><span><b>Welcome to the OSATURA studio.</b> Click a layer or bone on the canvas to select it and drag to move it. <kbd id="wl-play">Space</kbd> plays, <kbd id="wl-pal">Ctrl+K</kbd> finds any command, <kbd>?</kbd> lists every shortcut.</span>
+<button id="wl-demo" class="primary">Take the guided demo</button><button id="wl-keys">Keyboard shortcuts</button><button id="wl-ok" class="x" aria-label="Dismiss the quick start">Got it</button></div>
+<noscript><p style="margin:0;padding:12px 16px;background:#7a2630;color:#fff">The OSATURA studio needs JavaScript. Enable it for this page, or use the command line (<code>osatura --help</code>).</p></noscript>
 <main id="ws"></main>
 <div id="pool">
-<section class="panel" id="pn-stage"><div id="view"><div id="stage"><img id="img" alt="frame" draggable="false"><img id="onion" alt="" draggable="false" style="display:none"><svg id="trl" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" aria-hidden="true"></svg><svg id="ov" tabindex="0" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"></svg><div id="rc"></div></div></div></section>
+<section class="panel" id="pn-stage"><div id="view"><div id="stage"><img id="img" alt="Current frame of the animation" draggable="false"><img id="onion" alt="" draggable="false" style="display:none"><svg id="trl" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" aria-hidden="true"></svg><svg id="ov" tabindex="0" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"></svg><div id="rc"></div></div></div></section>
 <section class="panel side" id="pn-selection"><h3>Selection</h3>
-<div class="sm">Click picks the topmost thing (locked and hidden ones are skipped); Shift-click toggles; drag on empty space draws a box (hold Alt to draw a free-form lasso, Shift adds). Drag the box to move, a square to scale (Shift keeps proportions, Alt scales from the centre), the round knob to rotate (Shift snaps to 15 degrees). Hold Ctrl while dragging to switch snapping off. Arrow keys nudge 1 unit (Shift: 10), Delete removes layers, Esc cancels a drag or clears the selection.</div>
+<details class="sm"><summary>How selecting and transforming works</summary>Click picks the topmost thing (locked and hidden ones are skipped); Shift-click toggles; drag on empty space draws a box (hold Alt to draw a free-form lasso, Shift adds). Drag the box to move, a square to scale (Shift keeps proportions, Alt scales from the centre), the round knob to rotate (Shift snaps to 15 degrees). Hold Ctrl while dragging to switch snapping off. Arrow keys nudge 1 unit (Shift: 10), Delete removes layers, Esc cancels a drag or clears the selection.</details>
 <div id="selinfo"></div>
 </section>
 <section class="panel side" id="pn-layers"><h3>Layers</h3><div id="llist"></div></section>
@@ -236,7 +302,7 @@ kbd{font:11px ui-monospace,monospace;background:#0f1116;border:1px solid #3a4056
 <div id="dk-body"><canvas id="dk-cv" tabindex="0"></canvas></div>
 </section></section>
 </div>
-<footer><button id="play">Play</button><input id="tl" type="range" min="0" max="0" value="0"><span id="lab">0</span><div id="keys" title="keyframes of selected bone"></div><canvas id="wf" title="waveform of the project's sound tracks"></canvas><span id="lic" style="margin-left:auto;font-size:12px;opacity:.8"><a href="/source" target="_blank" rel="noopener" style="color:inherit">source (AGPL-3.0)</a> · <a href="https://buymeacoffee.com/echo.of.the.strings" target="_blank" rel="noopener noreferrer" style="color:inherit">support</a></span></footer>
+<footer><button id="play" title="Play or pause the animation">Play</button><input id="tl" type="range" min="0" max="0" value="0" aria-label="Current frame" title="drag to scrub; Home and End jump to the ends"><span id="lab">0</span><div id="keys" title="keyframes of selected bone"></div><canvas id="wf" title="waveform of the project's sound tracks"></canvas><span id="lic" style="margin-left:auto;font-size:12px;opacity:.8"><a href="/source" target="_blank" rel="noopener" style="color:inherit">source (AGPL-3.0)</a> · <a href="https://buymeacoffee.com/echo.of.the.strings" target="_blank" rel="noopener noreferrer" style="color:inherit">support</a></span></footer>
 <script>
 let S=null,frame=0,playing=false,sel=null,last=0,acc=0,scrubbing=false;
 const OVM={t0:0,level:0,ms:0,loads:0};
@@ -833,7 +899,8 @@ refresh().then(()=>{sel=S.bones[0]&&S.bones[0].name;$('lmap').value=lexample();d
 <div class="r"><span>allowed difference (screen pixels)</span><input type="number" id="ov-lodpx" min="0" max="16" step="0.25"></div>
 <div id="ovinfo"></div>
 </div>
-<div id="toast" role="status"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="netbar" role="alert">Lost the connection to the OSATURA studio. Is the program still running? Changes since your last save are not on disk yet. Trying again every few seconds...</div>
 <script>
 // ---- UI infrastructure: registry-driven shortcuts, command palette, shortcut editor, dockable panels ----
 // The command registry, default shortcuts, panel list, presets and the search ranking come from the server
@@ -1464,4 +1531,90 @@ if(dmStored('')==='1'){ (async()=>{
 Object.assign(CMD,{'demo.panel':()=>dmOpen()});
 </script>
 <!--/demo:script-->
+<script id="ux-js">
+// Interface polish layer. It only adds behaviour around the existing editor (it never changes what an edit does):
+// shortcut hints in tooltips, an unsaved-changes dot with a leave warning, optional autosave, a save result you can read,
+// the elapsed time next to the frame number, a quick-start strip for first-time visitors, the Export menu, "?" for the
+// shortcut list, and a banner when the connection to the studio server is lost. Tested by tests/studio_ux_smoke.js.
+(function(){ 'use strict';
+ const LSK='osatura.ui.';
+ const ls={ get(k){ try{ return localStorage.getItem(LSK+k); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(LSK+k,v); }catch(e){} } };
+ const dmOn=()=>{ try{ return typeof DM!=='undefined'&&!!DM&&!!DM.active; }catch(e){ return false; } };
+ const collabOn=()=>{ try{ return !!COLLAB.on; }catch(e){ return false; } };
+ const body=document.body, jsonEl=$('json');
+ let leaving=false;
+ window.addEventListener('pagehide',()=>{ leaving=true; });
+
+ // ---- shortcut hints in the tooltips (read from the live registry, so they follow rebinding) ----
+ const HINTS=[['undo','edit.undo'],['redo','edit.redo'],['save','file.save'],['play','playback.toggle'],['palbtn','ui.palette'],['keysbtn','ui.shortcuts']];
+ function chordFor(id){ try{ const c=UI.byId&&UI.byId[id]; const b=c&&c.bindings&&c.bindings[0]; return b?String(b).replace(/^[a-z]+:/i,'').split(' ')[0]:''; }catch(e){ return ''; } }
+ function uxHints(){
+  for(const [el,cmd] of HINTS){ const e=$(el); if(!e||(el==='save'&&e.disabled))continue; if(e.dataset.t0===undefined)e.dataset.t0=e.title||''; const ch=chordFor(cmd); e.title=e.dataset.t0+(ch?(e.dataset.t0?' ('+ch+')':ch):''); }
+  const wp=$('wl-pal'), wy=$('wl-play'); if(wp&&chordFor('ui.palette'))wp.textContent=chordFor('ui.palette'); if(wy&&chordFor('playback.toggle'))wy.textContent=chordFor('playback.toggle'); }
+ try{ if(typeof indexRegistry==='function'){ const orig=indexRegistry; indexRegistry=function(){ const r=orig.apply(this,arguments); try{ uxHints(); }catch(e){} return r; }; } uxHints(); }catch(e){}
+
+ // ---- unsaved changes: dot on Save, marker in the tab title, warning before the page is closed ----
+ let savedJson=null, autoT=0, saving=false;
+ const autoEl=$('autosave'), wel=$('welcome');
+ const hhmm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+ function setDirty(d){ body.classList.toggle('dirty',d); document.title=(d?'● ':'')+'OSATURA studio'; $('save').setAttribute('aria-label',d?'Save (there are unsaved changes)':'Save'); }
+ function checkDirty(){
+  if(dmOn()||savedJson===null||!jsonEl.value){ setDirty(false); return; } // an empty box = the first load has not finished yet
+  const d=jsonEl.value!==savedJson; setDirty(d);
+  if(d){ closeWelcome(); scheduleAuto(); } else clearTimeout(autoT); }
+ async function baseline(){ try{ const p=await api('/api/project'); if(savedJson===null)savedJson=JSON.stringify(p,null,1); }catch(e){} checkDirty(); }
+ if(typeof refresh==='function'){ const orig=refresh; refresh=async function(){ const r=await orig.apply(this,arguments); try{ checkDirty(); }catch(e){} return r; }; }
+ baseline();
+ window.addEventListener('beforeunload',e=>{ if(body.classList.contains('dirty')&&!collabOn()&&!dmOn()){ e.preventDefault(); e.returnValue=''; } });
+
+ // ---- save with a readable result; optional autosave ----
+ async function doSave(auto){
+  const b=$('save'); if(b.disabled||saving)return; saving=true; b.classList.add('busy'); let r=null, err='';
+  try{ r=await api('/api/save',{}); }catch(e){ err='the studio server did not answer'; }
+  b.classList.remove('busy'); saving=false;
+  if(r&&r.ok){ try{ savedJson=JSON.stringify(await api('/api/project'),null,1); }catch(e){ savedJson=jsonEl.value; }
+   $('ok').textContent=(auto?'autosaved ':'saved ')+hhmm(new Date()); checkDirty(); if(!auto)toast('Saved',false,1500); }
+  else { $('ok').textContent=''; toast('Save failed: '+(err||(r&&r.errors&&r.errors.length?r.errors.join('; '):(r&&r.error)||'the server refused the save')),true,8000); } }
+ $('save').onclick=()=>doSave(false);
+ function scheduleAuto(){ clearTimeout(autoT); if(!autoEl.checked||collabOn()||dmOn())return; autoT=setTimeout(()=>{ if(body.classList.contains('dirty')&&!$('save').disabled)doSave(true); },3000); }
+ autoEl.checked=ls.get('autosave')==='1';
+ autoEl.addEventListener('change',()=>{ ls.set('autosave',autoEl.checked?'1':'0'); if(autoEl.checked){ toast('Autosave is on: changes are saved 3 seconds after your last edit',false,3500); checkDirty(); } else { clearTimeout(autoT); toast('Autosave is off'); } });
+
+ // ---- elapsed time next to the frame number ----
+ const lab=$('lab');
+ function labTime(){ const t=lab.textContent; if(/ s$/.test(t)||typeof S==='undefined'||!S||!S.fps)return; const m=/^(\d+) \//.exec(t); if(!m)return; lab.textContent=t+' · '+(+m[1]/S.fps).toFixed(2)+' s'; }
+ new MutationObserver(labTime).observe(lab,{childList:true,characterData:true,subtree:true});
+
+ // ---- quick start for first-time visitors ----
+ function closeWelcome(){ if(!wel.classList.contains('on'))return; wel.classList.remove('on'); ls.set('welcomed','1'); window.dispatchEvent(new Event('resize')); }
+ if(ls.get('welcomed')!=='1'&&!dmOn()){ wel.classList.add('on'); window.dispatchEvent(new Event('resize')); }
+ $('wl-ok').onclick=closeWelcome;
+ $('wl-demo').onclick=()=>{ closeWelcome(); $('demobtn').click(); };
+ $('wl-keys').onclick=()=>{ $('keysbtn').click(); };
+
+ // ---- Export menu: closes on outside click, Escape and after a choice; opens by itself when the demo points at an export ----
+ const em=$('expmenu');
+ document.addEventListener('click',e=>{ if(!em.open)return; const a=e.target.closest&&e.target.closest('.menu-pop a'); if(a)setTimeout(()=>{ em.open=false; },0); else if(!em.contains(e.target))em.open=false; });
+ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&em.open){ em.open=false; e.stopPropagation(); em.querySelector('summary').focus(); } },true);
+ new MutationObserver(()=>{ em.open=!!em.querySelector('a.dm-flash'); }).observe(em,{attributes:true,attributeFilter:['class'],subtree:true});
+
+ // ---- "?" opens the shortcut list ----
+ window.addEventListener('keydown',e=>{ if(e.key!=='?'||e.ctrlKey||e.metaKey||e.altKey)return; const t=e.target, n=t&&t.tagName;
+  const typing=n==='TEXTAREA'||n==='SELECT'||(n==='INPUT'&&!/^(range|checkbox|radio|button|submit|reset|color|file)$/.test(t.type))||(t&&t.isContentEditable); // a slider or a checkbox does not use "?"
+  if(typing||(typeof UI!=='undefined'&&UI.modal))return; e.preventDefault(); $('keysbtn').click(); });
+
+ // ---- lost connection: a banner, retries, and a resync when the server is back ----
+ const rawFetch=window.fetch.bind(window), nb=$('netbar'); let down=false, probing=false, retryT=0;
+ function setDown(v){ if(v===down)return; down=v; nb.classList.toggle('on',v);
+  if(v){ retryT=setInterval(retry,3000); } else { clearInterval(retryT); toast('Reconnected to the studio'); try{ refresh(true); }catch(e){} } }
+ async function retry(){ try{ const r=await rawFetch('/api/state',{cache:'no-store'}); if(r.ok)setDown(false); }catch(e){} }
+ async function probe(){ if(probing||down||leaving)return; probing=true; try{ const r=await rawFetch('/api/state',{cache:'no-store'}); if(!r.ok)throw new Error('status'); }catch(e){ if(!leaving)setDown(true); } probing=false; }
+ window.fetch=function(input,init){ const u=typeof input==='string'?input:((input&&input.url)||''); const p=rawFetch(input,init);
+  if(u.charAt(0)==='/'||u.indexOf(location.origin)===0){ p.then(r=>{ if(down&&r.ok)setDown(false); },()=>{ setTimeout(probe,1200); }); } return p; };
+ $('img').addEventListener('error',()=>setTimeout(probe,300));
+
+ // ---- small accessibility labels ----
+ [['dk-in','range start frame'],['dk-out','range end frame'],['grid','grid spacing in canvas units, 0 = off'],['cname','your name for the shared session']].forEach(([id,t])=>{ const e=$(id); if(e&&!e.getAttribute('aria-label'))e.setAttribute('aria-label',t); });
+})();
+</script>
 </body></html>

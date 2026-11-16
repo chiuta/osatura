@@ -10,6 +10,16 @@ Verwandte Versionen, die **echt** und von den obigen unabhängig sind: die `API_
 
 ## [Unreleased]
 
+### Geändert (Bedienbarkeit des Studios)
+
+- **Werkzeugleiste in zwei Zeilen neu gruppiert**, Schalter als Pillen gezeichnet (gefüllt, wenn an), eine primäre Save-Schaltfläche, Tastenkürzel-Hinweise in Tooltips, die deinen eigenen Belegungen folgen, und ein **Export**-Menü (GIF, HTML player, Lottie) mit je einer Erklärungszeile. Auf schmalen Bildschirmen ist die Werkzeugleiste eine Zeile, die du seitlich scrollst.
+- **Ungespeicherte Änderungen sind sichtbar**: ein orangefarbener Punkt auf Save, ein Punkt im Tabtitel und eine Nachfrage, bevor die Seite mit ungespeicherten Bearbeitungen geschlossen oder neu geladen wird (nicht in einer geteilten Sitzung oder während der geführten Demo). Zurück zum gespeicherten Zustand per Undo löscht die Markierung.
+- **Save sagt, was passiert ist** („saved 17:52“) und, wenn es fehlschlägt, warum. Neu: optionales **Autosave** (3 Sekunden nach deiner letzten Bearbeitung, pro Browser gemerkt).
+- **Banner bei verlorener Verbindung**: Antwortet der Studio-Server nicht mehr, erscheint ein roter Banner, und die Seite versucht es alle 3 Sekunden erneut und lädt dann das Projekt neu, wenn der Server zurück ist (vorher hörte die Seite einfach kommentarlos auf zu funktionieren).
+- **Schnellstart-Streifen** beim ersten Besuch (Klick zum Auswählen, Space, Ctrl+K, `?`, geführte Demo). `?` öffnet die Liste der Tastenkürzel.
+- Der Bildzähler zeigt auch Sekunden (`12 / 47 · 0.50 s`); der lange Hilfetext des Selection-Panels klappt ein, und eine leere Auswahl sagt, was zu tun ist; sichtbare Tastatur-Fokusrahmen; größere Touch-Ziele auf Touchscreens; das Bild hat ein brauchbares `alt`; reduzierte Bewegung wird berücksichtigt.
+- Neuer Smoke-Test `osatura-cli/tests/studio_ux_smoke.js` (32 Prüfungen). Keine Änderung am Projektformat, an der HTTP-API oder an der Kommandozeile.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Vorabversion, veröffentlicht am 10. Nov. 2026 von `main` (Commit `96e790a`, Tag `v0.1.0-alpha.5`). Die Crate-Versionen bleiben `0.1.0`; die Release-Version stammt aus `OSATURA_VERSION`, gesetzt von `release.yml`.*

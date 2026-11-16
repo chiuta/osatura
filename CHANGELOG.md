@@ -10,6 +10,16 @@ Related versions that **are** real and independent of the above: the Rust facade
 
 ## [Unreleased]
 
+### Changed (studio usability)
+
+- **Toolbar regrouped into two rows**, switches drawn as pills (filled when on), a primary Save button, shortcut hints in tooltips that follow your own bindings, and an **Export** menu (GIF, HTML player, Lottie) with a line of explanation for each. On narrow screens the toolbar is one row you scroll sideways.
+- **Unsaved changes are visible**: an orange dot on Save, a dot in the tab title, and a confirmation before the page is closed or reloaded with unsaved edits (not in a shared session or during the guided demo). Undoing back to the saved state clears the mark.
+- **Save says what happened** ("saved 17:52") and, when it fails, why. New opt-in **autosave** (3 seconds after your last edit, remembered per browser).
+- **Lost connection banner**: when the studio server stops answering, a red banner appears and the page retries every 3 seconds, then reloads the project when the server is back (before, the page just stopped working without a word).
+- **Quick-start strip** on the first visit (click to select, Space, Ctrl+K, `?`, guided demo). `?` opens the shortcut list.
+- The frame counter also shows seconds (`12 / 47 · 0.50 s`); the Selection panel's long help text folds away and an empty selection says what to do; visible keyboard focus rings; larger touch targets on touch screens; the image has a useful `alt`; reduced-motion respected.
+- New smoke test `osatura-cli/tests/studio_ux_smoke.js` (32 checks). No change to the project format, the HTTP API or the command line.
+
 ## [0.1.0-alpha.5] - 2026-11-09
 
 *Pre-release published on 10 Nov 2026 from `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Crate versions stay `0.1.0`; the release version comes from `OSATURA_VERSION` set by `release.yml`.*

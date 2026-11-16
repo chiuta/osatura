@@ -107,11 +107,20 @@ version. `/source` est cette offre ; définissez `--source-url` à l'endroit où
 
 ### Barre d'outils
 
-Annuler, Rétablir, **Enregistrer** ; les cases `bones` (dessiner le squelette), `auto-key`, `grid` (espacement en unités de canevas, 0 = désactivé), `snap` (sur les autres calques et le canevas),
-`whole groups` (un clic sur une partie d'un groupe sélectionne le groupe de premier niveau), `points` (afficher les ancres, poignées, points de cage/lattice/pin et sommets de maillage des
-calques sélectionnés) ; un sélecteur `box` pour ce que sélectionne un cadre de sélection (`touches`, `contains`, `bounds touch` ; il démarre à `touches`) ; **Lock** ; et les boutons **Overlays**, **Suggest**, **Layout**,
-**Commands** (palette) et **Keys** (éditeur de raccourcis). Une seconde rangée contient votre nom et **Collab**, ainsi que les boutons d'export **GIF**, **HTML player** et **Lottie**,
-qui téléchargent ce qu'écrirait `osatura export` (le lecteur HTML inclut le son mixé lorsqu'il y a du son et que `ffmpeg` peut produire le mp3). Le bouton **Simple view** masque les cases d'édition, Overlays, Suggest et le bouton de la palette de commandes, de sorte qu'il ne reste que l'annulation, l'enregistrement, les panneaux et les exports ; ce choix est mémorisé dans ce navigateur (ou cette fenêtre) et la barre d'outils complète revient avec **Full view**.
+La barre d'outils a deux rangées. **Première rangée** : Annuler, Rétablir et **Enregistrer** (un petit point orange sur Save signifie que le projet a des modifications qui ne sont pas sur le disque), un interrupteur **autosave**, et les interrupteurs d'édition `bones` (dessiner le squelette), `auto-key`, `grid` (espacement en unités de canevas, 0 = désactivé), `snap` (sur les autres calques et le canevas),
+`whole groups` (un clic sur une partie d'un groupe sélectionne le groupe de premier niveau) et `points` (afficher les ancres, poignées, points de cage/lattice/pin et sommets de maillage des
+calques sélectionnés) ; un sélecteur `box` pour ce que sélectionne un cadre de sélection (`touches`, `contains`, `bounds touch` ; il démarre à `touches`) ; et **Lock**. Les interrupteurs ont l'aspect de pilules et sont remplis lorsqu'ils sont actifs. **Seconde rangée** : votre nom et **Collab**, puis les boutons **Overlays**, **Demo**, **Suggest**, **Layout**,
+**Commands** (palette), **Keys** (éditeur de raccourcis) et **Simple view**, puis l'heure du dernier enregistrement et le menu **Export** avec **GIF**, **HTML player** et **Lottie**,
+qui téléchargent ce qu'écrirait `osatura export` (le lecteur HTML inclut le son mixé lorsqu'il y a du son et que `ffmpeg` peut produire le mp3). Le bouton **Simple view** masque les interrupteurs d'édition, Overlays, Suggest et le bouton de la palette de commandes, de sorte qu'il ne reste que l'annulation, l'enregistrement, les panneaux et les exports ; ce choix est mémorisé dans ce navigateur (ou cette fenêtre) et la barre d'outils complète revient avec **Full view**. Survolez un bouton pour voir son raccourci actuel (il suit vos propres associations). Sur un écran étroit (moins de 700 px), la barre d'outils devient une seule rangée que l'on fait défiler latéralement.
+
+### Enregistrement, modifications non enregistrées et connexion
+
+* **Save** écrit le fichier du projet et l'indique (« saved 17:52 » à côté d'Export). Si l'enregistrement échoue, la raison apparaît dans un message qui reste affiché plusieurs secondes.
+* **Modifications non enregistrées.** Après toute modification, le bouton Save affiche un point orange et le titre de l'onglet du navigateur commence par un point. Revenir par annulation à l'état enregistré les efface. Fermer ou recharger la page avec des modifications non enregistrées demande confirmation (pas dans une session partagée, ni pendant que la démo guidée est chargée, qui a son propre avertissement).
+* **Autosave** (désactivé par défaut, mémorisé dans ce navigateur) enregistre 3 secondes après votre dernière modification. Il ne fait rien dans une session partagée ni pendant la démo.
+* **Connexion perdue.** Si la page ne peut plus joindre le studio (le programme a été fermé ou la machine s'est mise en veille), une bannière rouge apparaît en haut et la page réessaie toutes les 3 secondes. Lorsque le serveur revient, la bannière disparaît et la page recharge le projet depuis celui-ci.
+* **Démarrage rapide.** À la première visite, un bandeau sous la barre d'outils nomme les trois choses à connaître (clic pour sélectionner, **Space** pour lire, **Ctrl+K** pour toutes les commandes, **?** pour la liste des raccourcis) et propose la démo guidée. Il disparaît lorsque vous appuyez sur *Got it*, lancez la démo ou faites votre première modification, et ne revient plus dans ce navigateur.
+* Le compteur d'images affiche aussi le temps : `12 / 47 · 0.50 s`.
 
 ### Panneaux et dispositions
 
@@ -456,9 +465,9 @@ Web MIDI nécessite un navigateur qui l'implémente (Chromium le fait) ; la cam�
 session partagée. Les événements de pointeur servent au glisser-déposer ; les écrans tactiles n'ont pas été testés.
 
 **Accessibilité, en toute honnêteté.** Je n'ai pas audité le studio avec un lecteur d'écran ni lors d'une session uniquement au clavier. Ce qui existe : un attribut `lang` et une balise meta viewport, des cases à cocher étiquetées, une
-notification `role="status"`, quelques attributs ARIA, **un ensemble complet de raccourcis clavier et une palette de commandes** qui atteignent chaque commande, des raccourcis reconfigurables, et la ligne de commande `osatura`, qui fait
+notification `role="status"` et état de l'enregistrement, `role="alert"` pour la bannière de connexion perdue, un rôle pour la barre d'outils, des anneaux de focus clavier visibles sur chaque contrôle, des cibles tactiles plus grandes sur les écrans tactiles, `prefers-reduced-motion` respecté pour les nouvelles transitions, des indications de raccourcis dans les infobulles, **un ensemble complet de raccourcis clavier et une palette de commandes** qui atteignent chaque commande, des raccourcis reconfigurables, et la ligne de commande `osatura`, qui fait
 tout ce que fait l'éditeur sans pointeur. Ce qui manque : le canevas est une image et la plupart des modifications sur le canevas se font au pointeur (le déplacement par touches fléchées existe), il n'y a ni thème clair ni
-prise en charge de `prefers-reduced-motion` ou de `prefers-color-scheme`, les contours de focus sont ceux par défaut du navigateur et je ne les ai pas vérifiés, et je n'ai pas mesuré les contrastes de couleur. Si vous dépendez de technologies d'assistance,
+prise en charge de `prefers-color-scheme`, les animations plus anciennes (le flash de la démo guidée) sont le seul mouvement pas encore couvert par la règle de mouvement réduit, au-delà de ce que fait le navigateur, et je n'ai pas mesuré les contrastes de couleur. Si vous dépendez de technologies d'assistance,
 préférez la CLI et le panneau JSON, et signalez au projet ce qui dysfonctionne.
 
 ## 12. Défauts connus

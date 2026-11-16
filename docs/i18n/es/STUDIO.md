@@ -107,11 +107,20 @@ versión. `/source` es esa oferta; establece `--source-url` con el lugar donde e
 
 ### Barra de herramientas
 
-Deshacer, Rehacer, **Save**; casillas `bones` (dibujar el esqueleto), `auto-key`, `grid` (separación en unidades del lienzo, 0 = desactivada), `snap` (a otras capas y al lienzo),
-`whole groups` (un clic en parte de un grupo selecciona el grupo de nivel superior), `points` (muestra anclas, manejadores, puntos de cage/lattice/pin y vértices de malla de las
-capas seleccionadas); un selector `box` para lo que selecciona un cuadro arrastrado (`touches`, `contains`, `bounds touch`; empieza en `touches`); **Lock**; y los botones **Overlays**, **Suggest**, **Layout**,
-**Commands** (paleta) y **Keys** (editor de atajos). Una segunda fila tiene tu nombre y **Collab**, y los botones de exportación **GIF**, **HTML player** y **Lottie**,
-que descargan lo que escribiría `osatura export` (el reproductor HTML incluye el sonido mezclado cuando hay sonido y `ffmpeg` puede crear el mp3). El botón **Simple view** oculta las casillas de edición, Overlays, Suggest y el botón de la paleta de comandos, de modo que solo quedan deshacer, guardar, paneles y exportaciones; la elección se recuerda en este navegador (o ventana) y la barra completa vuelve con **Full view**.
+La barra de herramientas tiene dos filas. **Primera fila**: Deshacer, Rehacer y **Save** (un pequeño punto naranja en Save significa que el proyecto tiene cambios que no están en el disco), un interruptor **autosave** y los interruptores de edición `bones` (dibujar el esqueleto), `auto-key`, `grid` (separación en unidades del lienzo, 0 = desactivada), `snap` (a otras capas y al lienzo),
+`whole groups` (un clic en parte de un grupo selecciona el grupo de nivel superior) y `points` (muestra anclas, manejadores, puntos de cage/lattice/pin y vértices de malla de las
+capas seleccionadas); un selector `box` para lo que selecciona un cuadro arrastrado (`touches`, `contains`, `bounds touch`; empieza en `touches`); y **Lock**. Los interruptores tienen forma de píldora y se rellenan cuando están activos. **Segunda fila**: tu nombre y **Collab**, y luego los botones **Overlays**, **Demo**, **Suggest**, **Layout**,
+**Commands** (paleta), **Keys** (editor de atajos) y **Simple view**, y después la hora del último guardado y el menú **Export** con **GIF**, **HTML player** y **Lottie**,
+que descargan lo que escribiría `osatura export` (el reproductor HTML incluye el sonido mezclado cuando hay sonido y `ffmpeg` puede crear el mp3). El botón **Simple view** oculta los interruptores de edición, Overlays, Suggest y el botón de la paleta de comandos, de modo que solo quedan deshacer, guardar, paneles y exportaciones; la elección se recuerda en este navegador (o ventana) y la barra completa vuelve con **Full view**. Pasa el cursor sobre un botón para ver su atajo actual (sigue tus propias asignaciones). En una pantalla estrecha (menos de 700 px) la barra se convierte en una sola fila que se desplaza hacia los lados.
+
+### Guardado, cambios sin guardar y conexión
+
+* **Save** escribe el archivo del proyecto y lo dice («saved 17:52» junto a Export). Si el guardado falla, el motivo aparece en un mensaje que permanece varios segundos.
+* **Cambios sin guardar.** Tras cualquier edición, el botón Save muestra un punto naranja y el título de la pestaña del navegador empieza con un punto. Deshacer hasta el estado guardado los borra. Cerrar o recargar la página con cambios sin guardar pide confirmación (no en una sesión compartida ni mientras está cargada la demo guiada, que tiene su propio aviso).
+* **Autosave** (desactivado por defecto, recordado en este navegador) guarda 3 segundos después de tu última edición. No hace nada en una sesión compartida ni durante la demo.
+* **Conexión perdida.** Si la página ya no puede llegar al estudio (el programa se cerró o el equipo se suspendió), aparece un banner rojo arriba y la página reintenta cada 3 segundos. Cuando el servidor vuelve, el banner desaparece y la página recarga el proyecto desde él.
+* **Inicio rápido.** En la primera visita, una franja bajo la barra de herramientas nombra las tres cosas que hay que saber (clic para seleccionar, **Space** para reproducir, **Ctrl+K** para todos los comandos, **?** para la lista de atajos) y ofrece la demo guiada. Desaparece cuando pulsas *Got it*, inicias la demo o haces tu primera edición, y no vuelve en este navegador.
+* El contador de fotogramas muestra también el tiempo: `12 / 47 · 0.50 s`.
 
 ### Paneles y disposiciones
 
@@ -456,9 +465,9 @@ Web MIDI necesita un navegador que lo implemente (Chromium lo hace); la cámara 
 sesión compartida. Para arrastrar se usan eventos de puntero; las pantallas táctiles no se probaron.
 
 **Accesibilidad, con franqueza.** No auditué el estudio con un lector de pantalla ni con una sesión solo de teclado. Lo que existe: un atributo `lang` y la etiqueta meta viewport, casillas de verificación etiquetadas, un
-aviso `role="status"`, algunos atributos ARIA, **un conjunto completo de atajos de teclado y una paleta de comandos** que alcanzan todos los comandos, atajos reasignables, y la línea de comandos `osatura`, que hace
+aviso `role="status"` y estado del guardado, `role="alert"` para el banner de conexión perdida, un rol para la barra de herramientas, anillos de foco de teclado visibles en cada control, objetivos táctiles más grandes en pantallas táctiles, `prefers-reduced-motion` respetado en las nuevas transiciones, pistas de atajos en las descripciones emergentes, **un conjunto completo de atajos de teclado y una paleta de comandos** que alcanzan todos los comandos, atajos reasignables, y la línea de comandos `osatura`, que hace
 todo lo que hace el editor sin puntero. Lo que falta: el lienzo es una imagen y la mayor parte de la edición sobre el lienzo se hace con el puntero (existe el desplazamiento con las teclas de flecha), no hay tema claro y tampoco
-tratamiento de `prefers-reduced-motion` ni de `prefers-color-scheme`, los contornos de foco son los predeterminados del navegador y no los comprobé, y no medí el contraste de color. Si dependes de tecnología de apoyo,
+tratamiento de `prefers-color-scheme`, las animaciones más antiguas (el destello de la demo guiada) son el único movimiento que la regla de movimiento reducido aún no cubre, más allá de lo que hace el navegador, y no medí el contraste de color. Si dependes de tecnología de apoyo,
 prefiere la CLI y el panel JSON, e informa al proyecto de lo que falle.
 
 ## 12. Problemas conocidos
