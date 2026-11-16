@@ -13,7 +13,7 @@ Contents: [Environment](#1-environment) - [Build and test commands](#2-build-and
 | Rust 1.97.0 (edition 2021 workspace) | everything | pinned in `rust-toolchain.toml` (rustup installs it on first use; `rust-version = "1.97"` in each crate); `Cargo.lock` is committed, builds are `--locked`-friendly. Release builds have `overflow-checks = true`: an integer overflow panics instead of wrapping, so test the release profile too (`cargo test --release`) |
 | A C compiler (`cc`) | the C ABI example/test (optional) | see [C_ABI.md](C_ABI.md) |
 | `ffmpeg` / `ffprobe` on `PATH` | video export, audio decoding of mp3/ogg, `dof-export` to .mp4/.webm, `soundtrack` | **never bundled or required for building**; commands that need it say so and fail without a success message |
-| Node.js >= 22 (what CI uses) and `playwright-core` + Chromium | the five studio smoke tests; the WASM wrapper test | defaults: `/opt/npm-tools/node_modules/playwright-core`, `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`; override with `PLAYWRIGHT_CORE`, `CHROME` |
+| Node.js >= 24 (what CI uses) and `playwright-core` + Chromium | the five studio smoke tests; the WASM wrapper test | defaults: `/opt/npm-tools/node_modules/playwright-core`, `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`; override with `PLAYWRIGHT_CORE`, `CHROME` |
 | `cargo-deny` | licence/ban/source policy | `scripts/licence-audit.sh` runs it when installed (`--no-deny` skips) |
 | `python3` | `scripts/licence-audit.sh` generates docs with an inline script | runs with `python3 -I` |
 | A Vulkan or GL adapter | only for real-GPU numbers from `osatura-gpu` | tests fall back to a software adapter; see section 2 |
