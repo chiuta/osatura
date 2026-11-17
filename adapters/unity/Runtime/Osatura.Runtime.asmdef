@@ -1,0 +1,9 @@
+{
+  "name": "Osatura.Runtime",
+  "rootNamespace": "Osatura",
+  "references": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true
+}

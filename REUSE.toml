@@ -19,7 +19,8 @@ path = [
   "osatura-capi/osatura.h", "osatura-capi/tests/smoke.c", "osatura-capi/Cargo.toml",
   "osatura-gpu/src/wgsl/*.wgsl", "osatura-gpu/Cargo.toml",
   "osatura-wasm/index.html", "osatura-wasm/Cargo.toml",
-  "osatura-core/src/api_surface.txt", "osatura-core/Cargo.toml",
+  "osatura-core/src/api_surface.txt", "osatura-core/Cargo.toml", "osatura-core/tests/golden/*.png",
+  "adapters/unity/package.json", "adapters/unity/Runtime/*.asmdef", "adapters/godot/addons/osatura/plugin.cfg",
   "Cargo.toml", "Cargo.lock", "deny.toml", ".github/**",
 ]
 precedence = "aggregate"

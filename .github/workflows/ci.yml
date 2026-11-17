@@ -191,6 +191,49 @@ jobs:
           run render smoke.json 0 smoke.png
           test -s smoke.png
 
+  adapters:
+    # The Unity and Godot adapters (adapters/): the C functions the Unity bindings import against osatura.h, the call sequence
+    # replayed through the real shared library, and the atlas keys the Godot script reads against a real sprite-sheet atlas.
+    name: engine adapters
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - run: cargo build --locked -p osatura-cli -p osatura-capi
+      - run: python3 scripts/check-adapters.py
+
+  determinism:
+    # Does the same project give the same pixels on every OS? Three demo frames against goldens written on Linux x86-64, byte
+    # for byte (docs/LIMITATIONS.md L-26). Linux must match exactly; Windows and macOS are informational for now: a red
+    # mark there is a finding, not a broken build, and the measured differences are in the job summary.
+    name: determinism (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os != 'ubuntu-22.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: Render and compare
+        shell: bash
+        env:
+          OSATURA_DETERMINISM_STRICT: "1"
+          OSATURA_DETERMINISM_REPORT: ${{ runner.temp }}/determinism.txt
+        run: |
+          set +e
+          cargo test --locked -p osatura-core --test determinism -- --nocapture
+          code=$?
+          { echo "### determinism on ${{ matrix.os }}"; echo '```'; cat "$OSATURA_DETERMINISM_REPORT" 2>/dev/null || echo "(no report)"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $code
+
   gpu-parity:
     # Linux runs the tests against Mesa's software Vulkan (lavapipe) and treats "no adapter" as a failure
     # (OSATURA_GPU_REQUIRE=1); the thresholds are in osatura-gpu/tests/parity.rs. macOS and Windows runners usually have
