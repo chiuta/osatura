@@ -14,7 +14,7 @@ OSATURA is a pre-alpha engine with a command line and a browser editor, built by
 | Interface | Browser editor and window shell; **has not been tested by working animators** | Desktop editor | Desktop editor | Desktop editor (unverified) |
 | Licence | Libraries MPL-2.0, CLI and studio AGPL-3.0-or-later, docs CC-BY-4.0 | Proprietary, paid | Proprietary, paid | Unverified |
 | Headless and scripted use | Yes: every operation is a CLI command or a script, with CI checks for animations (`osatura ci`) | Command-line export exists (vendor documentation) | Unverified | Unverified |
-| Game-engine runtimes | **None.** Exports GIF, PNG sequence, sprite sheet, SVG, Lottie, HTML player, C library and Rust crate | Many official runtimes | Exports to several formats; engine plug-ins unverified | Unverified |
+| Game-engine runtimes | Unity and Godot adapters exist but have **not been run inside those engines** ([adapters/README.md](../adapters/README.md)). Exports GIF, PNG sequence, sprite sheet, SVG, Lottie, HTML player, C library and Rust crate | Many official runtimes | Exports to several formats; engine plug-ins unverified | Unverified |
 | Mesh deformation, weights | Weights on anchors, deformers, IK, physics | Mature, with a large feature set (meshes are not in the cheapest edition) | Mature | Unverified |
 | Community, tutorials, support | None yet | Large | Large | Unverified |
 
@@ -27,9 +27,9 @@ OSATURA is a pre-alpha engine with a command line and a browser editor, built by
 
 ## Where it is behind, plainly
 
-* No engine runtimes: to use a rig in Unity, Godot or similar you export frames, SVG or Lottie, or write your own integration with the C library.
+* No tested engine runtimes: the Unity and Godot adapters are checked against the C header only, never inside the engines; otherwise you export frames, SVG or Lottie, or write your own integration with the C library.
 * No artist has used it for a real project. The interface is designed from the code outwards and may be awkward ([LIMITATIONS.md](LIMITATIONS.md)).
-* Import is limited to a subset of SVG and to OpenRaster; there is no Photoshop import.
+* Import is limited to a subset of SVG, OpenRaster and PSD; Photoshop files (`.psd`) can be imported with `import-psd` (raw and PackBits layers only, flattened groups; tried on synthetic files, not on real Photoshop output).
 * Not yet published: no installer, no signed binaries, no macOS user report.
 
 ## How to decide
