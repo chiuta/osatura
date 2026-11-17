@@ -1554,6 +1554,21 @@ not a zip/ORA file: invalid Zip archive: Could not find EOCD       [exit 1]
 ```
 Limits: 2000 archive entries, 128 MiB per entry, 64 Mpixel layers.
 
+### `import-psd`
+
+**Synopsis:** `osatura import-psd <file.psd> <out.json> [--fps N] [--frames N]`
+
+Photoshop -> project: one **image layer per raster layer** (embedded PNG), bottom-to-top order preserved, per-layer position, `opacity`, hidden flag and the common composite modes (multiply, screen, overlay, darken, lighten, color-dodge/burn, hard/soft-light, difference, exclusion, linear dodge -> add). Layer groups are flattened: a group's opacity multiplies into its layers and a hidden group hides them. Supported: 8-bit **RGB** documents (not `.psb`), raw and PackBits (RLE) channel data. Layers with no pixels of their own (adjustment, text, shape, smart-object placeholders) are skipped and listed on stderr as `note:` lines; masks, clipping groups, layer effects and ZIP-compressed channels are not read. The flattened preview in the file is ignored. Duplicate layer names get `_1`, `_2` suffixes.
+
+```
+$ osatura import-psd art.psd art.json
+note: 'Title' has no pixels (adjustment, text, shape or empty layer): skipped
+wrote art.json (12 layers)
+$ osatura import-psd cmyk.psd bad.json
+only RGB documents are supported (colour mode 4; convert to RGB in your paint tool)       [exit 1]
+```
+Limits: layers up to 16384 px per side and 64 Mpixel, at most 2048 layer records.
+
 ### `import-lottie`
 
 **Synopsis:** `osatura import-lottie <in.json> <out.json> [fx.json]`
@@ -2900,6 +2915,7 @@ Every command with a one-line summary and the section that documents it. Sub-com
 | `import-bvh` | BVH motion capture -> channels | [9](#9-import) |
 | `import-lottie` | Lottie subset -> project | [9](#9-import) |
 | `import-ora` | OpenRaster -> project | [9](#9-import) |
+| `import-psd` | Photoshop layers (8-bit RGB) -> project | [9](#9-import) |
 | `import-seq` | PNG sequence -> frame-by-frame layer | [9](#9-import) |
 | `import-svg` | SVG subset -> vector layer | [9](#9-import) |
 | `keyedit` | dope-sheet edits as one undo-safe batch | [6](#6-animation-keys-timeline-and-generators) |
