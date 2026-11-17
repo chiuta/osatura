@@ -1554,6 +1554,21 @@ not a zip/ORA file: invalid Zip archive: Could not find EOCD       [exit 1]
 ```
 Limites: 2000 entradas no arquivo, 128 MiB por entrada, camadas de 64 Mpixel.
 
+### `import-psd`
+
+**Sinopse:** `osatura import-psd <file.psd> <out.json> [--fps N] [--frames N]`
+
+Photoshop -> projeto: **uma camada de imagem por camada raster** (PNG incorporado), ordem de baixo para cima mantida, posição de cada camada, `opacity`, indicador de oculta e os modos de composição comuns (multiply, screen, overlay, darken, lighten, color-dodge/burn, hard/soft-light, difference, exclusion, linear dodge -> add). Os grupos de camadas são achatados: a opacidade de um grupo multiplica-se nas suas camadas e um grupo oculto oculta-as. Suportado: documentos **RGB** de 8 bits (não `.psb`), dados de canal brutos e PackBits (RLE). As camadas sem pixels próprios (ajuste, texto, forma, marcadores de objetos inteligentes) são ignoradas e listadas em stderr como linhas `note:`; máscaras, grupos de recorte, efeitos de camada e canais comprimidos com ZIP não são lidos. A pré-visualização achatada do arquivo é ignorada. Nomes de camada duplicados recebem os sufixos `_1`, `_2`.
+
+```
+$ osatura import-psd art.psd art.json
+note: 'Title' has no pixels (adjustment, text, shape or empty layer): skipped
+wrote art.json (12 layers)
+$ osatura import-psd cmyk.psd bad.json
+only RGB documents are supported (colour mode 4; convert to RGB in your paint tool)       [exit 1]
+```
+Limites: camadas de até 16384 px por lado e 64 Mpixels, no máximo 2048 registros de camada.
+
 ### `import-lottie`
 
 **Sinopse:** `osatura import-lottie <in.json> <out.json> [fx.json]`
@@ -2884,6 +2899,7 @@ Cada comando com um resumo de uma linha e a seção que o documenta. Os subcoman
 | `import-bvh` | captura de movimento BVH -> canais | [9](#9-importação) |
 | `import-lottie` | subconjunto de Lottie -> projeto | [9](#9-importação) |
 | `import-ora` | OpenRaster -> projeto | [9](#9-importação) |
+| `import-psd` | camadas do Photoshop (RGB de 8 bits) -> projeto | [9](#9-importação) |
 | `import-seq` | sequência de PNGs -> camada quadro a quadro | [9](#9-importação) |
 | `import-svg` | subconjunto de SVG -> camada vetorial | [9](#9-importação) |
 | `keyedit` | edições de dope sheet como um único lote seguro para desfazer | [6](#6-animação-keys-timeline-e-geradores) |

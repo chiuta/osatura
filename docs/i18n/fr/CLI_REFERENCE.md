@@ -1554,6 +1554,21 @@ not a zip/ORA file: invalid Zip archive: Could not find EOCD       [exit 1]
 ```
 Limites : 2000 entrées d'archive, 128 Mio par entrée, calques de 64 Mpixels.
 
+### `import-psd`
+
+**Synopsis :** `osatura import-psd <file.psd> <out.json> [--fps N] [--frames N]`
+
+Photoshop -> projet : **un calque d'image par calque raster** (PNG intégré), ordre de bas en haut conservé, position de chaque calque, `opacity`, indicateur de masquage et modes de fusion courants (multiply, screen, overlay, darken, lighten, color-dodge/burn, hard/soft-light, difference, exclusion, linear dodge -> add). Les groupes de calques sont aplatis : l'opacité d'un groupe se multiplie dans ses calques et un groupe masqué les masque. Pris en charge : documents **RVB** 8 bits (pas `.psb`), données de canal brutes et PackBits (RLE). Les calques sans pixels propres (réglage, texte, forme, substituts d'objets dynamiques) sont ignorés et listés sur stderr en lignes `note:` ; les masques, groupes d'écrêtage, effets de calque et canaux compressés ZIP ne sont pas lus. L'aperçu aplati du fichier est ignoré. Les noms de calques en double reçoivent les suffixes `_1`, `_2`.
+
+```
+$ osatura import-psd art.psd art.json
+note: 'Title' has no pixels (adjustment, text, shape or empty layer): skipped
+wrote art.json (12 layers)
+$ osatura import-psd cmyk.psd bad.json
+only RGB documents are supported (colour mode 4; convert to RGB in your paint tool)       [exit 1]
+```
+Limites : calques jusqu'à 16384 px de côté et 64 Mpixels, au plus 2048 enregistrements de calque.
+
 ### `import-lottie`
 
 **Synopsis :** `osatura import-lottie <in.json> <out.json> [fx.json]`
@@ -2884,6 +2899,7 @@ Chaque commande avec un résumé d'une ligne et la section qui la documente. Les
 | `import-bvh` | capture de mouvement BVH -> canaux | [9](#9-import) |
 | `import-lottie` | sous-ensemble Lottie -> projet | [9](#9-import) |
 | `import-ora` | OpenRaster -> projet | [9](#9-import) |
+| `import-psd` | calques Photoshop (RVB 8 bits) -> projet | [9](#9-import) |
 | `import-seq` | séquence PNG -> calque image par image | [9](#9-import) |
 | `import-svg` | sous-ensemble SVG -> calque vectoriel | [9](#9-import) |
 | `keyedit` | modifications de dope sheet en un seul lot annulable en une fois | [6](#6-animation-clés-timeline-et-générateurs) |

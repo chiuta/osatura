@@ -1553,6 +1553,21 @@ not a zip/ORA file: invalid Zip archive: Could not find EOCD       [exit 1]
 ```
 Grenzen: 2000 Archiveinträge, 128 MiB pro Eintrag, Ebenen bis 64 Megapixel.
 
+### `import-psd`
+
+**Synopsis:** `osatura import-psd <file.psd> <out.json> [--fps N] [--frames N]`
+
+Photoshop -> Projekt: **eine Bildebene pro Rasterebene** (eingebettetes PNG), Reihenfolge von unten nach oben bleibt erhalten, Position jeder Ebene, `opacity`, Verborgen-Kennzeichen und die üblichen Füllmethoden (multiply, screen, overlay, darken, lighten, color-dodge/burn, hard/soft-light, difference, exclusion, linear dodge -> add). Ebenengruppen werden abgeflacht: die Deckkraft einer Gruppe wird in ihre Ebenen multipliziert, und eine verborgene Gruppe verbirgt sie. Unterstützt: **RGB**-Dokumente mit 8 Bit (nicht `.psb`), rohe und PackBits-Kanaldaten (RLE). Ebenen ohne eigene Pixel (Einstellung, Text, Form, Smartobjekt-Platzhalter) werden übersprungen und auf stderr als `note:`-Zeilen aufgelistet; Masken, Schnittmasken, Ebeneneffekte und ZIP-komprimierte Kanäle werden nicht gelesen. Die abgeflachte Vorschau in der Datei wird ignoriert. Doppelte Ebenennamen erhalten die Endungen `_1`, `_2`.
+
+```
+$ osatura import-psd art.psd art.json
+note: 'Title' has no pixels (adjustment, text, shape or empty layer): skipped
+wrote art.json (12 layers)
+$ osatura import-psd cmyk.psd bad.json
+only RGB documents are supported (colour mode 4; convert to RGB in your paint tool)       [exit 1]
+```
+Grenzen: Ebenen bis 16384 px je Seite und 64 Megapixel, höchstens 2048 Ebenendatensätze.
+
 ### `import-lottie`
 
 **Synopsis:** `osatura import-lottie <in.json> <out.json> [fx.json]`
@@ -2883,6 +2898,7 @@ Jeder Befehl mit einer einzeiligen Zusammenfassung und dem Abschnitt, der ihn do
 | `import-bvh` | BVH-Motion-Capture -> Kanäle | [9](#9-import) |
 | `import-lottie` | Lottie-Teilmenge -> Projekt | [9](#9-import) |
 | `import-ora` | OpenRaster -> Projekt | [9](#9-import) |
+| `import-psd` | Photoshop-Ebenen (RGB, 8 Bit) -> Projekt | [9](#9-import) |
 | `import-seq` | PNG-Sequenz -> Frame-für-Frame-Ebene | [9](#9-import) |
 | `import-svg` | SVG-Teilmenge -> Vektor-Ebene | [9](#9-import) |
 | `keyedit` | Dope-Sheet-Bearbeitungen als ein Undo-sicherer Stapel | [6](#6-animation-keys-timeline-und-generatoren) |

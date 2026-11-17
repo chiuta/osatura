@@ -1554,6 +1554,21 @@ not a zip/ORA file: invalid Zip archive: Could not find EOCD       [exit 1]
 ```
 Límites: 2000 entradas de archivo, 128 MiB por entrada, capas de 64 Mpíxeles.
 
+### `import-psd`
+
+**Sinopsis:** `osatura import-psd <file.psd> <out.json> [--fps N] [--frames N]`
+
+Photoshop -> proyecto: **una capa de imagen por cada capa raster** (PNG incrustado), orden de abajo arriba conservado, posición de cada capa, `opacity`, indicador de oculta y los modos de fusión habituales (multiply, screen, overlay, darken, lighten, color-dodge/burn, hard/soft-light, difference, exclusion, linear dodge -> add). Los grupos de capas se aplanan: la opacidad de un grupo se multiplica en sus capas y un grupo oculto las oculta. Compatible: documentos **RGB** de 8 bits (no `.psb`), datos de canal sin comprimir y PackBits (RLE). Las capas sin píxeles propios (ajuste, texto, forma, marcadores de objetos inteligentes) se omiten y se listan en stderr como líneas `note:`; las máscaras, los grupos de recorte, los efectos de capa y los canales comprimidos con ZIP no se leen. La vista previa aplanada del archivo se ignora. Los nombres de capa duplicados reciben los sufijos `_1`, `_2`.
+
+```
+$ osatura import-psd art.psd art.json
+note: 'Title' has no pixels (adjustment, text, shape or empty layer): skipped
+wrote art.json (12 layers)
+$ osatura import-psd cmyk.psd bad.json
+only RGB documents are supported (colour mode 4; convert to RGB in your paint tool)       [exit 1]
+```
+Límites: capas de hasta 16384 px por lado y 64 Mpíxeles, como máximo 2048 registros de capa.
+
 ### `import-lottie`
 
 **Sinopsis:** `osatura import-lottie <in.json> <out.json> [fx.json]`
@@ -2882,6 +2897,7 @@ Cada comando con un resumen de una línea y la sección que lo documenta. Los su
 | `import-bvh` | captura de movimiento BVH -> canales | [9](#9-importación) |
 | `import-lottie` | subconjunto de Lottie -> proyecto | [9](#9-importación) |
 | `import-ora` | OpenRaster -> proyecto | [9](#9-importación) |
+| `import-psd` | capas de Photoshop (RGB de 8 bits) -> proyecto | [9](#9-importación) |
 | `import-seq` | secuencia PNG -> capa fotograma a fotograma | [9](#9-importación) |
 | `import-svg` | subconjunto de SVG -> capa vectorial | [9](#9-importación) |
 | `keyedit` | ediciones de dope sheet como un único lote seguro para deshacer | [6](#6-animación-keys-línea-de-tiempo-y-generadores) |

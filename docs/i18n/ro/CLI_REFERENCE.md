@@ -1554,6 +1554,21 @@ not a zip/ORA file: invalid Zip archive: Could not find EOCD       [exit 1]
 ```
 Limite: 2000 de intrări în arhivă, 128 MiB per intrare, straturi de 64 Mpixeli.
 
+### `import-psd`
+
+**Sinopsis:** `osatura import-psd <file.psd> <out.json> [--fps N] [--frames N]`
+
+Photoshop -> proiect: **un strat de imagine pentru fiecare strat raster** (PNG încorporat), ordinea de jos în sus este păstrată, poziția fiecărui strat, `opacity`, indicatorul de ascundere și operațiile de compunere uzuale (multiply, screen, overlay, darken, lighten, color-dodge/burn, hard/soft-light, difference, exclusion, linear dodge -> add). Grupurile de straturi sunt aplatizate: opacitatea unui grup se înmulțește în straturile lui, iar un grup ascuns le ascunde. Sunt acceptate: documente **RGB** pe 8 biți (nu `.psb`), date de canal brute și PackBits (RLE). Straturile fără pixeli proprii (ajustare, text, formă, înlocuitori de obiecte inteligente) sunt omise și listate pe stderr ca linii `note:`; măștile, grupurile de decupare, efectele de strat și canalele comprimate ZIP nu sunt citite. Previzualizarea aplatizată din fișier este ignorată. Numele duplicate de straturi primesc sufixele `_1`, `_2`.
+
+```
+$ osatura import-psd art.psd art.json
+note: 'Title' has no pixels (adjustment, text, shape or empty layer): skipped
+wrote art.json (12 layers)
+$ osatura import-psd cmyk.psd bad.json
+only RGB documents are supported (colour mode 4; convert to RGB in your paint tool)       [exit 1]
+```
+Limite: straturi de până la 16384 px pe latură și 64 Mpixeli, cel mult 2048 de înregistrări de strat.
+
 ### `import-lottie`
 
 **Sinopsis:** `osatura import-lottie <in.json> <out.json> [fx.json]`
@@ -2884,6 +2899,7 @@ Fiecare comandă, cu un rezumat de o linie și secțiunea care o documentează. 
 | `import-bvh` | motion capture BVH -> canale | [9](#9-import) |
 | `import-lottie` | subset Lottie -> proiect | [9](#9-import) |
 | `import-ora` | OpenRaster -> proiect | [9](#9-import) |
+| `import-psd` | straturi Photoshop (RGB pe 8 biți) -> proiect | [9](#9-import) |
 | `import-seq` | secvență PNG -> strat cadru cu cadru | [9](#9-import) |
 | `import-svg` | subset SVG -> strat vectorial | [9](#9-import) |
 | `keyedit` | editări de dope sheet ca un singur lot sigur la anulare | [6](#6-animație-chei-timeline-și-generatoare) |

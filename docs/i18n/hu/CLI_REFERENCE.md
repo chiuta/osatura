@@ -1551,6 +1551,21 @@ not a zip/ORA file: invalid Zip archive: Could not find EOCD       [exit 1]
 ```
 Korlátok: 2000 archívumbejegyzés, bejegyzésenként 128 MiB, 64 megapixeles rétegek.
 
+### `import-psd`
+
+**Szintaxis:** `osatura import-psd <file.psd> <out.json> [--fps N] [--frames N]`
+
+Photoshop -> projekt: **rasztereként egy képréteg** (beágyazott PNG), az alulról felfelé sorrend megmarad, minden réteg pozíciója, `opacity`, a rejtett jelző és a szokásos keverési módok (multiply, screen, overlay, darken, lighten, color-dodge/burn, hard/soft-light, difference, exclusion, linear dodge -> add). A rétegcsoportok laposítva lesznek: a csoport átlátszatlansága beleszorzódik a rétegeibe, a rejtett csoport elrejti őket. Támogatott: **RGB** dokumentumok 8 biten (nem `.psb`), nyers és PackBits (RLE) csatornaadatok. A saját képpont nélküli rétegek (korrekció, szöveg, alakzat, intelligens objektum helyőrzők) kimaradnak, és `note:` sorokként kerülnek a stderrre; a maszkokat, a vágócsoportokat, a rétegeffektusokat és a ZIP-tömörítésű csatornákat nem olvassa. A fájlban lévő lapított előnézetet figyelmen kívül hagyja. Az ismétlődő rétegnevek `_1`, `_2` utótagot kapnak.
+
+```
+$ osatura import-psd art.psd art.json
+note: 'Title' has no pixels (adjustment, text, shape or empty layer): skipped
+wrote art.json (12 layers)
+$ osatura import-psd cmyk.psd bad.json
+only RGB documents are supported (colour mode 4; convert to RGB in your paint tool)       [exit 1]
+```
+Korlátok: legfeljebb 16384 képpont oldalanként és 64 megapixeles rétegek, legfeljebb 2048 rétegrekord.
+
 ### `import-lottie`
 
 **Szintaxis:** `osatura import-lottie <in.json> <out.json> [fx.json]`
@@ -2872,6 +2887,7 @@ Minden parancs egysoros összefoglalóval és a dokumentáló szakasszal. Az alp
 | `import-bvh` | BVH mozgásrögzítés -> csatornák | [9](#9-import) |
 | `import-lottie` | Lottie-részhalmaz -> projekt | [9](#9-import) |
 | `import-ora` | OpenRaster -> projekt | [9](#9-import) |
+| `import-psd` | Photoshop-rétegek (RGB, 8 bit) -> projekt | [9](#9-import) |
 | `import-seq` | PNG-sorozat -> képkockánkénti réteg | [9](#9-import) |
 | `import-svg` | SVG-részhalmaz -> vektorréteg | [9](#9-import) |
 | `keyedit` | dope sheet szerkesztések egyetlen, visszavonásbiztos kötegként | [6](#6-animáció-kulcsok-idővonal-és-generátorok) |

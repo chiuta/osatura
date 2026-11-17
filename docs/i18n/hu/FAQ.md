@@ -250,7 +250,7 @@ A videóhoz ffmpeg kell. A Lottie és a glTF az OSATURA által rajzolható és a
 A GitHub Actionsön lefordul `wasm32-unknown-unknown` célra, a wrapper tesztje pedig sikeres a valódi modul ellen Node 20 alatt, és `osatura-web.tar.gz` néven csatolva van a vázlatkiadáshoz. Böngészőben még nem futtatták, sebessége és memóriahasználata nincs megmérve ([WASM.md](WASM.md), [LIMITATIONS.md](LIMITATIONS.md)). Tekintsd részben ellenőrzöttnek.
 
 **65. Importálja más eszközök projektfájljait?**
-Importál SVG-t, OpenRastert, Lottie JSON-t, képeket, GIF/APNG-t, BVH mozgásrögzítést és MIDI-t ([EXPORT_FORMATS.md](EXPORT_FORMATS.md), 9. és 10. szakasz). PSD-t, `.lottie` zip-fájlokat és OCA mappákat nem importál. Az importok új projektet hoznak létre. Vedd figyelembe, hogy az `import-lottie in.json in.json` parancsnak nincs felülírásvédelme, és lecseréli a bemenetét. Ne várd, hogy egy importált fájl pixelre megegyezzen az eredetivel.
+Importál SVG-t, OpenRastert, Lottie JSON-t, képeket, GIF/APNG-t, BVH mozgásrögzítést és MIDI-t ([EXPORT_FORMATS.md](EXPORT_FORMATS.md), 9. és 10. szakasz). Az 8 bites RGB PSD-fájlok rétegeit beolvassa (`import-psd`), de `.lottie` zip-fájlokat és OCA mappákat nem importál. Az importok új projektet hoznak létre. Vedd figyelembe, hogy az `import-lottie in.json in.json` parancsnak nincs felülírásvédelme, és lecseréli a bemenetét. Ne várd, hogy egy importált fájl pixelre megegyezzen az eredetivel.
 
 **66. Stabil a projekt JSON-ja?**
 „1-es formátum”. Az újabb fájlt elutasítja: `project format 2 is newer than this build supports (1); update OSATURA`. Mivel csak alfa előzetes kiadás létezik, maga az 1-es formátum még változhat egy stabil kiadás előtt; lásd [PROJECT_FORMAT.md](PROJECT_FORMAT.md).

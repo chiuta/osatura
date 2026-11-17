@@ -1554,6 +1554,21 @@ not a zip/ORA file: invalid Zip archive: Could not find EOCD       [exit 1]
 ```
 Limiti: 2000 voci nell'archivio, 128 MiB per voce, livelli da 64 Mpixel.
 
+### `import-psd`
+
+**Sintassi:** `osatura import-psd <file.psd> <out.json> [--fps N] [--frames N]`
+
+Photoshop -> progetto: **un livello immagine per ogni livello raster** (PNG incorporato), ordine dal basso verso l'alto mantenuto, posizione di ogni livello, `opacity`, indicatore di nascosto e le modalità di fusione comuni (multiply, screen, overlay, darken, lighten, color-dodge/burn, hard/soft-light, difference, exclusion, linear dodge -> add). I gruppi di livelli vengono appiattiti: l'opacità di un gruppo si moltiplica nei suoi livelli e un gruppo nascosto li nasconde. Supportati: documenti **RGB** a 8 bit (non `.psb`), dati di canale grezzi e PackBits (RLE). I livelli senza pixel propri (regolazione, testo, forma, segnaposto di oggetti avanzati) vengono saltati ed elencati su stderr come righe `note:`; maschere, gruppi di ritaglio, effetti di livello e canali compressi ZIP non vengono letti. L'anteprima appiattita nel file viene ignorata. I nomi di livello duplicati ricevono i suffissi `_1`, `_2`.
+
+```
+$ osatura import-psd art.psd art.json
+note: 'Title' has no pixels (adjustment, text, shape or empty layer): skipped
+wrote art.json (12 layers)
+$ osatura import-psd cmyk.psd bad.json
+only RGB documents are supported (colour mode 4; convert to RGB in your paint tool)       [exit 1]
+```
+Limiti: livelli fino a 16384 px per lato e 64 Mpixel, al massimo 2048 record di livello.
+
 ### `import-lottie`
 
 **Sintassi:** `osatura import-lottie <in.json> <out.json> [fx.json]`
@@ -2882,6 +2897,7 @@ Ogni comando con un riepilogo di una riga e la sezione che lo documenta. I sotto
 | `import-bvh` | motion capture BVH -> canali | [9](#9-import) |
 | `import-lottie` | sottoinsieme Lottie -> progetto | [9](#9-import) |
 | `import-ora` | OpenRaster -> progetto | [9](#9-import) |
+| `import-psd` | livelli Photoshop (RGB a 8 bit) -> progetto | [9](#9-import) |
 | `import-seq` | sequenza PNG -> livello fotogramma per fotogramma | [9](#9-import) |
 | `import-svg` | sottoinsieme SVG -> livello vettoriale | [9](#9-import) |
 | `keyedit` | modifiche del dope sheet come un unico batch sicuro per l'annullamento | [6](#6-animazione-chiavi-timeline-e-generatori) |
