@@ -171,6 +171,7 @@ pub mod midi;
 pub mod noise;
 #[doc(hidden)]
 pub mod open_formats;
+pub mod psd;
 #[doc(hidden)]
 pub mod overlays;
 #[doc(hidden)]

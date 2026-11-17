@@ -1031,6 +1031,53 @@ impl Project {
 }
 
 impl Project {
+    /// Everything a weight-painting view needs for one image-layer mesh: vertices (layer space), triangles, the
+    /// influence of `bone` at each vertex (0 where unskinned) and the bone names.
+    #[allow(clippy::type_complexity)]
+    pub fn mesh_weight_map(&self, layer: &str, bone: &str) -> Result<(Vec<Vec2>, Vec<[usize; 3]>, Vec<f32>, Vec<String>), String> {
+        if !self.bones.iter().any(|b| b.name == bone) {
+            return Err(format!("no bone named '{bone}'"));
+        }
+        let l = self.find_layer(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
+        let LayerKind::Image { origin, size, mesh, .. } = &l.kind else {
+            return Err(format!("layer '{layer}' is not an image layer"));
+        };
+        let m = mesh.as_ref().ok_or_else(|| format!("layer '{layer}' has no mesh"))?;
+        let sz = size.ok_or_else(|| format!("layer '{layer}' needs an explicit size"))?;
+        let verts = m.rest_vertices(*origin, sz);
+        let vals = (0..verts.len())
+            .map(|i| m.weights.get(i).map(|r| r.iter().filter(|w| w.bone == bone).map(|w| w.weight).sum()).unwrap_or(0.0))
+            .collect();
+        Ok((verts, m.tri_indices(), vals, self.bones.iter().map(|b| b.name.clone()).collect()))
+    }
+
+    /// Paint skin weights on an image-layer mesh (see `weights::paint_stroke`); `points` are in layer space, the same
+    /// space as `mesh_weight_map`. A mesh that is not skinned yet is skinned first (`auto_skin`). Returns the number
+    /// of vertices changed.
+    #[allow(clippy::too_many_arguments)]
+    pub fn paint_mesh_weights(&mut self, layer: &str, bone: &str, mode: crate::weights::PaintMode, points: &[Vec2], radius: f32, strength: f32, max_influences: usize) -> Result<usize, String> {
+        let (verts, _, _, names) = self.mesh_weight_map(layer, bone)?;
+        let fallback: Option<String> = self.bones.iter().find(|b| b.name == bone).and_then(|b| b.parent.clone());
+        let need = match &self.find_layer(layer).map(|l| &l.kind) {
+            Some(LayerKind::Image { mesh: Some(m), .. }) => m.weights.len() != verts.len(),
+            _ => true,
+        };
+        if need {
+            self.auto_skin(layer, max_influences)?;
+        }
+        let l = self.find_layer_mut(layer).ok_or_else(|| format!("no layer at '{layer}'"))?;
+        let LayerKind::Image { mesh: Some(m), .. } = &mut l.kind else {
+            return Err(format!("layer '{layer}' has no mesh"));
+        };
+        if m.weights.len() != verts.len() {
+            return Err(format!("could not skin '{layer}': {} weight rows for {} vertices", m.weights.len(), verts.len()));
+        }
+        let tris = m.tri_indices();
+        crate::weights::paint_stroke(&verts, &tris, &mut m.weights, &names, bone, mode, points, radius, strength, max_influences.max(1), fallback.as_deref())
+    }
+}
+
+impl Project {
     /// Skin the mesh of an image layer by harmonic diffusion on the mesh graph
     /// (see `weights`): smooth, partition of unity, no leaking across gaps.
     /// Needs the layer's `mesh` and displayed `size`.
@@ -1200,6 +1247,27 @@ mod tests {
         let l = Layer::frame_by_frame("walk", vec![vec![], vec![], vec![]]);
         assert_eq!(l.children().len(), 3);
         assert_eq!(l.children()[2].name, "d2");
+    }
+
+        #[test]
+    fn paint_mesh_weights_skins_then_paints() {
+        let mut p = Project::new("t", 100.0, 100.0, 24.0, 1);
+        p.bones.push(Bone::new("a", None, 40.0, Vec2::new(10.0, 50.0), 0.0));
+        p.bones.push(Bone::new("b", Some("a"), 40.0, Vec2::new(40.0, 0.0), 0.0));
+        let mut l = Layer::image_from_png("img", &[], Vec2::ZERO);
+        if let LayerKind::Image { size, mesh, .. } = &mut l.kind {
+            *size = Some(Vec2::new(100.0, 100.0));
+            *mesh = Some(MeshSpec { cols: 5, rows: 5, ..Default::default() });
+        }
+        p.layers.push(l);
+        assert!(p.paint_mesh_weights("img", "zzz", crate::weights::PaintMode::Add, &[], 10.0, 1.0, 4).is_err());
+        let n = p.paint_mesh_weights("img", "b", crate::weights::PaintMode::Add, &[Vec2::new(90.0, 50.0)], 25.0, 1.0, 4).unwrap();
+        assert!(n > 0);
+        let (v, _, vals, names) = p.mesh_weight_map("img", "b").unwrap();
+        assert_eq!(names, vec!["a", "b"]);
+        let i = v.iter().position(|q| q.distance(Vec2::new(100.0, 40.0)) < 11.0).unwrap();
+        assert!(vals[i] > 0.9, "painted vertex follows b, got {}", vals[i]);
+        assert_eq!(vals.len(), v.len());
     }
 
     #[test]

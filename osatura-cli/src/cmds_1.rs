@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
-//! Commands part 1 of the dispatcher in `main.rs` (arms kept in their original order, so the first matching arm still wins): demo, demo-person, demo-fx, check, render, frames, export, lipsync, walk, mirror, export-oca, import-ora, safety, reduced-motion, pose-db, pose-bench, pose-suggest, autotrace-bench, autotrace, trace, skin-diffuse, drive, state-bake, pose-match.
+//! Commands part 1 of the dispatcher in `main.rs` (arms kept in their original order, so the first matching arm still wins): demo, demo-person, demo-fx, check, render, frames, export, lipsync, walk, mirror, export-oca, import-ora, import-psd, safety, reduced-motion, pose-db, pose-bench, pose-suggest, autotrace-bench, autotrace, trace, skin-diffuse, drive, state-bake, pose-match.
 use super::*;
 
 /// `Some(result)` when one of this part's arms matched the command line, `None` to try the next part.
@@ -217,6 +217,18 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
             let p = open_formats::import_ora(&bytes, name, num(a, "--fps", 24.0)?, num(a, "--frames", 1.0)? as u32)?;
             Engine::new(p.clone()).map_err(|errs| errs.join("; "))?;
             write_json(&p, out)?;
+            println!("wrote {out} ({} layers)", p.layers.len());
+            Ok(())
+        }
+        ["import-psd", file, out] => {
+            let bytes = fs::read(file).map_err(|e| format!("cannot read {file}: {e}"))?;
+            let name = Path::new(file).file_stem().and_then(|n| n.to_str()).unwrap_or("psd");
+            let (p, notes) = osatura_core::psd::import_psd(&bytes, name, num(a, "--fps", 24.0)?, num(a, "--frames", 1.0)? as u32)?;
+            Engine::new(p.clone()).map_err(|errs| errs.join("; "))?;
+            write_json(&p, out)?;
+            for n in &notes {
+                eprintln!("note: {n}");
+            }
             println!("wrote {out} ({} layers)", p.layers.len());
             Ok(())
         }

@@ -1,0 +1,8 @@
+{
+  "name": "tf.trom.osatura",
+  "displayName": "OSATURA",
+  "version": "0.1.0",
+  "unity": "2022.3",
+  "description": "Play OSATURA 2D rigging/animation projects in Unity through the C ABI (osatura_capi).",
+  "license": "MPL-2.0"
+}

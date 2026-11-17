@@ -58,6 +58,7 @@ OPEN FORMATS (open specifications; no H.264/H.265 unless you ask for .mp4; codec
   osatura export   <project.json> <out.glb> [--report r.json] [--layer-anim]   glTF 2.0 (bones, animation, skinned fills/strokes, gradients, masks, images, morph targets); --layer-anim also animates the position, rotation and scale of rigid shape layers
   osatura export-oca <project.json> <out_dir> [--layers]   Open Cel Animation folder
   osatura import-ora <file.ora> <out.json> [--fps N] [--frames N]   OpenRaster -> project
+  osatura import-psd <file.psd> <out.json> [--fps N] [--frames N]   Photoshop layers (8-bit RGB) -> project
 
 SAFETY
   osatura safety   <project.json> [--scale N]         flash / red-flash / camera-motion report (WCAG 2.3.1 approximation)

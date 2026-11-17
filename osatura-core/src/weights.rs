@@ -198,6 +198,146 @@ pub fn normalize(w: &mut [BoneWeight]) {
     }
 }
 
+/// What a weight-painting dab does to the chosen bone.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PaintMode {
+    /// Pull the vertex toward "fully this bone".
+    Add,
+    /// Take influence away from the bone; the others share what is freed.
+    Subtract,
+    /// Blend toward the mean of the neighbours.
+    Smooth,
+}
+
+impl PaintMode {
+    pub fn parse(s: &str) -> Result<PaintMode, String> {
+        match s {
+            "add" => Ok(PaintMode::Add),
+            "subtract" => Ok(PaintMode::Subtract),
+            "smooth" => Ok(PaintMode::Smooth),
+            o => Err(format!("unknown paint mode '{o}' (add, subtract, smooth)")),
+        }
+    }
+}
+
+/// Apply a brush stroke to per-vertex weights. Every dab touches the vertices within `radius` of one of `points`
+/// with strength `strength · smoothstep(1 − d/radius)` (0..1); each row keeps summing to 1 and at most `k`
+/// influences. Rows left empty by "unskinned" meshes count as all-zero. Returns the number of rows changed.
+/// Subtracting from a vertex that has no other influence hands the weight to `fallback` (if it names another bone).
+/// Deterministic: dabs are applied in order, vertices in index order.
+#[allow(clippy::too_many_arguments)]
+pub fn paint_stroke(
+    verts: &[Vec2],
+    tris: &[[usize; 3]],
+    weights: &mut [Vec<BoneWeight>],
+    names: &[String],
+    bone: &str,
+    mode: PaintMode,
+    points: &[Vec2],
+    radius: f32,
+    strength: f32,
+    k: usize,
+    fallback: Option<&str>,
+) -> Result<usize, String> {
+    let bi = names.iter().position(|n| n == bone).ok_or_else(|| format!("no bone named '{bone}'"))?;
+    if weights.len() != verts.len() {
+        return Err(format!("{} weight rows for {} vertices", weights.len(), verts.len()));
+    }
+    if !(radius.is_finite() && radius > 0.0) || !strength.is_finite() {
+        return Err("radius must be a positive number and strength a number".into());
+    }
+    let strength = strength.clamp(0.0, 1.0);
+    let nb = names.len();
+    let mut dense: Vec<Vec<f32>> = weights
+        .iter()
+        .map(|row| {
+            let mut d = vec![0.0f32; nb];
+            for bw in row {
+                if let Some(i) = names.iter().position(|x| *x == bw.bone) {
+                    d[i] += bw.weight.max(0.0);
+                }
+            }
+            d
+        })
+        .collect();
+    let mut nbrs: Vec<Vec<usize>> = vec![Vec::new(); verts.len()];
+    if mode == PaintMode::Smooth {
+        for t in tris {
+            for (a, b) in [(t[0], t[1]), (t[1], t[2]), (t[2], t[0])] {
+                if a < verts.len() && b < verts.len() {
+                    if !nbrs[a].contains(&b) {
+                        nbrs[a].push(b);
+                    }
+                    if !nbrs[b].contains(&a) {
+                        nbrs[b].push(a);
+                    }
+                }
+            }
+        }
+    }
+    let mut touched = vec![false; verts.len()];
+    for &pt in points {
+        let prev = if mode == PaintMode::Smooth { Some(dense.clone()) } else { None };
+        for (i, &v) in verts.iter().enumerate() {
+            let d = v.distance(pt);
+            if d >= radius {
+                continue;
+            }
+            let t = 1.0 - d / radius;
+            let f = strength * t * t * (3.0 - 2.0 * t);
+            if f <= 0.0 {
+                continue;
+            }
+            let row = &mut dense[i];
+            match mode {
+                PaintMode::Add => {
+                    for (j, w) in row.iter_mut().enumerate() {
+                        let target = if j == bi { 1.0 } else { 0.0 };
+                        *w += (target - *w) * f;
+                    }
+                }
+                PaintMode::Subtract => {
+                    let w = row[bi];
+                    let others: f32 = row.iter().sum::<f32>() - w;
+                    if w > 0.0 && others <= 1e-6 {
+                        // nobody else to hand the weight to: it goes to the fallback bone (the parent), if there is one
+                        if let Some(fi) = fallback.and_then(|n| names.iter().position(|x| x == n)).filter(|&fi| fi != bi) {
+                            let nw = w * (1.0 - f);
+                            row[fi] += w - nw;
+                            row[bi] = nw;
+                        }
+                    } else if w > 0.0 {
+                        let nw = w * (1.0 - f);
+                        let scale = (others + (w - nw)) / others;
+                        for (j, x) in row.iter_mut().enumerate() {
+                            *x = if j == bi { nw } else { *x * scale };
+                        }
+                    }
+                }
+                PaintMode::Smooth => {
+                    if nbrs[i].is_empty() {
+                        continue;
+                    }
+                    let pv = prev.as_ref().expect("smooth keeps the previous state");
+                    for j in 0..nb {
+                        let mean: f32 = nbrs[i].iter().map(|&q| pv[q][j]).sum::<f32>() / nbrs[i].len() as f32;
+                        row[j] = pv[i][j] + (mean - pv[i][j]) * f;
+                    }
+                }
+            }
+            touched[i] = true;
+        }
+    }
+    let mut changed = 0;
+    for (i, row) in dense.iter().enumerate() {
+        if touched[i] {
+            weights[i] = limit_influences(&dense_to_named(row, names), k);
+            changed += 1;
+        }
+    }
+    Ok(changed)
+}
+
 /// Laplacian smoothing of per-vertex weights: each vertex moves `lambda` of the way toward
 /// the mean of its neighbours, `iterations` times. Result is renormalised and limited to `k`.
 pub fn smooth(weights: &[Vec<BoneWeight>], tris: &[[usize; 3]], names: &[String], iterations: usize, lambda: f32, k: usize) -> Vec<Vec<BoneWeight>> {
@@ -282,6 +422,61 @@ pub fn mirror_x(verts: &[Vec2], weights: &[Vec<BoneWeight>], axis: f32, rename: 
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn paint_add_subtract_smooth_keep_partition_of_unity() {
+        let names = vec!["a".to_string(), "b".to_string()];
+        let (cols, rows) = (6usize, 6usize);
+        let verts = crate::project::mesh_vertices(Vec2::new(0.0, 0.0), Vec2::new(60.0, 60.0), cols, rows);
+        let tris = grid_triangles(cols, rows);
+        let all_a: Vec<Vec<BoneWeight>> = verts.iter().map(|_| vec![BoneWeight { bone: "a".into(), weight: 1.0 }]).collect();
+        let mut w = all_a.clone();
+        let n = paint_stroke(&verts, &tris, &mut w, &names, "b", PaintMode::Add, &[Vec2::new(30.0, 30.0)], 20.0, 1.0, 4, None).unwrap();
+        assert!(n > 0 && n < verts.len());
+        let at = |w: &Vec<Vec<BoneWeight>>, i: usize, b: &str| w[i].iter().find(|x| x.bone == b).map(|x| x.weight).unwrap_or(0.0);
+        let centre = verts.iter().position(|v| v.distance(Vec2::new(30.0, 30.0)) < 1.0).unwrap();
+        assert!(at(&w, centre, "b") > 0.99, "the vertex under the brush becomes bone b");
+        let far = 0;
+        assert!((at(&w, far, "a") - 1.0).abs() < 1e-6, "a vertex outside the radius is untouched");
+        for row in &w {
+            let s: f32 = row.iter().map(|x| x.weight).sum();
+            assert!((s - 1.0).abs() < 1e-4, "row sums to 1, got {s}");
+        }
+        // subtracting it again hands the weight back to a
+        paint_stroke(&verts, &tris, &mut w, &names, "b", PaintMode::Subtract, &[Vec2::new(30.0, 30.0)], 20.0, 1.0, 4, Some("a")).unwrap();
+        assert!(at(&w, centre, "b") < 0.01);
+        assert!(at(&w, centre, "a") > 0.99);
+        // smoothing a hard edge lowers its contrast and keeps the sums
+        let mut e: Vec<Vec<BoneWeight>> = verts.iter().map(|v| vec![BoneWeight { bone: if v.x < 30.0 { "a" } else { "b" }.into(), weight: 1.0 }]).collect();
+        let before = at(&e, centre, "a");
+        paint_stroke(&verts, &tris, &mut e, &names, "a", PaintMode::Smooth, &[Vec2::new(30.0, 30.0)], 25.0, 1.0, 4, None).unwrap();
+        let after = at(&e, centre, "a");
+        assert!((after - before).abs() > 1e-3 || at(&e, centre, "b") > 0.0, "smoothing changes the edge");
+        for row in &e {
+            let s: f32 = row.iter().map(|x| x.weight).sum();
+            assert!((s - 1.0).abs() < 1e-4);
+        }
+    }
+
+    #[test]
+    fn paint_is_deterministic_and_validates_input() {
+        let names = vec!["a".to_string(), "b".to_string()];
+        let verts = crate::project::mesh_vertices(Vec2::new(0.0, 0.0), Vec2::new(40.0, 40.0), 4, 4);
+        let tris = grid_triangles(4, 4);
+        let base: Vec<Vec<BoneWeight>> = verts.iter().map(|_| vec![BoneWeight { bone: "a".into(), weight: 1.0 }]).collect();
+        let pts = [Vec2::new(10.0, 10.0), Vec2::new(20.0, 15.0), Vec2::new(30.0, 25.0)];
+        let (mut x, mut y) = (base.clone(), base.clone());
+        paint_stroke(&verts, &tris, &mut x, &names, "b", PaintMode::Add, &pts, 15.0, 0.5, 4, None).unwrap();
+        paint_stroke(&verts, &tris, &mut y, &names, "b", PaintMode::Add, &pts, 15.0, 0.5, 4, None).unwrap();
+        assert_eq!(x, y);
+        let mut z = base.clone();
+        assert!(paint_stroke(&verts, &tris, &mut z, &names, "nope", PaintMode::Add, &pts, 15.0, 0.5, 4, None).is_err());
+        assert!(paint_stroke(&verts, &tris, &mut z, &names, "b", PaintMode::Add, &pts, 0.0, 0.5, 4, None).is_err());
+        assert!(paint_stroke(&verts, &tris, &mut z, &names, "b", PaintMode::Add, &pts, f32::NAN, 0.5, 4, None).is_err());
+        assert!(PaintMode::parse("erase").is_err());
+        let mut short = base[..3].to_vec();
+        assert!(paint_stroke(&verts, &tris, &mut short, &names, "b", PaintMode::Add, &pts, 15.0, 0.5, 4, None).is_err());
+    }
     use super::*;
 
     fn grid(cols: usize, rows: usize, w: f32, h: f32) -> Vec<Vec2> {

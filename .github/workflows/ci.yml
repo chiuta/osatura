@@ -4,8 +4,9 @@
 # Continuous integration for OSATURA. First fully green run: 2026-10-24 (ubuntu, windows, macos tests and
 # clippy with -D warnings, wasm32 build + Node test, cargo-deny, REUSE; gpu parity jobs are informational).
 # The toolchain is pinned in rust-toolchain.toml (single source of the version) so that new clippy lints do not break
-# the build; bump it deliberately. Linux jobs run on ubuntu-22.04 (glibc 2.35) so that the CI binaries have the same
-# floor as the release (docs/LIMITATIONS.md L-77).
+# the build; bump it deliberately. Linux jobs run on ubuntu-26.04 (Ubuntu 26 is the newest runner image);
+# one extra test job stays on ubuntu-22.04 (glibc 2.35), the same floor as the release binaries (docs/LIMITATIONS.md L-77,
+# release.yml still builds there). Node is 26, the newest release.
 # There is deliberately no `paths-ignore`: a workflow that is skipped leaves a required status check pending forever.
 # See docs/DEVELOPMENT.md ("Continuous integration").
 name: ci
@@ -34,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-latest, macos-latest]
+        os: [ubuntu-26.04, ubuntu-22.04, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
@@ -76,7 +77,7 @@ jobs:
 
   wasm32:
     name: wasm32 build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
@@ -91,7 +92,7 @@ jobs:
         run: cp target/wasm32-unknown-unknown/debug/osatura_wasm.wasm osatura-wasm/osatura_wasm.wasm
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 26
       - name: JavaScript wrapper tests (host-side mock of the module)
         shell: bash
         run: |
@@ -105,7 +106,7 @@ jobs:
   linux-static:
     # The static (musl) Linux build of the release: core and CLI tests on musl, then the empty-chroot check.
     name: linux static (musl)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
@@ -191,6 +192,84 @@ jobs:
           run render smoke.json 0 smoke.png
           test -s smoke.png
 
+  adapters:
+    # The Unity and Godot adapters (adapters/): the C functions the Unity bindings import against osatura.h, the call sequence
+    # replayed through the real shared library, and the atlas keys the Godot script reads against a real sprite-sheet atlas.
+    name: engine adapters
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - run: cargo build --locked -p osatura-cli -p osatura-capi
+      - run: python3 scripts/check-adapters.py
+
+  determinism:
+    # Does the same project give the same pixels on every OS? Three demo frames against goldens written on Linux x86-64, byte
+    # for byte (docs/LIMITATIONS.md L-26). Linux must match exactly; Windows and macOS are informational for now: a red
+    # mark there is a finding, not a broken build, and the measured differences are in the job summary.
+    name: determinism (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os != 'ubuntu-26.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: Render and compare
+        shell: bash
+        env:
+          OSATURA_DETERMINISM_STRICT: "1"
+          OSATURA_DETERMINISM_REPORT: ${{ runner.temp }}/determinism.txt
+        run: |
+          set +e
+          cargo test --locked -p osatura-core --test determinism -- --nocapture
+          code=$?
+          { echo "### determinism on ${{ matrix.os }}"; echo '```'; cat "$OSATURA_DETERMINISM_REPORT" 2>/dev/null || echo "(no report)"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $code
+
+  browser-tests:
+    # Headless Chromium: the studio's texture and weight-painting sections, and the Lottie export played by an independent
+    # player (lottie-web) and compared with OSATURA's own render (scripts/lottie-conformance/run.js).
+    name: browser tests (studio, lottie)
+    # ubuntu-24.04, not 26.04: Playwright (1.56) refuses to install Chromium and its libraries on Ubuntu 26.04
+    # ("does not support chromium on ubuntu26.04-x64"). Move this job to 26.04 once Playwright supports it.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - run: cargo build --locked -p osatura-cli
+      - name: Playwright (Chromium) and lottie-web
+        run: |
+          npm install --prefix "$RUNNER_TEMP/tools" playwright-core@1.56.1 lottie-web@5.12.2
+          DEBIAN_FRONTEND=noninteractive node "$RUNNER_TEMP/tools/node_modules/playwright-core/cli.js" install --with-deps chromium </dev/null
+          echo "PLAYWRIGHT_CORE=$RUNNER_TEMP/tools/node_modules/playwright-core" >> "$GITHUB_ENV"
+          echo "LOTTIE_WEB=$RUNNER_TEMP/tools/node_modules/lottie-web/build/player/lottie.js" >> "$GITHUB_ENV"
+          echo "CHROME=$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*chromium-*' | head -1)" >> "$GITHUB_ENV"
+      - name: Studio texture section
+        run: node osatura-cli/tests/studio_texture_smoke.js
+      - name: Studio weight-painting section
+        run: node osatura-cli/tests/studio_weights_smoke.js
+      - name: Lottie export against lottie-web
+        run: |
+          set -o pipefail
+          node scripts/lottie-conformance/run.js --out "$RUNNER_TEMP/lottie.md" | tee "$RUNNER_TEMP/lottie.log"
+          { echo "### Lottie export played by lottie-web"; cat "$RUNNER_TEMP/lottie.md"; } >> "$GITHUB_STEP_SUMMARY"
+
   gpu-parity:
     # Linux runs the tests against Mesa's software Vulkan (lavapipe) and treats "no adapter" as a failure
     # (OSATURA_GPU_REQUIRE=1); the thresholds are in osatura-gpu/tests/parity.rs. macOS and Windows runners usually have
@@ -201,7 +280,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-latest, windows-latest]
+        os: [ubuntu-26.04, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
@@ -226,7 +305,7 @@ jobs:
 
   licences:
     name: cargo-deny and REUSE
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0

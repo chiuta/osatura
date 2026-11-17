@@ -250,7 +250,7 @@ Video necesită ffmpeg. Lottie și glTF acoperă un subset din ce poate OSATURA 
 Se compilează pentru `wasm32-unknown-unknown` pe GitHub Actions, iar testul wrapper-ului trece față de modulul real sub Node 20, și este atașat la lansarea ciornă ca `osatura-web.tar.gz`. Nu a fost rulat într-un browser, iar viteza și memoria lui nu sunt măsurate ([WASM.md](WASM.md), [LIMITATIONS.md](LIMITATIONS.md)). Tratează-l ca parțial verificat.
 
 **65. Importă fișierele de proiect ale altor instrumente?**
-Importă SVG, OpenRaster, Lottie JSON, imagini, GIF/APNG, motion capture BVH și MIDI ([EXPORT_FORMATS.md](EXPORT_FORMATS.md), secțiunile 9 și 10). Nu importă PSD, fișiere zip `.lottie` sau foldere OCA. Importurile creează un proiect nou. Reține că `import-lottie in.json in.json` nu are protecție la suprascriere și își înlocuiește intrarea. Nu te aștepta ca un fișier importat să se potrivească cu originalul pixel cu pixel.
+Importă SVG, OpenRaster, Lottie JSON, imagini, GIF/APNG, motion capture BVH și MIDI ([EXPORT_FORMATS.md](EXPORT_FORMATS.md), secțiunile 9 și 10). Citește straturile fișierelor PSD RGB pe 8 biți (`import-psd`), dar nu fișiere zip `.lottie` sau foldere OCA. Importurile creează un proiect nou. Reține că `import-lottie in.json in.json` nu are protecție la suprascriere și își înlocuiește intrarea. Nu te aștepta ca un fișier importat să se potrivească cu originalul pixel cu pixel.
 
 **66. Este JSON-ul proiectului stabil?**
 Este „format 1”. Un fișier mai nou este refuzat: `project format 2 is newer than this build supports (1); update OSATURA`. Cum există doar o pre-lansare alpha, formatul 1 însuși se poate schimba încă înaintea unei lansări stabile; vezi [PROJECT_FORMAT.md](PROJECT_FORMAT.md).

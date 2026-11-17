@@ -250,7 +250,7 @@ Video needs ffmpeg. Lottie and glTF cover a subset of what OSATURA can draw and 
 It builds for `wasm32-unknown-unknown` on GitHub Actions and the wrapper's test passes against the real module under Node 20, and it is attached to the draft release as `osatura-web.tar.gz`. It has not been run in a browser, and its speed and memory are unmeasured ([WASM.md](WASM.md), [LIMITATIONS.md](LIMITATIONS.md)). Treat it as partly verified.
 
 **65. Does it import other tools' project files?**
-It imports SVG, OpenRaster, Lottie JSON, images, GIF/APNG, BVH motion capture and MIDI ([EXPORT_FORMATS.md](EXPORT_FORMATS.md), sections 9 and 10). It does not import PSD, `.lottie` zip files or OCA folders. Imports create a new project. Note that `import-lottie in.json in.json` has no overwrite guard and replaces its input. Do not expect an imported file to match the original pixel for pixel.
+It imports SVG, OpenRaster, Lottie JSON, images, GIF/APNG, BVH motion capture and MIDI ([EXPORT_FORMATS.md](EXPORT_FORMATS.md), sections 9 and 10). It reads the layers of 8-bit RGB PSD files (`import-psd`), but not `.lottie` zip files or OCA folders. Imports create a new project. Note that `import-lottie in.json in.json` has no overwrite guard and replaces its input. Do not expect an imported file to match the original pixel for pixel.
 
 **66. Is the project JSON stable?**
 It is "format 1". A newer file is refused: `project format 2 is newer than this build supports (1); update OSATURA`. Since only an alpha pre-release exists, format 1 itself may still change before a stable release; see [PROJECT_FORMAT.md](PROJECT_FORMAT.md).
