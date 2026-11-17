@@ -239,7 +239,9 @@ jobs:
     # Headless Chromium: the studio's texture and weight-painting sections, and the Lottie export played by an independent
     # player (lottie-web) and compared with OSATURA's own render (scripts/lottie-conformance/run.js).
     name: browser tests (studio, lottie)
-    runs-on: ubuntu-26.04
+    # ubuntu-24.04, not 26.04: Playwright (1.56) refuses to install Chromium and its libraries on Ubuntu 26.04
+    # ("does not support chromium on ubuntu26.04-x64"). Move this job to 26.04 once Playwright supports it.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
