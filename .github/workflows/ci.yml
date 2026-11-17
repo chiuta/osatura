@@ -242,6 +242,7 @@ jobs:
     # ubuntu-24.04, not 26.04: Playwright (1.56) refuses to install Chromium and its libraries on Ubuntu 26.04
     # ("does not support chromium on ubuntu26.04-x64"). Move this job to 26.04 once Playwright supports it.
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@f08ac54821369508305fcb9e0121ec6e30ae9ada # 1.97.0
@@ -255,7 +256,7 @@ jobs:
       - name: Playwright (Chromium) and lottie-web
         run: |
           npm install --prefix "$RUNNER_TEMP/tools" playwright-core@1.56.1 lottie-web@5.12.2
-          npx --prefix "$RUNNER_TEMP/tools" playwright-core install --with-deps chromium
+          DEBIAN_FRONTEND=noninteractive node "$RUNNER_TEMP/tools/node_modules/playwright-core/cli.js" install --with-deps chromium </dev/null
           echo "PLAYWRIGHT_CORE=$RUNNER_TEMP/tools/node_modules/playwright-core" >> "$GITHUB_ENV"
           echo "LOTTIE_WEB=$RUNNER_TEMP/tools/node_modules/lottie-web/build/player/lottie.js" >> "$GITHUB_ENV"
           echo "CHROME=$(find "$HOME/.cache/ms-playwright" -type f -name chrome -path '*chromium-*' | head -1)" >> "$GITHUB_ENV"
