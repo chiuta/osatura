@@ -654,6 +654,68 @@ fn handle(ed: &mut Editor, live: &mut LiveSession, face: &mut FaceState, ui: &mu
                 .map_err(|e| err(vec![e]))?;
                 Ok(Resp::from_data(png).with_header(hdr("Content-Type", "image/png")).with_header(hdr("Cache-Control", "private, max-age=300")))
             }
+            // POST /api/weights {layer, bone}: the mesh of an image layer (layer space) and the influence of one bone at
+            // every vertex, for the weight-painting view. Read-only.
+            (Method::Post, "/api/weights") => {
+                let v = parse(&body)?;
+                let layer = v["layer"].as_str().ok_or_else(|| err(vec!["layer must be a layer path".into()]))?;
+                let bone = v["bone"].as_str().ok_or_else(|| err(vec!["bone must be a bone name".into()]))?;
+                let (verts, tris, vals, names) = ed.project().mesh_weight_map(layer, bone).map_err(|e| err(vec![e]))?;
+                let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+                for q in &verts {
+                    x0 = x0.min(q.x);
+                    y0 = y0.min(q.y);
+                    x1 = x1.max(q.x);
+                    y1 = y1.max(q.y);
+                }
+                let vs: Vec<Value> = verts.iter().map(|q| json!([q.x, q.y])).collect();
+                Ok(json_resp(json!({"ok": true, "layer": layer, "bone": bone, "bones": names, "vertices": vs, "triangles": tris, "values": vals, "bounds": [x0, y0, x1, y1]})))
+            }
+            // POST /api/weights/paint {layer, bone, mode: add|subtract|smooth, points: [[x, y], …], radius, strength}:
+            // one brush stroke (layer space) = one undo step; an unskinned mesh is skinned first.
+            (Method::Post, "/api/weights/paint") => {
+                let v = parse(&body)?;
+                let layer = v["layer"].as_str().ok_or_else(|| err(vec!["layer must be a layer path".into()]))?.to_string();
+                let bone = v["bone"].as_str().ok_or_else(|| err(vec!["bone must be a bone name".into()]))?.to_string();
+                let mode = osatura_core::weights::PaintMode::parse(v["mode"].as_str().unwrap_or("add")).map_err(|e| err(vec![e]))?;
+                let radius = v["radius"].as_f64().ok_or_else(|| err(vec!["radius must be a number".into()]))? as f32;
+                let strength = v["strength"].as_f64().unwrap_or(1.0) as f32;
+                let pts_v = v["points"].as_array().ok_or_else(|| err(vec!["points must be a list of [x, y]".into()]))?;
+                if pts_v.is_empty() || pts_v.len() > 4000 {
+                    return Err(err(vec!["a stroke needs 1 to 4000 points".into()]));
+                }
+                let mut points = Vec::with_capacity(pts_v.len());
+                for q in pts_v {
+                    match (q.get(0).and_then(Value::as_f64), q.get(1).and_then(Value::as_f64)) {
+                        (Some(x), Some(y)) if x.is_finite() && y.is_finite() => points.push(osatura_core::math::Vec2::new(x as f32, y as f32)),
+                        _ => return Err(err(vec!["every point must be [x, y] with finite numbers".into()])),
+                    }
+                }
+                let mut trial = ed.project().clone();
+                let changed = trial.paint_mesh_weights(&layer, &bone, mode, &points, radius, strength, 4).map_err(|e| err(vec![e]))?;
+                let weights = match trial.find_layer(&layer).map(|l| &l.kind) {
+                    Some(osatura_core::project::LayerKind::Image { mesh: Some(m), .. }) => serde_json::to_value(&m.weights).map_err(|e| err(vec![e.to_string()]))?,
+                    _ => return Err(err(vec![format!("layer '{layer}' has no mesh")])),
+                };
+                let f = ed.engine().evaluate(0.0);
+                let mut ptr = None;
+                for id in 0..ed.engine().node_count() {
+                    if f.nodes[id].name == layer {
+                        let ix = ed.engine().node_idx_path(id);
+                        let mut s = format!("/layers/{}", ix[0]);
+                        for i in &ix[1..] {
+                            s.push_str(&format!("/layers/{i}"));
+                        }
+                        ptr = Some(s);
+                        break;
+                    }
+                }
+                let ptr = ptr.ok_or_else(|| err(vec![format!("no layer at '{layer}'")]))?;
+                let op = Op::Set { path: format!("{ptr}/mesh/weights"), value: weights };
+                let mut st = if collab.active() { collab.op(ed, &ctx, op)? } else { ed.apply(op).map_err(err)?; state(ed) };
+                st["changed"] = json!(changed);
+                Ok(json_resp(st))
+            }
             (Method::Post, "/api/op") => {
                 let op: Op = serde_json::from_value(parse(&body)?).map_err(|e| err(vec![format!("bad op: {e}")]))?;
                 if collab.active() {

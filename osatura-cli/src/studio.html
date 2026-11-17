@@ -270,7 +270,15 @@ details.sm>summary{cursor:pointer;color:#aab3d0;margin-bottom:4px}
 <div class="texrow"><label>Tile (px) <input id="textile" type="number" min="16" max="4096" step="1" value="256"></label> <label>Amount <input id="texamt" type="range" min="0" max="1" step="0.05" value="1"></label></div>
 <img id="texprev" alt="Preview of the chosen texture" width="192" height="192">
 <div class="texrow"><button id="texapply" title="Add the texture to every selected layer (it paints only inside the layer's own shape)">Apply to selected layers</button> <button id="texdel" title="Remove texture effects from the selected layers">Remove texture</button></div>
-<div id="texmsg" role="status" class="sm"></div></details></section>
+<div id="texmsg" role="status" class="sm"></div></details>
+<details class="sm" id="wtfx"><summary>Weight painting</summary>
+<div class="sm">Paint how strongly each bone moves the points of an image layer's mesh. The view shows the mesh in the layer's own space; red = full influence of the chosen bone, blue = none. One stroke is one undo step.</div>
+<div class="texrow"><label>Layer <select id="wtlayer"></select></label> <label>Bone <select id="wtbone"></select></label></div>
+<div class="texrow"><label>Brush <select id="wtmode"><option value="add">Add</option><option value="subtract">Subtract</option><option value="smooth">Smooth</option></select></label> <label>Radius <input id="wtrad" type="range" min="2" max="200" step="1" value="30"></label> <label>Strength <input id="wtstr" type="range" min="0.05" max="1" step="0.05" value="0.5"></label></div>
+<canvas id="wtcv" width="320" height="320" tabindex="0" role="img" aria-label="Weight painting view of the chosen layer's mesh; drag to paint, or use the arrow keys and Enter to paint at the cursor" style="width:100%;max-width:320px;border:1px solid #2a3150;border-radius:6px;background:#0d1020;touch-action:none;cursor:crosshair"></canvas>
+<div class="texrow"><button id="wtreload" title="Read the mesh and weights again">Reload</button> <button id="wtkeys" title="Paint one dab at the keyboard cursor">Paint at cursor (Enter)</button></div>
+<div id="wtmsg" role="status" class="sm"></div></details>
+</section>
 <section class="panel side" id="pn-bones"><h3>Bones (key at current frame)</h3><div id="bonelist"></div></section>
 <section class="panel side" id="pn-live"><h3>Live input</h3>
 <div class="sm">Mouse over the picture, keys, gamepad and MIDI (needs a browser with Web MIDI) are mapped to parameters by the table below. Record bakes the performance into keys as one undo step.</div>
@@ -643,6 +651,36 @@ $('ptmode').onchange=()=>selRefresh();
  $('texdel').onclick=async()=>{ const t=await targets(); if(!t)return; const ops=[]; for(const l of t.rows){ const cur=at(t.doc,l.ptr+'/effects'); if(!Array.isArray(cur))continue; for(let i=cur.length-1;i>=0;i--) if(cur[i]&&cur[i].type==='texture') ops.push({op:'remove',path:l.ptr+'/effects/'+i}); }
   if(!ops.length){ tmsg('no texture effect on the selected layers'); return; }
   const o=await api('/api/op',ops.length===1?ops[0]:{op:'batch',ops}); say(o); if(o.ok===false){ tmsg('could not remove: '+((o.errors||[])[0]||'error')); return; } S=o; refresh(true); tmsg('removed '+ops.length+' texture effect'+(ops.length===1?'':'s')); };
+})();
+
+// ---- weight painting: brush strokes on an image layer's mesh, drawn in the layer's own space ----
+(function(){
+ const lay=$('wtlayer'), bone=$('wtbone'), mode=$('wtmode'), rad=$('wtrad'), str=$('wtstr'), cv=$('wtcv'), msg=$('wtmsg'), cx=cv.getContext('2d');
+ let M=null, pts=[], down=false, kx=0, ky=0, busy=false;
+ function wmsg(t){ msg.textContent=t||''; }
+ function ramp(v){ v=Math.max(0,Math.min(1,v)); const r=Math.round(40+215*v), g=Math.round(70+60*(1-Math.abs(2*v-1))), b=Math.round(220-190*v); return 'rgb('+r+','+g+','+b+')'; }
+ function view(){ if(!M)return null; const b=M.bounds, w=Math.max(1e-6,b[2]-b[0]), h=Math.max(1e-6,b[3]-b[1]), m=14, k=Math.min((cv.width-2*m)/w,(cv.height-2*m)/h); return {k,ox:m-b[0]*k+(cv.width-2*m-w*k)/2,oy:m-b[1]*k+(cv.height-2*m-h*k)/2}; }
+ function draw(){ cx.clearRect(0,0,cv.width,cv.height); const v=view(); if(!v){ cx.fillStyle='#7f89b0'; cx.font='13px sans-serif'; cx.fillText('choose an image layer with a mesh',12,24); return; }
+  const P=M.vertices.map(q=>[q[0]*v.k+v.ox,q[1]*v.k+v.oy]);
+  for(const t of M.triangles){ const a=P[t[0]],b=P[t[1]],c=P[t[2]]; if(!a||!b||!c)continue; const val=((M.values[t[0]]||0)+(M.values[t[1]]||0)+(M.values[t[2]]||0))/3; cx.fillStyle=ramp(val); cx.strokeStyle='rgba(255,255,255,.18)'; cx.beginPath(); cx.moveTo(a[0],a[1]); cx.lineTo(b[0],b[1]); cx.lineTo(c[0],c[1]); cx.closePath(); cx.fill(); cx.stroke(); }
+  cx.strokeStyle='#fff'; cx.lineWidth=1.5; for(const q of pts){ cx.beginPath(); cx.arc(q[0]*v.k+v.ox,q[1]*v.k+v.oy,Number(rad.value)*v.k,0,6.2832); cx.stroke(); } cx.lineWidth=1;
+  if(!down){ cx.setLineDash([4,3]); cx.beginPath(); cx.arc(kx*v.k+v.ox,ky*v.k+v.oy,Number(rad.value)*v.k,0,6.2832); cx.stroke(); cx.setLineDash([]); } }
+ function toLayer(ev){ const v=view(); const r=cv.getBoundingClientRect(); const sx=(ev.clientX-r.left)*cv.width/r.width, sy=(ev.clientY-r.top)*cv.height/r.height; return [(sx-v.ox)/v.k,(sy-v.oy)/v.k]; }
+ function imageLayers(){ return (window.LROWS||[]).filter(l=>l.kind==='image'); }
+ function fillLayers(){ const cur=lay.value; lay.textContent=''; for(const l of imageLayers()){ const o=document.createElement('option'); o.value=l.path; o.textContent=l.path; lay.appendChild(o); } if(cur&&[...lay.options].some(o=>o.value===cur))lay.value=cur; }
+ async function load(keep){ fillLayers(); if(!lay.options.length){ M=null; bone.textContent=''; draw(); wmsg('this project has no image layers'); return; }
+  if(!bone.options.length){ const doc=await api('/api/project'); for(const b of (doc.bones||[])){ const o=document.createElement('option'); o.value=b.name; o.textContent=b.name; bone.appendChild(o); } if(!bone.options.length){ M=null; draw(); wmsg('this project has no bones'); return; } }
+  const r=await api('/api/weights',{layer:lay.value,bone:bone.value}); if(r.ok===false){ M=null; draw(); wmsg((r.errors||['error'])[0]); return; } M=r; const b=M.bounds; kx=(b[0]+b[2])/2; ky=(b[1]+b[3])/2; draw(); if(!keep)wmsg(M.vertices.length+' mesh points, bone "'+M.bone+'"'); }
+ async function commit(points){ if(busy||!points.length)return; busy=true; try{ const o=await api('/api/weights/paint',{layer:lay.value,bone:bone.value,mode:mode.value,radius:Number(rad.value),strength:Number(str.value),points}); if(o.ok===false){ wmsg('could not paint: '+((o.errors||[])[0]||'error')); } else { S=o; refresh(true); wmsg('painted '+o.changed+' mesh points (Undo takes the stroke back)'); } }finally{ busy=false; } await load(true); }
+ cv.addEventListener('pointerdown',ev=>{ if(!M)return; ev.preventDefault(); cv.setPointerCapture(ev.pointerId); down=true; pts=[toLayer(ev)]; draw(); });
+ cv.addEventListener('pointermove',ev=>{ if(!M)return; const q=toLayer(ev); kx=q[0]; ky=q[1]; if(down){ const l=pts[pts.length-1], step=Math.max(1,Number(rad.value)/4); if(Math.hypot(q[0]-l[0],q[1]-l[1])>=step&&pts.length<3500)pts.push(q); } draw(); });
+ function end(){ if(!down)return; down=false; const p=pts; pts=[]; commit(p); }
+ cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end);
+ cv.addEventListener('keydown',ev=>{ if(!M)return; const s=Number(rad.value)/2; if(ev.key==='ArrowLeft')kx-=s; else if(ev.key==='ArrowRight')kx+=s; else if(ev.key==='ArrowUp')ky-=s; else if(ev.key==='ArrowDown')ky+=s; else if(ev.key==='Enter'){ commit([[kx,ky]]); } else return; ev.preventDefault(); draw(); });
+ $('wtkeys').onclick=()=>{ if(M)commit([[kx,ky]]); };
+ $('wtreload').onclick=()=>load(); lay.onchange=()=>load(); bone.onchange=()=>load(); rad.oninput=draw;
+ $('wtfx').addEventListener('toggle',()=>{ if($('wtfx').open)load(); });
+ window.__wt={load,commit,get M(){return M;}};
 })();
 
 $('bones').addEventListener('change',()=>selRefresh());
