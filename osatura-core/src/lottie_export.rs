@@ -706,6 +706,28 @@ pub fn lottie_export(engine: &Engine) -> LottieExport {
             _ => {}
         }
     }
+    // layer kinds that are resolved by the engine outside the vector-node list and therefore have no Lottie output at all
+    // (found by playing the demo-fx export in lottie-web: it came out empty, without a word)
+    fn kinds(ls: &[crate::project::Layer], prefix: &str, out: &mut Vec<(&'static str, String, &'static str)>) {
+        use crate::project::LayerKind as K;
+        for l in ls {
+            let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
+            match &l.kind {
+                K::Metaball { .. } if l.visible => out.push(("liquid-layer", path.clone(), "liquid (metaball) layers are not exported: Lottie has no metaball field")),
+                K::Boolean { .. } if l.visible => out.push(("boolean-layer", path.clone(), "boolean (union, subtract, ...) layers are not exported: the result is computed by OSATURA, not stored as shapes")),
+                K::Emitter { .. } if l.visible => out.push(("emitter-layer", path.clone(), "particle emitters are not exported: Lottie cannot run a deterministic emitter")),
+                _ => {}
+            }
+            if let K::Group { layers } | K::Selector { layers, .. } = &l.kind {
+                kinds(layers, &path, out);
+            }
+        }
+    }
+    let mut dropped = Vec::new();
+    kinds(&p.layers, "", &mut dropped);
+    for (code, path, why) in dropped {
+        b.warn(code, &path, why.into());
+    }
     if !p.sounds.is_empty() {
         b.warn("audio", "", format!("Lottie cannot carry audio; {} sound track(s) are not included", p.sounds.len()));
     }
@@ -765,6 +787,20 @@ mod tests {
     }
 
     /// C3a: translucent gradient stops are written in Lottie's colour-then-alpha layout.
+    #[test]
+    fn liquid_boolean_and_emitter_layers_are_warned_about() {
+        // regression: demo-fx exported an empty animation with no warning at all
+        let mut p = crate::demo::fx_project();
+        p.frames = 4;
+        let out = lottie_export(&Engine::new(p).unwrap());
+        let mut got: Vec<(&str, &str)> = out.warnings.iter().map(|w| (w.code, w.layer.as_str())).collect();
+        got.sort();
+        assert_eq!(got, vec![("boolean-layer", "window"), ("emitter-layer", "sparks"), ("liquid-layer", "goo")]);
+        // a project without those layers is not affected
+        let plain = lottie_export(&Engine::new(crate::demo::project()).unwrap());
+        assert!(plain.warnings.iter().all(|w| !w.code.ends_with("-layer") || w.code == "image-layer"));
+    }
+
     #[test]
     fn gradient_stop_alpha_is_written() {
         let g = json!({"from": [0, 0], "to": [100, 0], "stops": [{"offset": 1, "color": "#0000ff00"}, {"offset": 0, "color": "#ff0000ff"}]});
