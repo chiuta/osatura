@@ -70,7 +70,7 @@ impl Out {
     }
 
     /// Write one primitive as a mesh node. `place` maps layer space to the node's space.
-    pub(super) fn emit(&mut self, pr: Prim, to_stage: Affine2, to_host: Affine2, host: Option<usize>) {
+    pub(super) fn emit(&mut self, pr: Prim, to_stage: Affine2, to_host: Affine2, host: Option<usize>) -> Option<usize> {
         let skinned = pr.skin.is_some();
         let place = if skinned { to_stage } else { to_host };
         let z = if skinned { self.shape_count as f32 * 0.01 } else { 0.0 };
@@ -167,7 +167,7 @@ impl Out {
             self.nodes.push(json!({"name": format!("skinned {}", pr.name), "mesh": mi, "skin": 0}));
             self.shape_count += 1;
             self.scene_nodes.push(self.nodes.len() - 1);
-            return;
+            return None;
         }
         self.nodes.push(json!({"name": format!("shape {}", pr.name), "mesh": mi, "translation": [0.0, 0.0, self.shape_count as f32 * 0.01]}));
         self.shape_count += 1;
@@ -182,6 +182,7 @@ impl Out {
             },
             None => self.scene_nodes.push(ni),
         }
+        Some(ni)
     }
 }
 
@@ -192,7 +193,7 @@ pub(super) fn note(notes: &mut Vec<String>, s: String) {
 }
 
 /// Things glTF cannot carry (or this exporter does not write) that the project uses: reported so a silent loss never looks like success.
-pub(super) fn dropped_features(p: &crate::project::Project, notes: &mut Vec<String>) {
+pub(super) fn dropped_features(p: &crate::project::Project, notes: &mut Vec<String>, layer_animation: bool) {
     use crate::project::Prop;
     fn walk(ls: &[Layer], prefix: &str, notes: &mut Vec<String>) {
         for l in ls {
@@ -215,6 +216,8 @@ pub(super) fn dropped_features(p: &crate::project::Project, notes: &mut Vec<Stri
             Prop::LayerOpacity => ("opacity", "animated opacity of '{}' is not exported (frozen at frame 0)"),
             Prop::LatticeDx | Prop::LatticeDy | Prop::SpineDx | Prop::SpineDy | Prop::PinDx | Prop::PinDy | Prop::CageDx | Prop::CageDy => ("deformer", "animated deformer '{}' is not exported (frozen at frame 0)"),
             Prop::PointDx | Prop::PointDy => ("point", "animated path point '{}' is not exported (frozen at frame 0; only morphs become morph targets)"),
+            Prop::LayerX | Prop::LayerY | Prop::LayerRotation | Prop::LayerScaleX | Prop::LayerScaleY if layer_animation => continue,
+            Prop::LayerSkew | Prop::LayerSwitch | Prop::LayerWobble if layer_animation => ("layer", "animated layer skew/switch/wobble of '{}' is not exported (--layer-anim writes position, rotation and scale only)"),
             Prop::LayerX | Prop::LayerY | Prop::LayerRotation | Prop::LayerScaleX | Prop::LayerScaleY | Prop::LayerSkew | Prop::LayerSwitch | Prop::LayerWobble => ("layer", "animated layer transform/switch/wobble of '{}' is not exported (only bone animation is)"),
             Prop::FxBlur | Prop::FxDx | Prop::FxDy | Prop::FxSoft | Prop::FxAmount => ("effect", "animated layer effect '{}' is not exported"),
             Prop::GradDx | Prop::GradDy => ("gradient", "animated gradient handle '{}' is not exported (frozen at frame 0)"),
@@ -242,8 +245,23 @@ pub fn export_glb(engine: &Engine) -> Result<Vec<u8>, String> {
     export_glb_report(engine).map(|r| r.0)
 }
 
+/// Options of the .glb export. `GlbOptions::default()` is what [`export_glb`] and [`export_glb_report`] use.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct GlbOptions {
+    /// Animate the position, rotation and scale of rigid shape layers (spec 07, `gltf::anim`). Off by default: layer transforms are then
+    /// frozen at frame 0 as before. When on, every rigid (not skinned) shape layer whose transform changes gets a parent node that carries
+    /// sampled LINEAR translation / rotation / scale channels, relative to its frame-0 placement, in the space of the bone it follows (or
+    /// the stage). Skew is not representable and is dropped; opacity, switches, wobble and deformers are still not animated.
+    pub layer_animation: bool,
+}
+
 /// Build the .glb bytes and a list of things that could not be exported exactly.
 pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), String> {
+    export_glb_with(engine, &GlbOptions::default())
+}
+
+/// Like [`export_glb_report`], with options.
+pub fn export_glb_with(engine: &Engine, opts: &GlbOptions) -> Result<(Vec<u8>, Vec<String>), String> {
     let p = &engine.project;
     let nb = p.bones.len();
     if nb == 0 {
@@ -253,7 +271,7 @@ pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), Stri
         return Err("animation too large for glTF export".into());
     }
     let mut notes: Vec<String> = Vec::new();
-    dropped_features(p, &mut notes);
+    dropped_features(p, &mut notes, opts.layer_animation);
     let parent: Vec<Option<usize>> = p.bones.iter().map(|b| b.parent.as_ref().and_then(|n| p.bones.iter().position(|x| &x.name == n))).collect();
     let bone_ix: HashMap<&str, usize> = p.bones.iter().enumerate().map(|(i, b)| (b.name.as_str(), i)).collect();
     let f0 = engine.evaluate(0.0);
@@ -294,6 +312,8 @@ pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), Stri
     let node_by_name: HashMap<&str, usize> = f0.nodes.iter().map(|n| (n.name.as_str(), n.id)).collect();
     let cam_inv = f0.camera.inverse().unwrap_or(Affine2::IDENTITY);
     let mut morph_cache: MorphCache = None;
+    // rigid shape nodes per layer node: (node id of the layer, host bone, frame-0 placement, glTF node indices)
+    let mut rigid: Vec<RigidLayer> = Vec::new();
     for (layer, lpath) in shapes {
         let Some(&nid) = node_by_name.get(lpath.as_str()) else { continue };
         let node = &f0.nodes[nid];
@@ -434,7 +454,8 @@ pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), Stri
                 if let UvSrc::Quad { .. } = uv {
                     uv = UvSrc::Quad { origin: img.origin, size: img.size };
                 }
-                out.emit(Prim { name: node.name.clone(), pos, tris, skin, paint: PaintSrc::Image { png: img.data.png.clone(), key, has_alpha }, uv, opacity, morph: None }, to_stage, to_host, host);
+                let made = out.emit(Prim { name: node.name.clone(), pos, tris, skin, paint: PaintSrc::Image { png: img.data.png.clone(), key, has_alpha }, uv, opacity, morph: None }, to_stage, to_host, host);
+                track_rigid(&mut rigid, made, nid, host, to_host);
             }
             _ => {
                 let src_paths: &[VPath] = match &layer.kind {
@@ -478,7 +499,8 @@ pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), Stri
                             }
                             tp.clear();
                             if !tris.is_empty() {
-                                out.emit(Prim { name: format!("{}:{}", node.name, pname), pos: pts, tris, skin, paint: PaintSrc::Paint(fill.clone()), uv: UvSrc::Paint, opacity, morph }, to_stage, to_host, host);
+                                let made = out.emit(Prim { name: format!("{}:{}", node.name, pname), pos: pts, tris, skin, paint: PaintSrc::Paint(fill.clone()), uv: UvSrc::Paint, opacity, morph }, to_stage, to_host, host);
+                                track_rigid(&mut rigid, made, nid, host, to_host);
                             }
                         }
                     }
@@ -510,7 +532,8 @@ pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), Stri
                         if soup.tris.is_empty() {
                             continue;
                         }
-                        out.emit(Prim { name: format!("{}:{}:stroke", node.name, pname), pos: soup.pos, tris: soup.tris, skin, paint: PaintSrc::Paint(st.paint.clone()), uv: UvSrc::Paint, opacity, morph: None }, to_stage, to_host, host);
+                        let made = out.emit(Prim { name: format!("{}:{}:stroke", node.name, pname), pos: soup.pos, tris: soup.tris, skin, paint: PaintSrc::Paint(st.paint.clone()), uv: UvSrc::Paint, opacity, morph: None }, to_stage, to_host, host);
+                        track_rigid(&mut rigid, made, nid, host, to_host);
                     }
                 }
             }
@@ -522,8 +545,16 @@ pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), Stri
     let mut tr = vec![Vec::new(); nb];
     let mut ro = vec![Vec::new(); nb];
     let mut sc = vec![Vec::new(); nb];
+    let animate_layers = opts.layer_animation && !rigid.is_empty();
+    if animate_layers && (nb + rigid.len()) * p.frames as usize * 10 > MAX_ANIM_VALUES {
+        note(&mut notes, "layer transform animation was not exported: animation too large for glTF export".into());
+    }
+    let animate_layers = animate_layers && (nb + rigid.len()) * p.frames as usize * 10 <= MAX_ANIM_VALUES;
     for f in 0..p.frames {
         let fr = engine.evaluate(f as f32);
+        if animate_layers {
+            sample_rigid(&mut rigid, &fr);
+        }
         for i in 0..nb {
             let (t, r, s) = trs(fr.world[i], parent[i].map(|q| fr.world[q]));
             tr[i].extend_from_slice(&t);
@@ -539,6 +570,16 @@ pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), Stri
             let acc = out.bin.add(&f32s(data), 5126, times.len(), ty, None, None);
             samplers.push(json!({"input": t_acc, "output": acc, "interpolation": "LINEAR"}));
             channels.push(json!({"sampler": samplers.len() - 1, "target": {"node": i, "path": path}}));
+        }
+    }
+    if animate_layers {
+        let tracks = wrap_animated_layers(&mut out, &rigid, p.fps, &mut notes);
+        let (s, c) = anim::append_animation(&mut out.bin, &tracks)?;
+        let base = samplers.len();
+        samplers.extend(s);
+        for mut ch in c {
+            ch["sampler"] = json!(ch["sampler"].as_u64().unwrap_or(0) as usize + base);
+            channels.push(ch);
         }
     }
     for (ni, data, nt) in std::mem::take(&mut out.morph_anims) {
@@ -617,4 +658,103 @@ pub fn export_glb_report(engine: &Engine) -> Result<(Vec<u8>, Vec<String>), Stri
     glb.extend_from_slice(b"BIN\0");
     glb.extend_from_slice(&data);
     Ok((glb, notes))
+}
+
+/// The rigid shape nodes of one layer node and its sampled placement (`export_glb_with`, option `layer_animation`).
+pub(super) struct RigidLayer {
+    nid: usize,
+    host: Option<usize>,
+    /// Inverse of the frame-0 placement (layer space to host space).
+    inv0: Option<Affine2>,
+    nodes: Vec<usize>,
+    /// Per frame: placement at that frame composed with `inv0` (identity while the layer does not move relative to its host).
+    local: Vec<Affine2>,
+}
+
+fn track_rigid(rigid: &mut Vec<RigidLayer>, made: Option<usize>, nid: usize, host: Option<usize>, to_host: Affine2) {
+    let Some(ni) = made else { return };
+    match rigid.iter_mut().find(|r| r.nid == nid) {
+        Some(r) => r.nodes.push(ni),
+        None => rigid.push(RigidLayer { nid, host, inv0: to_host.inverse(), nodes: vec![ni], local: Vec::new() }),
+    }
+}
+
+/// Camera-compensated placement of each tracked layer in `fr`, relative to its frame-0 placement.
+fn sample_rigid(rigid: &mut [RigidLayer], fr: &Frame) {
+    let cam_inv = fr.camera.inverse().unwrap_or(Affine2::IDENTITY);
+    for r in rigid.iter_mut() {
+        let m = match (r.inv0, fr.nodes.get(r.nid)) {
+            (Some(inv0), Some(n)) => {
+                let to_stage = cam_inv.mul(n.world);
+                let to_host = match r.host.and_then(|h| fr.world.get(h)).and_then(|w| w.inverse()) {
+                    Some(inv) => inv.mul(to_stage),
+                    None => to_stage,
+                };
+                to_host.mul(inv0)
+            }
+            _ => Affine2::IDENTITY,
+        };
+        r.local.push(m);
+    }
+}
+
+fn is_identity(m: &Affine2) -> bool {
+    [(m.a, 1.0), (m.b, 0.0), (m.c, 0.0), (m.d, 1.0), (m.tx, 0.0), (m.ty, 0.0)].iter().all(|(v, w)| (v - w).abs() < 1e-4)
+}
+
+/// For every tracked layer that moves: a parent node (put where the shape nodes were) and its translation / rotation / scale tracks, one key
+/// per frame. Layers that do not move keep their shape nodes as they are.
+fn wrap_animated_layers(out: &mut Out, rigid: &[RigidLayer], fps: f32, notes: &mut Vec<String>) -> Vec<anim::NodeTrack> {
+    use anim::{densify_rotation, Interp, Key, NodeTrack};
+    let mut tracks = Vec::new();
+    for r in rigid {
+        if r.local.iter().all(is_identity) {
+            continue;
+        }
+        let name = out.nodes[r.nodes[0]]["name"].as_str().unwrap_or("shape").trim_start_matches("shape ").to_string();
+        let (mut tk, mut rk, mut sk) = (Vec::new(), Vec::new(), Vec::new());
+        let mut prev = 0.0f64;
+        let mut skewed = false;
+        for (f, m) in r.local.iter().enumerate() {
+            let t = f as f64 / f64::from(fps);
+            let sx = m.a.hypot(m.b).max(1e-6);
+            let sy = (m.a * m.d - m.b * m.c) / sx;
+            skewed |= (m.a * m.c + m.b * m.d).abs() > 1e-3 * sx * sx.max(sy.abs());
+            // y flip negates the angle; keep it continuous from key to key (the quaternion would wrap at a half turn)
+            let mut ang = -f64::from(m.b.atan2(m.a));
+            while ang - prev > std::f64::consts::PI {
+                ang -= std::f64::consts::TAU;
+            }
+            while ang - prev < -std::f64::consts::PI {
+                ang += std::f64::consts::TAU;
+            }
+            prev = ang;
+            tk.push(Key::new(t, [f64::from(m.tx), f64::from(-m.ty)]));
+            rk.push((t, ang));
+            sk.push(Key::new(t, [f64::from(sx), f64::from(sy)]));
+        }
+        if skewed {
+            note(notes, format!("skew of '{name}' is not exported in its animation (glTF nodes carry translation, rotation and scale only)"));
+        }
+        out.nodes.push(json!({"name": format!("anim {name}"), "children": r.nodes}));
+        let wrapper = out.nodes.len() - 1;
+        match r.host {
+            Some(h) => {
+                if let Some(a) = out.nodes[h].get_mut("children").and_then(Value::as_array_mut) {
+                    a.retain(|c| !r.nodes.iter().any(|&n| c.as_u64() == Some(n as u64)));
+                    a.push(json!(wrapper));
+                }
+            }
+            None => {
+                let at = out.scene_nodes.iter().position(|n| r.nodes.contains(n)).unwrap_or(out.scene_nodes.len());
+                out.scene_nodes.retain(|n| !r.nodes.contains(n));
+                out.scene_nodes.insert(at.min(out.scene_nodes.len()), wrapper);
+            }
+        }
+        let rot: Vec<Key<1>> = densify_rotation(&rk).into_iter().map(|(t, a)| Key::new(t, [a])).collect();
+        tracks.push(NodeTrack::Translation { node: wrapper, interp: Interp::Linear, keys: tk });
+        tracks.push(NodeTrack::Rotation { node: wrapper, interp: Interp::Linear, keys: rot });
+        tracks.push(NodeTrack::Scale { node: wrapper, interp: Interp::Linear, keys: sk });
+    }
+    tracks
 }

@@ -863,7 +863,7 @@ mod tests {
         let r = run_script(&mut e, r#"add_switch("face", ["blush", "mouth"]); set_key("face", "layer_switch", 0, 1);"#).unwrap();
         assert_eq!(r.applied, 2);
         let sw = e.project().layers.iter().find(|l| l.name == "face").unwrap();
-        assert!(matches!(&sw.kind, crate::project::LayerKind::Switch { layers, selected: 0 } if layers.len() == 2));
+        assert!(matches!(&sw.kind, crate::project::LayerKind::Selector { layers, selected: 0 } if layers.len() == 2));
         assert!(e.undo() && e.undo());
         assert!(e.project().layers.iter().all(|l| l.name != "face"));
     }

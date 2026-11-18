@@ -124,6 +124,26 @@ pub mod animimport;
 #[doc(hidden)]
 pub mod soundtrack;
 #[doc(hidden)]
+pub mod formatschema;
+#[doc(hidden)]
+pub mod segease;
+#[doc(hidden)]
+pub mod stereopan;
+#[doc(hidden)]
+pub mod biquad;
+#[doc(hidden)]
+pub mod baseline;
+#[doc(hidden)]
+pub mod gifseq;
+#[doc(hidden)]
+pub mod apngseq;
+#[doc(hidden)]
+pub mod capsule2d;
+#[doc(hidden)]
+pub mod lighting;
+#[doc(hidden)]
+pub mod motionblur;
+#[doc(hidden)]
 pub mod speech;
 #[doc(hidden)]
 pub mod gltf;

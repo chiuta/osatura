@@ -21,7 +21,7 @@ Tartalom: [Minden dokumentum](#minden-dokumentum) - [Olvasási útvonalak célk�
 | [COMPARISON.md](../../COMPARISON.md) | Őszinte, dátumozott összehasonlítás más 2D animációs eszközökkel | értékelők |
 | [VERIFY_DOWNLOADS.md](../../VERIFY_DOWNLOADS.md) | A kiadási fájlok ellenőrzése: Sigstore-aláírások, build-eredet, SHA-256 összegek | mindenki, aki telepít |
 | [UNINSTALL.md](../../UNINSTALL.md) | Az OSATURA eltávolítása és minden fájlé, amelyet létrehozhat | mindenki, aki telepít |
-| [../CODE_SIGNING_POLICY.md](../../../CODE_SIGNING_POLICY.md) · [../PRIVACY.md](../../../PRIVACY.md) | Kódaláírási szabályzat (SignPath Foundation), csapatszerepek, adatvédelem | mindenki, aki telepít, karbantartók |
+| [../CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) · [../PRIVACY.md](PRIVACY.md) | Kódaláírási szabályzat (SignPath Foundation), csapatszerepek, adatvédelem | mindenki, aki telepít, karbantartók |
 | [GOOD_FIRST_TASKS.md](../../GOOD_FIRST_TASKS.md) | Kis feladatok az első közreműködéshez | új közreműködők |
 | [PROJECT_FORMAT.md](PROJECT_FORMAT.md) | A JSON projektformátum mezőről mezőre | eszközfejlesztők, JSON-t szerkesztő riggerek |
 | [EXPORT_FORMATS.md](EXPORT_FORMATS.md) | Mit visz és mit hagy el az egyes export- és importformátum | pipeline-építők, integrátorok |
@@ -58,7 +58,7 @@ Minden útvonal egy sorrend, nem követelmény. Állj meg, ha megvan, amire szü
 
 **Biztonsági átnéző vagy telepítő.** [SECURITY.md](SECURITY.md) -> [DEVELOPMENT.md](DEVELOPMENT.md) 3. szakasz (mi van tesztelve) -> LIMITATIONS 2. és 11. szakasz -> `osatura-cli/src/http.rs`, `studio.rs`, `collab_srv.rs`, `osatura-core/src/assets.rs`, `fsutil.rs` -> [CI.md](CI.md) korlátok.
 
-**Licencbirtokos, csomagoló vagy jogász.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../../../../COPYRIGHT) és [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> kiadási ellenőrzőlista a [DEVELOPMENT.md](DEVELOPMENT.md) 7. szakaszában.
+**Licencbirtokos, csomagoló vagy jogász.** [../LICENSING.md](LICENSING.md) -> [../COPYRIGHT](../../../COPYRIGHT) és [../LICENSES/](../../../LICENSES/) -> [THIRD_PARTY.md](THIRD_PARTY.md) -> [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) -> [PATENT_NOTES.md](PATENT_NOTES.md) -> [../TRADEMARK.md](TRADEMARK.md) -> [../CLEANROOM.md](CLEANROOM.md) -> kiadási ellenőrzőlista a [DEVELOPMENT.md](DEVELOPMENT.md) 7. szakaszában.
 
 **Kiadást készítő karbantartó.** DEVELOPMENT 7. szakasz -> [../CHANGELOG.md](CHANGELOG.md) -> LIMITATIONS (frissítés) -> a README állapotdoboza.
 
@@ -72,7 +72,7 @@ Minden útvonal egy sorrend, nem követelmény. Állj meg, ha megvan, amire szü
 | [../FEATURES.md](FEATURES.md) | Funkciómátrix más eszközökkel szemben (részei elavultak, lásd LIMITATIONS) |
 | [../CLEANROOM.md](CLEANROOM.md) | Eredetnapló és szabályok a független megvalósításhoz |
 | [../CONTRIBUTING.md](CONTRIBUTING.md) | Közreműködési szabályok, bejövő = kimenő licenc, DCO 1.1 |
-| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Licencdöntés (A változat), szövegek |
+| [../LICENSING.md](LICENSING.md), [../COPYRIGHT](../../../COPYRIGHT), [../LICENSES/](../../../LICENSES/) | Licencdöntés (A változat), szövegek |
 | [../TRADEMARK.md](TRADEMARK.md) | A név- és logóhasználati szabályzat |
 | `../REUSE.toml`, `../deny.toml` | Licenc-metaadatok a nem forrásfájlokhoz; függőségi szabályzat |
 

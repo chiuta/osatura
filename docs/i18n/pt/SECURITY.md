@@ -21,6 +21,8 @@ O que o OSATURA processa: **arquivos de projeto** (JSON), imagens, áudio, arqui
 | Um colaborador com o token | editar a sessão compartilhada | danificar o projeto | histórico de desfazer, o log encadeado por hashes; os colaboradores têm a confiança do projeto, não há contas nem papéis |
 | Chamador hostil das bibliotecas | passar argumentos inválidos à fachada, à ABI C ou WASM | corrupção de memória, panics através da fronteira | validação de argumentos, verificação de tamanhos antes da alocação, panics capturados (onde o alvo faz unwinding) |
 
+A única requisição de saída que o OSATURA pode fazer é `osatura update-check`, e somente quando você a executa (um único GET HTTPS anônimo da lista pública de versões, pelo `curl` do sistema: somente HTTPS, TLS 1.2+, 30 s, 2 MB, o link mostrado é verificado para estar em `github.com/chiuta/osatura`). Ela pode passar pelo Tor, pelo Tor Browser, pelo Cloudflare WARP ou pelo seu próprio proxy; as predefinições são pontos locais `socks5h://`, de modo que o DNS não é resolvido fora do proxy. Os testes estão em `update_cmd.rs`.
+
 Fora do escopo: proteção contra um administrador local malicioso, uma cadeia de ferramentas de build ou dependência comprometida (veja [THIRD_PARTY.md](THIRD_PARTY.md) para o que é distribuído; `cargo deny` policia licenças, proibições e fontes, não vulnerabilidades), canais laterais e a segurança do próprio ffmpeg.
 
 ## 2. Servidor HTTP do studio
@@ -137,7 +139,7 @@ Lista honesta; veja [LIMITATIONS.md](LIMITATIONS.md) para a lista mais ampla de 
 * **Não abra uma issue pública** para uma vulnerabilidade. Envie um relatório privado ao mantenedor: **`alexio@trom.tf`** (o endereço do aviso de `--version` do programa e dos documentos de licença), ou use o relato privado de vulnerabilidades do GitHub, na aba *Security* do repositório, quando estiver ativado.
 * Inclua: a versão (`osatura --version`) e a plataforma, o projeto ou a requisição que provoca o problema (um arquivo mínimo é o melhor), o que você esperava e o que aconteceu, e se deseja receber crédito.
 * O que esperar *(intenção, não um contrato: este é um projeto de uma pessoa só)*: uma confirmação de recebimento em prazo razoável, uma correção desenvolvida em privado, um teste de regressão adicionado à suíte, uma nota em [CHANGELOG.md](CHANGELOG.md) e crédito, se você desejar. Por favor, dê tempo para uma correção antes de publicar detalhes.
-* Versões suportadas: apenas o pré-lançamento mais recente (atualmente `v0.1.0-alpha.4`) e a árvore atual em `main` são suportados.
+* Versões suportadas: apenas o pré-lançamento mais recente (atualmente `v0.1.0-alpha.5`) e a árvore atual em `main` são suportados.
 * Relatos sobre a exposição de rede do studio quando ele é deliberadamente colocado em um endereço público sem proxy reverso são, antes de tudo, problemas de documentação: veja a seção 11.
 
 ## 11. Checklist de endurecimento para quem implanta

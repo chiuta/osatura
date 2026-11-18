@@ -10,6 +10,48 @@ Kapcsolódó verziók, amelyek **valódiak**, és függetlenek a fentiektől: a 
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - 2026-11-09
+
+*Előzetes kiadás, 2026. nov. 10-én közzétéve a `main` ágból (commit `96e790a`, címke `v0.1.0-alpha.5`). A crate-verziók `0.1.0` maradnak; a kiadás verziója az `OSATURA_VERSION`-ből jön, amelyet a `release.yml` állít be.*
+
+### Hozzáadva (1. köteg: a kilenc funkcionális specifikáció, mind opcionális)
+
+- **Hang** (03. és 04. specifikáció): a `SoundTrack`-nek opcionális `pan`-ja (-1..1, egyenlő teljesítmény) és `filters`-e (biquad) van; a `sound add` és a `sound edit` elfogadja a `--pan P|none` és `--filter kind:freq[:q[:gain_db]][,...]` kapcsolót; használja a `sound mix`, az mp4/webm exportok és a HTML-lejátszó. Nélkülük a sávok megtartják a változatlan ffmpeg-gráfot; a projektséma mindkét mezőt leírja.
+- **Mozgáselmosás** (11. specifikáció): `--shutter DEG [--samples N] [--shutter-phase SEC]` a `frames --png`-nél és a `.gif`, `.apng`, `.mp4` és `.webm` exportnál. A 0 szög az egyszerű bájtokat adja; egy sorozat legfeljebb 100000 renderre korlátozott. A `render-hdr`, a stúdió és a többi export nincs bekötve.
+- **Megvilágítás** (09. specifikáció): a `relight` effekt egy fényen elfogad egy opcionális `shading` objektumot (csillapítás, éles spotkúp, Blinn-csillogás); nélküle a fények ugyanazokat a pixeleket adják, mint korábban.
+- **Fizika** (10. specifikáció): láncok opcionális önütközése kapszulákkal (`PhysicsOptions::self_collision`, `selfcollide=R` fizikai szó); alapértelmezetten a szimuláció bitre azonos marad.
+- **Easing** (05. specifikáció): a `keys curve --curve piecewise:...|steps:N[:pos]` szakaszonként lineáris vagy lépcsős görbét süt szokásos kulcsokba.
+- **Elrendezés** (06. specifikáció): `Align::Baseline` és opcionális `Member::baseline` a sor típusú tárolókhoz.
+- **glTF** (07. specifikáció): az `export ... .glb --layer-anim` mintavételezett eltolás-, forgatás- és méretezéscsatornákat ír a mozgó rétegekhez (a skew elvetve és jelentve).
+- A GIF- és APNG-sorozatdekóderek (01. és 02. specifikáció) az `osatura-core`-ban vannak, de **semelyik parancshoz sincsenek bekötve**.
+
+### Javítva (az 1. köteg átvizsgálása)
+
+- **A fájlbeli nevek megmaradnak**: a Rust-változatok neve `Selector` és `Metaball`, de a projektfájlok, a `layer_info(path).kind` és a szkriptek megtartják a `switch` és `liquid` nevet; a `selector` és `metaball` olvasáskor is elfogadott. A mellékelt WebAssembly bemutatóprojekt újra működik. Regressziós teszt hozzáadva.
+- **`keys curve`**: egy projekt összes kulcsának száma 2 000 000-ra korlátozott (`MAX_PROJECT_KEYS_AFTER_BAKE`, sütés közben ellenőrizve); korábban a `--curve steps:4096` sok sávos projekten kimeríthette a memóriát.
+- **A mozgáselmosás memóriája**: a minták futó összegben halmozódnak, így a memória már nem nő a `--samples`-szel (bájtra azonos kimenet).
+- **A hang dekódolási mérete**: a `--pan`-nal és `--filter`-rel rendelkező sávokat dekódolás előtt ellenőrzi a 256 MiB-os korláttal szemben (a trimet figyelembe veszi, az ffprobe-ot először kérdezi), a hangot megnevező hibával.
+- rustdoc-figyelmeztetések (puszta URL-ek), `reuse lint` annotációk a `docs/clean-room` és a `try/THIRD-PARTY-NOTICES.md` számára, clippy (`manual_is_multiple_of`), egy halott tartalomjegyzék-hivatkozás és egy rossz helyre került dokumentációs sor.
+- A `CLEANROOM.md` és a `docs/clean-room` mostantól pontosan megmondja, mely modulok vannak bekötve, és mit tett a clean-room szűrő (a specifikációkban a három szűrődoboz nincs kipipálva; a háromlépcsős szétválasztást nem követtük).
+
+### Ismert megjegyzések
+
+- **A hangszűrők nincsenek korlátozva** (kiadás előtt ellenséges teszteléssel fedezve fel): egy ellenséges projektfájl, amelynek egy sávján nagyjából egymillió `filters` van, percekig futtatja a `sound mix`-et. Csak megbízható projektfájlokat nyiss meg; a következő előzetes kiadásra korlát van tervezve. A `--shutter-phase` nagyon nagy véges értékeket is elfogad (ártalmatlan).
+- **WebAssembly exportnevek**: a modul továbbra is a régi `arm_` előtaggal exportálja a függvényeit (ABI 1-es verzió); átnevezésük megtörné az ABI-t.
+
+- **Fájlbeli nevek**: a `switch` és a `liquid` marad a név a fájlban, a szkriptekben és a parancssorban, bár a Rust-típusok `Selector` és `Metaball` (lásd „Megjegyzések integrátoroknak” lent).
+- **Kulcskorlát**: a `keys curve` megtagadja, hogy összesen több mint 2 000 000 kulcsot süssön.
+- **Sign-off**: a `v0.1.0-alpha.4` óta a `main` 9 commitja nem hordozza a DCO `Signed-off-by` sort (a clean-room készlet, az eredetiségi audit, az eredetiségi nyilatkozatok, a független implementáció megfogalmazása, a `try/` harmadik felek közleményei és a clean-room specifikációk köteg; lásd `git log --no-merges v0.1.0-alpha.4..main`). Itt közzé vannak téve, és nincsenek átírva.
+
+### Megjegyzések integrátoroknak
+
+- Az `osatura-core` Rust API-ja: a `LayerKind` `Switch` és `Liquid` változatai mostantól `Selector` és `Metaball` nevűek, néhány nyilvános structnak új opcionális mezői vannak (`SoundTrack::pan` és `filters`, `PhysicsOptions::self_collision`, `postfx::Light::shading`, `containers::Member::baseline`), az `Align`-nak pedig új `Baseline` változata van (a külső Rust-kódban a struct-literálokat és a kimerítő mintaillesztéseket frissíteni kell). A projektfájl-formátum, a szkript-API (`layer_info(path).kind`) és a parancssor megtartja a `switch` és `liquid` nevet; a `selector` és `metaball` olvasáskor is elfogadott. Az írt fájlok változatlanok maradnak, hacsak nem használják az új opcionális mezőket.
+
+
+### Hozzáadva
+
+- `osatura update-check`: megkérdezi a GitHubot, létezik-e újabb kiadás. Csak akkor fut, ha te futtatod; nem tölt le és nem telepít semmit; egyetlen névtelen HTTPS-kérés a rendszer `curl` programján át. Az ingyenes, etikus proxy-lehetőségek elrejtik a címedet a GitHub elől: `--proxy-preset tor|tor-browser|warp` (helyi `socks5h://` végpontok, így a proxy oldja fel a nevet) vagy a saját proxyd a `--proxy-url` kapcsolóval; a nyílt nyilvános proxyk listáit szándékosan nem kínáljuk. SemVer-összehasonlítás (az `alpha.10` újabb, mint az `alpha.9`); a forrásból épített build nem tudja, melyik kiadásnak felel meg, és ezt közli.
+
 ### Dokumentáció
 
 - README (angol és román): új szakasz „Live demo and animation examples”: az üzemeltetett élő demó **tervezettként** szerepel (még nincs ilyen), és fel vannak sorolva a tárolóban meglévő animációs példák. Csak dokumentáció; Rust-forráshoz, manifesthez vagy build-fájlhoz nem nyúltunk. A `cargo check` nem futtatható az átnézési környezetben (az 1.97.0 eszközlánc offline nem tölthető le).

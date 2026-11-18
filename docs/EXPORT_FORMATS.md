@@ -295,8 +295,13 @@ glTF 2.0 binary (`glTF` magic, version 2, `"generator": "osatura"`), core featur
 * **Path morphs** become morph targets with animated weights when the per-frame check reproduces the engine geometry; otherwise
   the path stays a static frame-0 shape and the reason is reported.
 * **Not exported (reported as `[glb-limit]` warnings):** blend modes other than normal (drawn as normal), animated layer opacity (frozen at
-  frame 0), non-bone layer transform animation, layer effects, deformers beyond their frame-0 shape, animated paths without a valid
+  frame 0), non-bone layer transform animation (unless `--layer-anim` is given: see below), layer effects, deformers beyond their frame-0 shape, animated paths without a valid
   morph, animated mask shapes, sound.
+* **Layer transform animation (opt-in, `--layer-anim`):** each rigid shape layer whose position, rotation or scale changes gets a parent
+  node with sampled LINEAR translation, rotation (a quaternion about Z, kept continuous across half turns) and scale channels, relative
+  to the layer's frame-0 placement and expressed in the space of the bone the layer follows (or the stage). Parent groups and the
+  camera are already part of the sampled placement. Skinned shapes and morphing shapes keep their own animation; layers that do not
+  move, and every export without the flag, are written as before. Skew is dropped (reported).
 * **Coordinates:** y is negated (glTF is y-up); shapes are layered with a small z offset (0.01 per shape) for draw order.
 * **Validation:** the header is `glTF`, version 2, and the length field equals the file size (`python3` one-liner in section 16). Use a glTF
   validator or viewer of your choice for the full check; none is bundled and none was run for this document. The example above has 22 nodes,
@@ -503,7 +508,7 @@ If ffmpeg is missing the command fails with `cannot run ffmpeg (...)` and writes
   claims have been announced for both; **status: not assessed, do not treat VP9/AV1 as cleared.** Because ffmpeg is the user's own installation, every
   codec choice is the user's responsibility, and OSATURA must not bundle ffmpeg.
 * The deterministic raster, GIF, APNG, PNG, SVG, OpenEXR, OCA, ORA, glTF and Lottie writers are OSATURA's own implementations from public
-  format descriptions (clean-room, see CLEANROOM.md). Their patent status is not assessed beyond that: PATENT_NOTES.md lists only the areas above
+  format descriptions (independent implementation, see CLEANROOM.md). Their patent status is not assessed beyond that: PATENT_NOTES.md lists only the areas above
   (face-driven puppeteering, state machines and data binding, FABRIK/MVC/weights, stencil-then-cover filling, codecs).
 * GIF: the LZW patents are long expired in all jurisdictions; this is general knowledge, not a clearance recorded in the repository.
 * Licences of produced files: files you export are yours; the engine is MPL-2.0 and the CLI AGPL-3.0-or-later, which applies to the programs, not to the

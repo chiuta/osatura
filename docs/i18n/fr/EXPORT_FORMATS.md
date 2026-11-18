@@ -294,9 +294,14 @@ glTF 2.0 binaire (magic `glTF`, version 2, `"generator": "osatura"`), fonctionna
   traits, et uniquement pour la forme du masque à l'image 0. **Les calques d'image** deviennent des quads texturés ou des meshes de déformation avec PNG intégré.
 * **Les morphs de chemin** deviennent des morph targets avec des poids animés lorsque la vérification image par image reproduit la géométrie du moteur ; sinon
   le chemin reste une forme statique de l'image 0 et la raison est signalée.
-* **Non exportés (signalés par des avertissements `[glb-limit]`) :** modes de fusion autres que normal (dessinés comme normal), opacité de calque animée (figée à
-  l'image 0), animation de transformation de calque hors os, effets de calque, déformateurs au-delà de leur forme à l'image 0, chemins animés sans morph
+* **Non exporté (signalé par des avertissements `[glb-limit]`) :** modes de fusion autres que normal (dessinés en normal), opacité de calque animée (figée à
+  l’image 0), animation de transformation des calques non liés à un os (sauf si `--layer-anim` est donné : voir ci-dessous), effets de calque, déformateurs au-delà de leur forme à l’image 0, chemins animés sans morph
   valide, formes de masque animées, son.
+* **Animation de transformation des calques (facultative, `--layer-anim`) :** chaque calque de forme rigide dont la position, la rotation ou l’échelle change reçoit un nœud
+  parent avec des canaux LINEAR échantillonnés de translation, rotation (un quaternion autour de Z, maintenu continu au-delà des demi-tours) et échelle, relatifs
+  au placement du calque à l’image 0 et exprimés dans l’espace de l’os que le calque suit (ou de la scène). Les groupes parents et la
+  caméra font déjà partie du placement échantillonné. Les formes skinnées et les formes à morph gardent leur propre animation ; les calques qui ne
+  bougent pas, et tout export sans l’option, sont écrits comme avant. Le skew est abandonné (signalé).
 * **Coordonnées :** y est inversé (glTF a l'axe y vers le haut) ; les formes sont étagées avec un petit décalage en z (0,01 par forme) pour l'ordre de dessin.
 * **Validation :** l'en-tête est `glTF`, version 2, et le champ de longueur est égal à la taille du fichier (commande `python3` d'une ligne à la section 16). Utilisez un validateur
   ou un visualiseur glTF de votre choix pour la vérification complète ; aucun n'est fourni et aucun n'a été exécuté pour ce document. L'exemple ci-dessus comporte 22 nœuds,

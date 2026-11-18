@@ -132,7 +132,7 @@ pub fn view_swap(p: &mut Project, switch_layer: &str, driver_bone: &str, driver_
         return Err("need at least one range".into());
     }
     let layer = p.find_layer(switch_layer).ok_or_else(|| format!("no layer '{switch_layer}'"))?;
-    let LayerKind::Switch { layers, .. } = &layer.kind else { return Err(format!("'{switch_layer}' is not a switch layer")) };
+    let LayerKind::Selector { layers, .. } = &layer.kind else { return Err(format!("'{switch_layer}' is not a switch layer")) };
     if let Some(&(_, c)) = ranges.iter().find(|&&(_, c)| c >= layers.len()) {
         return Err(format!("child index {c} is out of range (the layer has {})", layers.len()));
     }

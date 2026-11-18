@@ -22,7 +22,7 @@ Principiile proiectului:
 
 *Nume: proiectul s-a numit ARMATURA până la 24 oct. 2026 și a fost redenumit OSATURA în urma unei căutări de mărci ([docs/LIMITATIONS.md](docs/LIMITATIONS.md) L-78). Depozitul și adresa site-ului au fost redenumite și ele (linkurile vechi către depozit redirecționează).*
 
-> **Alpha. Cea mai recentă pre-lansare publicată: `v0.1.0-alpha.4`; următoarea este `v0.1.0-alpha.5`.** Executabilele pentru Windows x86-64, macOS arm64 și Linux x86-64 și modulul WebAssembly sunt construite de GitHub Actions și atașate la o pre-lansare *ciornă* pe <https://github.com/chiuta/osatura/releases> (o ciornă este vizibilă doar proprietarului până când este publicată manual). Toate crate-urile au în continuare versiunea `0.1.0`; „v0.5 / v0.6 / v0.7” sunt *niveluri de funcționalitate* în istoric, nu numere de lansare ([CHANGELOG.md](CHANGELOG.md)).
+> **Alpha. Cea mai recentă pre-lansare publicată: `v0.1.0-alpha.5`.** Executabilele pentru Windows x86-64, macOS arm64 și Linux x86-64 și modulul WebAssembly sunt construite de GitHub Actions și atașate la o pre-lansare *ciornă* pe <https://github.com/chiuta/osatura/releases> (o ciornă este vizibilă doar proprietarului până când este publicată manual). Toate crate-urile au în continuare versiunea `0.1.0`; „v0.5 / v0.6 / v0.7” sunt *niveluri de funcționalitate* în istoric, nu numere de lansare ([CHANGELOG.md](CHANGELOG.md)).
 >
 > | Verificat | Neverificat |
 > |---|---|
@@ -38,6 +38,16 @@ Principiile proiectului:
   * [`docs/examples/pip.svg`](docs/examples/pip.svg) și [`docs/examples/pip-rig.rhai`](docs/examples/pip-rig.rhai): un desen și scriptul care îi pune schelet și ciclu de mers, folosite pas cu pas în [docs/TUTORIAL_SVG.md](docs/TUTORIAL_SVG.md) (rezultat: [`docs/img/tutorial-svg-walk.png`](docs/img/tutorial-svg-walk.png)).
   * `osatura demo` (demo de rig, 48 de cadre) și `osatura demo-fx` (lichid, booleene, particule) generează fișiere de proiect pe care le poți randa și exporta singur.
   * Alte exemple animate: încă neadăugate (planificat).
+
+## Maturitate: de unde să începi
+
+OSATURA are mult mai multe funcții decât poate valida o singură persoană. Tabelul arată unde pune autorul efortul mai întâi. **Este o intenție, nu o garanție de calitate: niciun animator în afară de autor nu a folosit încă nimic din ea** ([docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
+
+| Nivel | Ce | Ce înseamnă |
+|---|---|---|
+| Nucleu | Formatul de proiect, oase, IK, skinning, chei și atenuări, randare, export în GIF, PNG, SVG, Lottie și HTML, linia de comandă `osatura`, elementele de bază ale studioului | Reparat primul, cele mai multe teste, începe de aici ([tutorial](docs/TUTORIAL_SVG.md)) |
+| Susținut | Deformatoare, fizică, mașini de stare, import SVG și OpenRaster, biblioteca C, modulul WebAssembly | Funcționează în teste; mai puțini ochi pe el |
+| Experimental | Retargeting de mocap, sincronizare labială și vorbire, detecția fețelor, intrare în direct, colaborare, control al versiunilor, export la dimensiune țintă, niveluri de detaliu, randare GPU | Așteaptă-te la neregularități și schimbări; nu construi pe el încă |
 
 ## Descărcare
 

@@ -79,7 +79,7 @@ pub fn gradient_warnings(project: &Project) -> Vec<(String, String)> {
                         }
                     }
                 }
-                LayerKind::Liquid { fill, stroke, .. } => {
+                LayerKind::Metaball { fill, stroke, .. } => {
                     if let Some(f) = fill {
                         check(&name, "fill", f, out);
                     }
@@ -106,7 +106,7 @@ pub fn switch_key_warnings(project: &Project) -> Vec<(String, String)> {
             let p = if path.is_empty() { l.name.clone() } else { format!("{path}/{}", l.name) };
             if p == name {
                 return match &l.kind {
-                    crate::project::LayerKind::Switch { layers, .. } => Some(layers.len()),
+                    crate::project::LayerKind::Selector { layers, .. } => Some(layers.len()),
                     _ => None,
                 };
             }

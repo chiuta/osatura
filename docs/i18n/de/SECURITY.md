@@ -21,6 +21,8 @@ Was OSATURA verarbeitet: **Projektdateien** (JSON), Bilder, Audio, Importdateien
 | Ein Mitarbeitender mit dem Token | die geteilte Sitzung bearbeiten | das Projekt beschädigen | Undo-Verlauf, das per Hash verkettete Log; Mitarbeitenden wird das Projekt anvertraut, es gibt keine Konten oder Rollen |
 | Feindlicher Aufrufer der Bibliotheken | schlechte Argumente an die Fassade, die C- oder WASM-ABI übergeben | Speicherkorruption, Panics über die Grenze hinweg | Argumentvalidierung, Größenprüfungen vor der Allokation, abgefangene Panics (wo das Target unwindet) |
 
+Die einzige ausgehende Anfrage, die OSATURA stellen kann, ist `osatura update-check`, und nur, wenn du sie ausführst (ein einziger anonymer HTTPS-GET der öffentlichen Versionsliste über das `curl` des Systems: nur HTTPS, TLS 1.2+, 30 s, 2 MB, der angezeigte Link wird darauf geprüft, auf `github.com/chiuta/osatura` zu liegen). Sie kann über Tor, Tor Browser, Cloudflare WARP oder deinen eigenen Proxy laufen; die Voreinstellungen sind lokale `socks5h://`-Endpunkte, DNS wird also nicht außerhalb des Proxys aufgelöst. Die Tests stehen in `update_cmd.rs`.
+
 Nicht im Umfang: Schutz gegen einen böswilligen lokalen Administrator, eine kompromittierte Build-Toolchain oder Abhängigkeit (siehe [THIRD_PARTY.md](THIRD_PARTY.md) dazu, was ausgeliefert wird; `cargo deny` überwacht Lizenzen, Sperrlisten und Quellen, nicht Schwachstellen), Seitenkanäle und die Sicherheit von ffmpeg selbst.
 
 ## 2. HTTP-Server des Studios
@@ -137,7 +139,7 @@ Ehrliche Liste; für die weitere Liste funktionaler Einschränkungen siehe [LIMI
 * **Eröffne kein öffentliches Issue** für eine Schwachstelle. Sende eine private Meldung an den Maintainer: **`alexio@trom.tf`** (die Adresse im Hinweis des Programms bei `--version` und in den Lizenzdokumenten), oder nutze die private Schwachstellenmeldung von GitHub auf dem Reiter *Security* des Repositorys, sofern sie aktiviert ist.
 * Gib an: Version (`osatura --version`) und Plattform, das Projekt oder die Anfrage, die das Problem auslöst (eine minimale Datei ist am besten), was du erwartet hast und was passiert ist, und ob du namentlich genannt werden möchtest.
 * Was dich erwartet *(Absicht, kein Vertrag: Dies ist ein Ein-Personen-Projekt)*: eine Bestätigung innerhalb angemessener Zeit, ein im Privaten entwickelter Fix, ein der Suite hinzugefügter Regressionstest, ein Vermerk in [CHANGELOG.md](CHANGELOG.md) und auf Wunsch eine Namensnennung. Bitte lass Zeit für einen Fix, bevor du Details veröffentlichst.
-* Unterstützte Versionen: Nur die neueste Vorabversion (derzeit `v0.1.0-alpha.4`) und der aktuelle Baum auf `main` werden unterstützt.
+* Unterstützte Versionen: Nur die neueste Vorabversion (derzeit `v0.1.0-alpha.5`) und der aktuelle Baum auf `main` werden unterstützt.
 * Meldungen zur Netzwerk-Exposition des Studios, wenn es absichtlich ohne Reverse-Proxy an eine öffentliche Adresse gebunden wird, sind zunächst Dokumentationsthemen: siehe Abschnitt 11.
 
 ## 11. Härtungs-Checkliste für Betreiber

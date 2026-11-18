@@ -1,6 +1,7 @@
 target/
 out/
 *.mp4
+!tutorials/v/*.mp4
 *.log
 demo-ci.json
 osatura-wasm/osatura_wasm.wasm

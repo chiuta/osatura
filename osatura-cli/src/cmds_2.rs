@@ -105,6 +105,18 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
             println!("{total} finding(s), {errors} error(s)");
             if errors > 0 { Err("lint errors".into()) } else { Ok(()) }
         }
+        ["schema"] | ["schema", _] => {
+            let schema = formatschema::generate(&formatschema::project_format(a.flags.iter().any(|f| f == "--strict")))?;
+            let text = formatschema::to_text(&schema);
+            match pos.get(1) {
+                Some(out) => {
+                    fwrite(out, text)?;
+                    println!("wrote {out}");
+                }
+                None => print!("{text}"),
+            }
+            Ok(())
+        }
         ["contracts", path, cpath] => {
             let e = load(path)?;
             let contracts: Vec<lint::Contract> = read_json(cpath)?;
@@ -170,16 +182,22 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
             };
             let by = a.opts.get("--by").map(|_| num(a, "--by", 0.0)).transpose()?;
             let factor = a.opts.get("--factor").map(|_| num(a, "--factor", 1.0)).transpose()?;
-            if !["shift", "scale", "ease", "reverse"].contains(op) {
-                return Err(format!("unknown keys operation '{op}' (shift, scale, ease, reverse)"));
+            if !["shift", "scale", "ease", "reverse", "curve"].contains(op) {
+                return Err(format!("unknown keys operation '{op}' (shift, scale, ease, reverse, curve)"));
             }
+            let curve = match a.opts.get("--curve") {
+                Some(s) => Some(osatura_core::segease::BakeCurve::parse(s)?),
+                None => None,
+            };
             match *op {
                 "shift" if by.is_none() => return Err("keys shift needs --by N".into()),
                 "scale" if factor.is_none() => return Err("keys scale needs --factor X".into()),
                 "ease" if ease.is_none() => return Err("--ease is required".into()),
+                "curve" if curve.is_none() => return Err("keys curve needs --curve piecewise:STOP,STOP,... or --curve steps:N[:position]".into()),
                 _ => {}
             }
             let mut touched = 0;
+            let mut total_keys: usize = p.channels.iter().map(|c| if let Source::Keys { track } = &c.source { track.keys.len() } else { 0 }).sum();
             let locked_view = p.clone();
             for c in &mut p.channels {
                 if want_target.is_some_and(|t| &c.target != t) || want_prop.is_some_and(|pr| c.prop != pr) {
@@ -195,7 +213,16 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                     "scale" => keyops::scale_keys(track, from, to, num(a, "--pivot", 0.0)?, factor.ok_or("keys scale needs --factor X")?)?,
                     "ease" => keyops::set_ease(track, from, to, ease.ok_or("--ease is required")?),
                     "reverse" => keyops::reverse_keys(track, from, to),
-                    other => return Err(format!("unknown keys operation '{other}' (shift, scale, ease, reverse)")),
+                    "curve" => {
+                        let before = track.keys.len();
+                        let n = keyops::bake_curve(track, from, to, curve.as_ref().ok_or("keys curve needs --curve")?)?;
+                        total_keys = total_keys + track.keys.len() - before;
+                        if total_keys > keyops::MAX_PROJECT_KEYS_AFTER_BAKE {
+                            return Err(format!("the bake would give more than {} keys in the project (use a curve with fewer stops or steps, or a smaller range or fewer channels)", keyops::MAX_PROJECT_KEYS_AFTER_BAKE));
+                        }
+                        n
+                    }
+                    other => return Err(format!("unknown keys operation '{other}' (shift, scale, ease, reverse, curve)")),
                 };
             }
             compile(p.clone(), path)?;

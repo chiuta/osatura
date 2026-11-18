@@ -140,7 +140,7 @@ Le projet est une implémentation indépendante. En bref (le texte qui fait foi 
 
 ## 7. Liste de contrôle de publication
 
-La dernière préversion publiée est `v0.1.0-alpha.4` ; la suivante est préparée sous le nom `v0.1.0-alpha.5` (toutes les crates sont toujours en 0.1.0 ; les libellés de version « v0.5/v0.6/v0.7 » dans README, FEATURES et ROADMAP sont des niveaux de fonctionnalités, pas des versions de crates ; voir [CHANGELOG.md](CHANGELOG.md)). Pour en produire une :
+La dernière préversion publiée est `v0.1.0-alpha.5` (toutes les crates sont toujours en 0.1.0 ; les libellés de version « v0.5/v0.6/v0.7 » dans README, FEATURES et ROADMAP sont des niveaux de fonctionnalités, pas des versions de crates ; voir [CHANGELOG.md](CHANGELOG.md)). Pour en produire une :
 
 1. **Version.** Décidez de la version de chaque crate. La façade a sa propre version (`API_VERSION`, 1.4.0 aujourd'hui : majeure en cas de suppression ou de modification d'une ligne de surface, mineure en cas d'ajout) et `OSATURA_ABI_VERSION` / `arm_abi_version()` (tous deux à 1) ne changent qu'en cas de changement incompatible de l'ABI C ou wasm. Alignez les versions de `Cargo.toml`, la sortie de `osatura --version`, l'encadré d'état du README et le CHANGELOG.
 2. **Contrôles au vert.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, les cinq tests de fumée Chromium, `scripts/e2e.sh` (release), `cargo test -p osatura-gpu` si le code GPU a changé.

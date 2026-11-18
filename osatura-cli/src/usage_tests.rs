@@ -73,6 +73,7 @@ fn option_read_sites() -> Vec<(String, Option<Vec<String>>, String)> {
     let face: Vec<&str> = vec!["face-synth", "face-train", "face-eval", "face-detect", "face-track", "face-calibrate", "face-bake"];
     let mut out = vec![
         ("lod_cmd.rs".to_string(), cmds(&["lod", "lod-pick"]), strip(include_str!("lod_cmd.rs"))),
+        ("update_cmd.rs".to_string(), cmds(&["update-check"]), strip(include_str!("update_cmd.rs"))),
         ("fit_cmd.rs".to_string(), cmds(&["export-fit", "size-report"]), strip(include_str!("fit_cmd.rs"))),
         ("fuzz_cmd.rs".to_string(), cmds(&["fuzz", "fuzz-grid"]), strip(include_str!("fuzz_cmd.rs"))),
         ("vcs_cmd.rs".to_string(), cmds(&["vcs"]), strip(include_str!("vcs_cmd.rs"))),
@@ -271,7 +272,7 @@ fn usage_forms_split_alternatives() {
     assert_eq!(f.iter().map(|x| x.keys[0].as_str()).collect::<Vec<_>>(), ["init", "run", "bless", "diff"]);
     assert!(select_forms("golden", &args(&["golden", "write"]), &[]).iter().all(|f| f.keys == ["write"]));
     assert_eq!(usage_forms().iter().filter(|f| f.cmd == "keyedit").count(), 16);
-    assert_eq!(usage_forms().iter().filter(|f| f.cmd == "keys").count(), 4);
+    assert_eq!(usage_forms().iter().filter(|f| f.cmd == "keys").count(), 5);
     assert_eq!(usage_forms().iter().filter(|f| f.cmd == "idle").count(), 3);
     assert_eq!(usage_forms().iter().filter(|f| f.cmd == "snapshot").count(), 4);
     assert_eq!(usage_forms().iter().filter(|f| f.cmd == "comp").count(), 2);

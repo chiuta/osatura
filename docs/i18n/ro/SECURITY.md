@@ -21,6 +21,8 @@ Ce procesează OSATURA: **fișiere de proiect** (JSON), imagini, audio, fișiere
 | Un colaborator cu token | să editeze sesiunea partajată | să strice proiectul | istoricul de anulare, jurnalul înlănțuit prin hash; colaboratorilor li se acordă încredere pentru proiect, nu există conturi sau roluri |
 | Apelant ostil al bibliotecilor | să dea argumente greșite fațadei, ABI-ului C sau WASM | corupere de memorie, panici peste graniță | validarea argumentelor, verificări de dimensiune înainte de alocare, panici prinse (unde ținta face unwinding) |
 
+Singura cerere de ieșire pe care o poate face OSATURA este `osatura update-check`, și doar când o rulezi (un singur GET HTTPS anonim pentru lista publică de versiuni, prin `curl` din sistem: doar HTTPS, TLS 1.2+, 30 s, 2 MB, linkul afișat este verificat să fie pe `github.com/chiuta/osatura`). Poate trece prin Tor, Tor Browser, Cloudflare WARP sau propriul tău proxy; presetările sunt puncte locale `socks5h://`, deci DNS nu este rezolvat în afara proxy-ului. Testele sunt în `update_cmd.rs`.
+
 În afara domeniului: protecția împotriva unui administrator local rău intenționat, a unui toolchain de build sau a unei dependențe compromise (vezi [THIRD_PARTY.md](THIRD_PARTY.md) pentru ce se livrează; `cargo deny` supraveghează licențele, interdicțiile și sursele, nu vulnerabilitățile), canalele laterale și securitatea ffmpeg însuși.
 
 ## 2. Serverul HTTP al studioului
@@ -137,7 +139,7 @@ Listă sinceră; vezi [LIMITATIONS.md](LIMITATIONS.md) pentru lista mai largă d
 * **Nu deschide un issue public** pentru o vulnerabilitate. Trimite un raport privat către mentenanță: **`alexio@trom.tf`** (adresa din notificarea `--version` a programului și din documentele de licență), sau folosește raportarea privată de vulnerabilități a GitHub, din fila *Security* a depozitului, când este activată.
 * Include: versiunea (`osatura --version`) și platforma, proiectul sau cererea care declanșează problema (un fișier minimal este cel mai bun), ce te așteptai să se întâmple și ce s-a întâmplat, și dacă dorești să fii menționat.
 * La ce să te aștepți *(intenție, nu contract: acesta este un proiect al unei singure persoane)*: o confirmare într-un timp rezonabil, o remediere dezvoltată în privat, un test de regresie adăugat în suită, o notă în [CHANGELOG.md](CHANGELOG.md) și menționare dacă dorești. Te rugăm să lași timp pentru o remediere înainte de a publica detalii.
-* Versiuni suportate: este suportată doar cea mai nouă pre-lansare (în prezent `v0.1.0-alpha.4`) și arborele curent de pe `main`.
+* Versiuni suportate: este suportată doar cea mai nouă pre-lansare (în prezent `v0.1.0-alpha.5`) și arborele curent de pe `main`.
 * Rapoartele despre expunerea în rețea a studioului când este legat în mod deliberat la o adresă publică fără reverse proxy sunt mai întâi probleme de documentație: vezi secțiunea 11.
 
 ## 11. Listă de consolidare pentru cel care implementează

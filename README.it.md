@@ -28,7 +28,7 @@ Principi che danno forma al progetto:
 
 *Nome: il progetto si chiamava ARMATURA fino al 24 ott 2026 ed è stato rinominato OSATURA dopo una ricerca di marchio ([docs/LIMITATIONS.md](docs/i18n/it/LIMITATIONS.md) L-78). Sono stati rinominati anche il repository e l'indirizzo del sito (i vecchi link al repository reindirizzano).*
 
-> **Alpha. Ultima pre-release pubblicata: `v0.1.0-alpha.4`; la prossima è `v0.1.0-alpha.5`.** Gli eseguibili per Windows x86-64, macOS arm64 e Linux x86-64 e il modulo WebAssembly sono compilati da GitHub Actions e allegati a una pre-release *in bozza* su <https://github.com/chiuta/osatura/releases> (una bozza è visibile solo al proprietario finché non viene pubblicata a mano). Tutti i crate sono ancora alla versione `0.1.0`; "v0.5 / v0.6 / v0.7" sono *livelli di funzionalità* nella cronologia, non numeri di release ([CHANGELOG.md](docs/i18n/it/CHANGELOG.md)).
+> **Alpha. Ultima pre-release pubblicata: `v0.1.0-alpha.5`.** Gli eseguibili per Windows x86-64, macOS arm64 e Linux x86-64 e il modulo WebAssembly sono compilati da GitHub Actions e allegati a una pre-release *in bozza* su <https://github.com/chiuta/osatura/releases> (una bozza è visibile solo al proprietario finché non viene pubblicata a mano). Tutti i crate sono ancora alla versione `0.1.0`; "v0.5 / v0.6 / v0.7" sono *livelli di funzionalità* nella cronologia, non numeri di release ([CHANGELOG.md](docs/i18n/it/CHANGELOG.md)).
 >
 > | Verificato | Non verificato |
 > |---|---|

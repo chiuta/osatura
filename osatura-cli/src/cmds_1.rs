@@ -65,6 +65,12 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
             e.check_all_frames_finite()?;
             fs::create_dir_all(dir).map_err(|e| e.to_string())?;
             let ext = if a.flags.iter().any(|f| f == "--png") { "png" } else { "svg" };
+            if let Some(sh) = shutter_from_args(a)? {
+                if ext != "png" {
+                    return Err("--shutter works with --png frames (nothing was written)".into());
+                }
+                osatura_core::motionblur::check_sequence_cost(e.project.frames, &sh)?;
+            }
             for f in 0..e.project.frames {
                 write_frame(&e, f as f32, &Path::new(dir).join(format!("frame_{f:04}.{ext}")), a)?;
             }
@@ -78,13 +84,17 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                 export::check_budget(&e.project)?;
             }
             let ext = Path::new(out).extension().and_then(|x| x.to_str()).unwrap_or("").to_ascii_lowercase();
+            let shutter = shutter_from_args(a)?;
+            if shutter.is_some() && !matches!(ext.as_str(), "gif" | "apng" | "mp4" | "webm") {
+                return Err(format!("--shutter works with .gif .apng .mp4 .webm exports, not '.{ext}' (nothing was written)"));
+            }
             if ext == "png" {
                 guard_out(path, &Path::new(out).with_extension("atlas.json").to_string_lossy())?;
             }
             match ext.as_str() {
                 "gif" => {
                     warn_silent(&e, "GIF");
-                    let (bytes, warns) = export::gif_bytes_warn(&e, a.scale)?;
+                    let (bytes, warns) = export::gif_bytes_warn_with(&e, a.scale, shutter.as_ref())?;
                     report_warnings(a, path, "gif", warns.iter().map(|w| ("frame-rate", String::new(), w.clone())).collect())?;
                     fwrite(out, bytes).map_err(|e| e.to_string())?
                 }
@@ -97,19 +107,23 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                     report_warnings(a, path, "lottie", x.warnings.iter().map(|w| (w.code, w.layer.clone(), w.message.clone())).collect())?;
                     fwrite(out, x.doc.to_string()).map_err(|e| e.to_string())?
                 }
-                "mp4" => export_mp4(&e, out, a.scale, Path::new(path).parent().unwrap_or(Path::new(".")))?,
+                "mp4" => export_mp4(&e, out, a.scale, Path::new(path).parent().unwrap_or(Path::new(".")), shutter.as_ref())?,
                 "lottie" => {
                     let (bytes, warns) = open_formats::dotlottie_bytes_report(&e)?;
                     report_warnings(a, path, "dotlottie", warns.iter().map(|w| (w.code, w.layer.clone(), w.message.clone())).collect())?;
                     fwrite(out, bytes).map_err(|e| e.to_string())?
                 }
-                "apng" => { warn_silent(&e, "APNG"); fwrite(out, open_formats::apng_bytes(&e, a.scale)?).map_err(|e| e.to_string())? }
+                "apng" => {
+                    warn_silent(&e, "APNG");
+                    let bytes = match shutter.as_ref() { Some(sh) => open_formats::apng_bytes_blurred(&e, a.scale, sh)?, None => open_formats::apng_bytes(&e, a.scale)? };
+                    fwrite(out, bytes).map_err(|e| e.to_string())?
+                }
                 "glb" => {
-                    let (bytes, notes) = osatura_core::gltf::export_glb_report(&e)?;
+                    let (bytes, notes) = osatura_core::gltf::export_glb_with(&e, &osatura_core::gltf::GlbOptions { layer_animation: a.flags.iter().any(|f| f == "--layer-anim") })?;
                     fwrite(out, bytes).map_err(|e| e.to_string())?;
                     report_warnings(a, path, "glb", notes.into_iter().map(|n| ("glb-limit", String::new(), n)).collect())?;
                 }
-                "webm" => export_webm(&e, out, a.scale, a.opts.get("--codec").map(String::as_str).unwrap_or("vp9"), Path::new(path).parent().unwrap_or(Path::new(".")))?,
+                "webm" => export_webm(&e, out, a.scale, a.opts.get("--codec").map(String::as_str).unwrap_or("vp9"), Path::new(path).parent().unwrap_or(Path::new(".")), shutter.as_ref())?,
                 "png" => {
                     let cols = num(a, "--columns", 0.0)? as usize;
                     // `<name>.atlas.json`, never `<name>.json`: that name is where a Lottie export of the same stem goes

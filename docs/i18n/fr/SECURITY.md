@@ -21,6 +21,8 @@ Ce qu'OSATURA traite : des **fichiers de projet** (JSON), des images, de l'audio
 | Un collaborateur disposant du jeton | modifier la session partagée | endommager le projet | historique d'annulation, journal chaîné par hachage ; les collaborateurs ont la confiance du projet, il n'y a ni comptes ni rôles |
 | Appelant hostile des bibliothèques | passer de mauvais arguments à la façade, à l'ABI C ou WASM | corruption mémoire, paniques à travers la frontière | validation des arguments, contrôle des tailles avant allocation, paniques interceptées (là où la cible déroule la pile) |
 
+La seule requête sortante qu'OSATURA puisse faire est `osatura update-check`, et seulement quand vous l'exécutez (un seul GET HTTPS anonyme de la liste publique des versions, par le `curl` du système : HTTPS uniquement, TLS 1.2+, 30 s, 2 Mo, le lien affiché est vérifié pour être sur `github.com/chiuta/osatura`). Elle peut passer par Tor, Tor Browser, Cloudflare WARP ou votre propre proxy ; les préréglages sont des points locaux `socks5h://`, donc le DNS n'est pas résolu hors du proxy. Les tests sont dans `update_cmd.rs`.
+
 Hors périmètre : la protection contre un administrateur local malveillant, une chaîne de compilation ou une dépendance compromise (voir [THIRD_PARTY.md](THIRD_PARTY.md) pour ce qui est livré ; `cargo deny` contrôle les licences, les interdictions et les sources, pas les vulnérabilités), les canaux auxiliaires, et la sécurité de ffmpeg lui-même.
 
 ## 2. Serveur HTTP du studio
@@ -137,7 +139,7 @@ Liste franche ; voir [LIMITATIONS.md](LIMITATIONS.md) pour la liste plus large d
 * **N'ouvrez pas de ticket public** pour une vulnérabilité. Envoyez un rapport privé au mainteneur : **`alexio@trom.tf`** (l'adresse de l'avis affiché par `--version` du programme et des documents de licence), ou utilisez le signalement privé de vulnérabilités de GitHub, dans l'onglet *Security* du dépôt, lorsqu'il est activé.
 * Indiquez : la version (`osatura --version`) et la plateforme, le projet ou la requête qui déclenche le problème (un fichier minimal est idéal), ce que vous attendiez et ce qui s'est passé, et si vous souhaitez être crédité.
 * À quoi s'attendre *(intention, pas contrat : c'est un projet mené par une seule personne)* : un accusé de réception dans un délai raisonnable, un correctif développé en privé, un test de régression ajouté à la suite, une note dans [CHANGELOG.md](CHANGELOG.md), et un crédit si vous le souhaitez. Laissez le temps d'un correctif avant de publier les détails.
-* Versions prises en charge : seules la dernière préversion (actuellement `v0.1.0-alpha.4`) et l'arborescence actuelle sur `main` sont prises en charge.
+* Versions prises en charge : seules la dernière préversion (actuellement `v0.1.0-alpha.5`) et l'arborescence actuelle sur `main` sont prises en charge.
 * Les signalements concernant l'exposition réseau du studio lorsqu'il est délibérément lié à une adresse publique sans proxy inverse relèvent d'abord de la documentation : voir la section 11.
 
 ## 11. Liste de durcissement pour le déployeur

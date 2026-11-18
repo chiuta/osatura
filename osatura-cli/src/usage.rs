@@ -17,13 +17,14 @@ USAGE:
   osatura demo-person <out.json>                      write the walking-person demo (head, ears, hands with fingers, feet)
   osatura demo-fx  <out.json>                         write the liquid / boolean / particles demo
   osatura check    <project.json>                     validate a project
-  osatura render   <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N]
+  osatura render   <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
                     --proxy N: scrub proxy (N = 1..4): .png = bitmap at 1/2^N resolution, .svg = simplified vectors; both drop fine strokes, gradients, blends
-  osatura frames   <project.json> <out_dir> [--png] [--bones] [--scale N]
-  osatura export   <project.json> <out.gif> [--scale N] [--report r.json]   looping GIF; limits are warned on stderr and listed in --report
+                    --shutter DEG: motion blur (.png only): average --samples N (default 8) renders over DEG/360 of the frame time, starting --shutter-phase SEC (default 0) after the frame time
+  osatura frames   <project.json> <out_dir> [--png] [--bones] [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+  osatura export   <project.json> <out.gif> [--scale N] [--report r.json] [--shutter DEG] [--samples N] [--shutter-phase SEC]   looping GIF; limits are warned on stderr and listed in --report
   osatura export   <project.json> <out.html|out.htm>   one self-contained HTML player (no options)
   osatura export   <project.json> <out.json|out.lottie> [--report r.json]   .json = Lottie, .lottie = dotLottie; limits are warned on stderr and listed in --report
-  osatura export   <project.json> <out.mp4> [--scale N]   H.264, needs ffmpeg on PATH
+  osatura export   <project.json> <out.mp4> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]   H.264, needs ffmpeg on PATH
   osatura lipsync  <project.json> <audio.wav> <switch_layer> <out.json> [--map 0,1,2,3,4]   default map follows the switch's child count; shapes rest,small,open,round,wide: 1 child all, 2 closed+open, 3 closed+open+round/wide, 4 closed+small+open+round/wide, 5+ in that order
   osatura walk     <project.json> <out.json> --thigh-l B --thigh-r B [--shin-l B --shin-r B
                     --arm-l B --arm-r B --hips B --period N --stride DEG --knee DEG --bob PX --swing DEG]
@@ -51,10 +52,10 @@ USAGE:
   osatura ui       search <query...> [--ui-config F]              fuzzy command search as the palette ranks it
 
 OPEN FORMATS (open specifications; no H.264/H.265 unless you ask for .mp4; codec patent status is not assessed, see docs/PATENT_NOTES.md)
-  osatura export   <project.json> <out.apng> [--scale N]   animated PNG
-  osatura export   <project.json> <out.webm> [--scale N] [--codec vp9|av1]   VP9 with alpha (--codec av1 for AV1) via ffmpeg
+  osatura export   <project.json> <out.apng> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]   animated PNG
+  osatura export   <project.json> <out.webm> [--scale N] [--codec vp9|av1] [--shutter DEG] [--samples N] [--shutter-phase SEC]   VP9 with alpha (--codec av1 for AV1) via ffmpeg
   osatura export   <project.json> <out.png> [--scale N] [--columns N]   sprite sheet + <out>.atlas.json (layout; never <out>.json)
-  osatura export   <project.json> <out.glb> [--report r.json]   glTF 2.0 (bones, animation, skinned fills/strokes, gradients, masks, images, morph targets)
+  osatura export   <project.json> <out.glb> [--report r.json] [--layer-anim]   glTF 2.0 (bones, animation, skinned fills/strokes, gradients, masks, images, morph targets); --layer-anim also animates the position, rotation and scale of rigid shape layers
   osatura export-oca <project.json> <out_dir> [--layers]   Open Cel Animation folder
   osatura import-ora <file.ora> <out.json> [--fps N] [--frames N]   OpenRaster -> project
 
@@ -71,8 +72,10 @@ INSPECT / QUALITY
   osatura size-report <project.json> [--tol T] [--json]   which layers, images and channels contribute bytes (project file, baked Lottie, HTML page)
   osatura lod      <project.json> --tolerance-px 0.5 [--scale S | --size WxH] [--levels 4] [--ratio 2] [--out-dir D] [--report r.json] [--verify] [--frames N]   level of detail L1..Ln with a declared error bound in output pixels (path simplification, key reduction, mesh collapse, culling); --verify measures the real deviation (exit 1 if above the bound)
   osatura lod-pick <project.json> --screen-px WxH [--max-px 0.5] [--tolerance-px 0.25] [--levels 4] [--out chosen.json]   coarsest level whose declared bound stays within the pixel budget on that screen
+  osatura update-check [--proxy-preset tor|tor-browser|warp | --proxy-url URL] [--list-proxy-presets] [--json]   asks GitHub whether a newer release exists (only when you run it; downloads and installs nothing; the optional proxy keeps your address from GitHub)
   osatura ci       init <project.json> [--out osatura-ci.json] [--no-goldens] | run [manifest] [--update] [--bless] [--prune] [--only a,b] [--junit f.xml] [--html f.html] [--json f.json] [--artifacts dir] [--quiet] | bless [manifest] | diff a.png b.png [--metric ssim|de2000|de76|mse] [--tol T] [--ignore x,y,w,h;...] [--aa N] [--out heat.png] [--side s.png] [--overlay o.png] [--flicker f.gif]   animation CI: golden frames with perceptual diff (SSIM, CIEDE2000), structural checks, budgets; exit 0 pass, 1 fail, 2 error
   osatura lint     <project.json>                     static rig / animation checks (exit 1 on errors)
+  osatura schema   [out.json] [--strict]              JSON Schema (2020-12) of project files; stdout without a file; --strict forbids unknown properties
   osatura contracts <project.json> <contracts.json>   motion contracts (unit tests for animation)
   osatura loop-solve <project.json> <out.json> [--window 24] [--inclusive]   make keyed channels loop seamlessly (period N frames, no duplicated seam frame; --inclusive = last frame equals first, legacy)
   osatura coach    <project.json>                     timing / principles suggestions
@@ -91,6 +94,7 @@ RIG / PROJECT ORGANISATION
   osatura camera-seq <project.json> <out.json> <frame:shot[:cut],...>   keys the camera through saved shots
   osatura sound list <project.json> | add <project.json> <out.json> <name> <file.wav|ogg|mp3|...> [start_frame] [gain] [trim/fade options] | edit <project.json> <out.json> <name> [--start F] [--gain G] [trim/fade options] | remove <project.json> <out.json> <name>
                     trim/fade options (seconds, or frames with an f suffix such as 36f): --trim-in T --trim-out T --fade-in T --fade-out T (trim points are inside the audio file; edit: 0 clears)
+                    audio options: --pan P (-1 left .. 1 right, equal power) --filter kind:freq[:q[:gain_db]][,...] (biquad; kinds lowpass highpass bandpass notch allpass peaking lowshelf highshelf); edit: none clears
   osatura sound mix <project.json> <out.wav|out.ogg|out.mp3>   only the mixed audio (start, gain, trim, fades; project length), through ffmpeg
                     audio is mixed into .mp4 (AAC) and .webm (Opus) and embedded in .html (needs ffmpeg); .gif and .apng cannot carry audio and stay silent
   osatura make-loop <project.json> <out.json> [targets|all] [props] [--inclusive]   (removes travel = in-place; period N frames so playing 0..N-1 repeatedly has no duplicate seam frame; --inclusive = frame N-1 equals frame 0, legacy)
@@ -126,7 +130,7 @@ RIG / PROJECT ORGANISATION
   osatura glue add <project.json> <out.json> <name> a=LAYER[:path] b=LAYER[:path] pairs=i:j;i:j|auto=RADIUS [mode=rigid|snap|offset] [strength=1]   glues b vertices to a vertices (b follows a); rigid keeps the rest offset in the frame of a, snap makes them coincide, offset keeps a constant offset
   osatura glue list|remove <project.json> [<out.json> <name>]   lists / removes glues
   osatura cloth <project.json> <out.json> <layer> [pin=top,left@bone,row:N,col:N,v:N,corners,none] [gravity=900] [wind=x,y] [gust=0.5] [gust-hz=0.5] [gust-len=px] [stiffness=1] [shear=0.05] [bend=0.2] [max-stretch=1.1] [damping=0.99] [cols=N rows=N] [rect=x,y,w,h] [name=cloth] [substeps=4] [iterations=10] [preroll=frames] [circle=x,y,r[@bone];...] [capsule=x1,y1,x2,y2,r[@bone];...] [from=F] [to=F]   bakes a deterministic cloth surface onto an image layer mesh (or a vector layer with rect=) as per-vertex deform channels
-  osatura physics <project.json> <out.json> <bone,bone,...> [gravity=900] [wind=x,y] [gust=0.5] [damping=0.985] [circle=x,y,r[@bone];...] [capsule=x1,y1,x2,y2,r[@bone];...] [follow=bone] [--allow-empty] [drive=bone:gain;...] [vortex=bone|x,y:swirl[:radial[:radius]];...] [preset=hair|tail|rope|antenna|cape] [merge=keep|replace] [lateral=0..1]   bakes a chain simulation; options after preset= override it. Several chains: bone,bone/bone,bone with lateral= ties neighbouring strands
+  osatura physics <project.json> <out.json> <bone,bone,...> [gravity=900] [wind=x,y] [gust=0.5] [damping=0.985] [circle=x,y,r[@bone];...] [capsule=x1,y1,x2,y2,r[@bone];...] [follow=bone] [--allow-empty] [drive=bone:gain;...] [vortex=bone|x,y:swirl[:radial[:radius]];...] [preset=hair|tail|rope|antenna|cape] [merge=keep|replace] [lateral=0..1] [selfcollide=R]   bakes a chain simulation; options after preset= override it. Several chains: bone,bone/bone,bone with lateral= ties neighbouring strands
   osatura eye-clip <project.json> <out.json>   masks iris/pupil layers by the eye shape on the same side
   osatura parallax <project.json> <out.json> <far_layer,...,near_layer> <far_value> <near_value>   multiplane depth for top-level layers
   osatura chan-meta <project.json> <out.json> <target> <prop|*> [color=#rrggbb] [shy=on|off] [solo=on|off] [lock=on|off]
@@ -189,6 +193,7 @@ EDITING / GENERATORS / IMPORT
   osatura keys     scale <project.json> <out.json> --factor X [--pivot F --from F --to F --target NAME --prop PROP]   scale key times about a pivot frame
   osatura keys     ease <project.json> <out.json> --ease linear|step|ease_in|ease_out|ease_in_out|smooth [--from F --to F --target NAME --prop PROP]   set the easing of the keys
   osatura keys     reverse <project.json> <out.json> [--from F --to F --target NAME --prop PROP]   reverse the key order inside the range
+  osatura keys     curve <project.json> <out.json> --curve piecewise:STOP,STOP,...|steps:N[:position] [--from F --to F --target NAME --prop PROP]   bake a piecewise-linear or stepped easing curve into the segments that start in the range
   osatura marker   <project.json> <out.json> <name> <frame> [--end F]
   osatura idle     blink <project.json> <out.json> --target T --prop P [--interval S --jitter X --closed F --seed N]   random blinks
   osatura idle     breath <project.json> <out.json> --target T --prop P [--amp A --period F]   slow scale breathing

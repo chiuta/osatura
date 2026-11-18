@@ -14,7 +14,7 @@
 //! * [`match_bones`]: automatic mapping of BVH joints to rig bones (normalised names plus synonym
 //!   tables, then hierarchy topology and limb-length sanity as fallback) with a confidence table
 //!   and a manual override map.
-//! * [`retarget`]: rest-relative 2D angle deltas applied to the rig's bone angle channels, scaled
+//! * `retarget`: rest-relative 2D angle deltas applied to the rig's bone angle channels, scaled
 //!   root translation, resampling to the project frame rate, smoothing and optional foot lock.
 //!   The result is a list of appended keyed channels (non-destructive, channel locks respected),
 //!   which [`bake`] adds directly or [`bake_op`] expresses as one undoable editor operation.

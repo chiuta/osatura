@@ -137,7 +137,7 @@ impl Engine {
                     (NodeKind::Vector, self.vector_geometry(id, &st, &skin_mats, layer_tick), Vec::new())
                 }
                 LayerKind::Group { .. } => (NodeKind::Group, Vec::new(), info.children.clone()),
-                LayerKind::Switch { .. } => {
+                LayerKind::Selector { .. } => {
                     let n = info.children.len();
                     let sel = if n == 0 { None } else { Some((lp.switch.round().max(0.0) as usize).min(n - 1)) };
                     (NodeKind::Switch, Vec::new(), sel.map(|s| vec![info.children[s]]).unwrap_or_default())
@@ -146,7 +146,7 @@ impl Engine {
                     image = self.image_draw(id, &st, &skin_mats, layer_tick);
                     (NodeKind::Image, Vec::new(), Vec::new())
                 }
-                LayerKind::Liquid { blobs, threshold, cell, fill, stroke } => {
+                LayerKind::Metaball { blobs, threshold, cell, fill, stroke } => {
                     let pts: Vec<(Vec2, f32)> = blobs
                         .iter()
                         .map(|b| match b.bone.as_ref().and_then(|n| self.bone_ix.get(n)) {

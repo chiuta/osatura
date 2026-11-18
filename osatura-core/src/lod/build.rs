@@ -369,7 +369,7 @@ pub fn build(p: &Project, o: &LodOptions) -> Result<Vec<Lod>, String> {
                 continue; // removing it would change the bounds the layout is solved from
             }
             if let Some(pa) = parent_v[id] {
-                if matches!(pk.find_layer(&paths_v[pa]).map(|x| &x.kind), Some(LayerKind::Switch { .. })) {
+                if matches!(pk.find_layer(&paths_v[pa]).map(|x| &x.kind), Some(LayerKind::Selector { .. })) {
                     continue;
                 }
             }

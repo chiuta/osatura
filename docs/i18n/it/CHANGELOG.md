@@ -10,6 +10,48 @@ Le versioni correlate che **sono** reali e indipendenti da quanto sopra: l'`API_
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - 2026-11-09
+
+*Pre-release pubblicata il 10 nov 2026 da `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Le versioni dei crate restano `0.1.0`; la versione di rilascio proviene da `OSATURA_VERSION`, impostata da `release.yml`.*
+
+### Aggiunto (lotto 1: le nove specifiche funzionali, tutte facoltative)
+
+- **Suono** (specifiche 03 e 04): `SoundTrack` ha un `pan` facoltativo (da -1 a 1, potenza uguale) e `filters` (biquad); `sound add` e `sound edit` accettano `--pan P|none` e `--filter kind:freq[:q[:gain_db]][,...]`; usati da `sound mix`, dagli export mp4/webm e dal player HTML. Le tracce senza di essi mantengono invariato il grafo ffmpeg; lo schema del progetto descrive entrambi i campi.
+- **Motion blur** (specifica 11): `--shutter DEG [--samples N] [--shutter-phase SEC]` su `frames --png` e sull’export in `.gif`, `.apng`, `.mp4` e `.webm`. L’angolo 0 dà i byte semplici; una sequenza è limitata a 100000 render. `render-hdr`, lo studio e gli altri export non sono collegati.
+- **Illuminazione** (specifica 09): l’effetto `relight` accetta un oggetto `shading` facoltativo su una luce (attenuazione, cono di spot netto, speculare Blinn); le luci senza di esso danno gli stessi pixel di prima.
+- **Fisica** (specifica 10): autocollisione facoltativa delle catene con capsule (`PhysicsOptions::self_collision`, parola di fisica `selfcollide=R`); per impostazione predefinita la simulazione resta identica bit per bit.
+- **Easing** (specifica 05): `keys curve --curve piecewise:...|steps:N[:pos]` cuoce una curva lineare a tratti o a gradini in chiavi ordinarie.
+- **Layout** (specifica 06): `Align::Baseline` e un `Member::baseline` facoltativo per i contenitori a riga.
+- **glTF** (specifica 07): `export ... .glb --layer-anim` scrive canali campionati di traslazione, rotazione e scala per i livelli in movimento (lo skew viene scartato e segnalato).
+- I decodificatori di sequenze GIF e APNG (specifiche 01 e 02) sono in `osatura-core` ma **non sono collegati** a nessun comando.
+
+### Corretto (revisione del lotto 1)
+
+- **Nomi sul filo conservati**: le varianti Rust sono `Selector` e `Metaball`, ma i file di progetto, `layer_info(path).kind` e gli script mantengono `switch` e `liquid`; `selector` e `metaball` sono accettati anche in lettura. Il progetto demo WebAssembly distribuito funziona di nuovo. Aggiunto un test di regressione.
+- **`keys curve`**: il numero totale di chiavi di un progetto è limitato a 2.000.000 (`MAX_PROJECT_KEYS_AFTER_BAKE`, verificato durante la cottura); prima, `--curve steps:4096` su un progetto con molte tracce poteva esaurire la memoria.
+- **Memoria del motion blur**: i campioni sono accumulati in una somma corrente, quindi la memoria non cresce più con `--samples` (output identico byte per byte).
+- **Dimensione di decodifica del suono**: le tracce con `--pan` e `--filter` sono verificate rispetto al limite di 256 MiB prima della decodifica (il trim è rispettato, ffprobe viene consultato per primo), con un errore che nomina il suono.
+- Avvisi rustdoc (URL nudi), annotazioni `reuse lint` per `docs/clean-room` e `try/THIRD-PARTY-NOTICES.md`, clippy (`manual_is_multiple_of`), un link di indice morto e una riga di documentazione fuori posto.
+- `CLEANROOM.md` e `docs/clean-room` ora dicono esattamente quali moduli sono collegati e cosa ha fatto il filtro clean-room (le tre caselle di filtro nelle specifiche sono non spuntate; la separazione in tre fasi non è stata seguita).
+
+### Note note
+
+- **I filtri sonori non sono limitati** (scoperto con test avversari prima della pubblicazione): un file di progetto ostile con circa un milione di `filters` su una traccia fa girare `sound mix` per minuti. Apri solo file di progetto fidati; un limite è previsto per la prossima pre-release. `--shutter-phase` accetta anche valori finiti molto grandi (innocuo).
+- **Nomi di export WebAssembly**: il modulo esporta ancora le sue funzioni con il vecchio prefisso `arm_` (versione ABI 1); rinominarle romperebbe l’ABI.
+
+- **Nomi sul filo**: `switch` e `liquid` restano i nomi nel file, negli script e nella riga di comando, anche se i tipi Rust sono `Selector` e `Metaball` (vedi «Note per gli integratori» più sotto).
+- **Limite di chiavi**: `keys curve` rifiuta di cuocere più di 2.000.000 di chiavi in totale.
+- **Sign-off**: 9 commit su `main` da `v0.1.0-alpha.4` non portano la riga DCO `Signed-off-by` (il kit clean-room, l’audit di provenienza, le dichiarazioni di provenienza, la formulazione dell’implementazione indipendente, gli avvisi di terze parti per `try/` e il lotto di specifiche clean-room; vedi `git log --no-merges v0.1.0-alpha.4..main`). Sono dichiarati qui e non riscritti.
+
+### Note per gli integratori
+
+- API Rust di `osatura-core`: le varianti `LayerKind` `Switch` e `Liquid` ora si chiamano `Selector` e `Metaball`, alcune struct pubbliche hanno nuovi campi facoltativi (`SoundTrack::pan` e `filters`, `PhysicsOptions::self_collision`, `postfx::Light::shading`, `containers::Member::baseline`) e `Align` ha una nuova variante `Baseline` (i letterali di struct e i pattern matching esaustivi nel codice Rust esterno vanno aggiornati). Il formato del file di progetto, l’API di scripting (`layer_info(path).kind`) e la riga di comando mantengono i nomi `switch` e `liquid`; `selector` e `metaball` sono accettati anche in lettura. I file scritti restano invariati a meno che non si usino i nuovi campi facoltativi.
+
+
+### Aggiunto
+
+- `osatura update-check`: chiede a GitHub se esiste una versione più recente. Solo quando lo esegui; non scarica né installa nulla; una sola richiesta HTTPS anonima tramite il `curl` del sistema. Opzioni di proxy gratuito ed etico nascondono il tuo indirizzo a GitHub: `--proxy-preset tor|tor-browser|warp` (punti locali `socks5h://`, quindi il proxy risolve il nome) o il tuo con `--proxy-url`; gli elenchi di proxy pubblici aperti non sono offerti di proposito. Confronto SemVer (`alpha.10` è più recente di `alpha.9`); una build dai sorgenti non può sapere a quale versione corrisponde e lo dice.
+
 ### Documentation
 
 - README (inglese e rumeno): nuova sezione "Live demo and animation examples": la demo online ospitata è dichiarata **prevista** (non ne esiste alcuna) e sono elencati gli esempi di animazione presenti nel repository. Solo documentazione; non è stato toccato alcun sorgente Rust, manifest o file di build. `cargo check` non ha potuto essere eseguito nell'ambiente di revisione (la toolchain 1.97.0 non è scaricabile offline).

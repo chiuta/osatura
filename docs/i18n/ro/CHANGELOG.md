@@ -10,6 +10,48 @@ Versiuni înrudite care **sunt** reale și independente de cele de mai sus: `API
 
 ## [Nepublicat]
 
+## [0.1.0-alpha.5] - 2026-11-09
+
+*Pre-lansare publicată la 10 noi 2026 din `main` (commit `96e790a`, tag `v0.1.0-alpha.5`). Versiunile crate-urilor rămân `0.1.0`; versiunea lansării provine din `OSATURA_VERSION`, setată de `release.yml`.*
+
+### Adăugat (lotul 1: cele nouă specificații funcționale, toate opționale)
+
+- **Sunet** (specificațiile 03 și 04): `SoundTrack` are `pan` opțional (-1 până la 1, putere egală) și `filters` (biquad); `sound add` și `sound edit` primesc `--pan P|none` și `--filter kind:freq[:q[:gain_db]][,...]`; folosite de `sound mix`, exporturile mp4/webm și playerul HTML. Pistele fără ele păstrează graful ffmpeg neschimbat; schema proiectului descrie ambele câmpuri.
+- **Motion blur** (specificația 11): `--shutter DEG [--samples N] [--shutter-phase SEC]` la `frames --png` și la exportul în `.gif`, `.apng`, `.mp4` și `.webm`. Unghiul 0 dă octeții simpli; o secvență este limitată la 100000 de randări. `render-hdr`, studioul și celelalte exporturi nu sunt conectate.
+- **Iluminare** (specificația 09): efectul `relight` acceptă un obiect opțional `shading` pe o lumină (atenuare, con de spot strict, speculară Blinn); luminile fără el dau aceiași pixeli ca înainte.
+- **Fizică** (specificația 10): auto-coliziune opțională a lanțurilor cu capsule (`PhysicsOptions::self_collision`, cuvântul de fizică `selfcollide=R`); implicit simularea rămâne identică bit cu bit.
+- **Easing** (specificația 05): `keys curve --curve piecewise:...|steps:N[:pos]` coace o curbă liniară pe porțiuni sau în trepte în chei obișnuite.
+- **Layout** (specificația 06): `Align::Baseline` și un `Member::baseline` opțional pentru containerele de tip rând.
+- **glTF** (specificația 07): `export ... .glb --layer-anim` scrie canale eșantionate de translație, rotație și scală pentru straturile în mișcare (skew-ul este eliminat și raportat).
+- Decodoarele de secvențe GIF și APNG (specificațiile 01 și 02) se află în `osatura-core`, dar **nu sunt conectate** la nicio comandă.
+
+### Remediat (revizuirea lotului 1)
+
+- **Nume de pe fir păstrate**: variantele Rust sunt `Selector` și `Metaball`, dar fișierele de proiect, `layer_info(path).kind` și scripturile păstrează `switch` și `liquid`; `selector` și `metaball` sunt acceptate și la citire. Proiectul demo WebAssembly livrat funcționează din nou. Test de regresie adăugat.
+- **`keys curve`**: numărul total de chei al unui proiect este limitat la 2.000.000 (`MAX_PROJECT_KEYS_AFTER_BAKE`, verificat în timpul coacerii); înainte, `--curve steps:4096` pe un proiect cu multe piste putea epuiza memoria.
+- **Memoria motion blur**: eșantioanele sunt acumulate într-o sumă curentă, deci memoria nu mai crește cu `--samples` (ieșire identică octet cu octet).
+- **Dimensiunea decodării sunetului**: pistele cu `--pan` și `--filter` sunt verificate față de limita de 256 MiB înainte de decodare (trim este respectat, ffprobe este consultat întâi), cu o eroare care numește sunetul.
+- Avertismente rustdoc (URL-uri goale), adnotări `reuse lint` pentru `docs/clean-room` și `try/THIRD-PARTY-NOTICES.md`, clippy (`manual_is_multiple_of`), un link de cuprins mort și o linie de documentație pusă greșit.
+- `CLEANROOM.md` și `docs/clean-room` spun acum exact care module sunt conectate și ce a făcut filtrul clean-room (cele trei căsuțe de filtru din specificații sunt nebifate; separarea în trei etape nu a fost urmată).
+
+### Note cunoscute
+
+- **Filtrele de sunet nu sunt limitate** (descoperit prin teste adversariale înainte de publicare): un fișier de proiect ostil cu aproximativ un milion de `filters` pe o pistă face ca `sound mix` să ruleze minute în șir. Deschide doar fișiere de proiect de încredere; o limită este planificată pentru următoarea pre-lansare. `--shutter-phase` acceptă și valori finite foarte mari (inofensiv).
+- **Numele exporturilor WebAssembly**: modulul își exportă în continuare funcțiile cu vechiul prefix `arm_` (versiunea ABI 1); redenumirea ar strica ABI-ul.
+
+- **Nume de pe fir**: `switch` și `liquid` rămân numele din fișier, din script și din linia de comandă, deși tipurile Rust sunt `Selector` și `Metaball` (vezi „Note pentru integratori” mai jos).
+- **Limita de chei**: `keys curve` refuză să coacă mai mult de 2.000.000 de chei în total.
+- **Sign-off**: 9 commit-uri de pe `main` de la `v0.1.0-alpha.4` nu poartă linia DCO `Signed-off-by` (kitul clean-room, auditul de proveniență, declarațiile de proveniență, formularea implementării independente, notificările terților pentru `try/` și lotul de specificații clean-room; vezi `git log --no-merges v0.1.0-alpha.4..main`). Sunt dezvăluite aici și nu sunt rescrise.
+
+### Note pentru integratori
+
+- API-ul Rust al `osatura-core`: variantele `LayerKind` `Switch` și `Liquid` se numesc acum `Selector` și `Metaball`, iar unele structuri publice au câmpuri opționale noi (`SoundTrack::pan` și `filters`, `PhysicsOptions::self_collision`, `postfx::Light::shading`, `containers::Member::baseline`), iar `Align` are o variantă nouă `Baseline` (literalii de structuri și potrivirile exhaustive din codul Rust extern trebuie actualizate). Formatul fișierului de proiect, API-ul de scripting (`layer_info(path).kind`) și linia de comandă păstrează numele `switch` și `liquid`; `selector` și `metaball` sunt acceptate și la citire. Fișierele scrise rămân neschimbate, cu excepția cazului în care se folosesc câmpurile opționale noi.
+
+
+### Adăugat
+
+- `osatura update-check`: întreabă GitHub dacă există o versiune mai nouă. Doar când îl rulezi; nu descarcă și nu instalează nimic; o singură cerere HTTPS anonimă prin `curl` din sistem. Opțiuni de proxy gratuit și etic îți ascund adresa față de GitHub: `--proxy-preset tor|tor-browser|warp` (puncte locale `socks5h://`, deci proxy-ul rezolvă numele) sau propriul tău cu `--proxy-url`; listele de proxy-uri publice deschise nu sunt oferite intenționat. Comparație SemVer (`alpha.10` este mai nouă decât `alpha.9`); un build din surse nu poate ști cărei versiuni îi corespunde și spune asta.
+
 ### Documentație
 
 - README (în engleză și în română): secțiune nouă „Demo live și exemple de animație”: demo-ul live găzduit este declarat **planificat** (nu există niciunul), iar exemplele de animație care există în depozit sunt listate. Doar documentație; niciun cod sursă Rust, manifest sau fișier de build nu a fost atins. `cargo check` nu a putut fi rulat în mediul de revizuire (toolchain 1.97.0 nu poate fi descărcat offline).

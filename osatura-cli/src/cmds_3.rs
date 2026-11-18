@@ -62,6 +62,8 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                 if s.trim_in > 0.0 || s.trim_out.is_some() { extra += &format!(" trim {}s..{}", s.trim_in, s.trim_out.map(|o| format!("{o}s")).unwrap_or_else(|| "end".into())); }
                 if s.fade_in > 0.0 { extra += &format!(" fade-in {}s", s.fade_in); }
                 if s.fade_out > 0.0 { extra += &format!(" fade-out {}s", s.fade_out); }
+                if let Some(p) = s.pan { extra += &format!(" pan {p}"); }
+                if !s.filters.is_empty() { extra += &format!(" filter {}", s.filters.iter().map(|f| f.spec()).collect::<Vec<_>>().join(",")); }
                 println!("{}: {} at frame {} gain {}{extra}", s.name, s.file, s.start, s.gain);
             }
             if p.sounds.is_empty() { println!("no sound tracks"); }
@@ -200,6 +202,7 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
                             o.capsules.push(physics::Capsule { a: osatura_core::math::Vec2::new(num(f[0])?, num(f[1])?), b: osatura_core::math::Vec2::new(num(f[2])?, num(f[3])?), radius: num(f[4])?, follow: fb });
                         }
                     }
+                    "selfcollide" => o.self_collision = Some(num(v)?),
                     "follow" => follow_all = Some(v.to_string()),
                     "drive" => {
                         for d in v.split(';') {

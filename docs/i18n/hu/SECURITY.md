@@ -21,6 +21,8 @@ Amit az OSATURA feldolgoz: **projektfájlok** (JSON), képek, hang, Lottie / OCA
 | Közreműködő a tokennel | szerkesztheti a megosztott munkamenetet | a projekt megkárosítása | visszavonási előzmény, a hash-láncolt napló; a közreműködők megbízhatók a projekttel, nincsenek fiókok vagy szerepkörök |
 | A könyvtárak ártalmas hívója | rossz argumentumokat adhat át a homlokzatnak, a C vagy WASM ABI-nak | memóriasérülés, a határon átterjedő pánik | argumentumvalidáció, foglalás előtti méretellenőrzés, elkapott pánikok (ahol a cél unwindol) |
 
+Az egyetlen kimenő kérés, amelyet az OSATURA indíthat, az `osatura update-check`, és csak akkor, ha te futtatod (egyetlen névtelen HTTPS GET a nyilvános kiadáslistáért a rendszer `curl` programján át: csak HTTPS, TLS 1.2+, 30 s, 2 MB, a kiírt hivatkozásról ellenőrzi, hogy a `github.com/chiuta/osatura` címen van-e). Mehet Toron, Tor Browseren, Cloudflare WARP-on vagy a saját proxydon át; az előbeállítások helyi `socks5h://` végpontok, így a DNS-t nem a proxyn kívül oldják fel. A tesztek az `update_cmd.rs` fájlban vannak.
+
 Hatókörön kívül: védelem egy rosszindulatú helyi rendszergazda, egy kompromittált build-eszközlánc vagy függőség ellen (a szállított tartalomról lásd [THIRD_PARTY.md](THIRD_PARTY.md); a `cargo deny` licenceket, tiltásokat és forrásokat felügyel, sebezhetőségeket nem), oldalcsatornák, valamint maga az ffmpeg biztonsága.
 
 ## 2. A stúdió HTTP-szervere
@@ -137,7 +139,7 @@ Maga az ffmpeg összetett médiaformátumokat dolgoz fel, és voltak saját sebe
 * **Sebezhetőség miatt ne nyiss nyilvános issue-t.** Küldj privát jelentést a karbantartónak: **`alexio@trom.tf`** (a program `--version` közleményében és a licencdokumentumokban szereplő cím), vagy használd a GitHub privát sebezhetőség-bejelentését a tároló *Security* fülén, ha engedélyezve van.
 * Tartalmazza: a verziót (`osatura --version`) és a platformot, a problémát kiváltó projektet vagy kérést (a minimális fájl a legjobb), hogy mit vártál és mi történt, és hogy kérsz-e említést.
 * Mire számíthatsz *(szándék, nem szerződés: ez egy egyszemélyes projekt)*: észszerű időn belüli visszaigazolás, privátban kidolgozott javítás, a csomaghoz hozzáadott regressziós teszt, egy megjegyzés a [CHANGELOG.md](CHANGELOG.md) fájlban, és kívánságra említés. Kérjük, hagyj időt a javításra, mielőtt részleteket közzéteszel.
-* Támogatott verziók: csak a legújabb előzetes kiadás (jelenleg a `v0.1.0-alpha.4`) és a `main` aktuális fája támogatott.
+* Támogatott verziók: csak a legújabb előzetes kiadás (jelenleg a `v0.1.0-alpha.5`) és a `main` aktuális fája támogatott.
 * A stúdió hálózati kitettségéről szóló jelentések, ha szándékosan nyilvános címhez van kötve reverse proxy nélkül, először dokumentációs problémák: lásd a 11. szakaszt.
 
 ## 11. Üzemeltetői keményítési ellenőrzőlista

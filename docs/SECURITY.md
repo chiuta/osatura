@@ -21,6 +21,8 @@ What OSATURA processes: **project files** (JSON), images, audio, Lottie / OCA / 
 | A collaborator with the token | edit the shared session | damage the project | undo history, the hash-chained log; collaborators are trusted with the project, there are no accounts or roles |
 | Hostile caller of the libraries | pass bad arguments to the facade, C or WASM ABI | memory corruption, panics across the boundary | argument validation, size checks before allocation, panics caught (where the target unwinds) |
 
+The only outbound request OSATURA can make is `osatura update-check`, and only when you run it (one anonymous HTTPS GET of the public release list through the system `curl`: HTTPS only, TLS 1.2+, 30 s, 2 MB, the printed link is checked to be on `github.com/chiuta/osatura`). It can go through Tor, Tor Browser, Cloudflare WARP or your own proxy; the presets are local `socks5h://` endpoints so DNS is not resolved outside the proxy. The tests are in `update_cmd.rs`.
+
 Out of scope: protecting against a malicious local administrator, a compromised build toolchain or dependency (see [THIRD_PARTY.md](THIRD_PARTY.md) for what is shipped; `cargo deny` polices licences, bans and sources, not vulnerabilities), side channels, and the security of ffmpeg itself.
 
 ## 2. Studio HTTP server
@@ -137,7 +139,7 @@ Honest list; see [LIMITATIONS.md](LIMITATIONS.md) for the wider list of function
 * **Do not open a public issue** for a vulnerability. Send a private report to the maintainer: **`alexio@trom.tf`** (the address in the program's `--version` notice and the licence documents), or use GitHub's private vulnerability reporting on the repository's *Security* tab when it is enabled.
 * Include: version (`osatura --version`) and platform, the project or request that triggers the problem (a minimal file is best), what you expected and what happened, and whether you want to be credited.
 * What to expect *(intent, not a contract: this is a one-person project)*: an acknowledgement within a reasonable time, a fix developed in private, a regression test added to the suite, a note in [CHANGELOG.md](../CHANGELOG.md), and credit if you wish. Please allow time for a fix before publishing details.
-* Supported versions: only the newest pre-release (currently `v0.1.0-alpha.4`) and the current tree on `main` are supported.
+* Supported versions: only the newest pre-release (currently `v0.1.0-alpha.5`) and the current tree on `main` are supported.
 * Reports about the studio's network exposure when it is deliberately bound to a public address without a reverse proxy are documentation issues first: see section 11.
 
 ## 11. Deployer hardening checklist

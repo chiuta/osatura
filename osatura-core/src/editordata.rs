@@ -24,7 +24,7 @@ pub struct Report {
 fn layer_paths(layers: &[crate::project::Layer], prefix: &str, out: &mut Vec<(String, f32, bool)>) {
     for l in layers {
         let path = if prefix.is_empty() { l.name.clone() } else { format!("{prefix}/{}", l.name) };
-        out.push((path.clone(), l.opacity, matches!(l.kind, LayerKind::Switch { .. })));
+        out.push((path.clone(), l.opacity, matches!(l.kind, LayerKind::Selector { .. })));
         layer_paths(l.children(), &path, out);
     }
 }
@@ -38,7 +38,7 @@ fn switch_children(layers: &[crate::project::Layer], path: &str) -> Option<usize
     match rest {
         Some(r) => switch_children(l.children(), r),
         None => match &l.kind {
-            LayerKind::Switch { layers, .. } => Some(layers.len()),
+            LayerKind::Selector { layers, .. } => Some(layers.len()),
             _ => None,
         },
     }

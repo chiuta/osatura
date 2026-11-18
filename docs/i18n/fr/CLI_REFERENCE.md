@@ -462,7 +462,7 @@ wrote recovered.json
 
 ### `render`
 
-**Synopsis :** `osatura render <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N]`
+**Synopsis :** `osatura render <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N] [--shutter DEG] [--samples N] [--shutter-phase SEC]`
 
 `--proxy N` produit un proxy de scrub (N = 1..4) : un `.png` est un bitmap à la résolution 1/2^N, un `.svg` est un vectoriel simplifié ; tous deux abandonnent les traits fins, les dégradés et les fusions.
 
@@ -473,6 +473,11 @@ Rend une image. Une `<frame>` égale ou supérieure à la longueur du projet est
 | `--bones` | désactivé | Dessine la superposition du squelette (têtes sous forme de points, os sous forme de lignes). |
 | `--scale N` | 1 | Échelle de sortie, un nombre dans (0, 16]. Pour `.png`, elle multiplie la taille en pixels ; pour `.svg`, le document conserve son viewBox. |
 | `--proxy N` | désactivé | Proxy de scrub, N = 1..4 : `.png` = bitmap à la résolution 1/2^N, `.svg` = vectoriel simplifié ; tous deux abandonnent les traits fins, les dégradés et les modes de fusion. Destiné au scrub interactif, pas aux livrables. |
+| `--shutter DEG` | désactivé | Flou de mouvement (sortie `.png` uniquement, pas avec `--proxy`) : l’image est la moyenne de `--samples` rendus de la scène à des instants répartis uniformément sur le temps d’exposition `DEG / 360 / fps` secondes (angle d’obturation `0..360` ; 180 est l’exposition habituelle d’une demi-image ; 0 donne un rendu simple). L’alpha est moyenné prémultiplié et arrondi une seule fois à la fin. Coûte `--samples` rendus. |
+| `--samples N` | 8 | Nombre de rendus moyennés pour `--shutter` (1..256). Chaque échantillon se situe au milieu de l’une des N parties égales de l’exposition. |
+| `--shutter-phase SEC` | 0 | Début de l’exposition par rapport à l’instant de l’image, en secondes (négatif = centré ou avant l’image). Les instants sont limités à la durée du projet. |
+
+Les trois mêmes options sont acceptées par `frames --png` (chaque image floutée) et par `export` vers `.gif`, `.apng`, `.mp4` et `.webm` (chaque image de l’animation floutée ; un GIF au-dessus de 50 fps ne floute que les images qu’il conserve). Elles sont refusées pour les autres formats et pour les images `.svg` (`--shutter works with ...`). Une séquence peut comporter au plus 100000 rendus (images x échantillons) ; `--shutter 0` écrit les rendus simples. Non raccordés : `render-hdr`, le studio et les autres exports.
 
 ```
 $ osatura render demo.json 12 f12.png --bones --scale 2
@@ -491,7 +496,7 @@ wrote px.png
 
 ### `frames`
 
-**Synopsis :** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N]`
+**Synopsis :** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]`
 
 Rend **chaque** image dans un répertoire (créé s'il n'existe pas) sous la forme `frame_0000.svg` ... (ou `.png` avec `--png`). Toutes les images sont d'abord vérifiées pour s'assurer que leurs poses sont finies.
 
@@ -508,14 +513,14 @@ frame_0001.png
 
 **Synopsis :**
 ```
-osatura export <project.json> <out.gif> [--scale N] [--report r.json]
+osatura export <project.json> <out.gif> [--scale N] [--report r.json] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.html|out.htm>
 osatura export <project.json> <out.json|out.lottie> [--report r.json]
-osatura export <project.json> <out.mp4> [--scale N]
-osatura export <project.json> <out.apng> [--scale N]
-osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1]
+osatura export <project.json> <out.mp4> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.apng> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.png> [--scale N] [--columns N]
-osatura export <project.json> <out.glb> [--report r.json]
+osatura export <project.json> <out.glb> [--report r.json] [--layer-anim]
 ```
 (une forme par format ; l'extension de sortie, sans distinction de casse, choisit la forme. Une option que la forme ne mentionne pas est refusée : `unknown option --scale for 'export .json' (applies to: export .gif, export .mp4, ...)`. Avec une extension inconnue ou absente, c'est l'erreur de format qui est signalée.)
 
@@ -539,6 +544,7 @@ Options :
 |---|---|
 | `--scale N` | Échelle du raster (0, 16] pour `.gif .mp4 .apng .webm .png`. Sur les autres formats, elle est refusée (`unknown option --scale for 'export .json'`) ; avant la vague 7, c'était un avertissement. |
 | `--report FILE` | Écrit en JSON la liste des éléments que le format n'a pas pu transporter (`.gif .json .lottie .glb`) : `{"format","count","warnings":[{"code","layer","message"}]}`. Les mêmes avertissements sont toujours affichés sur stderr. Le fichier ne peut pas être le projet d'entrée. |
+| `--layer-anim` | `.glb` uniquement : anime aussi la position, la rotation et l’échelle des calques de formes rigides (non skinnés). Chaque calque en mouvement reçoit un nœud parent avec des canaux LINEAR échantillonnés de translation, rotation et échelle relatifs à son placement à l’image 0, dans l’espace de l’os qu’il suit (ou de la scène), de sorte que les groupes animés et la scène compensée par la caméra sont inclus ; les calques qui ne bougent pas sont écrits exactement comme sans l’option. Le skew, l’opacité, les switches, le wobble et les déformateurs ne sont toujours pas animés (signalés comme `[glb-limit]`). |
 | `--codec vp9\|av1` | `.webm` uniquement (`vp9` par défaut) ; toute autre valeur : `unknown --codec 'foo' (vp9 or av1)`. |
 | `--columns N` | Sprite sheet `.png` uniquement : nombre de vignettes par ligne (par défaut : une grille presque carrée, ceil(sqrt(frames)) : 3 colonnes pour 8 images). |
 
@@ -871,6 +877,7 @@ osatura keys shift <project.json> <out.json> --by N [--from F --to F --target NA
 osatura keys scale <project.json> <out.json> --factor X [--pivot F --from F --to F --target NAME --prop PROP]
 osatura keys ease <project.json> <out.json> --ease linear|step|ease_in|ease_out|ease_in_out|smooth [--from F --to F --target NAME --prop PROP]
 osatura keys reverse <project.json> <out.json> [--from F --to F --target NAME --prop PROP]
+osatura keys curve <project.json> <out.json> --curve piecewise:STOP,STOP,...|steps:N[:position] [--from F --to F --target NAME --prop PROP]
 ```
 Chaque opération n'accepte que ses propres options (`keys shift --factor 2` est refusé) ; `--by`, `--factor` et `--ease` sont obligatoires pour leur opération (un `--by` ou `--factor` omis était auparavant sans effet, en silence).
 
@@ -882,6 +889,9 @@ Opérations de clés en masse sur **tous les canaux animés par clés** (filtré
 | `scale` | `--pivot F --factor X` | Met à l'échelle les temps des clés autour de l'image pivot. |
 | `ease` | `--ease E` | Définit l'interpolation des clés (interpolations nommées ; utilisez `keyedit ease` pour `bezier:`). |
 | `reverse` | - | Inverse l'ordre des clés dans la plage. |
+| `curve` | `--curve C` | Cuit une courbe d’interpolation linéaire par morceaux ou en escalier dans chaque segment qui **commence** à une clé de l’intervalle. |
+
+**`keys curve`.** `--curve piecewise:STOP,STOP,...` prend des arrêts écrits `output [input [input]]` (entrées en fractions ou en pourcentages, de sorte que `piecewise:0,0.25 75%,1` monte à un quart aux trois quarts du segment, puis jusqu’à la valeur finale) ; `--curve steps:N[:position]` prend `jump-end` (par défaut) ou `jump-none`. Les règles sur les arrêts et les entrées (entrées manquantes réparties uniformément, une entrée inférieure à une précédente relevée à celle-ci, deux entrées sur un même arrêt, au moins 2 arrêts) suivent le brouillon public CSS Easing Functions Level 2. La courbe est **cuite** : la clé de départ garde sa valeur, reçoit la première interpolation (linéaire, ou en escalier pour une courbe en escalier) et des clés sont insérées pour que l’interpolation ordinaire des clés reproduise exactement la courbe ; la courbe elle-même n’est pas stockée, le format du projet ne change pas, et les anciens projets se chargent comme avant. La clé de fin d’un segment n’est jamais modifiée, donc une courbe doit commencer à 0 et finir à 1 : une courbe qui ne le fait pas (pas `jump-start` et `jump-both`, courbe par morceaux commençant au-dessus de 0), et une courbe par morceaux avec un saut vertical (deux arrêts de même entrée et de sorties différentes), sont refusées avec la raison et rien n’est écrit. Au plus 200000 clés par piste.
 
 ```
 $ osatura keys shift small.json k1.json --target arm_up --prop bone_angle --by 2
@@ -890,6 +900,7 @@ $ osatura keys scale small.json k2.json --pivot 0 --factor 0.5 --from 0 --to 48
 wrote k2.json (37 key(s) changed)
 $ osatura keys reverse small.json k4.json
 wrote k4.json (37 key(s) changed)
+$ osatura keys curve small.json k5.json --curve steps:4 --target arm_up --prop bone_angle --from 0 --to 12
 ```
 Les clés déplacées en dehors de `0..frames-1` restent dans le fichier (lint signale `L007`) ; cette commande n'allonge pas la durée du projet. **Voir aussi :** `keyedit` (précis, fondé sur une sélection), `loop-solve`.
 
@@ -1190,7 +1201,7 @@ Elles prennent `<project.json> <out.json>` et des mots `key=value` (sans `--`).
 osatura physics <project.json> <out.json> <bone,bone,...> [gravity=900] [wind=x,y] [gust=0.5] [damping=0.985]
     [circle=x,y,r[@bone];...] [capsule=x1,y1,x2,y2,r[@bone];...] [follow=bone] [--allow-empty]
     [drive=bone:gain;...] [vortex=bone|x,y:swirl[:radial[:radius]];...] [preset=hair|tail|rope|antenna|cape]
-    [merge=keep|replace] [lateral=0..1]
+    [merge=keep|replace] [lateral=0..1] [selfcollide=R]
 ```
 Fige une **simulation de chaîne** de Verlet (cheveux, queue, corde, antenne, cape) sur les os listés (racine de la chaîne en premier) sous forme de clés `bone_angle`, une par image.
 
@@ -1206,6 +1217,7 @@ Fige une **simulation de chaîne** de Verlet (cheveux, queue, corde, antenne, ca
 | `preset=` | Valeurs de départ pour `hair tail rope antenna cape` ; les mots écrits **après** `preset=` les remplacent. |
 | `merge=keep\|replace` | `keep` (par défaut) laisse intacts les os qui ont déjà une animation ; `replace` les écrase. |
 | `lateral=0..1` | Avec plusieurs chaînes (`bone,bone/bone,bone`), relie entre eux les brins voisins. |
+| `selfcollide=R` | Auto-collision facultative de chaque chaîne : chaque segment est une capsule 2D de rayon `R` et les segments qui ne sont pas voisins se repoussent (une queue qui s’enroule sur elle-même ne se traverse donc pas). `R` doit être fini, > 0 et inférieur à la moitié de l’os le plus court de la chaîne ; au plus 128 os par chaîne ; les brins n’entrent pas en collision entre eux. Sans ce mot, la simulation est exactement comme avant. |
 | `--allow-empty` | Accepte une exécution qui n'a rien figé. |
 
 ```
@@ -1474,8 +1486,11 @@ osatura sound edit   <project.json> <out.json> <name> [--start F] [--gain G] [tr
 osatura sound remove <project.json> <out.json> <name>
 osatura sound mix    <project.json> <out.wav|out.ogg|out.mp3>
     trim/fade options (seconds, or frames with an f suffix such as 36f): --trim-in T --trim-out T --fade-in T --fade-out T
+    audio options: --pan P (-1 left .. 1 right, equal power) --filter kind:freq[:q[:gain_db]][,...] (biquad; kinds lowpass highpass bandpass notch allpass peaking lowshelf highshelf); edit: none clears
 ```
 Les pistes de son sont des **références** (chemin du fichier relatif au projet, image de départ, gain 0..4, fenêtre de rognage dans le fichier, fondus). Rien n'est intégré au projet ; le fichier audio doit voyager avec lui, et doit se trouver dans le répertoire du projet, sauf si `--allow-external-assets` est donné. `edit` ne modifie que les champs indiqués (`0` supprime un rognage). `--trim-out 0` signifie « jusqu'à la fin ». `sound mix` rend uniquement l'audio mixé pour la **durée du projet** (via ffmpeg : wav = PCM 16 bits 44,1 kHz, ogg = Vorbis q4, mp3 = 96 kb/s).
+**Panoramique et filtres (facultatifs).** `--pan P` (-1 = gauche, 0 = centre, 1 = droite) enregistre sur la piste un panoramique constant à puissance égale (un fichier mono devient stéréo ; un fichier stéréo utilise la loi de balance du panoramiqueur stéréo ; plus de deux canaux sont refusés). Une piste sans ni l’un ni l’autre est mixée exactement comme avant, par le graphe ffmpeg inchangé. Une piste avec panoramique est d’abord décodée en flottant 32 bits, panoramiquée dans le domaine des échantillons, et le résultat remplace le fichier comme entrée ffmpeg ; démarrage, rognage, fondus et gain s’appliquent ensuite à l’audio panoramiqué. `sound edit ... --pan none` le supprime. `--filter` enregistre une liste de filtres du second ordre (biquad) appliqués dans l’ordre, avant le panoramique, à tout le fichier décodé : `kind:freq[:q[:gain_db]]`, types `lowpass`, `highpass`, `bandpass`, `notch`, `allpass`, `peaking`, `lowshelf`, `highshelf` ; `q` vaut 0.7071 par défaut (0 < q <= 1000), `gain_db` compte pour peaking et les shelves ; plusieurs filtres sont séparés par des virgules (`--filter lowpass:8000,peaking:1000:2:6`) ; `--filter none` les efface. La fréquence doit être inférieure à la moitié de la fréquence d’échantillonnage du fichier (vérifié au moment du mixage ; au-dessus de 0,45 fois la fréquence, un avertissement de stabilité numérique est affiché), chaque canal est filtré séparément avec un état initial nul, et la sortie est limitée à -1..1. Les formules des filtres sont les formes publiques de l’Audio EQ Cookbook ; la liste est enregistrée comme `filters` sur la piste (absente quand elle est vide). Les pistes avec panoramique ou filtres empruntent le chemin dans le domaine des échantillons décrit ci-dessus ; l’ordre est filtres, puis panoramique, puis rognage, fondus, démarrage et gain. L’aperçu de la forme d’onde dans le studio n’en montre aucun.
+
 L'audio mixé est aussi multiplexé dans `.mp4` (AAC) et `.webm` (Opus) et intégré dans `.html` ; `.gif`/`.apng` ne peuvent pas le porter.
 
 ```
@@ -1903,11 +1918,11 @@ osatura container solve  <project.json> [--size WxH --data out.json]
 
 Un **conteneur** est une boîte de mise en page de type flexbox : `id`, `members`, `axis` (`row`|`column`), `gap`, `cross_gap`, `padding`
 (`[left,top,right,bottom]`), `justify` (`start|center|end|space_between|space_around`), `align`
-(`start|center|end|stretch`), `wrap` (`none|wrap`) et `rect`, une règle pour son propre rectangle sur le canevas :
+(`start|center|end|stretch|baseline`), `wrap` (`none|wrap`) et `rect`, une règle pour son propre rectangle sur le canevas :
 `{"kind":"fixed",...}`, `{"kind":"pin","left","right","top","bottom","width","height"}` (distances par rapport aux bords du canevas ; deux valeurs quelconques
 par axe), `{"kind":"aspect",...}` ou `{"kind":"hug"}`. Un **membre** est exactement l'un de `{"layer":PATH}`,
 `{"container":ID}` ou `{"spacer":true}`, avec `grow`, `shrink`, `width`, `height`, `min_w/max_w/min_h/max_h` et
-un `align` de remplacement ; `"resize":true` permet au solveur de mettre le calque à l'échelle de son emplacement.
+une surcharge `align` et un `baseline` facultatif (distance entre le haut du membre et sa ligne de base, utilisée par `align: baseline` dans les conteneurs en ligne ; voir PROJECT_FORMAT.md section 11.5) ; `"resize":true` permet au solveur de mettre le calque à l’échelle de son emplacement.
 
 ```
 $ cat cont.json
@@ -1991,7 +2006,14 @@ Rend une image et applique par-dessus une **chaîne d'effets de post-traitement*
 `blur {radius}`, `drop_shadow {dx,dy,blur,color,opacity}`, `glow {radius,strength,color?}`, `outline {width,color}`,
 `posterize {levels}`, `pixelate {size}`, `levels {in_black,in_white,gamma,out_black?,out_white?}`, `fade {amount}` et
 `relight {ambient,bevel,height,lights:[{x,y,z,color?,intensity?,radius?,cast_shadow?,spot?,falloff?}],ground_shadow?,
-normal_map?,ambient_color?}`. Sans `normal_map`, le relight ombre un biseau fabriqué à partir du canal alpha flouté.
+normal_map?,ambient_color?}`. Sans `normal_map`, relight ombre un biseau construit à partir du canal alpha flouté.
+Une lumière peut porter l’objet facultatif `shading` `{attenuation?:[kc,kl,kq], cutoff?, direction?:[x,y,z], exponent?, specular?, shininess?}`
+pour utiliser un autre modèle d’éclairage : atténuation `1/(kc + kl d + kq d^2)` (par défaut `[1,0,0]`, chacun >= 0, pas tous nuls), un cône strict de
+demi-angle `cutoff` degrés (0..90 ; absent = pas de cône, pas de bord doux) autour de `direction` (de la lumière vers l’image, par défaut
+`[0,0,-1]`) avec l’intensité `cos(angle)^exponent` (0..128, par défaut 0), et une brillance Blinn pour un observateur situé directement au-dessus de l’image
+(`specular` >= 0, par défaut 0 = aucune ; `shininess` >= 0, par défaut 32). La brillance est la couleur de la lumière multipliée par son intensité, ajoutée après
+la multiplication de la couleur de surface par la lumière diffuse. Pour une lumière avec `shading`, les `spot`, `radius` et `falloff` de cette lumière sont ignorés ;
+`color`, `intensity` et `cast_shadow` s’appliquent toujours. Les lumières sans `shading` et les chaînes écrites avant son existence sont rendues exactement comme avant.
 
 ```
 $ cat chain.json
@@ -2178,6 +2200,23 @@ $ osatura lod-pick small.json --screen-px 64x48 --max-px 2 --out chosen2.json
 screen 64x48 -> scale 0.1000 px/unit; budget 2 px -> level L4 (declared 0.5310 px, 62 anchors, 0 mesh vertices, 37 keys)
 ```
 
+### `update-check`
+
+**Synopsis :** `osatura update-check [--proxy-preset tor|tor-browser|warp | --proxy-url URL] [--list-proxy-presets] [--json]`
+
+Demande à GitHub s'il existe une version plus récente d'OSATURA. La commande ne s'exécute que lorsque vous la tapez : rien ne vérifie en arrière-plan, rien n'est téléchargé ni installé, et la seule chose envoyée est une requête anonyme pour la liste publique des versions (faite par le `curl` du système, HTTPS uniquement, 30 s, 2 Mo au plus). La réponse compare votre version à la plus récente version publiée selon les règles SemVer : `0.1.0-alpha.5` est plus récente que `0.1.0-alpha.4`, et `0.1.0` est plus récente que `0.1.0-rc.1`.
+
+`--proxy-preset` envoie la requête par un proxy gratuit qui tourne sur votre propre machine : `tor` (le service Tor sur `127.0.0.1:9050`), `tor-browser` (un Tor Browser lancé, `127.0.0.1:9150`) ou `warp` (Cloudflare WARP en mode proxy, `127.0.0.1:40000`). Les trois utilisent `socks5h://`, donc le nom `api.github.com` est résolu par le proxy et non par votre système. Tor est le choix recommandé (réseau de bénévoles, à but non lucratif, open source) ; WARP est gratuit mais reste un service commercial à client fermé. Les listes de proxys publics ouverts ne sont volontairement pas proposées : ils sont souvent compromis ou interceptent le trafic. `--proxy-url` accepte votre propre proxy `http://`, `https://`, `socks5://` ou `socks5h://` ; les deux options ne se combinent pas. `--list-proxy-presets` affiche les préréglages et quitte. (`--proxy` est une autre option : le niveau de proxy de détail du studio.)
+
+```
+$ osatura update-check --proxy-preset tor
+update-check: going through socks5h://127.0.0.1:9050
+You are up to date: 0.1.0-alpha.4 (newest published release: v0.1.0-alpha.4).
+$ osatura update-check --json
+{"current":"0.1.0-alpha.4","latest":"v0.1.0-alpha.5","prerelease":true,"update_available":true,"url":"https://github.com/chiuta/osatura/releases/tag/v0.1.0-alpha.5"}
+```
+**Piège :** seuls les builds produits par le workflow de publication connaissent leur version ; un build depuis les sources (version `0.1.0`) affiche la dernière version mais ne peut pas dire si elle est plus récente, et `--json` contient alors `"current": null` et `"update_available": null`. Code de sortie 1 avec une raison d'une ligne quand `curl` est absent ou que GitHub est injoignable (les sorties Tor sont parfois bloquées ou limitées). L'adresse de téléchargement affichée est toujours un lien `github.com/chiuta/osatura`.
+
 ### `export-fit`
 
 **Synopsis :** `osatura export-fit <project.json> <out> --max-size 500KB [--format lottie|html|gif|apng|webm|project] [--min-ssim X] [--max-seconds 60] [--measure raw|gzip] [--frames N] [--search ladder|descent|grid] [--report out.json] [--pareto out.csv] [--audit] [--no-baseline]`
@@ -2229,6 +2268,17 @@ Info L007 [:CameraX] key at frame 24 lies outside the 0..8 timeline
 Info L007 [arm_low:BoneAngle] key at frame 12 lies outside the 0..8 timeline
 ```
 `L007` est une clé située hors de la timeline (ici parce que `small.json` est la démo réduite à 8 images).
+
+### `schema`
+
+**Synopsis :** `osatura schema [out.json] [--strict]`
+
+Publie le JSON Schema (dialecte 2020-12) des fichiers de projet, afin que les éditeurs et outils externes puissent valider un projet avant de le charger et proposer la complétion. La racine, `camera`, `bones` et `ik` sont décrits champ par champ (types, champs obligatoires, valeurs par défaut, la version du format comme `const`, `color_space` comme énumération) ; les autres listes sont acceptées comme tableaux d’objets. La sortie est déterministe (clés triées, mêmes octets à chaque fois) et va vers la sortie standard quand aucun fichier n’est nommé. Par défaut, les propriétés inconnues sont autorisées, comme dans le chargeur (il les signale, il ne les refuse pas) ; `--strict` ajoute `additionalProperties: false` aux objets décrits.
+```
+$ osatura schema project.schema.json
+wrote project.schema.json
+```
+**Codes de sortie :** 0 en cas de succès, 1 quand le fichier ne peut pas être écrit. **Voir aussi :** `check`, `lint`.
 
 ### `contracts`
 
@@ -2885,6 +2935,7 @@ Chaque commande avec un résumé d'une ligne et la section qui la documente. Les
 | `trail` | trajectoire de mouvement d'un os, d'un calque ou d'un point | [12](#12-effets-profondeur-de-champ-onion-skin-trajectoires-et-caméra) |
 | `trim` | précalcule un trim path dans un calque vectoriel | [5](#5-rigging-skins-ik-et-aides-de-mise-en-page) |
 | `ui` | registre des commandes du studio, raccourcis, dispositions, recherche | [16](#16-studio-collaboration-serveur-dagent-mcp-et-registre-de-linterface) |
+| `update-check` | demande à GitHub si une version plus récente existe ; proxy gratuit en option | [13](#13-niveau-de-détail-rapports-de-taille-et-export-fit) |
 | `vcs` | gestion de versions avec fusion sémantique pour un fichier de projet | [15](#15-gestion-de-versions-vcs) |
 | `view-swap` | pilote un calque de commutation à partir d'une propriété d'os (fonction en escalier) | [5](#5-rigging-skins-ik-et-aides-de-mise-en-page) |
 | `walk` | génère un cycle de marche | [6](#6-animation-clés-timeline-et-générateurs) |

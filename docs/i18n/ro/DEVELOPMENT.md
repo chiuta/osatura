@@ -140,7 +140,7 @@ Proiectul este o implementare independentă. Pe scurt (textul obligatoriu este [
 
 ## 7. Listă de verificare pentru lansare
 
-Ultima pre-lansare publicată este `v0.1.0-alpha.4`; următoarea este pregătită ca `v0.1.0-alpha.5` (toate crate-urile sunt încă 0.1.0; etichetele de versiune „v0.5/v0.6/v0.7” din README, FEATURES și ROADMAP sunt niveluri de funcționalități, nu versiuni de crate; vezi [CHANGELOG.md](CHANGELOG.md)). Pentru a face una:
+Ultima pre-lansare publicată este `v0.1.0-alpha.5` (toate crate-urile sunt încă 0.1.0; etichetele de versiune „v0.5/v0.6/v0.7” din README, FEATURES și ROADMAP sunt niveluri de funcționalități, nu versiuni de crate; vezi [CHANGELOG.md](CHANGELOG.md)). Pentru a face una:
 
 1. **Versiune.** Stabilește versiunea fiecărui crate. Fațada are propria versiune (`API_VERSION`, azi 1.4.0: majoră la eliminarea sau schimbarea unei linii de suprafață, minoră la adăugare), iar `OSATURA_ABI_VERSION` / `arm_abi_version()` (ambele 1) se schimbă doar la o modificare incompatibilă a ABI-ului C sau wasm. Aliniază versiunile din `Cargo.toml`, ieșirea `osatura --version`, caseta de stare din README și CHANGELOG.
 2. **Condiții verzi.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, cele cinci teste smoke Chromium, `scripts/e2e.sh` (release), `cargo test -p osatura-gpu` dacă s-a schimbat codul GPU.

@@ -115,7 +115,7 @@ impl Engine {
                     skew: l.transform.skew,
                     opacity: l.opacity.clamp(0.0, 1.0),
                     switch: match &l.kind {
-                        LayerKind::Switch { selected, .. } => *selected as f32,
+                        LayerKind::Selector { selected, .. } => *selected as f32,
                         _ => 0.0,
                     },
                     wobble: l.wobble.as_ref().map(|w| w.amp).unwrap_or(0.0),

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+<!-- Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio) -->
+<!--
+  SignPath artifact configuration for the Windows release (CODE_SIGNING_POLICY.md). SignPath keeps its own copy:
+  paste this into the project "osatura", artifact configuration "windows-zip". The outer <zip-file> is the GitHub
+  Actions artifact "osatura-windows-x86_64"; inside it is the release zip, whose root folder is osatura-windows-x86_64/.
+  Every file must carry product name OSATURA and product/file version = the release version (embedded by build.rs;
+  checked by release.yml before signing; enforced here).
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <!-- the release version without the leading v, e.g. 0.1.0-alpha.4; passed by release.yml -->
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <zip-file path="osatura-windows-x86_64.zip">
+      <pe-file-set product-name="OSATURA" product-version="${version}" file-version="${version}">
+        <include path="osatura-windows-x86_64/osatura.exe" />
+        <include path="osatura-windows-x86_64/osatura-studio.exe" />
+        <include path="osatura-windows-x86_64/lib/osatura_capi.dll" />
+        <for-each>
+          <authenticode-sign />
+        </for-each>
+      </pe-file-set>
+    </zip-file>
+  </zip-file>
+</artifact-configuration>

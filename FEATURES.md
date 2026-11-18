@@ -18,7 +18,7 @@ Honest status of what exists. **✅ done & tested · 🟡 partial · ❌ not imp
 
 This section is the **single place to see what can be built, in what order, and whether it is safe**.
 It supersedes the scattered "candidate #" lists further down; details and IDs live in `ROADMAP.md`
-(R-xxx / I-xx), the clean-room method in `CLEANROOM.md`, licences in `LICENSING.md`.
+(R-xxx / I-xx), the independent-implementation method in `CLEANROOM.md`, licences in `LICENSING.md`.
 
 **Status:** ✅ built & tested · 🟡 partly built · ⬜ planned (not started)
 **IP status (after the alternatives of ROADMAP §8):**

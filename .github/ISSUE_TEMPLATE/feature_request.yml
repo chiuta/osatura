@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: CC-BY-4.0
+# Copyright (c) 2026 Alexandru-Ionuț Chiuță (Alexio)
+name: Feature request
+description: Suggest an improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        OSATURA is an independent implementation (see CLEANROOM.md). Describe the need and the behaviour you want
+        in your own words; please do not paste code, file formats or documentation from proprietary software.
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like OSATURA to do?
+    validations:
+      required: true

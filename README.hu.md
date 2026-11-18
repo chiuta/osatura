@@ -28,7 +28,7 @@ A projektet alakító alapelvek:
 
 *Név: a projektet 2026. okt. 24-ig ARMATURA-nak hívták, és egy védjegykeresés után nevezték át OSATURA-ra ([docs/LIMITATIONS.md](docs/i18n/hu/LIMITATIONS.md) L-78). A tárolót és az oldal címét is átneveztük (a régi tárolólinkek átirányítanak).*
 
-> **Alfa. A legutóbb közzétett előzetes kiadás: `v0.1.0-alpha.4`; a következő a `v0.1.0-alpha.5`.** A Windows x86-64, macOS arm64 és Linux x86-64 futtatható fájlokat, valamint a WebAssembly modult a GitHub Actions építi, és egy *vázlat* előzetes kiadáshoz csatolja a <https://github.com/chiuta/osatura/releases> oldalon (a vázlatot csak a tulajdonos látja, amíg kézzel közzé nem teszi). Minden crate verziója továbbra is `0.1.0`; a „v0.5 / v0.6 / v0.7” a történetben *funkciószintet* jelöl, nem kiadási számot ([CHANGELOG.md](docs/i18n/hu/CHANGELOG.md)).
+> **Alfa. A legutóbb közzétett előzetes kiadás: `v0.1.0-alpha.5`.** A Windows x86-64, macOS arm64 és Linux x86-64 futtatható fájlokat, valamint a WebAssembly modult a GitHub Actions építi, és egy *vázlat* előzetes kiadáshoz csatolja a <https://github.com/chiuta/osatura/releases> oldalon (a vázlatot csak a tulajdonos látja, amíg kézzel közzé nem teszi). Minden crate verziója továbbra is `0.1.0`; a „v0.5 / v0.6 / v0.7” a történetben *funkciószintet* jelöl, nem kiadási számot ([CHANGELOG.md](docs/i18n/hu/CHANGELOG.md)).
 >
 > | Ellenőrizve | Nem ellenőrizve |
 > |---|---|

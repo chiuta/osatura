@@ -21,6 +21,8 @@ Ciò che OSATURA elabora: **file di progetto** (JSON), immagini, audio, file di 
 | Un collaboratore con il token | modificare la sessione condivisa | danneggiare il progetto | cronologia di annullamento, log con catena di hash; ai collaboratori è affidato il progetto, non ci sono account né ruoli |
 | Chiamante ostile delle librerie | passare argomenti errati alla facciata, alla ABI C o WASM | corruzione della memoria, panic oltre il confine | validazione degli argomenti, controlli di dimensione prima dell'allocazione, panic intercettati (dove il target esegue l'unwinding) |
 
+L'unica richiesta in uscita che OSATURA può fare è `osatura update-check`, e solo quando la esegui (un solo GET HTTPS anonimo dell'elenco pubblico delle versioni, tramite il `curl` del sistema: solo HTTPS, TLS 1.2+, 30 s, 2 MB, il link stampato è verificato per essere su `github.com/chiuta/osatura`). Può passare da Tor, Tor Browser, Cloudflare WARP o dal tuo proxy; i preset sono punti locali `socks5h://`, quindi il DNS non viene risolto fuori dal proxy. I test sono in `update_cmd.rs`.
+
 Fuori ambito: la protezione da un amministratore locale malevolo, da una toolchain di build o da una dipendenza compromessa (vedi [THIRD_PARTY.md](THIRD_PARTY.md) per ciò che viene distribuito; `cargo deny` controlla licenze, ban e sorgenti, non le vulnerabilità), i canali laterali e la sicurezza di ffmpeg stesso.
 
 ## 2. Server HTTP dello studio
@@ -136,7 +138,7 @@ Elenco onesto; vedi [LIMITATIONS.md](LIMITATIONS.md) per l'elenco più ampio dei
 * **Non aprire una issue pubblica** per una vulnerabilità. Invia una segnalazione privata al maintainer: **`alexio@trom.tf`** (l'indirizzo dell'avviso di `--version` del programma e dei documenti di licenza), oppure usa la segnalazione privata delle vulnerabilità di GitHub nella scheda *Security* del repository, quando è abilitata.
 * Includi: versione (`osatura --version`) e piattaforma, il progetto o la richiesta che provoca il problema (un file minimo è la cosa migliore), cosa ti aspettavi e cosa è successo, e se vuoi essere citato.
 * Cosa aspettarsi *(un'intenzione, non un contratto: questo è un progetto di una sola persona)*: una conferma di ricezione in tempi ragionevoli, una correzione sviluppata in privato, un test di regressione aggiunto alla suite, una nota in [CHANGELOG.md](CHANGELOG.md) e un riconoscimento se lo desideri. Lascia il tempo per una correzione prima di pubblicare i dettagli.
-* Versioni supportate: solo l'ultima pre-release (attualmente `v0.1.0-alpha.4`) e l'albero attuale su `main` sono supportati.
+* Versioni supportate: solo l'ultima pre-release (attualmente `v0.1.0-alpha.5`) e l'albero attuale su `main` sono supportati.
 * Le segnalazioni sull'esposizione di rete dello studio quando è deliberatamente in bind su un indirizzo pubblico senza reverse proxy sono prima di tutto problemi di documentazione: vedi sezione 11.
 
 ## 11. Checklist di hardening per chi installa

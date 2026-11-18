@@ -178,7 +178,7 @@ pub fn wrap_layers(p: &mut Project, name: &str, members: &[String], kind: Wrap) 
     if top {
         // parallax belongs to the top-level ancestor; the members must agree or the picture would change
         let par = match &w.kind {
-            LayerKind::Group { layers } | LayerKind::Switch { layers, .. } => layers[0].parallax,
+            LayerKind::Group { layers } | LayerKind::Selector { layers, .. } => layers[0].parallax,
             _ => 1.0,
         };
         if w.children().iter().any(|c| c.parallax != par) {
@@ -235,7 +235,7 @@ trait ChildProbe {
 }
 impl ChildProbe for Layer {
     fn children_mut_probe(&self) -> bool {
-        matches!(self.kind, LayerKind::Group { .. } | LayerKind::Switch { .. })
+        matches!(self.kind, LayerKind::Group { .. } | LayerKind::Selector { .. })
     }
 }
 

@@ -96,6 +96,8 @@ live-input, overlay-urile și configurația parametrilor feței; fișierele de c
 Proiectul se serializează cu `skip_serializing_if` pentru listele opționale. Un fișier scris de mână poate
 fi mai scurt decât ce scrie `osatura` înapoi; ambele sunt echivalente.
 
+Un JSON Schema (dialectul 2020-12) al fișierului este afișat de `osatura schema [out.json] [--strict]`; descrie rădăcina, `camera`, `bones` și `ik` câmp cu câmp, iar celelalte liste ca tablouri de obiecte. Permite proprietăți necunoscute, ca încărcătorul, cu excepția cazului în care se dă `--strict`.
+
 ## 3. Câmpuri de nivel superior
 
 | Nume JSON | Tip | Implicit | Interval / regulă | Semnificație |
@@ -259,6 +261,8 @@ Câmpurile comune sunt scrise după câmpurile specifice tipului în ieșire, da
 | `layers` | array of layers | `[]` | Copiii moștenesc transformarea grupului. |
 
 ### 5.4 `switch`
+
+Tipul Rust al acestui fel se numește `Selector` (și `Metaball` pentru `liquid`), dar formatul de fișier și API-ul de scripting (`layer_info(path).kind`) păstrează numele `switch` și `liquid` din motive de compatibilitate. La citire, `selector` și `metaball` sunt acceptate ca alias-uri; fișierele se scriu întotdeauna cu `switch` / `liquid`.
 
 | Câmp | Tip | Implicit | Semnificație |
 | --- | --- | --- | --- |
@@ -679,8 +683,14 @@ sunt verificate printr-o compilare de probă.
 Layout 1-D în stil flexbox. Câmpurile unui container: `id`, `members`, `axis` (`row`, `column`), `gap`,
 `cross_gap`, `padding` (4 numere), `justify`, `align`, `wrap`, `rect`. Un `rect` are un `kind`:
 `fixed` (`x,y,w,h`), `pin`, `aspect` sau `hug`. Un membru are exact unul dintre `layer`, `container` sau
-`spacer`, plus `grow`, `shrink`, `width`, `height`, `align`, `resize`. Limite: 100000 de membri,
-adâncime de imbricare 64. Un scroll are `id`, `viewport`, `content`, `axis`, `offset`, `elastic`, `snap_x`,
+`spacer`, plus `grow`, `shrink`, `width`, `height`, `align`, `resize` și `baseline` opțional.
+`align` este `start`, `center`, `end`, `stretch` sau `baseline`. Într-un container de tip rând, membrii unei linii
+care aleg `baseline` (pe container sau pe membru) sunt deplasați astfel încât liniile lor de bază să coincidă;
+`baseline` este distanța de la marginea de sus a căsuței membrului până la linia sa de bază (un număr >= 0, nepermis
+pe un spacer; fără el, linia de bază este marginea de jos a căsuței). Grupul se află la
+începutul liniei, iar într-un container cu wrap stabilește și înălțimea liniei sale. Într-un container de tip
+coloană, `baseline` acționează ca `start`. `baseline` este omis când nu este setat, deci un proiect care nu
+îl folosește rămâne neschimbat. Limite: 100000 de membri, adâncime de imbricare 64. Un scroll are `id`, `viewport`, `content`, `axis`, `offset`, `elastic`, `snap_x`,
 `snap_y`, `fling`, `clip_layer`, `input`.
 
 ```json

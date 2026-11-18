@@ -11,7 +11,7 @@
 //!   layers named in `point_layers`, then bones (capsules), then layers topmost first.
 //! * [`marquee`]: rectangle or lasso selection in `bbox`, `contain` or `intersect` mode.
 //! * [`Selection`]: ordered, duplicate-free set with replace / add / toggle / subtract updates.
-//! * [`box_frame`] / [`selection_points`]: the selection's bounds, oriented for a single layer.
+//! * [`box_frame`] / `selection_points`: the selection's bounds, oriented for a single layer.
 //!
 //! Limits: layer masks, blend modes and image alpha are ignored (an image is hit by its box or,
 //! with a mesh, by its deformed triangles); dashes and variable stroke width are approximated by

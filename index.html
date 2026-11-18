@@ -2,11 +2,2522 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<!--fff:kit:start v=1 modules=core,store,view,a11y,share-->
+<meta name="fff-app" content="osatura">
+<meta name="fff-modules" content="core,store,view,a11y,share">
+<style id="fff-style">/* fff-kit · stil comun (prefix fff-). Nu modifică stilul aplicației gazdă. */
+[data-fff-label]{cursor:pointer;text-decoration:underline;text-decoration:underline dotted;text-underline-offset:3px}
+[data-fff-label]:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:3px}
+#app-version[data-fff-label]{box-sizing:border-box;min-height:24px;min-width:24px}
+#app-version[data-fff-label][data-fff-inl]{display:inline-flex;align-items:center;vertical-align:middle}
+#app-version[data-fff-label][data-fff-fs],#app-version[data-fff-label] [data-fff-fs]{font-size:12px!important}
+.fff-dlg{--_bg:var(--fff-bg,#fff);--_fg:var(--fff-fg,#1b1b1f);--_mut:var(--fff-muted,#4a4d57);--_line:var(--fff-line,#c4c7d0);--_btn:var(--fff-btn,#eef0f4);--_pri:var(--fff-accent,#0b57d0);--_prif:var(--fff-accent-fg,#fff);--_bad:var(--fff-bad,#b3261e);--_ok:var(--fff-ok,#146c2e);--_note:#fff1c9;--_notef:#3d2e00;
+  box-sizing:border-box;width:42rem;width:min(42rem,calc(100vw - 2rem));max-width:calc(100vw - 2rem);max-height:calc(100vh - 2rem);max-height:calc(100dvh - 2rem);margin:auto;padding:0;overflow:auto;
+  border:1px solid var(--_line);border-radius:12px;background:var(--_bg);color:var(--_fg);font:14px/1.5 var(--fff-font,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif);text-align:left;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.fff-dlg.fff-dark{--_bg:var(--fff-bg,#1e1f24);--_fg:var(--fff-fg,#ececf1);--_mut:var(--fff-muted,#b7bbc7);--_line:var(--fff-line,#4a4d57);--_btn:var(--fff-btn,#2c2e36);--_pri:var(--fff-accent,#a8c7fa);--_prif:var(--fff-accent-fg,#062e6f);--_bad:var(--fff-bad,#f2b8b5);--_ok:var(--fff-ok,#8fd9a0);--_note:#3b3118;--_notef:#f6e3a6;color-scheme:dark}
+@media (prefers-color-scheme:dark){.fff-dlg:not(.fff-light){--_bg:var(--fff-bg,#1e1f24);--_fg:var(--fff-fg,#ececf1);--_mut:var(--fff-muted,#b7bbc7);--_line:var(--fff-line,#4a4d57);--_btn:var(--fff-btn,#2c2e36);--_pri:var(--fff-accent,#a8c7fa);--_prif:var(--fff-accent-fg,#062e6f);--_bad:var(--fff-bad,#f2b8b5);--_ok:var(--fff-ok,#8fd9a0);--_note:#3b3118;--_notef:#f6e3a6;color-scheme:dark}}
+.fff-dlg::backdrop{background:rgba(0,0,0,.55)}
+.fff-dlg-sm{width:26rem;width:min(26rem,calc(100vw - 2rem))}
+.fff-dlg *,.fff-dlg *::before,.fff-dlg *::after{box-sizing:border-box}
+.fff-dlg .fff-in{padding:16px 20px 20px}
+.fff-dlg .fff-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 8px}
+.fff-dlg h2{margin:0;font-family:inherit;font-size:1.25rem;font-weight:700;line-height:1.3;color:var(--_fg);letter-spacing:0;text-transform:none}
+.fff-dlg h3{margin:0 0 6px;font-family:inherit;font-size:1rem;font-weight:700;line-height:1.35;color:var(--_fg);letter-spacing:0;text-transform:none}
+.fff-dlg p{margin:0 0 8px;color:var(--_fg);font-size:inherit}
+.fff-dlg .fff-mut{color:var(--_mut)}
+.fff-dlg p.fff-mut{color:var(--_mut)}
+.fff-dlg .fff-sm{font-size:.85rem}
+.fff-dlg .fff-lead{font-size:1.05rem}
+.fff-dlg .fff-sec{border-top:1px solid var(--_line);padding-top:12px;margin-top:12px}
+.fff-dlg .fff-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem;overflow-wrap:break-word;overflow-wrap:anywhere}
+.fff-dlg .fff-break{word-break:break-all}
+.fff-dlg code{background:none;border:0;padding:0;color:inherit}
+.fff-dlg .fff-list{margin:0 0 8px;padding-left:1.2rem;list-style:disc}
+.fff-dlg .fff-list li{margin:2px 0;color:var(--_fg)}
+.fff-dlg .fff-cols{columns:2 14rem}
+.fff-dlg .fff-tbl{width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 8px}
+.fff-dlg .fff-tbl th,.fff-dlg .fff-tbl td{padding:3px 6px;border-bottom:1px solid var(--_line);text-align:left;vertical-align:top;color:var(--_fg)}
+.fff-dlg .fff-tbl th.fff-num,.fff-dlg .fff-tbl td.fff-num{text-align:right;width:6.5rem;white-space:nowrap}
+.fff-dlg .fff-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.fff-dlg .fff-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
+.fff-dlg .fff-end{justify-content:flex-end}
+.fff-dlg .fff-btn{-webkit-appearance:none;-moz-appearance:none;appearance:none;min-height:36px;min-width:36px;padding:6px 14px;border:1px solid var(--_line);border-radius:8px;background:var(--_btn);color:var(--_fg);font:inherit;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;box-shadow:none}
+.fff-dlg .fff-btn:hover{border-color:var(--_fg)}
+.fff-dlg .fff-btn:focus-visible,.fff-dlg .fff-input:focus-visible,.fff-dlg summary:focus-visible,.fff-dlg .fff-pre:focus-visible{outline:2px solid var(--_fg);outline-offset:2px}
+.fff-dlg .fff-primary{background:var(--_pri);color:var(--_prif);border-color:transparent}
+.fff-dlg .fff-danger{background:var(--_bad);color:var(--_bg)}
+.fff-dlg .fff-danger-o{color:var(--_bad);border-color:var(--_bad)}
+.fff-dlg .fff-x{font-size:1.4rem;line-height:1;padding:2px 10px}
+.fff-dlg .fff-box{border:1px solid var(--_line);border-radius:8px;padding:10px;margin:0 0 8px}
+.fff-dlg [hidden]{display:none}
+.fff-dlg .fff-field{display:flex;flex-direction:column;gap:2px;margin:0 0 8px}
+.fff-dlg .fff-field label{font-weight:600}
+.fff-dlg .fff-input{width:100%;min-height:36px;padding:6px 10px;border:1px solid var(--_line);border-radius:6px;background:var(--_bg);color:var(--_fg);font:inherit}
+.fff-dlg .fff-note{background:var(--_note);color:var(--_notef);padding:8px 10px;border-radius:8px}
+.fff-dlg .fff-res{min-height:1.5em}
+.fff-dlg .fff-ok{color:var(--_ok);font-weight:600}
+.fff-dlg .fff-bad{color:var(--_bad);font-weight:600}
+.fff-dlg .fff-det{margin:0 0 8px}
+.fff-dlg .fff-det summary{cursor:pointer;font-weight:600;min-height:24px}
+.fff-dlg .fff-pre{margin:6px 0 0;padding:8px 10px;overflow:auto;white-space:pre-wrap;word-break:break-all;border:1px solid var(--_line);border-radius:6px;background:var(--_btn);color:var(--_fg)}
+.fff-dlg .fff-foot{border-top:1px solid var(--_line);margin-top:12px;padding-top:10px}
+.fff-dlg .fff-msg{font-size:1rem;margin-bottom:14px;white-space:pre-line;overflow-wrap:break-word;overflow-wrap:anywhere}
+.fff-chip{-webkit-appearance:none;-moz-appearance:none;appearance:none;background:none;border:1px dotted currentColor;border-radius:6px;color:inherit;font:inherit;font-size:.85em;cursor:pointer;min-height:24px;min-width:24px;padding:0 8px}
+.fff-chip{font-size:max(12px,.85em)}
+.fff-chip:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+@media (pointer:coarse){.fff-dlg .fff-btn,.fff-dlg .fff-input{min-height:44px}.fff-dlg .fff-btn{min-width:44px}.fff-dlg .fff-det summary{min-height:44px}}
+@media (prefers-reduced-motion:no-preference){.fff-dlg[open]{animation:fff-in .12s ease-out}@keyframes fff-in{from{transform:translateY(6px)}to{transform:none}}}
+@media (prefers-reduced-motion:reduce){.fff-dlg,.fff-dlg *{animation:none!important;transition:none!important}}
+.fff-dlg .fff-dt{margin:0 0 8px}
+.fff-dlg .fff-ta{resize:vertical;min-height:4.5em}
+.fff-dlg textarea.fff-input{font:inherit}
+.fff-toasts{--_tbg:var(--fff-toast-bg,#2b2d33);--_tfg:var(--fff-toast-fg,#f4f4f7);--_tac:var(--fff-toast-accent,#a8c7fa);
+  position:fixed;top:auto;right:0;bottom:0;left:0;inset:auto 0 0 0;margin:0;padding:0 16px 16px;border:0;background:transparent;overflow:visible;z-index:2147483000;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px;font:14px/1.45 var(--fff-font,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif);color:var(--_tfg);box-sizing:border-box}
+.fff-toasts *{box-sizing:border-box}
+.fff-toast-reg{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.fff-toast-reg:empty{display:none}
+.fff-toast{pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:34rem;max-width:min(34rem,100%);padding:10px 12px 10px 14px;border-radius:10px;background:var(--_tbg);color:var(--_tfg);border:1px solid rgba(255,255,255,.18);border-left:6px solid #a8c7fa;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+.fff-toast-success{border-left-color:#81c995}.fff-toast-warning{border-left-color:#fdd663}.fff-toast-error{border-left-color:#f28b82}
+.fff-toast-msg{flex:1 1 auto;min-width:0;overflow-wrap:break-word;overflow-wrap:anywhere;white-space:pre-line}
+.fff-toast .fff-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.fff-toast .fff-btn{-webkit-appearance:none;-moz-appearance:none;appearance:none;min-height:40px;min-width:40px;padding:2px 10px;border:1px solid rgba(255,255,255,.35);border-radius:8px;background:transparent;color:var(--_tac);font:inherit;font-weight:600;cursor:pointer}
+.fff-toast .fff-toast-x{font-size:1.3rem;line-height:1;color:var(--_tfg);padding:0 8px}
+.fff-toast .fff-btn:focus-visible{outline:2px solid var(--_tfg);outline-offset:2px}
+@media (pointer:coarse){.fff-toast .fff-btn{min-height:44px;min-width:44px}}
+@media (prefers-reduced-motion:no-preference){.fff-toast{animation:fff-tin .16s ease-out}@keyframes fff-tin{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}}
+@media (prefers-reduced-motion:reduce){.fff-toast{animation:none!important}}
+
+/* ---- rezerve pentru browsere vechi: clasele sunt puse pe <html> de compat.js ---- */
+html.fff-no-dialog dialog:not([open]){display:none}
+html.fff-no-dialog .fff-toasts{z-index:2147483647}
+html.fff-no-flexgap .fff-dlg .fff-hd>*+*{margin-left:12px}
+html.fff-no-flexgap .fff-dlg .fff-row>*{margin:0 8px 8px 0}
+html.fff-no-flexgap .fff-dlg .fff-row{margin:0 -8px 0 0}
+html.fff-no-flexgap .fff-dlg .fff-field>*+*{margin-top:2px}
+html.fff-no-flexgap .fff-toasts>*+*,html.fff-no-flexgap .fff-toast-reg>*+*{margin-top:8px}
+html.fff-no-flexgap .fff-toast>*+*{margin-left:10px}
+/* fff-kit · FFF.view — antete de tabel fixe + bară de zoom. Regulile cu :where() au specificitate 0: stilul aplicației le bate oricând. */
+:where(:root:not([data-fff-viewoff]) table:not([role=presentation]):not([role=none]) > thead > tr > th,
+       :root:not([data-fff-viewoff]) table:not([role=presentation]):not([role=none]) > thead > tr > td,
+       :root:not([data-fff-viewoff]) table:not([role=presentation]):not([role=none]):not(:has(> thead)) > tbody > tr:first-child > th,
+       :root:not([data-fff-viewoff]) table:not([role=presentation]):not([role=none]):not(:has(> thead)) > tr:first-child > th){position:-webkit-sticky;position:sticky;top:0;z-index:3}
+.fff-view{position:fixed;z-index:2147483590;margin:0;padding:0;pointer-events:none;font:600 13px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transition:opacity .4s;
+  top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
+.fff-view[hidden]{display:none}
+.fff-view-r{right:8px;right:calc(8px + env(safe-area-inset-right,0px))}
+.fff-view-l{left:8px;left:calc(8px + env(safe-area-inset-left,0px))}
+.fff-view-c{right:8px;right:calc(8px + env(safe-area-inset-right,0px))}
+.fff-view-btn{pointer-events:auto;box-sizing:border-box;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(18,20,26,.72);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;display:inline-grid;align-items:center;justify-items:center;place-items:center;padding:0;margin:0;cursor:pointer;opacity:.85;-webkit-tap-highlight-color:transparent;transition:opacity .4s,transform .15s;box-shadow:0 1px 6px rgba(0,0,0,.45)}
+.fff-view-idle .fff-view-btn{opacity:.4}
+.fff-view-btn:active{transform:scale(.92)}
+.fff-view-btn[disabled]{opacity:.25;cursor:default}
+.fff-view-btn:focus-visible{outline:3px solid #ffd54a;outline-offset:2px}
+.fff-view-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.fff-view,.fff-view-btn{transition:none}}
+@media print{.fff-view{display:none!important}:root{zoom:1!important}}
+
+:root.fff-vpad-r{padding-right:56px!important;padding-right:calc(56px + env(safe-area-inset-right,0px))!important}:root.fff-vpad-l{padding-left:56px!important;padding-left:calc(56px + env(safe-area-inset-left,0px))!important}
+html.fff-no-flexgap .fff-view>*+*{margin-top:6px}
+/* fff-kit · FFF.a11y — panou de accesibilitate (buton „Aa”) + săgeată „Înapoi sus”. Elementele stau direct sub <html>, în afara lui <body>, ca zoom-ul textului (pe <body>) să nu le scaleze;
+   zoom-ul paginii (FFF.view) e compensat cu --fff-zinv, deci 1 px CSS al lor = 1 px pe ecran. Dimensiunile și poziția se potrivesc ecranului din JS (a11y.js → fit()). */
+.fff-a11y,.fff-a11y-panel{zoom:var(--fff-zinv,1);box-sizing:border-box;margin:0;font:600 14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:normal;word-spacing:normal;text-transform:none;text-align:start;text-indent:0;color:#eef1ff}
+.fff-a11y *,.fff-a11y-panel *{box-sizing:border-box}
+.fff-a11y{position:fixed;z-index:2147483600;right:8px;right:calc(8px + env(safe-area-inset-right,0px));bottom:12px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;padding:0;pointer-events:none}
+.fff-a11y[hidden],.fff-a11y-panel[hidden],.fff-a11y-up[hidden]{display:none}
+.fff-a11y-btn{pointer-events:auto;width:44px;height:44px;min-width:44px;min-height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.5);background:rgba(18,24,44,.94);color:#fff;display:inline-flex;align-items:center;justify-content:center;display:inline-grid;align-items:center;justify-items:center;place-items:center;padding:0;margin:0;cursor:pointer;
+  font:700 16px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.55);-webkit-tap-highlight-color:transparent;transition:transform .15s,border-color .15s}
+.fff-a11y-btn:hover{border-color:#ffd54a}
+.fff-a11y-btn:active{transform:scale(.93)}
+.fff-a11y-btn:focus-visible,.fff-a11y-panel button:focus-visible,.fff-a11y-skip:focus-visible{outline:3px solid #ffd54a;outline-offset:2px}
+.fff-a11y-btn svg{display:block;pointer-events:none}
+.fff-a11y-panel{position:fixed;z-index:2147483601;right:8px;right:calc(8px + env(safe-area-inset-right,0px));bottom:68px;width:360px;max-width:calc(100% - 16px);max-height:calc(100% - 80px);overflow:auto;overscroll-behavior:contain;
+  background:#10152a;border:1px solid #4a5688;border-radius:14px;padding:12px;box-shadow:0 8px 30px rgba(0,0,0,.75)}
+.fff-a11y-panel h2{margin:0 0 6px;padding:0;font:700 16px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#ffd54a;background:none;border:0;text-transform:none}
+.fff-a11y-rw{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.fff-a11y-lb{flex:1 1 auto;min-width:0}
+.fff-a11y-panel button{min-height:44px;min-width:44px;padding:0 12px;margin:0;border-radius:8px;border:1px solid #3a4778;background:#1b2340;color:#eef1ff;cursor:pointer;font:600 14px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;text-align:center;box-shadow:none}
+.fff-a11y-panel button:hover:not([disabled]){border-color:#ffd54a}
+.fff-a11y-panel button[aria-pressed=true]{background:#ffd54a;color:#1a1405;border-color:#ffd54a;font-weight:700}
+.fff-a11y-panel button[disabled]{opacity:.4;cursor:default}
+.fff-a11y-pc{min-width:3.4em;text-align:center;color:#ffd54a;font-weight:700}
+.fff-a11y-msg{margin:6px 0;min-height:1.35em;font-weight:500;font-size:13px;color:#c9d1ee}
+.fff-a11y-skip{position:absolute;left:8px;top:-120px;z-index:2147483602;padding:10px 14px;border-radius:8px;background:#ffd54a;color:#1a1405;font:700 15px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;text-decoration:none}
+.fff-a11y-skip:focus{top:8px}
+:root.fff-apad{padding-right:56px!important;padding-right:calc(56px + env(safe-area-inset-right,0px))!important}
+@media (max-width:420px){.fff-a11y-panel button{flex:1 1 auto}}
+@media (prefers-reduced-motion:reduce){.fff-a11y-btn{transition:none}}
+@media print{.fff-a11y,.fff-a11y-panel,.fff-a11y-skip{display:none!important}}
+
+/* Contrast ridicat: negru pe alb, linkuri cyan, contururi albe. Regulile de bază au specificitate 0 (:where); cele pentru linkuri/focus o bat. Excepții: svg, imagini, canvas, video și elementele marcate data-fff-keep (casete colorate: pătrate de tablă, ștampile, bare de progres). */
+html.fff-hc{background:#000!important;color-scheme:dark}
+html.fff-hc body{background:#000!important;color:#fff!important}
+:where(html.fff-hc) body :where(*:not(svg,svg *,img,video,canvas,picture,iframe,[data-fff-keep],.fff-a11y-skip)){background-color:#000!important;background-image:none!important;color:#fff!important;border-color:#fff!important;box-shadow:none!important;text-shadow:none!important}
+html.fff-hc body :where(input,select,textarea,button){outline:1px solid #fff;outline-offset:-1px}
+html.fff-hc body a,html.fff-hc body a *:not(svg,svg *,img){color:#7de8ff!important}
+html.fff-hc body a:visited,html.fff-hc body a:visited *:not(svg,svg *,img){color:#e6b8ff!important}
+html.fff-hc svg text,html.fff-hc svg tspan{fill:#fff!important}
+html.fff-hc [data-fff-keep] *:not(svg,svg *,img){color:inherit!important}
+html.fff-hc :focus-visible{outline:3px solid #ffd54a!important;outline-offset:2px!important}
+
+/* Fără animații și tranziții (și derulare fără efect lin). */
+html.fff-rm *,html.fff-rm *::before,html.fff-rm *::after{animation-duration:.001ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.001ms!important;transition-delay:0s!important;scroll-behavior:auto!important}
+
+/* Text lizibil: font cu forme deschise, spațiere mărită (WCAG 1.4.12), rânduri înguste. Codul și pictogramele își păstrează fontul. */
+html.fff-rf body{font-family:Verdana,Tahoma,"Trebuchet MS","DejaVu Sans",sans-serif!important;letter-spacing:.03em!important;word-spacing:.12em!important;line-height:1.8!important}
+:where(html.fff-rf) body :where(*:not(code,pre,kbd,samp,svg,svg *,canvas,i,[class*="icon"],[class*="Icon"],[class*="material"])){font-family:Verdana,Tahoma,"Trebuchet MS","DejaVu Sans",sans-serif!important;letter-spacing:.03em!important;word-spacing:.12em!important}
+:where(html.fff-rf) body :where(p,li,dd,dt,blockquote,figcaption,td,th,summary,h1,h2,h3,h4,h5,h6){line-height:1.7!important}
+:where(html.fff-rf) body :where(p,li){max-width:72ch}
+
+/* Linkuri subliniate, focus accentuat. */
+html.fff-ul body a{text-decoration:underline!important;text-underline-offset:3px}
+html.fff-ul :focus-visible{outline:4px solid #ffd54a!important;outline-offset:3px!important}
+
+/* Browsere fără :where()/:not(listă) (clasa fff-oldsel pe <html>): același efect cu selectoare simple. Specificitate mai mare decât în varianta :where;
+   limită: descendenții casetelor data-fff-keep nu sunt scutiți (nu există selector echivalent). */
+html.fff-oldsel.fff-hc body *:not(svg):not(img):not(video):not(canvas):not(picture):not(iframe):not([data-fff-keep]):not(.fff-a11y-skip){background-color:#000!important;background-image:none!important;color:#fff!important;border-color:#fff!important;box-shadow:none!important;text-shadow:none!important}
+html.fff-oldsel.fff-hc body input,html.fff-oldsel.fff-hc body select,html.fff-oldsel.fff-hc body textarea,html.fff-oldsel.fff-hc body button{outline:1px solid #fff;outline-offset:-1px}
+html.fff-oldsel.fff-hc body a *:not(svg):not(img){color:#7de8ff!important}
+html.fff-oldsel.fff-hc body a:visited *:not(svg):not(img){color:#e6b8ff!important}
+html.fff-oldsel.fff-rf body *:not(code):not(pre):not(kbd):not(samp):not(svg):not(canvas):not(i):not([class*="icon"]):not([class*="Icon"]):not([class*="material"]){font-family:Verdana,Tahoma,"Trebuchet MS","DejaVu Sans",sans-serif!important;letter-spacing:.03em!important;word-spacing:.12em!important}
+html.fff-oldsel.fff-rf body p,html.fff-oldsel.fff-rf body li,html.fff-oldsel.fff-rf body dd,html.fff-oldsel.fff-rf body dt,html.fff-oldsel.fff-rf body blockquote,html.fff-oldsel.fff-rf body figcaption,html.fff-oldsel.fff-rf body td,html.fff-oldsel.fff-rf body th,html.fff-oldsel.fff-rf body summary,html.fff-oldsel.fff-rf body h1,html.fff-oldsel.fff-rf body h2,html.fff-oldsel.fff-rf body h3,html.fff-oldsel.fff-rf body h4,html.fff-oldsel.fff-rf body h5,html.fff-oldsel.fff-rf body h6{line-height:1.7!important}
+html.fff-oldsel.fff-rf body p,html.fff-oldsel.fff-rf body li{max-width:72ch}
+html.fff-no-flexgap .fff-a11y>*+*{margin-top:8px}
+html.fff-no-flexgap .fff-a11y-rw>*{margin:0 8px 8px 0}
+html.fff-no-flexgap .fff-a11y-rw{margin:8px -8px 0 0}
+/* fff-kit · FFF.share — bară verticală de distribuire, marginea din stânga, centrată pe verticală; compensează zoom-ul paginii (FFF.view) prin --fff-zinv. */
+.fff-share{position:fixed;z-index:2147483590;left:8px;left:calc(8px + env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);margin:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;
+  pointer-events:none;font:700 14px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transition:opacity .4s;max-height:calc(100vh * var(--fff-zinv,1) - 16px);overflow:visible}
+.fff-share *{box-sizing:border-box}
+.fff-share[hidden]{display:none}
+.fff-share-list{display:flex;flex-direction:column;gap:6px}
+.fff-share-closed .fff-share-list{display:none}
+.fff-share-btn{pointer-events:auto;box-sizing:border-box;width:40px;height:40px;min-width:40px;min-height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(18,20,26,.72);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;display:inline-grid;align-items:center;justify-items:center;place-items:center;padding:0;margin:0;cursor:pointer;text-decoration:none;opacity:.88;-webkit-tap-highlight-color:transparent;transition:opacity .4s,transform .15s,border-color .15s;box-shadow:0 1px 6px rgba(0,0,0,.45)}
+.fff-share-btn:hover{border-color:#ffd54a;opacity:1}
+.fff-share-btn:active{transform:scale(.92)}
+.fff-share-btn:focus-visible{outline:3px solid #ffd54a;outline-offset:2px}
+.fff-share-btn svg{display:block;pointer-events:none}
+.fff-share-txt{pointer-events:none;font:800 15px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:-.02em}
+.fff-share-tog{width:32px;height:32px;min-width:32px;min-height:32px}
+.fff-share-tog svg{width:18px;height:18px}
+.fff-share-idle .fff-share-btn{opacity:.4}
+.fff-share-ok{background:#1f7a3a;border-color:#7fe3a0}.fff-share-no{background:#8a2a2a;border-color:#ff9a9a}
+.fff-share-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (pointer:coarse){.fff-share-btn{width:44px;height:44px;min-width:44px;min-height:44px}}
+@media (max-height:420px){.fff-share-btn{width:34px;height:34px;min-width:34px;min-height:34px}.fff-share-list,.fff-share{gap:4px}}
+@media (prefers-reduced-motion:reduce){.fff-share,.fff-share-btn{transition:none}}
+@media print{.fff-share{display:none!important}}
+html.fff-no-flexgap .fff-share>*+*,html.fff-no-flexgap .fff-share-list>*+*{margin-top:6px}</style>
+<script id="fff-compat">/* fff-compat 1.8.0 — ES5, rulează înaintea kitului */
+/* fff-kit · compat — strat de compatibilitate cu browsere mai vechi.
+ * ES5 pur (fără let/const/săgeți/șabloane, fără sintaxă nouă): rulează ca script separat, ÎNAINTEA restului kitului, ca să poată
+ * semnala problema și în browsere care nu pot rula kitul. Fără rețea, fără eval/new Function, fără stiluri inline (doar CSSOM).
+ * Prag garantat (verificat în CI, vezi tools/compat/compat.config.json): Chrome/Edge 55+, Firefox 52+, Safari/iOS 10.1+ (sintaxă ES2017).
+ * Ce face:
+ *   1. rezerve (polyfill) pentru API-uri lipsă, definite DOAR dacă lipsesc: Object.entries/values/fromEntries, padStart/padEnd, trimStart/trimEnd,
+ *      replaceAll, matchAll, at, flat/flatMap, findLast, Promise.finally/allSettled/any, structuredClone, queueMicrotask, requestIdleCallback,
+ *      globalThis, crypto.randomUUID, AbortController, MediaQueryList.addEventListener, replaceChildren, toggleAttribute, Blob.arrayBuffer/text,
+ *      canvas.toBlob, ctx.roundRect, scrollTo/scrollBy/scrollIntoView cu opțiuni, navigator.clipboard (execCommand), IntersectionObserver/ResizeObserver;
+ *   2. <dialog>: show/showModal/close + atributul open când elementul nu există nativ (stilurile: clasa html.fff-no-dialog);
+ *   3. FFF.compat.rx(sursa, flaguri[, rezervă]): RegExp construit la rulare — proprietăți Unicode \p{…}, steagul s, lookbehind (emulat) și rezervă;
+ *   4. FFF.compat.imp(url): import() dinamic fără sintaxă nouă în scriptul clasic (printr-un mic script type=module, ignorat de browserele vechi);
+ *   5. avertisment tradus (8 limbi) dacă lipsesc elemente de bază (Promise, Symbol, Map, Set, Object.assign, Array.from, variabile CSS);
+ *   6. clase pe <html> pentru stiluri de rezervă: fff-no-dialog, fff-oldsel (fără :where/:not(listă)), fff-no-flexgap (fără gap în flex). */
+(function (w, d) {
+  'use strict';
+  var F = (w.FFF = w.FFF || {});
+  var C = (F.compat = F.compat || {});
+  if (C.ready) return;
+  C.ready = true;
+  C.version = '1.8.0';
+  C.floor = {chrome: 55, firefox: 52, safari: 10.1, ecma: 2017};
+  C.has = {};
+  var OP = Object.prototype, hasOwn = OP.hasOwnProperty, H = d.documentElement;
+  var MaxU32 = 4294967295;
+
+  function def(o, k, v) {
+    if (!o) return;
+    var cur; try { cur = o[k]; } catch (e) { cur = undefined; }
+    if (cur !== undefined) return;
+    try { Object.defineProperty(o, k, {value: v, writable: true, configurable: true}); } catch (e1) { try { o[k] = v; } catch (e2) { /* ignorat */ } }
+  }
+  function addCls(c) { if ((' ' + H.className + ' ').indexOf(' ' + c + ' ') < 0) H.className += (H.className ? ' ' : '') + c; }
+  function onReady(fn) { if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', fn); else fn(); }
+  function isNode(x) { return !!x && typeof x === 'object' && typeof x.nodeType === 'number'; }
+
+  /* ---------- 1. Verificare minimă + mesaj ---------- */
+  var miss = [];
+  if (!w.Promise) miss.push('Promise');
+  if (!w.Symbol) miss.push('Symbol');
+  if (!(w.Map && w.Set && w.WeakMap)) miss.push('Map/Set');
+  if (!Object.assign) miss.push('Object.assign');
+  if (!Array.from) miss.push('Array.from');
+  if (!(String.prototype.startsWith && Array.prototype.find)) miss.push('ES2015');
+  if (!(w.CSS && w.CSS.supports && w.CSS.supports('--a', '0'))) miss.push('CSS variables');
+  if (!(d.querySelector && w.addEventListener && w.JSON)) miss.push('DOM');
+  C.missing = miss; C.tooOld = miss.length > 0;
+
+  var MSG = {
+    ro: ['Browserul dumneavoastră este prea vechi pentru această aplicație (lipsesc: %). Unele funcții pot să nu meargă. Actualizați browserul sau deschideți pagina într-un browser recent (Firefox, Chrome, Edge, Safari).', 'Am înțeles', 'Această funcție necesită % și nu e disponibilă în acest browser.'],
+    en: ['Your browser is too old for this app (missing: %). Some features may not work. Update your browser or open this page in a recent one (Firefox, Chrome, Edge, Safari).', 'Dismiss', 'This feature needs % and it is not available in this browser.'],
+    fr: ['Votre navigateur est trop ancien pour cette application (manque : %). Certaines fonctions peuvent ne pas marcher. Mettez-le à jour ou ouvrez la page dans un navigateur récent (Firefox, Chrome, Edge, Safari).', 'Fermer', 'Cette fonction nécessite % et n’est pas disponible dans ce navigateur.'],
+    it: ['Il browser è troppo vecchio per questa applicazione (mancano: %). Alcune funzioni potrebbero non funzionare. Aggiornalo o apri la pagina in un browser recente (Firefox, Chrome, Edge, Safari).', 'Chiudi', 'Questa funzione richiede % e non è disponibile in questo browser.'],
+    es: ['Su navegador es demasiado antiguo para esta aplicación (faltan: %). Algunas funciones pueden no funcionar. Actualícelo o abra la página en un navegador reciente (Firefox, Chrome, Edge, Safari).', 'Cerrar', 'Esta función requiere % y no está disponible en este navegador.'],
+    pt: ['O seu navegador é demasiado antigo para esta aplicação (em falta: %). Algumas funções podem não funcionar. Atualize-o ou abra a página num navegador recente (Firefox, Chrome, Edge, Safari).', 'Fechar', 'Esta função requer % e não está disponível neste navegador.'],
+    de: ['Ihr Browser ist für diese Anwendung zu alt (es fehlt: %). Einige Funktionen funktionieren eventuell nicht. Aktualisieren Sie den Browser oder öffnen Sie die Seite in einem aktuellen Browser (Firefox, Chrome, Edge, Safari).', 'Schließen', 'Diese Funktion benötigt % und ist in diesem Browser nicht verfügbar.'],
+    hu: ['A böngészője túl régi ehhez az alkalmazáshoz (hiányzik: %). Egyes funkciók nem működhetnek. Frissítse a böngészőt, vagy nyissa meg az oldalt egy újabb böngészőben (Firefox, Chrome, Edge, Safari).', 'Bezár', 'Ehhez a funkcióhoz % szükséges, és ez a böngésző nem támogatja.']
+  };
+  function pickLang() {
+    var l = '';
+    try { l = (H.getAttribute('lang') || (w.navigator && (w.navigator.language || w.navigator.userLanguage)) || 'en'); } catch (e) { l = 'en'; }
+    l = String(l).slice(0, 2).toLowerCase();
+    return MSG[l] ? l : 'en';
+  }
+  var shown = {};
+  function banner(kind, text) {
+    if (shown[kind]) return; shown[kind] = true;
+    onReady(function () {
+      if (!d.body) return;
+      var L = MSG[pickLang()];
+      var box = d.createElement('div'), p = d.createElement('p'), b = d.createElement('button'), s;
+      box.setAttribute('role', 'status'); box.setAttribute('data-fff-compat', kind);
+      s = box.style; s.position = 'fixed'; s.left = '0'; s.right = '0'; s.bottom = '0'; s.zIndex = '2147483646'; s.boxSizing = 'border-box';
+      s.padding = '10px 14px'; s.background = '#fff4c2'; s.color = '#1b1b1f'; s.borderTop = '2px solid #8a6d00';
+      s.font = '14px/1.45 Arial,Helvetica,sans-serif'; s.textAlign = 'left';
+      p.style.margin = '0 0 6px'; p.appendChild(d.createTextNode(text));
+      b.type = 'button'; b.appendChild(d.createTextNode(L[1]));
+      s = b.style; s.font = 'inherit'; s.padding = '6px 12px'; s.minHeight = '32px'; s.cursor = 'pointer';
+      b.onclick = function () { if (box.parentNode) box.parentNode.removeChild(box); };
+      box.appendChild(p); box.appendChild(b); d.body.appendChild(box);
+    });
+  }
+  /** Afișează (o dată) că o funcție are nevoie de ceva ce browserul nu are. need('BigInt') → true dacă lipsește. */
+  C.need = function (name, present) {
+    var ok = present === undefined ? (typeof w[name] !== 'undefined') : !!present;
+    if (!ok) banner('need-' + name, MSG[pickLang()][2].replace('%', name));
+    return !ok;
+  };
+  if (C.tooOld) { addCls('fff-too-old'); banner('old', MSG[pickLang()][0].replace('%', miss.join(', '))); }
+  if (C.tooOld) return;   // restul stratului presupune un minim ES2015; fără el nu are rost să continuăm
+
+  /* ---------- 2. Rezerve pentru API-uri ---------- */
+  function repeatTo(str, n) { var r = ''; while (r.length < n) r += str; return r.slice(0, n); }
+  function sub(rep, m, pos, str) {
+    return rep.replace(/\$([$&`']|\d\d?)/g, function (x, c) {
+      if (c === '$') return '$'; if (c === '&') return m; if (c === '`') return str.slice(0, pos); if (c === "'") return str.slice(pos + m.length);
+      return x;
+    });
+  }
+  def(Object, 'entries', function (o) { var k = Object.keys(o), i = k.length, r = new Array(i); while (i--) r[i] = [k[i], o[k[i]]]; return r; });
+  def(Object, 'values', function (o) { var k = Object.keys(o), i = k.length, r = new Array(i); while (i--) r[i] = o[k[i]]; return r; });
+  def(Object, 'fromEntries', function (it) { var o = {}, a = Array.from(it), i; for (i = 0; i < a.length; i++) o[a[i][0]] = a[i][1]; return o; });
+  def(Object, 'hasOwn', function (o, k) { return hasOwn.call(Object(o), k); });
+  def(Object, 'getOwnPropertyDescriptors', function (o) { var r = {}; Object.getOwnPropertyNames(o).concat(Object.getOwnPropertySymbols ? Object.getOwnPropertySymbols(o) : []).forEach(function (k) { r[k] = Object.getOwnPropertyDescriptor(o, k); }); return r; });
+  def(String.prototype, 'padStart', function (n, s) { var t = String(this); n = n >>> 0; s = s === undefined ? ' ' : String(s); if (t.length >= n || !s) return t; return repeatTo(s, n - t.length) + t; });
+  def(String.prototype, 'padEnd', function (n, s) { var t = String(this); n = n >>> 0; s = s === undefined ? ' ' : String(s); if (t.length >= n || !s) return t; return t + repeatTo(s, n - t.length); });
+  def(String.prototype, 'trimStart', function () { return String(this).replace(/^[\s﻿\xA0]+/, ''); });
+  def(String.prototype, 'trimEnd', function () { return String(this).replace(/[\s﻿\xA0]+$/, ''); });
+  def(String.prototype, 'at', function (i) { var s = String(this), n = Math.trunc(i) || 0; if (n < 0) n += s.length; return n < 0 || n >= s.length ? undefined : s.charAt(n); });
+  def(String.prototype, 'replaceAll', function (a, b) {
+    var s = String(this), from, out = '', last = 0, pos = 0, i, fn = typeof b === 'function';
+    if (a instanceof RegExp) { if (!a.global) throw new TypeError('replaceAll must be called with a global RegExp'); return s.replace(a, b); }
+    from = String(a); if (!fn) b = String(b);
+    for (;;) {
+      if (pos > s.length) break;
+      i = s.indexOf(from, pos);
+      if (i === -1) break;
+      out += s.slice(last, i) + (fn ? String(b(from, i, s)) : sub(b, from, i, s));
+      last = i + from.length; pos = i + (from.length || 1);
+    }
+    return out + s.slice(last);
+  });
+  def(String.prototype, 'matchAll', function (re) {
+    var s = String(this), r, out = [], m;
+    if (re instanceof RegExp) { if (!re.global) throw new TypeError('matchAll must be called with a global RegExp'); r = new RegExp(re.source, re.flags); r.lastIndex = re.lastIndex; } else r = new RegExp(re, 'g');
+    while ((m = r.exec(s))) { out.push(m); if (m[0] === '') r.lastIndex++; }
+    return out[Symbol.iterator]();
+  });
+  function flatten(a, depth, out) { var i, v; for (i = 0; i < a.length; i++) { if (!(i in a)) continue; v = a[i]; if (depth > 0 && Array.isArray(v)) flatten(v, depth - 1, out); else out.push(v); } return out; }
+  def(Array.prototype, 'flat', function (dp) { return flatten(this, dp === undefined ? 1 : Math.floor(dp), []); });
+  def(Array.prototype, 'flatMap', function (fn, t) { return flatten(Array.prototype.map.call(this, fn, t), 1, []); });
+  def(Array.prototype, 'at', function (i) { var n = Math.trunc(i) || 0; if (n < 0) n += this.length; return n < 0 || n >= this.length ? undefined : this[n]; });
+  def(Array.prototype, 'findLast', function (fn, t) { for (var i = this.length - 1; i >= 0; i--) if (fn.call(t, this[i], i, this)) return this[i]; return undefined; });
+  def(Array.prototype, 'findLastIndex', function (fn, t) { for (var i = this.length - 1; i >= 0; i--) if (fn.call(t, this[i], i, this)) return i; return -1; });
+  var PP = w.Promise.prototype;
+  def(PP, 'finally', function (f) {
+    var P = this.constructor || w.Promise;
+    if (typeof f !== 'function') return this.then(f, f);
+    return this.then(function (v) { return P.resolve(f()).then(function () { return v; }); }, function (e) { return P.resolve(f()).then(function () { throw e; }); });
+  });
+  def(w.Promise, 'allSettled', function (it) {
+    return w.Promise.all(Array.from(it, function (p) { return w.Promise.resolve(p).then(function (v) { return {status: 'fulfilled', value: v}; }, function (e) { return {status: 'rejected', reason: e}; }); }));
+  });
+  def(w.Promise, 'any', function (it) {
+    return new w.Promise(function (res, rej) {
+      var arr = Array.from(it), errs = [], n = 0, er;
+      function fail() { er = new Error('All promises were rejected'); er.name = 'AggregateError'; er.errors = errs; rej(er); }
+      if (!arr.length) return fail();
+      arr.forEach(function (p, i) { w.Promise.resolve(p).then(res, function (e) { errs[i] = e; if (++n === arr.length) fail(); }); });
+    });
+  });
+  def(w, 'globalThis', w);
+  def(w, 'queueMicrotask', function (fn) { w.Promise.resolve().then(fn).catch(function (e) { setTimeout(function () { throw e; }, 0); }); });
+  def(w, 'requestIdleCallback', function (cb) { var t = Date.now(); return setTimeout(function () { cb({didTimeout: false, timeRemaining: function () { return Math.max(0, 50 - (Date.now() - t)); }}); }, 1); });
+  def(w, 'cancelIdleCallback', function (id) { clearTimeout(id); });
+  if (w.crypto && w.crypto.getRandomValues) def(w.crypto, 'randomUUID', function () {
+    var b = new Uint8Array(16), h = '', i; w.crypto.getRandomValues(b); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    for (i = 0; i < 16; i++) { h += (b[i] < 16 ? '0' : '') + b[i].toString(16); if (i === 3 || i === 5 || i === 7 || i === 9) h += '-'; }
+    return h;
+  });
+
+  function dce(msg) { try { return new w.DOMException(msg, 'DataCloneError'); } catch (e) { var er = new Error(msg); er.name = 'DataCloneError'; return er; } }
+  function sclone(v, seen) {
+    var t, r, i, keys;
+    if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw dce('el nu poate fi clonat'); return v; }
+    if (seen.has(v)) return seen.get(v);
+    t = OP.toString.call(v);
+    if (t === '[object Date]') return new Date(v.getTime());
+    if (t === '[object RegExp]') { r = new RegExp(v.source, v.flags); r.lastIndex = v.lastIndex; return r; }
+    if (typeof w.ArrayBuffer !== 'undefined' && v instanceof w.ArrayBuffer) return v.slice(0);
+    if (w.ArrayBuffer && w.ArrayBuffer.isView && w.ArrayBuffer.isView(v)) {
+      if (t === '[object DataView]') return new w.DataView(v.buffer.slice(v.byteOffset, v.byteOffset + v.byteLength));
+      return new v.constructor(v);
+    }
+    if (w.Map && v instanceof w.Map) { r = new w.Map(); seen.set(v, r); v.forEach(function (x, k) { r.set(sclone(k, seen), sclone(x, seen)); }); return r; }
+    if (w.Set && v instanceof w.Set) { r = new w.Set(); seen.set(v, r); v.forEach(function (x) { r.add(sclone(x, seen)); }); return r; }
+    if (Array.isArray(v)) { r = new Array(v.length); seen.set(v, r); for (i = 0; i < v.length; i++) if (i in v) r[i] = sclone(v[i], seen); return r; }
+    if (w.Blob && v instanceof w.Blob) return v;
+    if (isNode(v) || t === '[object Function]' || t === '[object Promise]' || t === '[object WeakMap]' || t === '[object WeakSet]') throw dce('el nu poate fi clonat');
+    r = {}; seen.set(v, r); keys = Object.keys(v);
+    for (i = 0; i < keys.length; i++) r[keys[i]] = sclone(v[keys[i]], seen);
+    return r;
+  }
+  def(w, 'structuredClone', function (v) { return sclone(v, new w.Map()); });
+
+  if (!w.AbortController) {
+    var AS = function () { this.aborted = false; this.reason = undefined; this.onabort = null; this._l = []; };
+    AS.prototype.addEventListener = function (t, fn) { if (t === 'abort' && this._l.indexOf(fn) < 0) this._l.push(fn); };
+    AS.prototype.removeEventListener = function (t, fn) { var i = this._l.indexOf(fn); if (i >= 0) this._l.splice(i, 1); };
+    AS.prototype.throwIfAborted = function () { if (this.aborted) throw this.reason; };
+    w.AbortSignal = w.AbortSignal || AS;
+    w.AbortController = function () { this.signal = new AS(); };
+    w.AbortController.prototype.abort = function (reason) {
+      var s = this.signal, ev; if (s.aborted) return;
+      s.aborted = true;
+      if (reason === undefined) { reason = new Error('The operation was aborted.'); reason.name = 'AbortError'; }
+      s.reason = reason; ev = {type: 'abort', target: s};
+      if (typeof s.onabort === 'function') s.onabort(ev);
+      s._l.slice().forEach(function (f) { f.call(s, ev); });
+    };
+  }
+  if (w.MediaQueryList && !w.MediaQueryList.prototype.addEventListener) {
+    w.MediaQueryList.prototype.addEventListener = function (t, fn) { if (t === 'change') this.addListener(fn); };
+    w.MediaQueryList.prototype.removeEventListener = function (t, fn) { if (t === 'change') this.removeListener(fn); };
+  }
+  function replaceChildren() {
+    var n, a = arguments, i;
+    while ((n = this.firstChild)) this.removeChild(n);
+    for (i = 0; i < a.length; i++) this.appendChild(isNode(a[i]) ? a[i] : d.createTextNode(String(a[i])));
+  }
+  ['Element', 'Document', 'DocumentFragment'].forEach(function (n) { if (w[n]) def(w[n].prototype, 'replaceChildren', replaceChildren); });
+  if (w.Element) def(w.Element.prototype, 'toggleAttribute', function (n, force) {
+    var has = this.hasAttribute(n), want = force === undefined ? !has : !!force;
+    if (want && !has) this.setAttribute(n, ''); else if (!want && has) this.removeAttribute(n);
+    return want;
+  });
+  if (w.Blob && w.FileReader) {
+    def(w.Blob.prototype, 'arrayBuffer', function () { var b = this; return new w.Promise(function (res, rej) { var r = new w.FileReader(); r.onload = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; r.readAsArrayBuffer(b); }); });
+    def(w.Blob.prototype, 'text', function () { var b = this; return new w.Promise(function (res, rej) { var r = new w.FileReader(); r.onload = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; r.readAsText(b); }); });
+  }
+  if (w.HTMLCanvasElement) def(w.HTMLCanvasElement.prototype, 'toBlob', function (cb, type, q) {
+    var c = this;
+    setTimeout(function () {
+      var url = c.toDataURL(type, q), parts = url.split(','), mime = (parts[0].match(/:(.*?);/) || [0, 'image/png'])[1], bin = w.atob(parts[1]), arr = new Uint8Array(bin.length), i;
+      for (i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      cb(new w.Blob([arr], {type: mime}));
+    }, 0);
+  });
+  if (w.CanvasRenderingContext2D) def(w.CanvasRenderingContext2D.prototype, 'roundRect', function (x, y, wd, h, r) {
+    var tl, tr, br, bl, a, m;
+    function rad(v) { return typeof v === 'object' && v ? (v.x || 0) : (+v || 0); }
+    if (Array.isArray(r)) {
+      a = r.map(rad);
+      if (a.length === 1) tl = tr = br = bl = a[0]; else if (a.length === 2) { tl = br = a[0]; tr = bl = a[1]; } else if (a.length === 3) { tl = a[0]; tr = bl = a[1]; br = a[2]; } else { tl = a[0]; tr = a[1]; br = a[2]; bl = a[3]; }
+    } else tl = tr = br = bl = rad(r);
+    if (wd < 0) { x += wd; wd = -wd; } if (h < 0) { y += h; h = -h; }
+    m = Math.min(wd, h) / 2; tl = Math.min(tl, m); tr = Math.min(tr, m); br = Math.min(br, m); bl = Math.min(bl, m);
+    this.moveTo(x + tl, y); this.lineTo(x + wd - tr, y); this.arcTo(x + wd, y, x + wd, y + tr, tr);
+    this.lineTo(x + wd, y + h - br); this.arcTo(x + wd, y + h, x + wd - br, y + h, br);
+    this.lineTo(x + bl, y + h); this.arcTo(x, y + h, x, y + h - bl, bl);
+    this.lineTo(x, y + tl); this.arcTo(x, y, x + tl, y, tl); this.closePath();
+  });
+  if (w.navigator && !w.navigator.clipboard) {
+    try {
+      Object.defineProperty(w.navigator, 'clipboard', {configurable: true, value: {
+        writeText: function (t) {
+          return new w.Promise(function (res, rej) {
+            var ta = d.createElement('textarea'), prev = d.activeElement, ok = false, s = ta.style;
+            ta.value = String(t); ta.setAttribute('readonly', ''); s.position = 'fixed'; s.top = '0'; s.left = '0'; s.opacity = '0';
+            d.body.appendChild(ta); ta.focus(); ta.select();
+            try { ta.setSelectionRange(0, ta.value.length); } catch (e1) { /* ignorat */ }
+            try { ok = d.execCommand('copy'); } catch (e2) { ok = false; }
+            d.body.removeChild(ta);
+            if (prev && prev.focus) { try { prev.focus(); } catch (e3) { /* ignorat */ } }
+            if (ok) res(); else rej(new Error('copierea a eșuat'));
+          });
+        },
+        readText: function () { return w.Promise.reject(new Error('citirea clipboardului nu e disponibilă')); }
+      }});
+    } catch (eC) { /* ignorat */ }
+  }
+  if (!w.IntersectionObserver) {
+    w.IntersectionObserver = function (cb) { this._cb = cb; };
+    w.IntersectionObserver.prototype.observe = function (el) { var self = this; setTimeout(function () { self._cb([{target: el, isIntersecting: true, intersectionRatio: 1, boundingClientRect: el.getBoundingClientRect(), time: Date.now()}], self); }, 0); };
+    w.IntersectionObserver.prototype.unobserve = w.IntersectionObserver.prototype.disconnect = function () { /* nimic */ };
+    w.IntersectionObserver.prototype.takeRecords = function () { return []; };
+  }
+  if (!w.ResizeObserver) {
+    w.ResizeObserver = function (cb) { this._cb = cb; this._els = []; this._sz = []; this._t = 0; var self = this; this._f = function () { self._tick(); }; };
+    w.ResizeObserver.prototype._tick = function () {
+      var out = [], i, el, wd, h, s;
+      for (i = 0; i < this._els.length; i++) {
+        el = this._els[i]; wd = el.clientWidth; h = el.clientHeight; s = this._sz[i];
+        if (!s || s[0] !== wd || s[1] !== h) { this._sz[i] = [wd, h]; out.push({target: el, contentRect: {x: 0, y: 0, top: 0, left: 0, width: wd, height: h, right: wd, bottom: h}}); }
+      }
+      if (out.length) this._cb(out, this);
+    };
+    w.ResizeObserver.prototype.observe = function (el) {
+      var self = this;
+      if (this._els.indexOf(el) >= 0) return;
+      this._els.push(el); this._sz.push(null);
+      if (this._els.length === 1) { w.addEventListener('resize', this._f); w.addEventListener('orientationchange', this._f); w.addEventListener('load', this._f); this._t = setInterval(this._f, 500); }
+      setTimeout(function () { self._tick(); }, 0);
+    };
+    w.ResizeObserver.prototype.unobserve = function (el) { var i = this._els.indexOf(el); if (i >= 0) { this._els.splice(i, 1); this._sz.splice(i, 1); } if (!this._els.length) this.disconnect(); };
+    w.ResizeObserver.prototype.disconnect = function () { w.removeEventListener('resize', this._f); w.removeEventListener('orientationchange', this._f); w.removeEventListener('load', this._f); clearInterval(this._t); this._els = []; this._sz = []; };
+  }
+  /* scrollTo/scrollBy/scrollIntoView cu obiect de opțiuni (Safari < 14 îl ignoră; „smooth” devine instant) */
+  (function () {
+    var EP = w.Element && w.Element.prototype, ES;
+    if (w.CSS && w.CSS.supports && w.CSS.supports('scroll-behavior', 'smooth')) return;
+    function fix(proto, name, isWin) {
+      var orig = proto[name];
+      proto[name] = function (a, b) {
+        var o, x, y, cx, cy;
+        if (a && typeof a === 'object') {
+          o = a; cx = isWin ? (w.pageXOffset || 0) : this.scrollLeft; cy = isWin ? (w.pageYOffset || 0) : this.scrollTop;
+          if (name === 'scrollBy') {
+            if (isWin) { if (orig) orig.call(this, o.left || 0, o.top || 0); return; }
+            this.scrollLeft = cx + (o.left || 0); this.scrollTop = cy + (o.top || 0); return;
+          }
+          x = o.left !== undefined ? o.left : cx; y = o.top !== undefined ? o.top : cy;
+          if (isWin) { if (orig) orig.call(this, x, y); return; }
+          this.scrollLeft = x; this.scrollTop = y; return;
+        }
+        if (orig) return orig.apply(this, arguments);
+        if (name === 'scrollBy') { this.scrollLeft += a || 0; this.scrollTop += b || 0; } else { this.scrollLeft = a || 0; this.scrollTop = b || 0; }
+      };
+    }
+    try { fix(w, 'scrollTo', true); fix(w, 'scrollBy', true); } catch (e1) { /* ignorat */ }
+    if (EP) {
+      try { fix(EP, 'scrollTo', false); fix(EP, 'scrollBy', false); } catch (e2) { /* ignorat */ }
+      ES = EP.scrollIntoView;
+      if (ES) EP.scrollIntoView = function (o) {
+        var r;
+        if (o && typeof o === 'object') {
+          if (o.block === 'center' && w.scrollTo) { r = this.getBoundingClientRect(); w.scrollTo(w.pageXOffset || 0, (w.pageYOffset || 0) + r.top + r.height / 2 - (w.innerHeight || H.clientHeight) / 2); return; }
+          return ES.call(this, o.block !== 'end' && o.block !== 'nearest');
+        }
+        return ES.apply(this, arguments);
+      };
+    }
+  })();
+
+  /* ---------- 3. <dialog> și clase pentru stiluri de rezervă ---------- */
+  if (!w.HTMLDialogElement) {
+    addCls('fff-no-dialog'); C.has.dialog = false;
+    (function () {
+      /* Firefox < 98, Safari/iOS < 15.4: elementul nu există. Ce replicăm: show/showModal/close, open, returnValue, evenimentele cancel (Esc) și close,
+         <form method="dialog"> (altfel butonul ar naviga pagina), fundal (div.fff-bd), blocarea clicurilor în afara dialogului modal, focus
+         în dialog și revenirea lui la închidere, centrare. Închis = ascuns prin CSS (kit.css: html.fff-no-dialog dialog:not([open])). */
+      var proto = (w.HTMLUnknownElement && w.HTMLUnknownElement.prototype) || w.HTMLElement.prototype;
+      var stack = [], loose = [], BASE = 2147483620, pending = null, mo = null;
+      function isDlg(el) { return !!el && el.nodeType === 1 && String(el.tagName).toUpperCase() === 'DIALOG'; }
+      function chk(el) { if (!isDlg(el)) throw new TypeError('Illegal invocation'); }
+      function fire(el, type, cancelable) {
+        var ev;
+        try { ev = new w.Event(type, {bubbles: false, cancelable: !!cancelable}); } catch (e) { ev = d.createEvent('Event'); ev.initEvent(type, false, !!cancelable); }
+        return el.dispatchEvent(ev);
+      }
+      function cs(el, k) { try { return w.getComputedStyle(el)[k]; } catch (e) { return ''; } }
+      function vis(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
+      function focusables(el) {
+        var all = el.querySelectorAll('a[href],area[href],button,input,select,textarea,summary,[tabindex],[contenteditable=""],[contenteditable="true"],iframe'), out = [], i, e;
+        for (i = 0; i < all.length; i++) {
+          e = all[i];
+          if (e.disabled || e.getAttribute('tabindex') === '-1' || e.type === 'hidden' || e.hasAttribute('hidden') || !vis(e)) continue;
+          out.push(e);
+        }
+        return out;
+      }
+      /* centrare fără transform (nu se bate cu animațiile aplicației) și corectă sub zoom CSS: top/left 50% + margini negative din dimensiunea proprie */
+      function place(el) {
+        if (!el.hasAttribute('open') || el.__fffMode === 'own') return;
+        var s = el.style;
+        if (!el.__fffMode) {
+          var pos = cs(el, 'position');
+          if ((pos === 'fixed' || pos === 'absolute') && (cs(el, 'top') !== 'auto' || cs(el, 'bottom') !== 'auto')) { el.__fffMode = 'own'; return; }
+          el.__fffMode = 'auto'; s.position = 'fixed'; s.right = 'auto'; s.bottom = 'auto'; s.top = '50%'; s.left = '50%'; s.marginRight = '0'; s.marginBottom = '0';
+          if (cs(el, 'maxWidth') === 'none') s.maxWidth = 'calc(100% - 2em)';
+          if (cs(el, 'maxHeight') === 'none') s.maxHeight = 'calc(100% - 2em)';
+          if (cs(el, 'overflowY') === 'visible') s.overflow = 'auto';
+        }
+        s.marginLeft = '0'; s.marginTop = '0';
+        var ww = el.offsetWidth, hh = el.offsetHeight;
+        s.marginLeft = (-Math.round(ww / 2)) + 'px'; s.marginTop = (-Math.round(hh / 2)) + 'px';
+      }
+      function unplace(el) {
+        if (el.__fffMode === 'auto') {
+          var s = el.style, k = ['position', 'right', 'bottom', 'top', 'left', 'marginLeft', 'marginTop', 'marginRight', 'marginBottom', 'maxWidth', 'maxHeight', 'overflow', 'zIndex'], i;
+          for (i = 0; i < k.length; i++) s[k[i]] = '';
+        } else if (el.__fffMode === 'own') el.style.zIndex = '';
+        el.__fffMode = null;
+      }
+      function replaceAll() { var i; for (i = 0; i < stack.length; i++) place(stack[i]); for (i = 0; i < loose.length; i++) place(loose[i]); }
+      function schedule() { if (pending) return; pending = setTimeout(function () { pending = null; replaceAll(); }, 16); }
+      function watch(el) {
+        if (!w.MutationObserver) return;
+        if (!mo) mo = new w.MutationObserver(schedule);
+        try { mo.observe(el, {childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'hidden', 'open']}); } catch (e) { /* ignorat */ }
+      }
+      w.addEventListener('resize', schedule); w.addEventListener('orientationchange', schedule);
+      function zOf(n) { return String(BASE + n); }
+      function prune() {
+        var i, b;
+        for (i = stack.length - 1; i >= 0; i--) if (!d.documentElement.contains(stack[i]) || !stack[i].hasAttribute('open')) { b = stack[i].__fffBd; if (b && b.parentNode) b.parentNode.removeChild(b); stack[i].__fffBd = null; stack.splice(i, 1); }
+      }
+      function open(el, modal) {
+        chk(el);
+        if (el.hasAttribute('open')) { if (modal) throw new Error('InvalidStateError'); return; }
+        prune();
+        el.__fffPrev = d.activeElement;
+        el.setAttribute('open', '');
+        var z = stack.length * 2;
+        if (modal) {
+          var b = d.createElement('div'), bs = b.style;
+          b.className = 'fff-bd'; b.setAttribute('data-fff-bd', ''); b.setAttribute('aria-hidden', 'true');
+          bs.position = 'fixed'; bs.top = '0'; bs.right = '0'; bs.bottom = '0'; bs.left = '0'; bs.background = 'rgba(0,0,0,.5)'; bs.zIndex = zOf(z);
+          (d.body || H).appendChild(b); el.__fffBd = b;
+          el.setAttribute('data-fff-modal', ''); stack.push(el);
+        } else if (loose.indexOf(el) < 0) loose.push(el);
+        el.style.zIndex = zOf(z + 1);
+        place(el); watch(el);
+        var f = el.querySelector('[autofocus]');
+        if (!f || !vis(f)) { var fs = focusables(el); f = fs.length ? fs[0] : null; }
+        if (modal || f) { try { if (f) f.focus(); else { if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1'); el.focus(); } } catch (e) { /* ignorat */ } }
+        setTimeout(function () { place(el); }, 0);
+      }
+      function close(el, rv) {
+        chk(el);
+        if (!el.hasAttribute('open')) return;
+        if (rv !== undefined) el.returnValue = String(rv);
+        el.removeAttribute('open'); el.removeAttribute('data-fff-modal');
+        var b = el.__fffBd; if (b && b.parentNode) b.parentNode.removeChild(b); el.__fffBd = null;
+        var i = stack.indexOf(el); if (i >= 0) stack.splice(i, 1);
+        i = loose.indexOf(el); if (i >= 0) loose.splice(i, 1);
+        unplace(el);
+        var prev = el.__fffPrev; el.__fffPrev = null;
+        if (prev && prev !== d.body && prev.focus && d.documentElement.contains(prev)) { try { prev.focus(); } catch (e) { /* ignorat */ } }
+        setTimeout(function () { fire(el, 'close', false); }, 0);
+      }
+      C._dlg = {show: function (el) { open(el, false); }, showModal: function (el) { open(el, true); }, close: close};
+      function put(name, fn) { if (!proto[name]) { try { Object.defineProperty(proto, name, {value: fn, writable: true, configurable: true}); } catch (e) { proto[name] = fn; } } }
+      put('show', function () { open(this, false); });
+      put('showModal', function () { open(this, true); });
+      put('close', function (rv) { close(this, rv); });
+      function prop(name, get, set) {
+        if (name in proto) return;
+        try { Object.defineProperty(proto, name, {configurable: true, get: get, set: set}); } catch (e) { /* ignorat */ }
+      }
+      prop('open', function () { return isDlg(this) ? this.hasAttribute('open') : undefined; },
+        function (v) { if (!isDlg(this)) return; if (v) { if (!this.hasAttribute('open')) open(this, false); } else close(this); });
+      prop('returnValue', function () { return isDlg(this) ? (this.__fffRv == null ? '' : this.__fffRv) : undefined; }, function (v) { if (isDlg(this)) this.__fffRv = String(v); });
+      /* Esc → cancel (anulabil) → close; capcană de focus; <form method="dialog"> */
+      d.addEventListener('keydown', function (e) {
+        if (!stack.length || e.defaultPrevented) return;
+        var top = stack[stack.length - 1];
+        if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) {
+          if (!d.documentElement.contains(top)) { prune(); return; }
+          e.preventDefault();
+          if (fire(top, 'cancel', true)) close(top);
+        } else if ((e.key === 'Tab' || e.keyCode === 9) && top.contains(e.target)) {
+          var fs = focusables(top);
+          if (!fs.length) { e.preventDefault(); return; }
+          if (e.shiftKey && e.target === fs[0]) { e.preventDefault(); fs[fs.length - 1].focus(); }
+          else if (!e.shiftKey && e.target === fs[fs.length - 1]) { e.preventDefault(); fs[0].focus(); }
+        }
+      }, false);
+      d.addEventListener('focusin', function (e) {
+        if (!stack.length) return;
+        var top = stack[stack.length - 1];
+        if (!top.contains(e.target)) { var fs = focusables(top); try { (fs[0] || top).focus(); } catch (x) { /* ignorat */ } }
+      }, true);
+      var lastSub = null;
+      d.addEventListener('click', function (e) {
+        var t = e.target, el = t && t.closest ? t.closest('button,input') : null;
+        if (el && (el.type === 'submit' || (el.tagName === 'BUTTON' && !el.getAttribute('type')) || el.type === 'image')) lastSub = el; else lastSub = null;
+      }, true);
+      d.addEventListener('submit', function (e) {   // fază de bubble: dacă aplicația a făcut preventDefault, nu închidem (ca în nativ)
+        var f = e.target;
+        if (e.defaultPrevented || !f || f.nodeType !== 1 || String(f.getAttribute('method') || '').toLowerCase() !== 'dialog') return;
+        e.preventDefault();
+        var dlg = f.closest ? f.closest('dialog') : null;
+        if (!dlg || !isDlg(dlg)) return;
+        var sub = e.submitter || (lastSub && f.contains(lastSub) ? lastSub : null);
+        close(dlg, sub && sub.value != null && sub.value !== '' ? sub.value : (dlg.returnValue || ''));
+      }, false);
+    })();
+  } else C.has.dialog = true;
+  (function () {
+    var ok = true;
+    try { d.querySelector(':where(a)'); d.querySelector(':not(a,b)'); } catch (e) { ok = false; }
+    C.has.selectors4 = ok; if (!ok) addCls('fff-oldsel');
+  })();
+  onReady(function () {
+    try {
+      var f = d.createElement('fff-t'), a = d.createElement('fff-t'), b = d.createElement('fff-t'), s = f.style, g;
+      s.display = 'flex'; s.flexDirection = 'column'; s.rowGap = '1px'; s.position = 'absolute'; s.visibility = 'hidden'; s.margin = '0'; s.padding = '0'; s.border = '0';
+      a.style.display = 'block'; a.style.height = '1px'; a.style.margin = '0'; b.style.display = 'block'; b.style.height = '1px'; b.style.margin = '0';
+      f.appendChild(a); f.appendChild(b); d.body.appendChild(f);
+      g = f.offsetHeight === 3; d.body.removeChild(f);
+      C.has.flexGap = g; if (!g) addCls('fff-no-flexgap');
+    } catch (e) { /* ignorat */ }
+  });
+
+  /* ---------- 4. import() dinamic fără sintaxă nouă ---------- */
+  C.imp = function (url) {
+    if (typeof w.__fffImp === 'function') return w.__fffImp(url);
+    if (d.readyState === 'loading') return new w.Promise(function (res) { d.addEventListener('DOMContentLoaded', function () { res(); }); }).then(function () { return C.imp(url); });
+    return w.Promise.reject(new Error('import() dinamic nu este disponibil în acest browser'));
+  };
+
+  /* ---------- 5. RegExp construit la rulare ---------- */
+  var PROPS = {"Lu":"A-Z\\xC0-\\xD6\\xD8-\\xDE\\u0100\\u0102\\u0104\\u0106\\u0108\\u010A\\u010C\\u010E\\u0110\\u0112\\u0114\\u0116\\u0118\\u011A\\u011C\\u011E\\u0120\\u0122\\u0124\\u0126\\u0128\\u012A\\u012C\\u012E\\u0130\\u0132\\u0134\\u0136\\u0139\\u013B\\u013D\\u013F\\u0141\\u0143\\u0145\\u0147\\u014A\\u014C\\u014E\\u0150\\u0152\\u0154\\u0156\\u0158\\u015A\\u015C\\u015E\\u0160\\u0162\\u0164\\u0166\\u0168\\u016A\\u016C\\u016E\\u0170\\u0172\\u0174\\u0176\\u0178\\u0179\\u017B\\u017D\\u0181\\u0182\\u0184\\u0186\\u0187\\u0189-\\u018B\\u018E-\\u0191\\u0193\\u0194\\u0196-\\u0198\\u019C\\u019D\\u019F\\u01A0\\u01A2\\u01A4\\u01A6\\u01A7\\u01A9\\u01AC\\u01AE\\u01AF\\u01B1-\\u01B3\\u01B5\\u01B7\\u01B8\\u01BC\\u01C4\\u01C7\\u01CA\\u01CD\\u01CF\\u01D1\\u01D3\\u01D5\\u01D7\\u01D9\\u01DB\\u01DE\\u01E0\\u01E2\\u01E4\\u01E6\\u01E8\\u01EA\\u01EC\\u01EE\\u01F1\\u01F4\\u01F6-\\u01F8\\u01FA\\u01FC\\u01FE\\u0200\\u0202\\u0204\\u0206\\u0208\\u020A\\u020C\\u020E\\u0210\\u0212\\u0214\\u0216\\u0218\\u021A\\u021C\\u021E\\u0220\\u0222\\u0224\\u0226\\u0228\\u022A\\u022C\\u022E\\u0230\\u0232\\u023A\\u023B\\u023D\\u023E\\u0241\\u0243-\\u0246\\u0248\\u024A\\u024C\\u024E\\u0370\\u0372\\u0376\\u037F\\u0386\\u0388-\\u038A\\u038C\\u038E\\u038F\\u0391-\\u03A1\\u03A3-\\u03AB\\u03CF\\u03D2-\\u03D4\\u03D8\\u03DA\\u03DC\\u03DE\\u03E0\\u03E2\\u03E4\\u03E6\\u03E8\\u03EA\\u03EC\\u03EE\\u03F4\\u03F7\\u03F9\\u03FA\\u03FD-\\u042F\\u0460\\u0462\\u0464\\u0466\\u0468\\u046A\\u046C\\u046E\\u0470\\u0472\\u0474\\u0476\\u0478\\u047A\\u047C\\u047E\\u0480\\u048A\\u048C\\u048E\\u0490\\u0492\\u0494\\u0496\\u0498\\u049A\\u049C\\u049E\\u04A0\\u04A2\\u04A4\\u04A6\\u04A8\\u04AA\\u04AC\\u04AE\\u04B0\\u04B2\\u04B4\\u04B6\\u04B8\\u04BA\\u04BC\\u04BE\\u04C0\\u04C1\\u04C3\\u04C5\\u04C7\\u04C9\\u04CB\\u04CD\\u04D0\\u04D2\\u04D4\\u04D6\\u04D8\\u04DA\\u04DC\\u04DE\\u04E0\\u04E2\\u04E4\\u04E6\\u04E8\\u04EA\\u04EC\\u04EE\\u04F0\\u04F2\\u04F4\\u04F6\\u04F8\\u04FA\\u04FC\\u04FE\\u1E00\\u1E02\\u1E04\\u1E06\\u1E08\\u1E0A\\u1E0C\\u1E0E\\u1E10\\u1E12\\u1E14\\u1E16\\u1E18\\u1E1A\\u1E1C\\u1E1E\\u1E20\\u1E22\\u1E24\\u1E26\\u1E28\\u1E2A\\u1E2C\\u1E2E\\u1E30\\u1E32\\u1E34\\u1E36\\u1E38\\u1E3A\\u1E3C\\u1E3E\\u1E40\\u1E42\\u1E44\\u1E46\\u1E48\\u1E4A\\u1E4C\\u1E4E\\u1E50\\u1E52\\u1E54\\u1E56\\u1E58\\u1E5A\\u1E5C\\u1E5E\\u1E60\\u1E62\\u1E64\\u1E66\\u1E68\\u1E6A\\u1E6C\\u1E6E\\u1E70\\u1E72\\u1E74\\u1E76\\u1E78\\u1E7A\\u1E7C\\u1E7E\\u1E80\\u1E82\\u1E84\\u1E86\\u1E88\\u1E8A\\u1E8C\\u1E8E\\u1E90\\u1E92\\u1E94\\u1E9E\\u1EA0\\u1EA2\\u1EA4\\u1EA6\\u1EA8\\u1EAA\\u1EAC\\u1EAE\\u1EB0\\u1EB2\\u1EB4\\u1EB6\\u1EB8\\u1EBA\\u1EBC\\u1EBE\\u1EC0\\u1EC2\\u1EC4\\u1EC6\\u1EC8\\u1ECA\\u1ECC\\u1ECE\\u1ED0\\u1ED2\\u1ED4\\u1ED6\\u1ED8\\u1EDA\\u1EDC\\u1EDE\\u1EE0\\u1EE2\\u1EE4\\u1EE6\\u1EE8\\u1EEA\\u1EEC\\u1EEE\\u1EF0\\u1EF2\\u1EF4\\u1EF6\\u1EF8\\u1EFA\\u1EFC\\u1EFE\\uFF21-\\uFF3A","Ll":"a-z\\xB5\\xDF-\\xF6\\xF8-\\xFF\\u0101\\u0103\\u0105\\u0107\\u0109\\u010B\\u010D\\u010F\\u0111\\u0113\\u0115\\u0117\\u0119\\u011B\\u011D\\u011F\\u0121\\u0123\\u0125\\u0127\\u0129\\u012B\\u012D\\u012F\\u0131\\u0133\\u0135\\u0137\\u0138\\u013A\\u013C\\u013E\\u0140\\u0142\\u0144\\u0146\\u0148\\u0149\\u014B\\u014D\\u014F\\u0151\\u0153\\u0155\\u0157\\u0159\\u015B\\u015D\\u015F\\u0161\\u0163\\u0165\\u0167\\u0169\\u016B\\u016D\\u016F\\u0171\\u0173\\u0175\\u0177\\u017A\\u017C\\u017E-\\u0180\\u0183\\u0185\\u0188\\u018C\\u018D\\u0192\\u0195\\u0199-\\u019B\\u019E\\u01A1\\u01A3\\u01A5\\u01A8\\u01AA\\u01AB\\u01AD\\u01B0\\u01B4\\u01B6\\u01B9\\u01BA\\u01BD-\\u01BF\\u01C6\\u01C9\\u01CC\\u01CE\\u01D0\\u01D2\\u01D4\\u01D6\\u01D8\\u01DA\\u01DC\\u01DD\\u01DF\\u01E1\\u01E3\\u01E5\\u01E7\\u01E9\\u01EB\\u01ED\\u01EF\\u01F0\\u01F3\\u01F5\\u01F9\\u01FB\\u01FD\\u01FF\\u0201\\u0203\\u0205\\u0207\\u0209\\u020B\\u020D\\u020F\\u0211\\u0213\\u0215\\u0217\\u0219\\u021B\\u021D\\u021F\\u0221\\u0223\\u0225\\u0227\\u0229\\u022B\\u022D\\u022F\\u0231\\u0233-\\u0239\\u023C\\u023F\\u0240\\u0242\\u0247\\u0249\\u024B\\u024D\\u024F\\u0371\\u0373\\u0377\\u037B-\\u037D\\u0390\\u03AC-\\u03CE\\u03D0\\u03D1\\u03D5-\\u03D7\\u03D9\\u03DB\\u03DD\\u03DF\\u03E1\\u03E3\\u03E5\\u03E7\\u03E9\\u03EB\\u03ED\\u03EF-\\u03F3\\u03F5\\u03F8\\u03FB\\u03FC\\u0430-\\u045F\\u0461\\u0463\\u0465\\u0467\\u0469\\u046B\\u046D\\u046F\\u0471\\u0473\\u0475\\u0477\\u0479\\u047B\\u047D\\u047F\\u0481\\u048B\\u048D\\u048F\\u0491\\u0493\\u0495\\u0497\\u0499\\u049B\\u049D\\u049F\\u04A1\\u04A3\\u04A5\\u04A7\\u04A9\\u04AB\\u04AD\\u04AF\\u04B1\\u04B3\\u04B5\\u04B7\\u04B9\\u04BB\\u04BD\\u04BF\\u04C2\\u04C4\\u04C6\\u04C8\\u04CA\\u04CC\\u04CE\\u04CF\\u04D1\\u04D3\\u04D5\\u04D7\\u04D9\\u04DB\\u04DD\\u04DF\\u04E1\\u04E3\\u04E5\\u04E7\\u04E9\\u04EB\\u04ED\\u04EF\\u04F1\\u04F3\\u04F5\\u04F7\\u04F9\\u04FB\\u04FD\\u04FF\\u1E01\\u1E03\\u1E05\\u1E07\\u1E09\\u1E0B\\u1E0D\\u1E0F\\u1E11\\u1E13\\u1E15\\u1E17\\u1E19\\u1E1B\\u1E1D\\u1E1F\\u1E21\\u1E23\\u1E25\\u1E27\\u1E29\\u1E2B\\u1E2D\\u1E2F\\u1E31\\u1E33\\u1E35\\u1E37\\u1E39\\u1E3B\\u1E3D\\u1E3F\\u1E41\\u1E43\\u1E45\\u1E47\\u1E49\\u1E4B\\u1E4D\\u1E4F\\u1E51\\u1E53\\u1E55\\u1E57\\u1E59\\u1E5B\\u1E5D\\u1E5F\\u1E61\\u1E63\\u1E65\\u1E67\\u1E69\\u1E6B\\u1E6D\\u1E6F\\u1E71\\u1E73\\u1E75\\u1E77\\u1E79\\u1E7B\\u1E7D\\u1E7F\\u1E81\\u1E83\\u1E85\\u1E87\\u1E89\\u1E8B\\u1E8D\\u1E8F\\u1E91\\u1E93\\u1E95-\\u1E9D\\u1E9F\\u1EA1\\u1EA3\\u1EA5\\u1EA7\\u1EA9\\u1EAB\\u1EAD\\u1EAF\\u1EB1\\u1EB3\\u1EB5\\u1EB7\\u1EB9\\u1EBB\\u1EBD\\u1EBF\\u1EC1\\u1EC3\\u1EC5\\u1EC7\\u1EC9\\u1ECB\\u1ECD\\u1ECF\\u1ED1\\u1ED3\\u1ED5\\u1ED7\\u1ED9\\u1EDB\\u1EDD\\u1EDF\\u1EE1\\u1EE3\\u1EE5\\u1EE7\\u1EE9\\u1EEB\\u1EED\\u1EEF\\u1EF1\\u1EF3\\u1EF5\\u1EF7\\u1EF9\\u1EFB\\u1EFD\\u1EFF\\uFF41-\\uFF5A","L":"A-Za-z\\xAA\\xB5\\xBA\\xC0-\\xD6\\xD8-\\xF6\\xF8-\\u024F\\u0370-\\u0374\\u0376\\u0377\\u037A-\\u037D\\u037F\\u0386\\u0388-\\u038A\\u038C\\u038E-\\u03A1\\u03A3-\\u03F5\\u03F7-\\u0481\\u048A-\\u04FF\\u1E00-\\u1EFF\\uFF21-\\uFF3A\\uFF41-\\uFF5A\\u0531-\\u0556\\u0561-\\u0587\\u05D0-\\u05EA\\u0620-\\u064A\\u066E-\\u06D3\\u0904-\\u0939\\u0E01-\\u0E30\\u10A0-\\u10FF\\u1100-\\u11FF\\u3041-\\u3096\\u30A1-\\u30FA\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uAC00-\\uD7A3","N":"0-9\\xB2\\xB3\\xB9\\xBC-\\xBE\\u0660-\\u0669\\u06F0-\\u06F9\\u07C0-\\u07C9\\u0966-\\u096F\\u09E6-\\u09EF\\u09F4-\\u09F9\\u0A66-\\u0A6F\\u0AE6-\\u0AEF\\u0B66-\\u0B6F\\u0B72-\\u0B77\\u0BE6-\\u0BF2\\u0C66-\\u0C6F\\u0C78-\\u0C7E\\u0CE6-\\u0CEF\\u0D58-\\u0D5E\\u0D66-\\u0D78\\u0DE6-\\u0DEF\\u0E50-\\u0E59\\u0ED0-\\u0ED9\\u0F20-\\u0F33\\u1040-\\u1049\\u1090-\\u1099\\u1369-\\u137C\\u16EE-\\u16F0\\u17E0-\\u17E9\\u17F0-\\u17F9\\u1810-\\u1819\\u1946-\\u194F\\u19D0-\\u19DA\\u1A80-\\u1A89\\u1A90-\\u1A99\\u1B50-\\u1B59\\u1BB0-\\u1BB9\\u1C40-\\u1C49\\u1C50-\\u1C59\\u2070\\u2074-\\u2079\\u2080-\\u2089\\u2150-\\u2182\\u2185-\\u2189\\u2460-\\u249B\\u24EA-\\u24FF\\u2776-\\u2793\\uFF10-\\uFF19","M":"\\u0300-\\u036F\\u0483-\\u0489\\u0591-\\u05BD\\u05BF\\u05C1\\u05C2\\u05C4\\u05C5\\u05C7\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06DC\\u06DF-\\u06E4\\u06E7\\u06E8\\u06EA-\\u06ED\\u0900-\\u0903\\u093A-\\u093C\\u093E-\\u094F\\u1AB0-\\u1ADD\\u1AE0-\\u1AEB\\u1DC0-\\u1DFF\\u20D0-\\u20F0\\uFE00-\\uFE0F\\uFE20-\\uFE2F","P":"\\x21-\\x23\\x25-\\x2A\\x2C-\\x2F\\x3A\\x3B\\x3F\\x40\\x5B-\\x5D\\x5F\\x7B\\x7D\\xA1\\xA7\\xAB\\xB6\\xB7\\xBB\\xBF\\u037E\\u0387\\u055A-\\u055F\\u0589\\u058A\\u05BE\\u05C0\\u05C3\\u05C6\\u05F3\\u05F4\\u0609\\u060A\\u060C\\u060D\\u061B\\u061D-\\u061F\\u066A-\\u066D\\u06D4\\u0700-\\u070D\\u07F7-\\u07F9\\u0830-\\u083E\\u085E\\u0964\\u0965\\u0970\\u09FD\\u0A76\\u0AF0\\u0C77\\u0C84\\u0DF4\\u0E4F\\u0E5A\\u0E5B\\u0F04-\\u0F12\\u0F14\\u0F3A-\\u0F3D\\u0F85\\u0FD0-\\u0FD4\\u0FD9\\u0FDA\\u104A-\\u104F\\u10FB\\u1360-\\u1368\\u1400\\u166E\\u169B\\u169C\\u16EB-\\u16ED\\u1735\\u1736\\u17D4-\\u17D6\\u17D8-\\u17DA\\u1800-\\u180A\\u1944\\u1945\\u1A1E\\u1A1F\\u1AA0-\\u1AA6\\u1AA8-\\u1AAD\\u1B4E\\u1B4F\\u1B5A-\\u1B60\\u1B7D-\\u1B7F\\u1BFC-\\u1BFF\\u1C3B-\\u1C3F\\u1C7E\\u1C7F\\u1CC0-\\u1CC7\\u1CD3\\u2010-\\u2027\\u2030-\\u2043\\u2045-\\u2051\\u2053-\\u205E\\u207D\\u207E\\u208D\\u208E\\u2308-\\u230B\\u2329\\u232A\\u2768-\\u2775\\u27C5\\u27C6\\u27E6-\\u27EF\\u2983-\\u2998\\u29D8-\\u29DB\\u29FC\\u29FD\\u2CF9-\\u2CFC\\u2CFE\\u2CFF\\u2D70\\u2E00-\\u2E2E\\u2E30-\\u2E4F\\u2E52-\\u2E5D\\u3001-\\u3003\\u3008-\\u3011\\uFF01-\\uFF03\\uFF05-\\uFF0A\\uFF0C-\\uFF0F\\uFF1A\\uFF1B\\uFF1F\\uFF20\\uFF3B-\\uFF3D\\uFF5B\\uFF5D\\uFF5F-\\uFF65"};
+  var PALIAS = {Letter: 'L', Uppercase_Letter: 'Lu', Lowercase_Letter: 'Ll', Number: 'N', Mark: 'M', Punctuation: 'P', Alphabetic: 'L', Uppercase: 'Lu', Lowercase: 'Ll', Nd: 'N', Decimal_Number: 'N'};
+  var EXTPIC_CLS = '\\xA9\\xAE\\u203C\\u2049\\u2122\\u2139\\u2194-\\u21AA\\u231A-\\u23FF\\u24C2\\u25AA-\\u25FE\\u2600-\\u27BF\\u2934\\u2935\\u2B05-\\u2B55\\u3030\\u303D\\u3297\\u3299';
+  var EXTPIC = '(?:[' + EXTPIC_CLS + ']|\\uD83C[\\uDC00-\\uDFFF]|\\uD83D[\\uDC00-\\uDFFF]|\\uD83E[\\uDC00-\\uDFFF])';
+
+  /** Rescrie proprietăți Unicode \p{…} (și, la cerere, punctul cu steagul s) în ES5. Aruncă SyntaxError pentru ce nu poate rescrie. */
+  function rewrite(src, dotAll) {
+    var out = '', i = 0, n = src.length, inCls = false, c, nx, j, name, body;
+    while (i < n) {
+      c = src.charAt(i);
+      if (c === '\\') {
+        nx = src.charAt(i + 1);
+        if ((nx === 'p' || nx === 'P') && src.charAt(i + 2) === '{') {
+          j = src.indexOf('}', i + 3);
+          if (j < 0) throw new SyntaxError('\\p fără }');
+          name = src.slice(i + 3, j).replace(/^(?:General_Category|gc)=/, '');
+          name = PALIAS[name] || name;
+          if (name === 'Extended_Pictographic' && !inCls && nx === 'p') out += EXTPIC;
+          else {
+            body = PROPS[name];
+            if (!body) throw new SyntaxError('proprietate Unicode neacceptată: ' + name);
+            if (inCls) { if (nx === 'P') throw new SyntaxError('\\P în clasă neacceptat'); out += body; } else out += (nx === 'P' ? '[^' : '[') + body + ']';
+          }
+          i = j + 1; continue;
+        }
+        out += c + nx; i += 2; continue;
+      }
+      if (inCls) { if (c === ']') inCls = false; out += c; i++; continue; }
+      if (c === '[') { inCls = true; out += c; i++; if (src.charAt(i) === '^') { out += '^'; i++; } continue; }
+      if (c === '.' && dotAll) { out += '[\\s\\S]'; i++; continue; }
+      out += c; i++;
+    }
+    return out;
+  }
+  function mk(src, flags) {   // fără lookbehind: doar proprietăți/dotAll; scoate steagurile necunoscute
+    var f = flags.replace(/[dsuv]/g, ''), s = rewrite(src, flags.indexOf('s') >= 0);
+    return new RegExp(s, f);
+  }
+  function skipGroup(s, i) {   // i pe „(” → indexul de după „)” corespunzător
+    var depth = 0, inCls = false, c;
+    for (; i < s.length; i++) {
+      c = s.charAt(i);
+      if (c === '\\') { i++; continue; }
+      if (inCls) { if (c === ']') inCls = false; continue; }
+      if (c === '[') { inCls = true; continue; }
+      if (c === '(') depth++; else if (c === ')') { depth--; if (depth === 0) return i + 1; }
+    }
+    throw new SyntaxError('grup neînchis');
+  }
+  function splitTop(s) {
+    var out = [], depth = 0, inCls = false, st = 0, i, c;
+    for (i = 0; i < s.length; i++) {
+      c = s.charAt(i);
+      if (c === '\\') { i++; continue; }
+      if (inCls) { if (c === ']') inCls = false; continue; }
+      if (c === '[') inCls = true; else if (c === '(') depth++; else if (c === ')') depth--;
+      else if (c === '|' && depth === 0) { out.push(s.slice(st, i)); st = i + 1; }
+    }
+    out.push(s.slice(st));
+    return out;
+  }
+  function peel(b) {
+    var lbs = [], m, end;
+    while ((m = /^\(\?<([=!])/.exec(b))) { end = skipGroup(b, 0); lbs.push({neg: m[1] === '!', src: b.slice(m[0].length, end - 1)}); b = b.slice(end); }
+    return {lbs: lbs, body: b};
+  }
+  function lbOk(lbs, str, idx) {
+    var i, pre, hit;
+    for (i = 0; i < lbs.length; i++) {
+      pre = lbs[i].win ? str.slice(Math.max(0, idx - lbs[i].win), idx) : str.slice(0, idx);
+      hit = lbs[i].re.test(pre);
+      if (hit === lbs[i].neg) return false;
+    }
+    return true;
+  }
+  /** Emulează un RegExp cu lookbehind la începutul fiecărei alternative de nivel superior (exec/test/replace/split/match/matchAll). */
+  function LB(src, flags) {
+    var f = flags.replace(/[gyd]/g, ''), dotAll = flags.indexOf('s') >= 0;
+    function ro(k, v) { Object.defineProperty(this, k, {value: v, writable: true, configurable: true, enumerable: false}); }
+    ro.call(this, 'source', src); ro.call(this, 'flags', flags);
+    ro.call(this, 'global', flags.indexOf('g') >= 0); ro.call(this, 'sticky', flags.indexOf('y') >= 0);
+    ro.call(this, 'ignoreCase', flags.indexOf('i') >= 0); ro.call(this, 'multiline', flags.indexOf('m') >= 0);
+    ro.call(this, 'dotAll', dotAll); ro.call(this, 'unicode', flags.indexOf('u') >= 0); ro.call(this, 'hasIndices', false);
+    this.lastIndex = 0;
+    this._br = splitTop(src).map(function (b) {
+      var p = peel(b);
+      if (/\(\?<[=!]/.test(p.body)) throw new SyntaxError('lookbehind neacceptat în această poziție');
+      return {re: mk(p.body, f + 'g' + (dotAll ? 's' : '')), lbs: p.lbs.map(function (l) {
+        var plain = !/\^|\\b|\\B|\$/.test(l.src);
+        return {neg: l.neg, win: plain ? 128 : 0, re: mk('(?:' + l.src + ')(?![\\s\\S])', f.replace('m', '') + (dotAll ? 's' : ''))};
+      })};
+    });
+  }
+  LB.prototype = Object.create(w.RegExp.prototype, {constructor: {value: LB, writable: true, configurable: true}});
+  LB.prototype._scan = function (str, from) {
+    var best = null, bi, br, p, m;
+    for (bi = 0; bi < this._br.length; bi++) {
+      br = this._br[bi]; p = from;
+      while (p <= str.length) {
+        br.re.lastIndex = p; m = br.re.exec(str);
+        if (!m) break;
+        if (lbOk(br.lbs, str, m.index)) { if (!best || m.index < best.index) best = m; break; }
+        p = m.index + 1;
+      }
+    }
+    return best;
+  };
+  LB.prototype.exec = function (str) {
+    var useLast = this.global || this.sticky, start = useLast ? this.lastIndex : 0, m;
+    str = String(str);
+    if (start > str.length) { if (useLast) this.lastIndex = 0; return null; }
+    m = this._scan(str, start);
+    if (m && this.sticky && m.index !== start) m = null;
+    if (!m) { if (useLast) this.lastIndex = 0; return null; }
+    if (useLast) this.lastIndex = m.index + m[0].length;
+    m.input = str; m.groups = undefined;
+    return m;
+  };
+  LB.prototype.test = function (str) { return this.exec(str) !== null; };
+  LB.prototype.toString = function () { return '/' + this.source + '/' + this.flags; };
+  LB.prototype._clone = function (flags) { return new LB(this.source, flags === undefined ? this.flags : flags); };
+  function expandSub(t, m, pos, str) {
+    var caps = m.length - 1;
+    return t.replace(/\$(\$|&|`|'|\d\d?)/g, function (x, c) {
+      var n;
+      if (c === '$') return '$'; if (c === '&') return m[0]; if (c === '`') return str.slice(0, pos); if (c === "'") return str.slice(pos + m[0].length);
+      n = parseInt(c, 10);
+      if (c.length === 2 && (n < 1 || n > caps)) { n = parseInt(c.charAt(0), 10); return n >= 1 && n <= caps ? (m[n] === undefined ? '' : m[n]) + c.charAt(1) : x; }
+      return n >= 1 && n <= caps ? (m[n] === undefined ? '' : m[n]) : x;
+    });
+  }
+  function symReplace(str, rep) {
+    var re = this, g = re.global, res = [], m, out = '', next = 0, i, pos, r, args;
+    str = String(str);
+    if (typeof rep !== 'function') rep = String(rep);
+    if (g) re.lastIndex = 0;
+    while ((m = re.exec(str))) { res.push(m); if (!g) break; if (m[0] === '') re.lastIndex++; }
+    for (i = 0; i < res.length; i++) {
+      m = res[i]; pos = m.index;
+      if (typeof rep === 'function') { args = [m[0]].concat(Array.prototype.slice.call(m, 1), [pos, str]); r = String(rep.apply(undefined, args)); } else r = expandSub(rep, m, pos, str);
+      if (pos >= next) { out += str.slice(next, pos) + r; next = pos + m[0].length; }
+    }
+    return out + str.slice(next);
+  }
+  function symMatch(str) {
+    var out = [], m;
+    str = String(str);
+    if (!this.global) return this.exec(str);
+    this.lastIndex = 0;
+    while ((m = this.exec(str))) { out.push(m[0]); if (m[0] === '') this.lastIndex++; }
+    return out.length ? out : null;
+  }
+  function symSearch(str) { var prev = this.lastIndex, m; this.lastIndex = 0; m = this._scan(String(str), 0); this.lastIndex = prev; return m ? m.index : -1; }
+  function symSplit(str, limit) {
+    var out = [], p = 0, q = 0, size, m, e, lim = limit === undefined ? MaxU32 : limit >>> 0, i;
+    str = String(str); size = str.length;
+    if (lim === 0) return out;
+    if (size === 0) return this._scan(str, 0) ? out : [str];
+    while (q < size) {
+      m = this._scan(str, q);
+      if (!m || m.index >= size) break;
+      e = Math.min(m.index + m[0].length, size);
+      if (e === p) { q = m.index + 1; continue; }
+      out.push(str.slice(p, m.index)); if (out.length === lim) return out;
+      for (i = 1; i < m.length; i++) { out.push(m[i]); if (out.length === lim) return out; }
+      p = e; q = p;
+    }
+    out.push(str.slice(p));
+    return out;
+  }
+  function symMatchAll(str) {
+    var c = this._clone(this.flags.indexOf('g') >= 0 ? this.flags : this.flags + 'g'), out = [], m;
+    str = String(str);
+    while ((m = c.exec(str))) { out.push(m); if (m[0] === '') c.lastIndex++; }
+    return out[Symbol.iterator]();
+  }
+  if (w.Symbol) {
+    if (w.Symbol.replace) LB.prototype[w.Symbol.replace] = symReplace;
+    if (w.Symbol.match) LB.prototype[w.Symbol.match] = symMatch;
+    if (w.Symbol.search) LB.prototype[w.Symbol.search] = symSearch;
+    if (w.Symbol.split) LB.prototype[w.Symbol.split] = symSplit;
+    if (w.Symbol.matchAll) LB.prototype[w.Symbol.matchAll] = symMatchAll;
+  }
+  C._LB = LB; C._rewrite = rewrite;
+  (function () {
+    function probe(s, f) { try { new RegExp(s, f); return true; } catch (e) { return false; } }
+    C.has.lookbehind = probe('(?<=a)b', ''); C.has.unicodeProps = probe('\\p{L}', 'u'); C.has.dotAll = probe('a.b', 's'); C.has.hasIndices = probe('a', 'd');
+  })();
+  /** RegExp construit la rulare. Nativ dacă se poate; altfel rescriere (\p{…}, steagul s), emulare (lookbehind) sau `fb` (rezervă dată de apelant). */
+  C.rx = function (src, flags, fb) {
+    flags = flags || '';
+    try { return new RegExp(src, flags); } catch (e0) { /* încercăm rezerva */ }
+    try { return /\(\?<[=!]/.test(src) ? new LB(src, flags) : mk(src, flags); } catch (e1) { if (fb) return fb; throw e1; }
+  };
+  F.rx = F.rx || C.rx; F.imp = F.imp || C.imp;
+})(window, document);
+</script>
+<script type="module" id="fff-imp">window.__fffImp=function(u){return import(u)};</script>
+<script id="fff-kit">/* fff-kit 1.8.0 */
+/* ---- fff-kit/core ---- */
+/* fff-kit · core · v1.2.0 — fără rețea, fără dependențe. Definește window.FFF. */
+(function () {
+  'use strict';
+  /* anti-clickjacking: GitHub Pages nu trimite X-Frame-Options; dacă pagina e încadrată de o origine străină (sau într-un iframe sandbox),
+     conținutul aplicației e ascuns și apare doar un mesaj minimal tradus cu un link către pagină într-o fereastră nouă. */
+  function frameGuard() {
+    var M = {
+      ro: ['Această pagină nu poate fi încadrată în alt site.', 'Deschide-o într-o fereastră nouă'],
+      en: ['This page cannot be embedded in another site.', 'Open it in a new window'],
+      fr: ['Cette page ne peut pas être intégrée dans un autre site.', 'Ouvrez-la dans une nouvelle fenêtre'],
+      it: ['Questa pagina non può essere incorporata in un altro sito.', 'Aprila in una nuova finestra'],
+      es: ['Esta página no se puede incrustar en otro sitio.', 'Ábrela en una ventana nueva'],
+      pt: ['Esta página não pode ser incorporada noutro site.', 'Abra-a numa nova janela'],
+      hu: ['Ez az oldal nem ágyazható be másik webhelyre.', 'Nyisd meg új ablakban'],
+      de: ['Diese Seite kann nicht in eine andere Website eingebettet werden.', 'In einem neuen Fenster öffnen']
+    };
+    var d = document, de = d.documentElement;
+    var l = (de.getAttribute('lang') || '').slice(0, 2).toLowerCase();
+    if (!M[l]) l = ((navigator.languages && navigator.languages[0]) || navigator.language || '').slice(0, 2).toLowerCase();
+    var m = M[l] || M.en, box = null;
+    function hideKids(b) {
+      for (var i = 0; i < b.children.length; i++) if (b.children[i] !== box) b.children[i].style.setProperty('display', 'none', 'important');
+    }
+    function build() {
+      var b = d.body;
+      if (!b || box) return;
+      box = d.createElement('div');
+      box.setAttribute('data-fff-frameguard', '');
+      box.setAttribute('role', 'alert');
+      box.style.cssText = 'display:block;box-sizing:border-box;margin:0;padding:24px 16px;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1b1b1f;background:#fff;text-align:center';
+      var p = d.createElement('p'); p.textContent = m[0]; p.style.cssText = 'margin:0 0 12px';
+      var a = d.createElement('a');
+      a.href = window.self.location.href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = m[1];
+      a.style.cssText = 'color:#0b57d0;text-decoration:underline;font-weight:600';
+      box.appendChild(p); box.appendChild(a);
+      hideKids(b);
+      b.appendChild(box);
+      b.style.setProperty('display', 'block', 'important');
+      de.style.display = '';
+      if (window.MutationObserver) new MutationObserver(function () { hideKids(b); if (box.parentNode !== b) b.appendChild(box); }).observe(b, {childList: true});
+    }
+    if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', build); else build();
+  }
+  try {
+    if (window.top !== window.self) {
+      var __cross = false;
+      try { void window.top.location.href; } catch (e) { __cross = true; }
+      if (__cross) {
+        document.documentElement.style.display = 'none';   // ascuns până când mesajul e gata (nimic din aplicație nu rămâne vizibil)
+        try { window.top.location = window.self.location.href; } catch (e2) {}
+        try { frameGuard(); } catch (e4) {}
+      }
+    }
+  } catch (e3) {}
+  var KIT_VERSION = '1.8.0';
+  var F = (window.FFF = window.FFF || {});
+  if (F.core && F.core.version) return; // idempotent la dublă încărcare
+  var SUP = ['ro', 'en', 'fr', 'it', 'es', 'pt', 'hu', 'de'];
+  var doc = document;
+
+  /* ---------- clipboard sigur: refuzul de permisiune nu mai produce o excepție neprinsă ----------
+   * navigator.clipboard.writeText respinge cu NotAllowedError când pagina nu are focus sau permisiunea e refuzată.
+   * Încercăm întâi API-ul, apoi execCommand('copy'); dacă nici acesta nu merge, respingerea rămâne (apelantul o poate prinde),
+   * dar dacă nimeni n-o prinde, o marcăm ca tratată, ca pagina să rămână stabilă. */
+  try {
+    var cb = navigator.clipboard;
+    if (cb && typeof cb.writeText === 'function' && !cb.__fffSafe) {
+      var rawWrite = cb.writeText.bind(cb);
+      var legacyCopy = function (t) {
+        var ta = doc.createElement('textarea');
+        ta.value = String(t); ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+        (doc.body || doc.documentElement).appendChild(ta); ta.select();
+        var ok = false; try { ok = doc.execCommand('copy'); } catch (e) { ok = false; }
+        ta.remove(); return ok;
+      };
+      cb.writeText = function (t) {
+        var p; try { p = rawWrite(t); } catch (e) { p = Promise.reject(e); }
+        return p.catch(function (err) { if (legacyCopy(t)) return; throw err; });
+      };
+      try { Object.defineProperty(cb, '__fffSafe', {value: true}); } catch (e) { cb.__fffSafe = true; }
+    }
+  } catch (e5) {}
+  window.addEventListener('unhandledrejection', function (ev) {
+    var r = ev && ev.reason;
+    if (r && (r.name === 'NotAllowedError' || r.name === 'SecurityError') && /clipboard|permission/i.test(String(r.message || ''))) ev.preventDefault();
+  });
+
+  /* ---------- meta / app ---------- */
+  function meta(name) {
+    var m = doc.querySelector('meta[name="' + name + '"]');
+    return m ? (m.getAttribute('content') || '') : '';
+  }
+  function guessSlug() {
+    var p = (location.pathname || '').split('/').filter(Boolean);
+    var s = p.length ? p[p.length - 1] : '';
+    if (/\.html?$/i.test(s)) s = p.length > 1 ? p[p.length - 2] : '';
+    s = s.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+    return s || 'app';
+  }
+  var SLUG = (meta('fff-app') || '').trim() || guessSlug();
+  var DISABLED = (meta('fff-disable') || '').trim() || '';
+  function computeApp() {
+    return {slug: SLUG, name: doc.title || SLUG, version: meta('application-version'), updated: meta('last-updated')};
+  }
+  var appCache = null;
+  Object.defineProperty(F, 'app', {
+    enumerable: true, configurable: true,
+    get: function () {
+      if (doc.readyState === 'loading') return computeApp();
+      return appCache || (appCache = computeApp());
+    }
+  });
+
+  /* ---------- bus ---------- */
+  var L = {};
+  var bus = {
+    on: function (ev, fn) { (L[ev] = L[ev] || []).push(fn); return function () { bus.off(ev, fn); }; },
+    off: function (ev, fn) { if (L[ev]) L[ev] = L[ev].filter(function (f) { return f !== fn; }); },
+    once: function (ev, fn) { var off = bus.on(ev, function (d) { off(); fn(d); }); return off; },
+    emit: function (ev, data) {
+      (L[ev] || []).slice().forEach(function (f) { try { f(data); } catch (e) { if (window.console) console.error('[fff] bus', ev, e); } });
+    }
+  };
+  F.bus = bus;
+
+  /* ---------- i18n ---------- */
+  var I18N = (F._i18n = F._i18n || {});
+  var i18nLoaded = false;
+  function mergeLang(mod, obj) {
+    var d = (I18N[mod] = I18N[mod] || {});
+    for (var l in obj) if (Object.prototype.hasOwnProperty.call(obj, l)) {
+      d[l] = Object.assign(d[l] || {}, obj[l]);
+    }
+  }
+  function loadI18nJson() {
+    var el = doc.getElementById('fff-i18n');
+    if (!el) return;
+    i18nLoaded = true;
+    try {
+      var j = JSON.parse(el.textContent || '{}');
+      for (var m in j) if (Object.prototype.hasOwnProperty.call(j, m)) mergeLang(m, j[m]);
+    } catch (e) { if (window.console) console.error('[fff] i18n', e); }
+  }
+  F.registerI18n = function (mod, obj) { mergeLang(mod, obj || {}); };
+  function lsGetRaw(k) { try { return LS ? origGet.call(LS, k) : null; } catch (e) { return null; } }
+
+  var LS = null;
+  try { LS = window.localStorage; } catch (e) { LS = null; }
+  var P = window.Storage ? window.Storage.prototype : null;
+  var origGet = P && P.getItem, origSet = P && P.setItem, origRem = P && P.removeItem, origClr = P && P.clear;
+
+  F.lang = function () {
+    var l = (doc.documentElement.getAttribute('lang') || '').slice(0, 2).toLowerCase();
+    if (SUP.indexOf(l) >= 0) return l;
+    var ks = ['lang', 'language', 'locale'];
+    for (var i = 0; i < ks.length; i++) {
+      var v = lsGetRaw(ks[i]);
+      if (v) { v = String(v).replace(/^"|"$/g, '').slice(0, 2).toLowerCase(); if (SUP.indexOf(v) >= 0) return v; }
+    }
+    var n = ((navigator.languages && navigator.languages[0]) || navigator.language || '').slice(0, 2).toLowerCase();
+    return SUP.indexOf(n) >= 0 ? n : 'en';
+  };
+  var langObs = null, langFns = [];
+  F.onLang = function (fn) {
+    langFns.push(fn);
+    if (!langObs && window.MutationObserver) {
+      var last = F.lang();
+      langObs = new MutationObserver(function () {
+        var now = F.lang();
+        if (now === last) return;
+        last = now;
+        langFns.slice().forEach(function (f) { try { f(now); } catch (e) { if (window.console) console.error(e); } });
+        bus.emit('lang', now);
+      });
+      langObs.observe(doc.documentElement, {attributes: true, attributeFilter: ['lang']});
+    }
+    return function () { langFns = langFns.filter(function (f) { return f !== fn; }); };
+  };
+  F.t = function (mod, key, vars) {
+    if (!i18nLoaded) loadI18nJson();
+    var d = I18N[mod] || {};
+    var s = (d[F.lang()] || {})[key];
+    if (s == null) s = (d.en || {})[key];
+    if (s == null) s = (d.ro || {})[key];
+    if (s == null) s = key;
+    if (vars) for (var k in vars) if (Object.prototype.hasOwnProperty.call(vars, k)) s = String(s).split('{' + k + '}').join(String(vars[k]));
+    return s;
+  };
+
+  /* ---------- observator de stocare ---------- */
+  var INDEX_KEY = 'fff.' + SLUG + '.__keys';
+  var PFX = 'fff.' + SLUG + '.';
+  var idx = null; // Set de chei ale aplicației (fără prefix fff.)
+  function loadIdx() {
+    if (idx) return idx;
+    idx = new Set();
+    try {
+      var raw = origGet && LS ? origGet.call(LS, INDEX_KEY) : null;
+      if (raw) JSON.parse(raw).forEach(function (k) { if (typeof k === 'string') idx.add(k); });
+    } catch (e) { /* index corupt: se reface */ }
+    return idx;
+  }
+  function saveIdx() {
+    try { if (LS && origSet) origSet.call(LS, INDEX_KEY, JSON.stringify(Array.from(idx).sort())); } catch (e) { /* plin: ignorat */ }
+  }
+  /* momentul ultimei scrieri pe cheie (folosit de FFF.sync): {cheie: ms}, în fff.<slug>.__mt (exclus din chei/export, ca __keys), scris cu amânare */
+  var MT_KEY = 'fff.' + SLUG + '.__mt', mt = null, mtTimer = 0;
+  function loadMt() {
+    if (mt) return mt;
+    mt = Object.create(null);
+    try {
+      var raw = origGet && LS ? origGet.call(LS, MT_KEY) : null;
+      if (raw) { var o = JSON.parse(raw); Object.keys(o).forEach(function (k) { if (typeof o[k] === 'number') mt[k] = o[k]; }); }
+    } catch (e) { /* corupt: se reface */ }
+    return mt;
+  }
+  function touch(k) {
+    k = String(k);
+    if (k.indexOf('fff.') === 0) return;
+    loadMt()[k] = Date.now();
+    if (mtTimer) return;
+    mtTimer = setTimeout(function () {
+      mtTimer = 0;
+      try { if (LS && origSet) origSet.call(LS, MT_KEY, JSON.stringify(mt)); } catch (e) { /* plin: ignorat */ }
+    }, 400);
+  }
+  F.mtime = function (k) { return loadMt()[String(k)] || 0; };
+  F.mtimeClear = function () { mt = Object.create(null); clearTimeout(mtTimer); mtTimer = 0; try { if (LS && origRem) origRem.call(LS, MT_KEY); } catch (e) { /* ignorat */ } };
+  function track(k) {
+    k = String(k);
+    if (k.indexOf('fff.') === 0) return;
+    var s = loadIdx();
+    if (!s.has(k)) { s.add(k); saveIdx(); }
+  }
+  function untrack(k) {
+    k = String(k);
+    var s = loadIdx();
+    if (s.delete(k)) saveIdx();
+  }
+  var observing = false;
+  if (!DISABLED && LS && P && origGet && origSet && origRem && origClr) {
+    try {
+      P.getItem = function getItem(k) {
+        var v = origGet.apply(this, arguments);
+        if (v !== null && this === LS) { try { track(k); } catch (e) { /* nu strica aplicația */ } }
+        return v;
+      };
+      P.setItem = function setItem(k, v) {
+        var r = origSet.apply(this, arguments);
+        if (this === LS) { try { track(k); touch(k); } catch (e) { /* idem */ } }
+        return r;
+      };
+      P.removeItem = function removeItem(k) {
+        var r = origRem.apply(this, arguments);
+        if (this === LS) { try { untrack(k); } catch (e) { /* idem */ } }
+        return r;
+      };
+      P.clear = function clear() {
+        var r = origClr.apply(this, arguments);
+        if (this === LS) { idx = new Set(); }
+        return r;
+      };
+      observing = true;
+    } catch (e) { observing = false; }
+  }
+
+  /* ---------- FFF.store ---------- */
+  var mem = Object.create(null), frozen = false;   // fără prototip: chei ca __proto__/constructor/toString sunt chei obișnuite
+  function lsOk() { return !!(LS && origGet); }
+  var store = {
+    get: function (k, d) {
+      if (lsOk()) {
+        try { var v = origGet.call(LS, PFX + k); if (v == null) return d; return JSON.parse(v); } catch (e) { /* cade în memorie */ }
+      }
+      return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : d;
+    },
+    set: function (k, v) {
+      if (frozen) return false;
+      if (lsOk()) {
+        try { origSet.call(LS, PFX + k, JSON.stringify(v)); delete mem[k]; return true; } catch (e) { /* memorie */ }
+      }
+      mem[k] = v; return false;
+    },
+    remove: function (k) {
+      if (frozen) return;
+      if (lsOk()) { try { origRem.call(LS, PFX + k); } catch (e) { /* ignorat */ } }
+      delete mem[k];
+    },
+    keys: function () {
+      var out = [];
+      try {
+        if (LS) for (var i = 0; i < LS.length; i++) {
+          var n = LS.key(i);
+          if (n && n.indexOf(PFX) === 0 && n !== INDEX_KEY && n !== MT_KEY) out.push(n.slice(PFX.length));
+        }
+      } catch (e) { /* ignorat */ }
+      Object.keys(mem).forEach(function (k) { if (out.indexOf(k) < 0) out.push(k); });
+      return out.sort();
+    },
+    /** Cheile (nume complete din localStorage) care aparțin aplicației: indexate + ale kitului (fff.<slug>.*). */
+    indexKeys: function () {
+      var out = new Set();
+      var present = Object.create(null);
+      try { if (LS) for (var i = 0; i < LS.length; i++) present[LS.key(i)] = 1; } catch (e) { /* ignorat */ }
+      loadIdx().forEach(function (k) { if (present[k]) out.add(k); });
+      Object.keys(present).forEach(function (n) { if (n.indexOf(PFX) === 0 && n !== INDEX_KEY && n !== MT_KEY) out.add(n); });
+      return Array.from(out).sort();
+    },
+    /** Citire/scriere brută pentru modulele kitului (ocolește observatorul). */
+    raw: {
+      get: function (k) { return lsOk() ? origGet.call(LS, k) : null; },
+      set: function (k, v) { if (frozen) return; if (!lsOk()) throw new Error('no-storage'); origSet.call(LS, k, v); },
+      remove: function (k) { if (!frozen && lsOk()) origRem.call(LS, k); }
+    },
+    prefix: PFX,
+    indexKey: INDEX_KEY,
+    mtKey: MT_KEY,
+    /** Blochează orice scriere în stocare până la reîncărcare (restaurare/ștergere): handlerele pagehide/beforeunload ale aplicației
+     *  nu mai pot suprascrie datele tocmai scrise. Înlocuiește Storage.prototype.setItem/removeItem/clear cu no-op, oprește put/add/delete/clear
+     *  din IndexedDB și blochează scrierile FFF.store. NU poate opri atribuirea directă localStorage.cheie = valoare. Ireversibil (până la reload). */
+    freeze: function () {
+      if (frozen) return;
+      frozen = true;
+      var noop = function () {};
+      if (P) ['setItem', 'removeItem', 'clear'].forEach(function (n) {
+        try { Object.defineProperty(P, n, {value: noop, writable: true, configurable: true}); } catch (e) { try { P[n] = noop; } catch (e2) { /* ignorat */ } }
+      });
+      try {
+        var OS = window.IDBObjectStore && window.IDBObjectStore.prototype;
+        if (OS) {
+          var fake = function () {
+            return {readyState: 'pending', result: undefined, error: null, onsuccess: null, onerror: null,
+              addEventListener: noop, removeEventListener: noop, dispatchEvent: function () { return false; }};
+          };
+          ['put', 'add', 'delete', 'clear'].forEach(function (n) { try { Object.defineProperty(OS, n, {value: fake, writable: true, configurable: true}); } catch (e) { /* ignorat */ } });
+        }
+      } catch (e3) { /* ignorat */ }
+    },
+    frozen: function () { return frozen; },
+    forget: function (k) { if (observing) untrack(k); },
+    remember: function (k) { if (observing) track(k); },
+    available: function () { return lsOk(); },
+    observing: function () { return observing; }
+  };
+  F.store = store;
+
+  /* ---------- sha256 ---------- */
+  var K256 = null, H256 = null;
+  function frac(x) { return Math.floor((x - Math.floor(x)) * 4294967296) >>> 0; }
+  function initConsts() {
+    K256 = []; H256 = [];
+    for (var n = 2, c = 0; c < 64; n++) {
+      var p = true;
+      for (var d = 2; d * d <= n; d++) if (n % d === 0) { p = false; break; }
+      if (p) { if (c < 8) H256.push(frac(Math.sqrt(n))); K256.push(frac(Math.cbrt(n))); c++; }
+    }
+  }
+  function sha256js(bytes) {
+    if (!K256) initConsts();
+    var l = bytes.length, bl = l * 8;
+    var padded = new Uint8Array(((l + 9 + 63) >> 6) << 6);
+    padded.set(bytes); padded[l] = 0x80;
+    var dv = new DataView(padded.buffer);
+    dv.setUint32(padded.length - 8, Math.floor(bl / 4294967296)); dv.setUint32(padded.length - 4, bl >>> 0);
+    var h = H256.slice(), w = new Uint32Array(64);
+    function rr(x, n) { return (x >>> n) | (x << (32 - n)); }
+    for (var o = 0; o < padded.length; o += 64) {
+      for (var i = 0; i < 16; i++) w[i] = dv.getUint32(o + i * 4);
+      for (i = 16; i < 64; i++) {
+        var s0 = rr(w[i - 15], 7) ^ rr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+        var s1 = rr(w[i - 2], 17) ^ rr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      var a = h[0], b = h[1], c = h[2], d2 = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+      for (i = 0; i < 64; i++) {
+        var S1 = rr(e, 6) ^ rr(e, 11) ^ rr(e, 25), ch = (e & f) ^ (~e & g);
+        var t1 = (hh + S1 + ch + K256[i] + w[i]) | 0;
+        var S0 = rr(a, 2) ^ rr(a, 13) ^ rr(a, 22), mj = (a & b) ^ (a & c) ^ (b & c);
+        var t2 = (S0 + mj) | 0;
+        hh = g; g = f; f = e; e = (d2 + t1) | 0; d2 = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      h[0] = (h[0] + a) | 0; h[1] = (h[1] + b) | 0; h[2] = (h[2] + c) | 0; h[3] = (h[3] + d2) | 0;
+      h[4] = (h[4] + e) | 0; h[5] = (h[5] + f) | 0; h[6] = (h[6] + g) | 0; h[7] = (h[7] + hh) | 0;
+    }
+    return h.map(function (v) { return ('00000000' + (v >>> 0).toString(16)).slice(-8); }).join('');
+  }
+  function toBytes(x) {
+    if (typeof x === 'string') return Promise.resolve(new TextEncoder().encode(x));
+    if (x instanceof Uint8Array) return Promise.resolve(x);
+    if (x instanceof ArrayBuffer) return Promise.resolve(new Uint8Array(x));
+    if (ArrayBuffer.isView(x)) return Promise.resolve(new Uint8Array(x.buffer, x.byteOffset, x.byteLength));
+    if (x && typeof x.arrayBuffer === 'function') return x.arrayBuffer().then(function (b) { return new Uint8Array(b); });
+    return Promise.reject(new TypeError('sha256: tip neacceptat'));
+  }
+  F.sha256 = function (x) {
+    return toBytes(x).then(function (b) {
+      var sub = window.crypto && window.crypto.subtle;
+      if (sub) {
+        return sub.digest('SHA-256', b).then(function (h) {
+          return Array.prototype.map.call(new Uint8Array(h), function (v) { return ('0' + v.toString(16)).slice(-2); }).join('');
+        });
+      }
+      return sha256js(b);
+    });
+  };
+
+  /* ---------- download / pickFile ---------- */
+  F.download = function (name, data, mime) {
+    var blob = data instanceof Blob ? data : new Blob([data], {type: mime || 'application/octet-stream'});
+    var url = URL.createObjectURL(blob);
+    var a = doc.createElement('a');
+    a.href = url; a.download = name; a.hidden = true;
+    (doc.body || doc.documentElement).appendChild(a);
+    a.click();
+    setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 4000);
+    return blob.size;
+  };
+  /** Rezolvă cu File sau null dacă utilizatorul anulează. */
+  F.pickFile = function (accept) {
+    return new Promise(function (res) {
+      var i = doc.createElement('input');
+      i.type = 'file'; i.hidden = true;
+      if (accept) i.accept = accept;
+      var done = false;
+      function fin(v) { if (done) return; done = true; i.remove(); res(v); }
+      i.addEventListener('change', function () { fin(i.files && i.files[0] ? i.files[0] : null); });
+      i.addEventListener('cancel', function () { fin(null); });
+      (doc.body || doc.documentElement).appendChild(i);
+      i.click();
+    });
+  };
+
+  /* ---------- instalare PWA (doar reținem evenimentul, nu îl blocăm) ---------- */
+  var core = F.core = {
+    version: KIT_VERSION,
+    slug: SLUG,
+    disabled: DISABLED || false,
+    installEvent: null,
+    modules: function () { return (meta('fff-modules') || '').split(',').filter(Boolean); }
+  };
+  window.addEventListener('beforeinstallprompt', function (e) { core.installEvent = e; bus.emit('installable', e); });
+  window.addEventListener('appinstalled', function () { core.installEvent = null; bus.emit('installed'); });
+
+  F.version = KIT_VERSION;
+  F.ready = function (fn) {
+    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', function () { fn(); }, {once: true});
+    else fn();
+  };
+  F.fmtBytes = function (n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+    return (n / 1048576).toFixed(2) + ' MB';
+  };
+})();
+/* ---- fff-kit/store ---- */
+/* fff-kit · store — stocare cu prefix de slug: <slug>.<cheie> (JSON sigur, cote/erori prinse, migrare idempotentă a cheilor vechi).
+   Extinde FFF.store din core: get/set/remove/keys lucrează acum pe `<slug>.`; datele kitului din `fff.<slug>.*` (srs, tts) rămân citibile (rezervă la citire). */
+(function () {
+  'use strict';
+  var F = window.FFF;
+  if (!F || !F.store || !F.core || F.store.migrate) return;
+  var S = F.store, SLUG = F.core.slug, PFX = SLUG + '.', LEG = S.prefix;   // LEG = 'fff.<slug>.' (spațiul kitului, din core)
+  var old = {get: S.get, set: S.set, remove: S.remove, keys: S.keys, indexKeys: S.indexKeys};
+  var mem = Object.create(null);
+
+  function lsOk() { return S.available(); }
+  function fail(op, key, e) {
+    var q = !!(e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014));
+    S.lastError = {op: op, key: key, quota: q, message: String(e && e.message || e)};
+    try { F.bus.emit('store:error', S.lastError); } catch (x) { /* ignorat */ }
+    return S.lastError;
+  }
+  function okKey(k) { return k != null && String(k) !== ''; }
+  function parse(raw, d) {
+    if (raw == null) return d;
+    try { return JSON.parse(raw); } catch (e) { return raw; }   // valoare migrată fără JSON (ex. „dark”): se întoarce ca șir
+  }
+
+  S.appPrefix = PFX;
+  S.lastError = null;
+
+  /** get(cheie, implicit): citește `<slug>.<cheie>`, apoi (rezervă) `fff.<slug>.<cheie>`, apoi memoria (dacă stocarea a fost indisponibilă la scriere). */
+  S.get = function (k, d) {
+    if (!okKey(k)) return d;
+    k = String(k);
+    if (lsOk()) {
+      try {
+        var v = S.raw.get(PFX + k);
+        if (v == null) v = S.raw.get(LEG + k);
+        if (v != null) return parse(v, d);
+      } catch (e) { fail('get', k, e); }
+    }
+    return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : d;
+  };
+  /** set(cheie, valoare) → true dacă a ajuns în localStorage; false dacă e înghețat, JSON invalid (circular, BigInt…), cotă depășită sau stocare indisponibilă (valoarea rămâne în memorie). `undefined` = remove. */
+  S.set = function (k, v) {
+    if (!okKey(k)) return false;
+    k = String(k);
+    if (S.frozen()) return false;
+    if (v === undefined) { S.remove(k); return true; }
+    var str;
+    try { str = JSON.stringify(v); } catch (e) { fail('set', k, e); return false; }
+    if (str === undefined) { fail('set', k, new Error('valoare neserializabilă')); return false; }
+    if (lsOk()) {
+      try { S.raw.set(PFX + k, str); delete mem[k]; return true; } catch (e) { fail('set', k, e); }
+    }
+    mem[k] = v;
+    return false;
+  };
+  S.remove = function (k) {
+    if (!okKey(k) || S.frozen()) return;
+    k = String(k);
+    if (lsOk()) { try { S.raw.remove(PFX + k); S.raw.remove(LEG + k); } catch (e) { fail('remove', k, e); } }
+    delete mem[k];
+  };
+  S.has = function (k) {
+    if (!okKey(k)) return false;
+    try { if (lsOk() && (S.raw.get(PFX + k) != null || S.raw.get(LEG + k) != null)) return true; } catch (e) { /* ignorat */ }
+    return Object.prototype.hasOwnProperty.call(mem, String(k));
+  };
+  S.keys = function () {
+    var out = Object.create(null);
+    try {
+      var ls = window.localStorage;
+      for (var i = 0; i < ls.length; i++) {
+        var n = ls.key(i);
+        if (n && n.indexOf(PFX) === 0 && n !== S.indexKey && n !== S.mtKey) out[n.slice(PFX.length)] = 1;
+      }
+    } catch (e) { /* ignorat */ }
+    old.keys.call(S).forEach(function (k) { if (k !== '__keys' && k !== '__mt') out[k] = 1; });
+    Object.keys(mem).forEach(function (k) { out[k] = 1; });
+    return Object.keys(out).sort();
+  };
+  /** Cheile cu nume complet ale aplicației: indexate, `<slug>.*` și `fff.<slug>.*`. */
+  S.indexKeys = function () {
+    var out = Object.create(null);
+    old.indexKeys.call(S).forEach(function (k) { out[k] = 1; });
+    try {
+      var ls = window.localStorage;
+      for (var i = 0; i < ls.length; i++) { var n = ls.key(i); if (n && n.indexOf(PFX) === 0 && n !== S.mtKey) out[n] = 1; }
+    } catch (e) { /* ignorat */ }
+    return Object.keys(out).sort();
+  };
+  /** Este `nume` (complet, din localStorage) o cheie a spațiului aplicației? */
+  S.owns = function (name) { name = String(name); return name.indexOf(PFX) === 0 || name.indexOf(LEG) === 0; };
+
+  /**
+   * migrate({'cheieVeche': 'cheieNouă', 'prefix_*': 'nou.*'}, {wrap, dryRun, dropOld}) → {moved, same, conflicts, missing, errors, frozen}.
+   *  - cheia veche = numele brut din localStorage; cheia nouă = relativă la prefix (FFF.store.get('cheieNouă')); dacă începe deja cu `<slug>.` e luată ca atare.
+   *  - copiază valoarea EXACTĂ (șirul brut), verifică citirea înapoi, abia apoi șterge cheia veche. Nu suprascrie niciodată o valoare nouă existentă:
+   *    dacă ambele există și sunt identice → doar șterge cheia veche; dacă diferă → conflict (rămân ambele; `dropOld:true` șterge totuși cheia veche).
+   *  - idempotentă: a doua rulare nu mai găsește nimic de mutat. Un șablon cu `*` (la sfârșit, în ambele chei) mută toate cheile cu acel prefix.
+   *  - wrap: 'keep' (implicit; valoarea brută e copiată, iar get() întoarce JSON-ul parsat sau șirul brut) | 'string' (valoarea veche este împachetată ca șir JSON: get() întoarce exact șirul vechi).
+   *  - nu face nimic cât timp stocarea e înghețată (restaurare în curs). Emite `store:migrated` pe FFF.bus dacă a mutat ceva. */
+  S.migrate = function (map, opt) {
+    opt = opt || {};
+    var rep = {moved: [], same: [], conflicts: [], missing: [], errors: [], frozen: false};
+    if (S.frozen()) { rep.frozen = true; return rep; }
+    if (!lsOk() || !map || typeof map !== 'object') { if (map && typeof map === 'object') rep.errors.push({key: '*', message: 'stocare indisponibilă'}); return rep; }
+    var ls = window.localStorage, names = [];
+    try { for (var i = 0; i < ls.length; i++) names.push(ls.key(i)); } catch (e) { /* ignorat */ }
+    var pairs = [];
+    Object.keys(map).forEach(function (from) {
+      var to = String(map[from]);
+      if (from.charAt(from.length - 1) === '*') {
+        var fp = from.slice(0, -1), tp = to.charAt(to.length - 1) === '*' ? to.slice(0, -1) : to;
+        names.forEach(function (n) { if (n.indexOf(fp) === 0 && n.indexOf('fff.') !== 0) pairs.push([n, tp + n.slice(fp.length)]); });
+      } else pairs.push([from, to]);
+    });
+    pairs.forEach(function (p) {
+      var from = p[0], full = p[1].indexOf(PFX) === 0 ? p[1] : PFX + p[1];
+      if (!from || from === full || from.indexOf('fff.') === 0 || full === PFX) return;
+      try {
+        var oldV = S.raw.get(from);
+        if (oldV == null) { rep.missing.push(from); return; }
+        var cur = S.raw.get(full), val = opt.wrap === 'string' ? JSON.stringify(oldV) : oldV;
+        if (cur != null) {
+          if (cur === val || cur === oldV) { if (!opt.dryRun) { S.raw.remove(from); S.forget(from); } rep.same.push(from); }
+          else if (opt.dropOld) { if (!opt.dryRun) { S.raw.remove(from); S.forget(from); } rep.conflicts.push({key: from, to: full, dropped: true}); }
+          else rep.conflicts.push({key: from, to: full});
+          return;
+        }
+        if (opt.dryRun) { rep.moved.push(from); return; }
+        S.raw.set(full, val);
+        if (S.raw.get(full) !== val) throw new Error('verificarea citirii înapoi a eșuat');
+        S.raw.remove(from); S.forget(from);
+        rep.moved.push(from);
+      } catch (e) { rep.errors.push({key: from, message: fail('migrate', from, e).message, quota: S.lastError.quota}); }
+    });
+    if (rep.moved.length && !opt.dryRun) { try { F.bus.emit('store:migrated', rep); } catch (e) { /* ignorat */ } }
+    return rep;
+  };
+})();
+/* ---- fff-kit/view ---- */
+/* fff-kit · FFF.view — vedere comodă pe orice ecran: (1) antete de tabel fixe la derulare, (2) bară pe marginea din STÂNGA cu zoom − / + (lupă) / „potrivire ecran” (automat),
+ * (3) zoom automat la încărcare, ca textul să fie mare și conținutul să ocupe spațiul util al ecranului.
+ * Antete fixe: regulile CSS (specificitate 0) fac antetul de tabel „lipicios”; pentru tabelele aflate într-un container care taie sau derulează
+ * pe orizontală (overflow), containerul primește o înălțime maximă ca antetul să rămână fix în el. Stilul propriu al aplicației are prioritate.
+ * Zoom: proprietatea CSS `zoom` pe elementul rădăcină (html), înmulțită din doi factori: cel automat (calculat din mărimea textului și din lățimea ocupată) și cel ales
+ * de utilizator (butoanele, păstrat în stocarea locală sub fff.<slug>.view). Automatul se verifică singur: dacă ar apărea derulare orizontală
+ * nouă (sau o pagină care încăpea pe verticală ar începe să se derulească), factorul se înjumătățește și, în ultimă instanță, rămâne 1.
+ * Nu se aplică la aplicații dominate de un <canvas>/<video>/<iframe> (zoom-ul automat ar strica calculele lor în pixeli).
+ * Bara și zoom-ul automat nu apar în iframe, în modul chioșc/încorporat (?kiosk=1, ?embed=1, ?noview=1) și în browsere automatizate
+ * (navigator.webdriver), ca testele să vadă pagina neschimbată. Se opresc cu <meta name="fff-view" content="off"> (totul),
+ * "sticky" (doar antetele fixe) sau "noauto" (fără zoom automat, bara rămâne). API: FFF.view.{zoomIn, zoomOut, reset, get, set, refit, hide, show, mount}. */
+(function () {
+  'use strict';
+  var F = window.FFF;
+  if (!F || F.view) return;
+  var doc = document, de = doc.documentElement;
+  var MIN = 0.5, MAX = 3, STEP = 1.12;
+  function T(k) { return F.t('view', k); }
+  function meta(n) { var m = doc.querySelector('meta[name="' + n + '"]'); return m ? (m.getAttribute('content') || '') : ''; }
+  var MODE = '', OFF = false;          // <meta> poate veni după script: se citește la DOMContentLoaded (init)
+  function RAW() { return F.store && F.store.raw ? F.store.raw : null; }
+  function KEY() { return ((F.store && F.store.prefix) || ('fff.' + (F.slug || 'app') + '.')) + 'view'; }
+
+  var root = null, bar = null, live = null, bIn = null, bOut = null, bFit = null;
+  var user = 1, auto = 1, total = 1, side = 'l', idleT = 0, wanted = true, forced = false, laterT = 0, stickyT = 0, trT = 0, mo = null;
+
+  function zoomOk() { try { return !!(window.CSS && CSS.supports && CSS.supports('zoom', '1.2')); } catch (e) { return false; } }
+  function eligible() {
+    if (OFF) return false;
+    if (forced) return zoomOk();
+    if (!wanted) return false;
+    if (window.top !== window.self) return false;
+    if (navigator.webdriver) return false;
+    if (/[?&](kiosk|embed)=(1|true)\b/.test(location.search) || de.classList.contains('kiosk') || (doc.body && doc.body.classList.contains('kiosk'))) return false;
+    return zoomOk();
+  }
+  function clamp(z) { return Math.min(MAX, Math.max(MIN, z)); }
+  function round2(z) { return Math.round(z * 100) / 100; }
+
+  /* ---------- stare ---------- */
+  function load() {
+    try {
+      var R = RAW(), raw = R ? R.get(KEY()) : null;
+      var j = raw ? JSON.parse(raw) : null;
+      if (j && typeof j.u === 'number' && j.u >= MIN && j.u <= MAX) user = j.u;
+    } catch (e) { /* ignorat */ }
+  }
+  function save() {
+    try {
+      var R = RAW(); if (!R) return;
+      if (Math.abs(user - 1) < 0.005) R.remove(KEY()); else R.set(KEY(), JSON.stringify({u: round2(user)}));
+    } catch (e) { /* ignorat */ }
+  }
+
+
+  /* ---------- unități de viewport sub zoom ----------
+   * `zoom` pe <html> mărește tot, dar vh/vw rămân măsurate pe fereastra reală: un panou cu height:calc(100vh - 60px) iese cu (zoom−1)·100% din ecran și se suprapune
+   * peste subsol. Regulile care folosesc vh/vw/vmin/vmax primesc unitatea înmulțită cu --fff-zinv (= 1/zoom): copiate într-o foaie proprie sau rescrise pe loc (vezi mai jos). */
+  var UNIT = /(-?\d*\.?\d+)(vh|dvh|svh|lvh|vw|dvw|svw|lvw|vmin|dvmin|svmin|lvmin|vmax|dvmax|svmax|lvmax)\b/g;
+  var VPROPS = /^(height|min-height|max-height|width|min-width|max-width|top|bottom|left|right|inset(-block|-inline)?(-start|-end)?|block-size|inline-size|min-block-size|max-block-size|min-inline-size|max-inline-size|flex-basis)$/;
+  var vhAdopt = null, vhT = 0;
+  function hasUnit(v) { UNIT.lastIndex = 0; var r = UNIT.test(v); UNIT.lastIndex = 0; return r; }
+  function wrapUnits(v) { return v.replace(UNIT, 'calc($1$2 * var(--fff-zinv,1))'); }
+  function collectUnits(list, out) {
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      try {
+        if (r.type === 1 && r.style) {
+          var decl = '';
+          for (var j = 0; j < r.style.length; j++) {
+            var p = r.style[j]; if (!VPROPS.test(p)) continue;
+            var v = r.style.getPropertyValue(p); if (!hasUnit(v) || v.indexOf('--fff-zinv') >= 0) continue;
+            decl += p + ':' + wrapUnits(v) + (r.style.getPropertyPriority(p) ? '!important' : '') + ';';
+          }
+          if (decl && r.selectorText) out.push(r.selectorText + '{' + decl + '}');
+        } else if ((r.type === 4 || r.type === 12) && r.cssRules) {
+          var inner = []; collectUnits(r.cssRules, inner);
+          if (inner.length) out.push((r.type === 4 ? '@media ' : '@supports ') + r.conditionText + '{' + inner.join('') + '}');
+        }
+      } catch (e) { /* ignorat */ }
+    }
+  }
+  /* Corecția are două căi, ambele fără element <style> nou (un `style-src` strict, doar pe hash-uri, îl blochează și îl raportează ca încălcare CSP):
+   *  1) foaie CONSTRUIBILĂ (adoptedStyleSheets: Chrome 73+, Firefox 101+, Safari 16.4+) cu copiile regulilor; vine după toate foile paginii, deci bate regulile aplicației;
+   *  2) în browserele mai vechi, regulile existente se rescriu PE LOC prin CSSOM (rule.style.setProperty — permis de CSP): valoarea învelită cu --fff-zinv e identică cu
+   *     originalul la zoom 1 (var(--fff-zinv,1)), deci nu trebuie restaurată, iar cascada rămâne neatinsă. */
+  function canAdopt() {
+    try { return !!(window.CSSStyleSheet && typeof window.CSSStyleSheet.prototype.replaceSync === 'function' && 'adoptedStyleSheets' in doc); } catch (e) { return false; }
+  }
+  function setVhCss(css) {
+    if (!vhAdopt) vhAdopt = new window.CSSStyleSheet();
+    vhAdopt.replaceSync(css);
+    var cur = Array.prototype.slice.call(doc.adoptedStyleSheets || []);
+    if (cur.indexOf(vhAdopt) < 0) doc.adoptedStyleSheets = cur.concat([vhAdopt]);
+  }
+  function mutateUnits(list) {
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      try {
+        if (r.type === 1 && r.style) {
+          var props = [];
+          for (var j = 0; j < r.style.length; j++) if (VPROPS.test(r.style[j])) props.push(r.style[j]);
+          for (var k = 0; k < props.length; k++) {
+            var v = r.style.getPropertyValue(props[k]);
+            if (hasUnit(v) && v.indexOf('--fff-zinv') < 0) r.style.setProperty(props[k], wrapUnits(v), r.style.getPropertyPriority(props[k]));
+          }
+        } else if ((r.type === 4 || r.type === 12) && r.cssRules) mutateUnits(r.cssRules);
+      } catch (e) { /* ignorat */ }
+    }
+  }
+  function fixUnits() {
+    if (Math.abs(total - 1) < 0.005 || !doc.head) return;
+    var out = [], adopt = canAdopt(), done = false, i, ss;
+    if (adopt) {
+      for (i = 0; i < doc.styleSheets.length; i++) {
+        ss = doc.styleSheets[i];
+        try { if (ss.cssRules) collectUnits(ss.cssRules, out); } catch (e) { /* foaie din alt domeniu */ }
+      }
+      try { setVhCss(out.join('\n')); done = true; } catch (e) { /* mai jos: pe loc */ }
+    }
+    if (!done) {
+      for (i = 0; i < doc.styleSheets.length; i++) {
+        ss = doc.styleSheets[i];
+        try { if (ss.cssRules) mutateUnits(ss.cssRules); } catch (e) { /* foaie din alt domeniu */ }
+      }
+    }
+    var els = doc.querySelectorAll('[style*="vh"],[style*="vw"],[style*="vmin"],[style*="vmax"]');
+    for (var k = 0; k < els.length; k++) {
+      var st = els[k].style;
+      for (var m = 0; m < st.length; m++) {
+        var pp = st[m]; if (!VPROPS.test(pp)) continue;
+        var vv = st.getPropertyValue(pp); if (hasUnit(vv) && vv.indexOf('--fff-zinv') < 0) st.setProperty(pp, wrapUnits(vv), st.getPropertyPriority(pp));
+      }
+    }
+  }
+  function scheduleUnits() { clearTimeout(vhT); vhT = setTimeout(function () { try { fixUnits(); } catch (e) { /* ignorat */ } }, 120); }
+
+  /* ---------- zoom ---------- */
+  function applyZoom(z) {
+    total = clamp(z);
+    if (Math.abs(total - 1) < 0.005) { de.style.removeProperty('zoom'); de.style.removeProperty('--fff-zinv'); }
+    else { de.style.zoom = String(round2(total)); de.style.setProperty('--fff-zinv', String(Math.round(1e4 / total) / 1e4)); }
+    if (root) root.style.zoom = total === 1 ? '' : String(Math.round(1e4 / total) / 1e4);
+    scheduleUnits();
+    state();
+  }
+  function state() {
+    if (!bar) return;
+    bOut.disabled = total <= MIN + 0.001;
+    bIn.disabled = total >= MAX - 0.001;
+    var pct = Math.round(total * 100) + '%';
+    bFit.title = T('fit') + ' (' + pct + ')';
+    bFit.setAttribute('aria-label', T('fit') + ', ' + pct);
+    live.textContent = T('zoom') + ' ' + pct;
+  }
+
+  /* partea „statică” a măsurătorii: mărimea textului și lățimea ocupată de text, la zoom 1 */
+  function measure() {
+    var body = doc.body, vw = de.clientWidth, vh = de.clientHeight, out = {vw: vw, vh: vh, font: 16, span: vw, appLike: false, over: false, scrolls: false};
+    try { out.font = parseFloat(getComputedStyle(body).fontSize) || 16; } catch (e) { /* ignorat */ }
+    out.over = de.scrollWidth > vw + 2;
+    out.scrolls = de.scrollHeight > vh + 2;
+    var left = 1e9, right = -1e9, n = 0, els = body.querySelectorAll('*'), big = 0;
+    for (var i = 0; i < els.length && n < 1500; i++, n++) {
+      var e = els[i], tag = e.tagName;
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK' || tag === 'META' || tag === 'TEMPLATE' || tag === 'NOSCRIPT') continue;
+      if (root && root.contains(e)) continue;
+      var r = e.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) continue;
+      if (tag === 'CANVAS' || tag === 'VIDEO' || tag === 'IFRAME' || tag === 'OBJECT' || tag === 'EMBED') {
+        if (r.width * r.height > 0.3 * vw * vh) big++;
+        continue;
+      }
+      var cs = getComputedStyle(e);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.position === 'fixed') continue;
+      var hasText = false;
+      for (var c = e.firstChild; c; c = c.nextSibling) { if (c.nodeType === 3 && /\S/.test(c.nodeValue)) { hasText = true; break; } }
+      if (!hasText) continue;
+      if (r.left < left) left = r.left;
+      if (r.right > right) right = r.right;
+    }
+    if (right > left) out.span = right - left;
+    out.appLike = big > 0;
+    return out;
+  }
+
+  function computeAuto() {
+    if (MODE === 'noauto' || !doc.body) return 1;
+    var prev = de.style.zoom; de.style.removeProperty('zoom');
+    var m;
+    try { m = measure(); } catch (e) { m = null; }
+    if (!m || m.appLike || m.over) { if (prev) de.style.zoom = prev; return 1; }
+    var phone = m.vw <= 560;
+    var wantFont = phone ? 18 : (m.vw <= 1000 ? 19 : 20);                    // mărimea de bază dorită a textului, în px CSS
+    var zFont = wantFont / Math.max(10, m.font);
+    var zFill = m.span > 0 && m.span < 0.9 * m.vw ? (0.96 * m.vw) / m.span : 1;   // conținut îngust, centrat: îl lărgim la ecran
+    var z = Math.max(zFont, zFill);
+    z = Math.min(z, 26 / Math.max(10, m.font), 2.2);                            // text de bază cel mult ~26 px
+    if (!(z > 1.04)) { if (prev) de.style.zoom = prev; return 1; }
+    // autoverificare: aplicăm, măsurăm, reducem dacă apare derulare nouă
+    for (var k = 0; k < 4; k++) {
+      de.style.zoom = String(round2(z));
+      var bad = de.scrollWidth > de.clientWidth + 2 || (!m.scrolls && de.scrollHeight > de.clientHeight + 2);
+      if (!bad) { if (prev) de.style.zoom = prev; else de.style.removeProperty('zoom'); return round2(z); }
+      z = 1 + (z - 1) / 2;
+      if (z < 1.04) break;
+    }
+    if (prev) de.style.zoom = prev; else de.style.removeProperty('zoom');
+    return 1;
+  }
+
+  function refit() {
+    if (!root || root.hidden) return;
+    auto = computeAuto();
+    applyZoom(auto * user);
+    place();
+  }
+  function setUser(u, persist) { user = clamp(auto * u) / auto; if (persist !== false) save(); applyZoom(auto * user); place(); wake(); }
+  function zoomIn() { setUser(round2(user * STEP)); }
+  function zoomOut() { setUser(round2(user / STEP)); }
+  function reset() { setUser(1); }
+
+  /* ---------- bara de zoom (pe margine) ---------- */
+  var TOUCHY = 'a[href],button,input,select,textarea,summary,label,[role=button],[role=link],[role=tab],[role=menuitem],[onclick],[tabindex]:not([tabindex="-1"])';
+  function busy(x, y) {
+    var n = 0, vw = innerWidth, vh = innerHeight;
+    var pts = [[x, y], [x - 22, y], [x + 22, y], [x, y - 22], [x, y + 22], [x - 22, y - 22], [x + 22, y + 22], [x + 22, y - 22], [x - 22, y + 22]];
+    for (var i = 0; i < pts.length; i++) {
+      var px = Math.min(Math.max(pts[i][0], 1), vw - 2), py = Math.min(Math.max(pts[i][1], 1), vh - 2);
+      var e = doc.elementFromPoint(px, py);
+      if (!e || root.contains(e) || e === doc.body || e === de || !e.closest) continue;
+      if (e.closest(TOUCHY)) { n += 2; continue; }
+      if (e.childElementCount === 0 && e.textContent && e.textContent.trim().length > 1 && !/^(CANVAS|SVG|IMG|VIDEO)$/i.test(e.tagName)) { n += 1; continue; }   // text de citit
+      for (var a = e; a && a !== doc.body && a !== de; a = a.parentElement) {   // panouri fixe (meniuri, hărți, player) nu se acoperă
+        var cs = getComputedStyle(a);
+        if (cs.position === 'fixed' || cs.position === 'sticky') {
+          var r = a.getBoundingClientRect();
+          if (r.width * r.height < vw * vh * 0.6) n += 1;
+          break;
+        }
+      }
+    }
+    return n;
+  }
+  /* coloană verticală pe marginea laterală (dreapta / stânga), la înălțimea cu cele mai puține suprapuneri */
+  function ctrlRects() {                                                          // dreptunghiurile controalelor vizibile din ecran
+    var out = [], vw = innerWidth, vh = innerHeight, els = doc.querySelectorAll('a[href],button,input,select,textarea,summary,[role=button],[role=tab],[role=menuitem],[onclick]');
+    for (var i = 0; i < els.length && out.length < 600; i++) {
+      var e = els[i];
+      if (root.contains(e) || (e.closest && e.closest('.fff-exit'))) continue;
+      var r = e.getBoundingClientRect();
+      if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) continue;
+      var cs = getComputedStyle(e);
+      if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
+      out.push(r);
+    }
+    return out;
+  }
+  function place() {                                                               // bara de zoom stă mereu pe marginea din DREAPTA, centrată pe verticală (CSS: top:50% + translateY)
+    if (!root) return;
+    de.classList.remove('fff-vpad-r', 'fff-vpad-l');
+    side = 'r';
+    root.className = root.className.replace(/\bfff-view-(r|l|c)\b/g, '').replace(/\s+/g, ' ').trim() + ' fff-view-' + side;
+    root.style.top = '';
+  }
+  function icon(kind) {
+    var NS = 'http://www.w3.org/2000/svg', s = doc.createElementNS(NS, 'svg');
+    s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', '22'); s.setAttribute('height', '22'); s.setAttribute('aria-hidden', 'true'); s.setAttribute('focusable', 'false');
+    function p(d) { var e = doc.createElementNS(NS, 'path'); e.setAttribute('d', d); e.setAttribute('fill', 'none'); e.setAttribute('stroke', 'currentColor'); e.setAttribute('stroke-width', '2'); e.setAttribute('stroke-linecap', 'round'); e.setAttribute('stroke-linejoin', 'round'); s.appendChild(e); }
+    var c = doc.createElementNS(NS, 'circle'); c.setAttribute('cx', '10.5'); c.setAttribute('cy', '10.5'); c.setAttribute('r', '6.5'); c.setAttribute('fill', 'none'); c.setAttribute('stroke', 'currentColor'); c.setAttribute('stroke-width', '2');
+    if (kind === 'fit') {                                                      // săgeți spre colțuri: „încadrează”
+      p('M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5');
+    } else {
+      s.appendChild(c); p('M15.5 15.5L21 21'); p(kind === 'in' ? 'M7.5 10.5h6M10.5 7.5v6' : 'M7.5 10.5h6');
+    }
+    return s;
+  }
+  function button(kind, fn) {
+    var b = doc.createElement('button'); b.type = 'button'; b.className = 'fff-view-btn'; b.appendChild(icon(kind));
+    b.addEventListener('click', function (e) { e.stopPropagation(); fn(); });
+    return b;
+  }
+  function build() {
+    if (root) return;
+    root = doc.createElement('div'); root.className = 'fff-view fff-view-l'; root.setAttribute('data-fff-view', ''); root.setAttribute('role', 'toolbar');
+    bOut = button('out', zoomOut); bIn = button('in', zoomIn); bFit = button('fit', reset);
+    live = doc.createElement('span'); live.className = 'fff-view-sr'; live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite');
+    root.appendChild(bOut); root.appendChild(bIn); root.appendChild(bFit); root.appendChild(live);
+    ['pointerdown', 'click', 'touchstart'].forEach(function (ev) { root.addEventListener(ev, function (e) { e.stopPropagation(); }, {passive: true}); });
+    bar = root; labels();
+  }
+  function labels() {
+    if (!bar) return;
+    root.setAttribute('aria-label', T('bar'));
+    bOut.setAttribute('aria-label', T('out')); bOut.title = T('out');
+    bIn.setAttribute('aria-label', T('in')); bIn.title = T('in');
+    state();
+  }
+  function wake() {
+    if (!root) return;
+    root.classList.remove('fff-view-idle'); clearTimeout(idleT);
+    idleT = setTimeout(function () { if (root) root.classList.add('fff-view-idle'); }, 4500);
+  }
+
+  function mount() {
+    if (root && root.isConnected) return true;
+    if (!doc.body) return false;
+    build(); de.appendChild(root); root.hidden = false;      // sub <html>, nu sub <body>: zoom-ul textului din FFF.a11y (pe <body>) nu scalează bara
+    load();
+    auto = computeAuto();
+    applyZoom(auto * user);
+    place(); wake();
+    watchFree();
+    return true;
+  }
+  /* după încărcare / schimbări de conținut, bara se mută dacă a ajuns peste un control */
+  var freeT = 0, freeW = false;
+  function ensureFree() {
+    if (!root || root.hidden || !root.isConnected) return;
+    var b = root.getBoundingClientRect(), rects = ctrlRects(), hit = false;
+    for (var i = 0; i < rects.length && !hit; i++) { var r = rects[i]; hit = Math.min(b.right, r.right) - Math.max(b.left, r.left) > 1 && Math.min(b.bottom, r.bottom) - Math.max(b.top, r.top) > 1; }
+    if (hit) place();
+  }
+  function watchFree() {
+    if (freeW) return; freeW = true;
+    var kick = function () { clearTimeout(freeT); freeT = setTimeout(ensureFree, 600); };
+    try {
+      new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) { if (!root || !root.contains(ms[i].target)) { kick(); return; } } }).observe(doc.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style']});
+    } catch (e) { /* ignorat */ }
+    window.addEventListener('load', kick); window.addEventListener('resize', kick);
+    kick();
+  }
+
+  /* ---------- antete fixe ---------- */
+  function opaque(c) { return !!c && c !== 'transparent' && !/^rgba\((?:[^,)]+,){3}\s*0(?:\.0+)?\s*\)$/.test(c) && !/^rgb\([^)]*\/\s*0(?:\.0+)?%?\s*\)$/.test(c); }
+  function bgOf(el) {
+    for (var e = el; e && e.nodeType === 1; e = e.parentElement) {
+      var c = getComputedStyle(e).backgroundColor;
+      if (opaque(c)) return c;
+    }
+    return '';
+  }
+  function stickyPass() {
+    var tables = doc.querySelectorAll('table:not([role=presentation]):not([role=none])');
+    var vh = innerHeight || de.clientHeight;
+    for (var t = 0; t < tables.length && t < 150; t++) {
+      var tb = tables[t];
+      if (tb.getAttribute('data-fff-sticky') === 'x') continue;
+      var thead = tb.tHead;
+      if (!thead || !thead.rows.length) continue;
+      var rows = thead.rows, top = 0;
+      for (var r = 0; r < rows.length; r++) {                                 // antete pe mai multe rânduri: fiecare sub precedentul
+        var cells = rows[r].cells;
+        for (var c = 0; c < cells.length; c++) {
+          var cell = cells[c];
+          if (cell.getAttribute('data-fff-bg')) { cell.style.backgroundColor = ''; cell.removeAttribute('data-fff-bg'); }   // reevaluat: tema se poate schimba
+          var cs = getComputedStyle(cell);
+          if (cs.position !== 'sticky') continue;                              // aplicația și-a ales altă poziționare
+          if (r > 0 && !cell.getAttribute('data-fff-top')) { cell.style.top = top + 'px'; cell.setAttribute('data-fff-top', '1'); }
+          if (!opaque(cs.backgroundColor)) { var bg = bgOf(cell.parentElement) || bgOf(tb) || '#fff'; cell.style.backgroundColor = bg; cell.setAttribute('data-fff-bg', '1'); }
+        }
+        top += rows[r].getBoundingClientRect().height;
+      }
+      // containere care taie sau derulează orizontal fără să deruleze vertical: antetul nu s-ar mai lipi de pagină
+      if (tb.getBoundingClientRect().height < vh * 0.8) continue;
+      for (var a = tb.parentElement; a && a !== doc.body && a !== de; a = a.parentElement) {
+        var ac = getComputedStyle(a);
+        if (ac.overflowX === 'visible' && ac.overflowY === 'visible') continue;
+        if (ac.position === 'fixed') break;
+        var scrollsY = (ac.overflowY === 'auto' || ac.overflowY === 'scroll') && a.scrollHeight > a.clientHeight + 2 && a.clientHeight > 0;
+        if (!scrollsY && !a.getAttribute('data-fff-vh')) {
+          a.style.overflowY = 'auto';
+          a.style.maxHeight = '85vh';
+          a.setAttribute('data-fff-vh', '1');
+          if (!a.hasAttribute('tabindex')) a.setAttribute('tabindex', '0'); // regiune derulabilă accesibilă de la tastatură
+        }
+        break;
+      }
+    }
+  }
+  function scheduleSticky() { if (OFF) return; clearTimeout(stickyT); stickyT = setTimeout(function () { try { stickyPass(); } catch (e) { /* ignorat */ } }, 350); }
+
+  /* ---------- API și pornire ---------- */
+  var api = {
+    zoomIn: function () { if (root) zoomIn(); },
+    zoomOut: function () { if (root) zoomOut(); },
+    reset: function () { if (root) reset(); },
+    set: function (u) { if (root) setUser(+u || 1); },
+    get: function () { return {user: user, auto: auto, total: total}; },
+    refit: refit,
+    show: function () { wanted = true; if (eligible() && mount()) { root.hidden = false; refit(); } },
+    hide: function () { wanted = false; if (root) { root.hidden = true; de.style.removeProperty('zoom'); de.style.removeProperty('--fff-zinv'); de.classList.remove('fff-vpad-r', 'fff-vpad-l'); total = 1; } },
+    mount: function (opt) { if (opt && opt.force) forced = true; wanted = true; if (!eligible()) return false; var ok = mount(); if (ok) { root.hidden = false; refit(); } return ok; },
+    sticky: stickyPass,
+    element: function () { return root; }
+  };
+  F.view = api;
+
+  function init() {
+    MODE = (meta('fff-view') || '').toLowerCase();
+    if (MODE === 'off' || /[?&]noview=(1|true)\b/.test(location.search)) { OFF = true; de.setAttribute('data-fff-viewoff', ''); api.hide(); return; }
+    scheduleSticky();
+    if (doc.body && typeof MutationObserver === 'function') {
+      try { mo = new MutationObserver(function (list) { for (var i = 0; i < list.length; i++) { var n = list[i].addedNodes; for (var j = 0; j < n.length; j++) { if (n[j].nodeType === 1 && (n[j].tagName === 'TABLE' || (n[j].querySelector && n[j].querySelector('table')))) { scheduleSticky(); return; } } } }); mo.observe(doc.body, {childList: true, subtree: true}); } catch (e) { /* ignorat */ }
+    }
+    try {
+      var tm = new MutationObserver(function () { try { stickyPass(); } catch (e) { /* ignorat */ } scheduleSticky(); setTimeout(scheduleSticky, 900); });                               // schimbarea temei (clasă / atribut pe html sau body)
+      tm.observe(de, {attributes: true, attributeFilter: ['class', 'data-theme', 'data-tema', 'data-mode', 'style']});
+      if (doc.body) tm.observe(doc.body, {attributes: true, attributeFilter: ['class', 'data-theme', 'data-tema', 'data-mode']});
+      doc.addEventListener('transitionend', function (e) { if (/background|color/.test(e.propertyName || '')) { clearTimeout(trT); trT = setTimeout(function () { try { stickyPass(); } catch (x) { /* ignorat */ } }, 60); } }, true);   // tranziții de temă: culoarea finală
+      if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', scheduleSticky); }
+    } catch (e) { /* ignorat */ }
+    if (MODE === 'sticky') return;
+    if (eligible()) mount();
+  }
+  F.onLang && F.onLang(labels);
+  function later() { if (OFF) return; clearTimeout(laterT); laterT = setTimeout(function () { if (root) refit(); }, 300); }
+  ['resize', 'orientationchange'].forEach(function (ev) { window.addEventListener(ev, later, {passive: true}); });
+  window.addEventListener('resize', scheduleSticky, {passive: true});
+  ['pointerdown', 'touchstart', 'scroll'].forEach(function (ev) { doc.addEventListener(ev, wake, {passive: true, capture: true}); });
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init); else init();
+  window.addEventListener('load', function () { scheduleUnits(); scheduleSticky(); setTimeout(function () { if (root && !root.hidden) refit(); }, 700); });
+  setTimeout(function () { if (root && !root.hidden) refit(); }, 2500);
+})();
+/* ---- fff-kit/a11y ---- */
+/* fff-kit · FFF.a11y — accesibilitate la fel în toate aplicațiile (modelul vine din BRAZDA):
+ * (1) buton „Aa” (jos, în dreapta) care deschide panoul „Opțiuni de accesibilitate”: mărimea textului (A− / A+), contrast ridicat, fără animații, text lizibil
+ *     (spațiere mărită), linkuri subliniate + focus accentuat, citire cu voce (textul selectat sau cel vizibil pe ecran), resetare, închidere;
+ * (2) săgeată „Înapoi sus” (apare după derulare; găsește singură zona derulabilă: pagina sau un panou mare al aplicației);
+ * (3) legătura „Sari la conținut” (doar dacă pagina are <main>/[role=main]/<h1> și nu are deja una).
+ * Fereastra se potrivește mereu ecranului: lățimea, înălțimea și poziția panoului se recalculează din fereastra vizibilă (visualViewport) la fiecare schimbare
+ * (rotire, tastatură, redimensionare), panoul se derulează în el însuși, iar zoom-ul paginii (FFF.view) e compensat, deci panoul nu se mărește peste ecran.
+ * Butoanele își caută un loc liber pe marginea din dreapta (bara de zoom cu lupă / „potrivire ecran” a lui FFF.view stă pe marginea din stânga).
+ * Mărimea textului: proprietatea CSS `zoom` pe <body> (merge la fel și în aplicațiile cu dimensiuni în px); dacă browserul nu o știe, se scalează fontul elementului <html>.
+ * O aplicație cu text în rem își poate scala singură textul: <meta name="fff-a11y" content="textvar"> + html{font-size:calc(16px*var(--fff-fs,1))} (kitul doar pune --fff-fs).
+ * Setările se rețin în stocarea locală (fff.<slug>.a11y); la prima vizită se respectă „mișcare redusă” și „contrast mai mare” din sistem.
+ * Nu apare în iframe, în modul chioșc/încorporat (?kiosk=1, ?embed=1, ?noa11y=1) și în browsere automatizate (navigator.webdriver; se forțează cu ?fffa11y=1),
+ * ca testele să vadă pagina neschimbată. Se oprește cu <meta name="fff-a11y" content="off"> sau FFF.a11y.hide().
+ * API: FFF.a11y.{open, close, toggle, get, set, reset, speak, stop, up, refit, mount, show, hide, element}. Evenimentul „a11y” pe FFF.bus. */
+(function () {
+  'use strict';
+  var F = window.FFF;
+  if (!F || F.a11y) return;
+  var doc = document, de = doc.documentElement;
+  var KEYS = ['hc', 'rm', 'rf', 'ul'], MINF = 0.85, MAXF = 1.6, STEPF = 0.1, TOPAT = 320;
+  var LOC = {ro: 'ro-RO', en: 'en-US', fr: 'fr-FR', it: 'it-IT', es: 'es-ES', pt: 'pt-PT', de: 'de-DE', hu: 'hu-HU'};
+  function T(k, v) { return F.t('a11y', k, v); }
+  function meta(n) { var m = doc.querySelector('meta[name="' + n + '"]'); return m ? (m.getAttribute('content') || '') : ''; }
+  function RAW() { return F.store && F.store.raw ? F.store.raw : null; }
+  function KEY() { return ((F.store && F.store.prefix) || ('fff.' + (F.slug || 'app') + '.')) + 'a11y'; }
+  function fresh() { return {fs: 1, hc: 0, rm: 0, rf: 0, ul: 0}; }
+  function r2(x) { return Math.round(x * 100) / 100; }
+
+  var S = fresh(), saved = false, TXTVAR = false, OFF = false, forced = false, wanted = true, inited = false;
+  var root = null, btnAa = null, btnUp = null, panel = null, ui = {}, msgT = 0, placeT = 0, fitT = 0, freeT = 0, target = null, mo = null, keepMo = null, keepT = 0, kept = [], gutter = false, scanned = false;
+
+  /* ---------- eligibilitate ---------- */
+  function eligible() {
+    if (OFF) return false;
+    if (forced) return true;
+    if (!wanted) return false;
+    if (window.top !== window.self) return false;
+    if (navigator.webdriver && !/[?&]fffa11y=1\b/.test(location.search)) return false;
+    if (/[?&](kiosk|embed|noa11y)=(1|true)\b/.test(location.search) || de.classList.contains('kiosk') || (doc.body && doc.body.classList.contains('kiosk'))) return false;
+    return true;
+  }
+
+  /* ---------- stare ---------- */
+  function load() {
+    saved = false; S = fresh();
+    try {
+      var R = RAW(), raw = R ? R.get(KEY()) : null, j = raw ? JSON.parse(raw) : null;
+      if (j && typeof j === 'object') {
+        var f = +j.fs; if (f >= MINF - 0.001 && f <= MAXF + 0.001) S.fs = r2(f);
+        KEYS.forEach(function (k) { S[k] = j[k] ? 1 : 0; });
+        saved = true;
+      }
+    } catch (e) { /* ignorat */ }
+    if (!saved) {
+      try {
+        if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) S.rm = 1;
+        if (window.matchMedia && matchMedia('(prefers-contrast: more)').matches) S.hc = 1;
+      } catch (e) { /* ignorat */ }
+    }
+  }
+  function isDefault() { return S.fs === 1 && !S.hc && !S.rm && !S.rf && !S.ul; }
+  function save() {
+    try {
+      var R = RAW(); if (!R) return;
+      if (isDefault()) R.remove(KEY()); else R.set(KEY(), JSON.stringify(S));
+    } catch (e) { /* ignorat */ }
+  }
+  function zoomOk() { try { return !!(window.CSS && CSS.supports && CSS.supports('zoom', '1.2')); } catch (e) { return false; } }
+
+  /* ---------- efectele setărilor ---------- */
+  function applyText() {
+    var f = r2(S.fs), b = doc.body;
+    de.classList.toggle('fff-fsz', f !== 1);
+    if (f === 1) de.style.removeProperty('--fff-fs'); else de.style.setProperty('--fff-fs', String(f));
+    if (b) b.style.removeProperty('zoom');
+    de.style.removeProperty('font-size');
+    if (f === 1 || TXTVAR) return;                                  // „textvar”: aplicația își scalează singură textul din --fff-fs (ex. html{font-size:calc(16px*var(--fff-fs,1))})
+    if (zoomOk()) { if (b) b.style.zoom = String(f); }
+    else de.style.setProperty('font-size', Math.round(f * 100) + '%');
+  }
+  function applyState(noEmit) {
+    if (S.hc && !scanned) scanKeep();           // culorile originale se citesc înainte ca regulile forțate să intre în vigoare
+    KEYS.forEach(function (k) { de.classList.toggle('fff-' + k, !!S[k]); });
+    de.setAttribute('data-fff-a11y', KEYS.filter(function (k) { return S[k]; }).concat(S.fs !== 1 ? ['fs'] : []).join(' '));
+    if (!de.getAttribute('data-fff-a11y')) de.removeAttribute('data-fff-a11y');
+    applyText();
+    if (S.hc) keepWatch(true); else keepWatch(false);
+    sync();
+    if (!noEmit) { try { F.bus && F.bus.emit && F.bus.emit('a11y', get()); } catch (e) { /* ignorat */ } }
+    schedRefit();
+  }
+  function schedRefit() {
+    clearTimeout(fitT);
+    fitT = setTimeout(function () {
+      try { if (F.view && F.view.refit && F.view.element && F.view.element()) F.view.refit(); } catch (e) { /* ignorat */ }
+      place(); fit();
+    }, 120);
+  }
+  function commit() { save(); applyState(); }
+
+  /* contrast ridicat: casetele colorate mici (pătrate de tablă, ștampile, bare de progres) își păstrează culoarea; restul devine negru/alb.
+     Culorile originale se citesc cu clasa oprită (altfel regulile forțate le-ar ascunde), în aceeași sarcină, deci fără clipire. */
+  function rgb(s) { var m = s && s.match(/[\d.]+/g); return m && m.length >= 3 ? {r: +m[0], g: +m[1], b: +m[2], a: m.length > 3 ? +m[3] : 1} : null; }
+  function mark(e, c) {
+    var p = e.style.getPropertyValue('color'), pr = e.style.getPropertyPriority('color');
+    e.setAttribute('data-fff-keep', '1');
+    if (c) e.style.setProperty('color', (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) > 150 ? '#000' : '#fff', 'important');
+    kept.push({e: e, p: p, pr: pr, c: !!c});
+  }
+  function scanKeep() {
+    if (!S.hc || !doc.body) return;
+    var had = de.classList.contains('fff-hc'); de.classList.remove('fff-hc');
+    try {
+      var all = doc.body.querySelectorAll('*'), n = 0;
+      for (var i = 0; i < all.length && n < 4000; i++, n++) {
+        var e = all[i];
+        if (e.hasAttribute('data-fff-keep') || /^(script|style|link|meta|template|noscript|svg|path|img|canvas|video|br|option|source)$/i.test(e.tagName) || (e.closest && e.closest('svg'))) continue;
+        var cs = getComputedStyle(e), c = rgb(cs.backgroundColor), pic = cs.backgroundImage && cs.backgroundImage !== 'none';
+        var colored = !!c && c.a > 0.5 && (Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b)) > 45;
+        if (!colored && !pic) continue;
+        var txt = (e.textContent || '').replace(/\s+/g, '').length > 0;
+        if (colored) {
+          var r = e.getBoundingClientRect();
+          if (!txt || (r.width > 0 && r.width <= 140 && r.height <= 140)) mark(e, c);
+        } else if (!txt) mark(e, null);
+      }
+    } catch (x) { /* ignorat */ }
+    if (had) de.classList.add('fff-hc');
+    scanned = true;
+  }
+  function unkeep() {
+    scanned = false;
+    for (var i = 0; i < kept.length; i++) {
+      var k = kept[i]; k.e.removeAttribute('data-fff-keep');
+      if (k.c) { if (k.p) k.e.style.setProperty('color', k.p, k.pr); else k.e.style.removeProperty('color'); }
+    }
+    kept = [];
+  }
+  function keepWatch(on) {
+    clearTimeout(keepT);
+    if (!on) { if (keepMo) { keepMo.disconnect(); keepMo = null; } unkeep(); return; }
+    if (!keepMo && doc.body && typeof MutationObserver === 'function') {
+      try {
+        keepMo = new MutationObserver(function (ms) {
+          for (var i = 0; i < ms.length; i++) { if (ms[i].addedNodes && ms[i].addedNodes.length) { clearTimeout(keepT); keepT = setTimeout(scanKeep, 700); return; } }
+        });
+        keepMo.observe(doc.body, {childList: true, subtree: true});
+      } catch (e) { /* ignorat */ }
+    }
+  }
+
+  /* ---------- citire cu voce ---------- */
+  var syn = null, queue = [], speaking = false;
+  try { syn = window.speechSynthesis || null; } catch (e) { syn = null; }
+  function lang4() { var l = F.lang ? F.lang() : (de.lang || 'en'); return LOC[l] || l; }
+  var SKIP = 'script,style,noscript,svg,canvas,select,option,textarea,button,nav,footer,[role=navigation],[role=toolbar],[aria-hidden=true],[hidden],.fff-a11y,.fff-a11y-panel,.fff-a11y-skip,[data-fff-view],.fff-exit';
+  function visibleText() {
+    var sel = ''; try { sel = String(window.getSelection() || '').trim(); } catch (e) { /* ignorat */ }
+    if (sel) return sel.slice(0, 8000);
+    var host = doc.querySelector('main,[role=main]') || doc.body; if (!host) return '';
+    var vw = innerWidth, vh = innerHeight, out = '', tw = doc.createTreeWalker(host, NodeFilter.SHOW_TEXT, null), nd, n = 0;
+    while ((nd = tw.nextNode()) && out.length < 5000 && n < 6000) {
+      n++;
+      var t = nd.nodeValue; if (!t || !/\S/.test(t)) continue;
+      var p = nd.parentElement; if (!p || (p.closest && p.closest(SKIP))) continue;
+      var r = p.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1 || r.bottom <= 0 || r.top >= vh || r.right <= 0 || r.left >= vw) continue;
+      var cs = getComputedStyle(p); if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+      out += t.replace(/\s+/g, ' ').trim() + ' ';
+    }
+    return out.trim();
+  }
+  function chunks(s) {
+    s = s.replace(/\s+/g, ' ').trim();
+    var out = [], re = /[^.!?;:…]+[.!?;:…]*\s*/g, m, cur = '';
+    while ((m = re.exec(s))) {
+      if (cur && (cur + m[0]).length > 200) { out.push(cur); cur = m[0]; } else cur += m[0];
+    }
+    if (cur) out.push(cur);
+    var res = [];
+    out.forEach(function (c) {
+      while (c.length > 240) { var i = c.lastIndexOf(' ', 220); if (i < 60) i = 220; res.push(c.slice(0, i)); c = c.slice(i); }
+      if (c.trim()) res.push(c);
+    });
+    return res;
+  }
+  function setSpeaking(v) { speaking = v; if (ui.tts2) ui.tts2.disabled = !v; }
+  function stop() { queue = []; try { if (syn) syn.cancel(); } catch (e) { /* ignorat */ } setSpeaking(false); }
+  function next() {
+    if (!queue.length) { setSpeaking(false); return; }
+    var u = new SpeechSynthesisUtterance(queue.shift());
+    u.lang = lang4();
+    u.onend = function () { if (speaking) next(); };
+    u.onerror = function () { stop(); };
+    try { syn.speak(u); } catch (e) { stop(); }
+  }
+  function speak() {
+    if (!syn || typeof SpeechSynthesisUtterance === 'undefined') { msg(T('tt0')); return; }
+    msg(''); stop();
+    var txt = visibleText();
+    if (!txt) { msg(T('ttn')); return; }
+    queue = chunks(txt); setSpeaking(true); next();
+  }
+  window.addEventListener('pagehide', function () { try { if (syn) syn.cancel(); } catch (e) { /* ignorat */ } });
+
+  /* ---------- interfața ---------- */
+  function el(tag, cls, attrs) {
+    var e = doc.createElement(tag); if (cls) e.className = cls;
+    if (attrs) for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function btn(txt, id, key, pressed) {
+    var b = el('button', '', {type: 'button'}); b.textContent = txt || ''; b.setAttribute('data-k', key || '');
+    if (pressed) b.setAttribute('aria-pressed', 'false');
+    ui[id] = b; return b;
+  }
+  function svgUp() {
+    var NS = 'http://www.w3.org/2000/svg', s = doc.createElementNS(NS, 'svg'), p = doc.createElementNS(NS, 'path');
+    s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', '22'); s.setAttribute('height', '22'); s.setAttribute('aria-hidden', 'true'); s.setAttribute('focusable', 'false');
+    p.setAttribute('d', 'M12 19V6M6 12l6-6 6 6'); p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '2.4'); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
+    s.appendChild(p); return s;
+  }
+  function build() {
+    if (root) return;
+    root = el('div', 'fff-a11y', {'data-fff-a11y-ui': ''});
+    btnUp = el('button', 'fff-a11y-btn fff-a11y-up', {type: 'button'}); btnUp.appendChild(svgUp()); btnUp.hidden = true;
+    btnAa = el('button', 'fff-a11y-btn fff-a11y-aa', {type: 'button', 'aria-haspopup': 'dialog', 'aria-expanded': 'false', 'aria-controls': 'fff-a11y-panel'}); btnAa.textContent = 'Aa';
+    root.appendChild(btnUp); root.appendChild(btnAa);
+
+    panel = el('div', 'fff-a11y-panel', {id: 'fff-a11y-panel', role: 'dialog', 'aria-labelledby': 'fff-a11y-t'}); panel.hidden = true;
+    ui.h = el('h2', '', {id: 'fff-a11y-t'});
+    var row1 = el('div', 'fff-a11y-rw', {role: 'group', 'aria-labelledby': 'fff-a11y-sz'});
+    ui.sz = el('span', 'fff-a11y-lb', {id: 'fff-a11y-sz'});
+    ui.pc = el('span', 'fff-a11y-pc', {'aria-live': 'polite'});
+    row1.appendChild(ui.sz); row1.appendChild(btn('A−', 'sm', 'sm')); row1.appendChild(ui.pc); row1.appendChild(btn('A+', 'lg', 'lg'));
+    var row2 = el('div', 'fff-a11y-rw'); row2.appendChild(btn('', 'hc', 'hc', 1)); row2.appendChild(btn('', 'rm', 'rm', 1));
+    var row3 = el('div', 'fff-a11y-rw'); row3.appendChild(btn('', 'rf', 'rf', 1)); row3.appendChild(btn('', 'ul', 'ul', 1));
+    var row4 = el('div', 'fff-a11y-rw'); row4.appendChild(btn('', 'tts', 'tts')); row4.appendChild(btn('', 'tts2', 'tts2'));
+    ui.msg = el('p', 'fff-a11y-msg', {'aria-live': 'polite'});
+    var row5 = el('div', 'fff-a11y-rw'); row5.appendChild(btn('', 'rs', 'rs')); row5.appendChild(btn('', 'cl', 'cl'));
+    [ui.h, row1, row2, row3, row4, ui.msg, row5].forEach(function (x) { panel.appendChild(x); });
+
+    btnAa.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
+    btnUp.addEventListener('click', function (e) { e.stopPropagation(); toTop(); });
+    panel.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var b = e.target && e.target.closest ? e.target.closest('button[data-k]') : null; if (!b || b.disabled) return;
+      var k = b.getAttribute('data-k');
+      if (k === 'sm') { S.fs = Math.max(MINF, r2(S.fs - STEPF)); commit(); }
+      else if (k === 'lg') { S.fs = Math.min(MAXF, r2(S.fs + STEPF)); commit(); }
+      else if (KEYS.indexOf(k) >= 0) { S[k] = S[k] ? 0 : 1; commit(); }
+      else if (k === 'tts') speak();
+      else if (k === 'tts2') stop();
+      else if (k === 'rs') { stop(); S = fresh(); saved = true; commit(); }
+      else if (k === 'cl') close();
+    });
+    ['pointerdown', 'touchstart'].forEach(function (ev) { root.addEventListener(ev, function (e) { e.stopPropagation(); }, {passive: true}); });
+    labels();
+  }
+  function labels() {
+    if (!root) return;
+    btnAa.setAttribute('aria-label', T('btn')); btnAa.title = T('btn');
+    btnUp.setAttribute('aria-label', T('up')); btnUp.title = T('up');
+    ui.h.textContent = T('t'); ui.sz.textContent = T('sz');
+    ui.sm.setAttribute('aria-label', 'A− ' + T('sm')); ui.sm.title = T('sm'); ui.lg.setAttribute('aria-label', 'A+ ' + T('lg')); ui.lg.title = T('lg');   // numele conține textul vizibil (WCAG 2.5.3)
+    ['hc', 'rm', 'rf', 'ul', 'tts', 'tts2', 'rs', 'cl'].forEach(function (k) { ui[k].textContent = T(k); });
+    ui.tts.title = T('tth');
+    sync();
+  }
+  function sync() {
+    if (!root) return;
+    ui.pc.textContent = T('pc', {n: Math.round(S.fs * 100)});
+    ui.sm.disabled = S.fs <= MINF + 0.001; ui.lg.disabled = S.fs >= MAXF - 0.001;
+    KEYS.forEach(function (k) { ui[k].setAttribute('aria-pressed', S[k] ? 'true' : 'false'); });
+    ui.tts2.disabled = !speaking;
+  }
+  function msg(t) { if (!ui.msg) return; ui.msg.textContent = t || ''; }
+
+  /* ---------- deschidere / închidere ---------- */
+  function open() {
+    if (!root) return;
+    panel.hidden = false; btnAa.setAttribute('aria-expanded', 'true');
+    fit();
+    try { ui.sm.focus({preventScroll: true}); } catch (e) { /* ignorat */ }
+  }
+  function close(noFocus) {
+    if (!panel || panel.hidden) return;
+    panel.hidden = true; btnAa.setAttribute('aria-expanded', 'false');
+    if (!noFocus) { try { btnAa.focus({preventScroll: true}); } catch (e) { /* ignorat */ } }
+  }
+  function toggle() { if (panel && panel.hidden) open(); else close(); }
+  doc.addEventListener('keydown', function (e) { if (e.key === 'Escape' && panel && !panel.hidden) { e.preventDefault(); close(); } });
+  doc.addEventListener('click', function (e) { if (panel && !panel.hidden && !panel.contains(e.target) && !btnAa.contains(e.target)) close(true); });
+
+  /* ---------- potrivirea la ecran ---------- */
+  function viewport() { var v = window.visualViewport; return {w: Math.floor(v && v.width ? v.width : innerWidth), h: Math.floor(v && v.height ? v.height : innerHeight), x: v ? v.offsetLeft : 0, y: v ? v.offsetTop : 0}; }
+  function fit() {
+    if (!root || !panel || root.hidden) return;
+    var vp = viewport(), pad = 8, w = Math.max(160, Math.min(360, vp.w - 2 * pad));
+    var top = vp.y + pad, low = vp.y + vp.h - pad, rb = btnAa.getBoundingClientRect();
+    var edge = Math.min(rb.height ? rb.top - 8 : low, low), room = edge - top;           // marginea de jos a panoului: deasupra lui „Aa”, în partea vizibilă a ecranului
+    if (room < 220) { edge = low; room = low - top; }                                      // ecran foarte scund: panoul acoperă butoanele (are propriul „Închide”)
+    panel.style.width = w + 'px';
+    panel.style.maxWidth = w + 'px';
+    panel.style.bottom = Math.max(pad, Math.round(innerHeight - edge)) + 'px';
+    panel.style.maxHeight = Math.max(120, Math.floor(room)) + 'px';
+  }
+  function ctrlRects() {
+    var out = [], vw = innerWidth, vh = innerHeight, q = doc.querySelectorAll('a[href],button,input,select,textarea,summary,[role=button],[role=tab],[role=menuitem],[onclick]');
+    for (var i = 0; i < q.length && out.length < 600; i++) {
+      var e = q[i];
+      if (root.contains(e) || panel.contains(e) || (e.closest && e.closest('.fff-exit,[data-fff-view],.fff-a11y-skip'))) continue;
+      var r = e.getBoundingClientRect();
+      if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) continue;
+      var cs = getComputedStyle(e);
+      if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
+      out.push(r);
+    }
+    return out;
+  }
+  function hits(b, rects) {
+    var n = 0;
+    for (var i = 0; i < rects.length; i++) { var r = rects[i]; if (Math.min(b.right, r.right) - Math.max(b.left, r.left) > 1 && Math.min(b.bottom, r.bottom) - Math.max(b.top, r.top) > 1) n++; }
+    return n;
+  }
+  /* coloana de butoane caută pe marginea din dreapta cea mai de jos poziție în care nu acoperă niciun control (apoi rezervă o gutieră) */
+  function place(again) {
+    if (!root || root.hidden) return;
+    var wasUp = btnUp.hidden; btnUp.hidden = false;                  // se măsoară coloana întreagă (cu săgeata), ca poziția să nu sară când apare
+    var prevV = root.style.visibility; root.style.visibility = 'hidden';
+    var rects = ctrlRects(), vp = viewport(), best = 12, bestN = 1e9;
+    if (!again) { de.classList.remove('fff-apad'); gutter = false; }
+    for (var k = 0; k < 9; k++) {
+      var b = 12 + k * 56;
+      if (b > vp.h * 0.55) break;
+      root.style.bottom = b + 'px';
+      var n = hits(root.getBoundingClientRect(), rects) * 10 + k * 0.1;
+      if (n < bestN) { bestN = n; best = b; }
+      if (n < 1) break;
+    }
+    root.style.bottom = best + 'px';
+    root.style.visibility = prevV; btnUp.hidden = wasUp;
+    if (bestN >= 10 && !again && !gutter) { gutter = true; de.classList.add('fff-apad'); void de.offsetWidth; return place(true); }
+    if (bestN >= 10 && again) { de.classList.remove('fff-apad'); gutter = false; }
+    fit();
+  }
+  function placeLater() { clearTimeout(placeT); placeT = setTimeout(function () { place(); }, 150); }
+  function watchFree() {
+    var kick = function () {
+      clearTimeout(freeT);
+      freeT = setTimeout(function () {
+        if (!root || root.hidden) return;
+        var wasUp = btnUp.hidden; btnUp.hidden = false;
+        var hit = hits(root.getBoundingClientRect(), ctrlRects()) > 0; btnUp.hidden = wasUp;
+        if (hit) place();
+      }, 700);
+    };
+    try {
+      if (doc.body && typeof MutationObserver === 'function') {
+        mo = new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) { var t = ms[i].target; if (!root || !(root.contains(t) || panel.contains(t))) { kick(); return; } } });
+        mo.observe(doc.body, {childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'open', 'style']});
+      }
+    } catch (e) { /* ignorat */ }
+    window.addEventListener('load', kick);
+    kick();
+  }
+
+  /* ---------- săgeata „înapoi sus” ---------- */
+  function scTop(t) { return t === doc ? (window.pageYOffset || de.scrollTop || (doc.body && doc.body.scrollTop) || 0) : t.scrollTop; }
+  function onScroll(e) {
+    if (!btnUp) return;
+    var t = e.target;
+    if (t === doc || t === doc.scrollingElement || t === window) t = doc;
+    else {
+      if (!t || t.nodeType !== 1 || root.contains(t) || panel.contains(t)) return;
+      var r = t.getBoundingClientRect();
+      if (r.height < innerHeight * 0.4 || r.width < innerWidth * 0.4) return;   // doar zone mari (pagina sau panoul principal)
+    }
+    var y = scTop(t);
+    if (y > TOPAT) { target = t; btnUp.hidden = false; }
+    else if (t === target) { target = null; btnUp.hidden = true; }
+  }
+  function toTop() {
+    var t = target, reduced = false;
+    try { reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* ignorat */ }
+    var beh = (S.rm || reduced) ? 'auto' : 'smooth';
+    try {
+      if (!t || t === doc) window.scrollTo({top: 0, behavior: beh}); else t.scrollTo({top: 0, behavior: beh});
+    } catch (e) { try { window.scrollTo(0, 0); } catch (x) { /* ignorat */ } }
+    var m = doc.querySelector('main,[role=main],h1');
+    if (m) { try { if (!m.hasAttribute('tabindex')) m.setAttribute('tabindex', '-1'); m.focus({preventScroll: true}); } catch (e) { /* ignorat */ } }
+  }
+
+  /* ---------- „Sari la conținut” ---------- */
+  function skipLink() {
+    if (!doc.body || doc.querySelector('.fff-a11y-skip, a.skip, a.skip-link, a.skiplink, a[href="#main"], a[href="#content"], a[href="#main-content"]')) return;
+    var t = doc.querySelector('main,[role=main]') || doc.querySelector('h1');
+    if (!t) return;
+    if (!t.id) t.id = 'fff-main';
+    var a = el('a', 'fff-a11y-skip', {href: '#' + t.id}); a.textContent = T('skip'); a.setAttribute('data-fff-skip', '');
+    a.addEventListener('click', function () { try { if (!t.hasAttribute('tabindex')) t.setAttribute('tabindex', '-1'); t.focus({preventScroll: false}); } catch (e) { /* ignorat */ } });
+    doc.body.insertBefore(a, doc.body.firstChild);
+  }
+
+  /* ---------- API și pornire ---------- */
+  function get() { var o = {fs: S.fs}; KEYS.forEach(function (k) { o[k] = S[k] ? 1 : 0; }); return o; }
+  function set(o) {
+    if (!o || typeof o !== 'object') return get();
+    if (o.fs != null) { var f = +o.fs; if (f >= MINF - 0.001 && f <= MAXF + 0.001) S.fs = r2(f); }
+    KEYS.forEach(function (k) { if (o[k] != null) S[k] = o[k] ? 1 : 0; });
+    commit(); return get();
+  }
+  function mount() {
+    if (root && root.isConnected) return true;
+    if (!doc.body) return false;
+    build(); de.appendChild(root); de.appendChild(panel); root.hidden = false;
+    var h = function () { clearTimeout(placeT); placeT = setTimeout(function () { place(); }, 150); };
+    window.addEventListener('resize', h, {passive: true}); window.addEventListener('orientationchange', h, {passive: true});
+    if (window.visualViewport) { try { visualViewport.addEventListener('resize', h); } catch (e) { /* ignorat */ } }
+    doc.addEventListener('scroll', onScroll, {passive: true, capture: true});
+    sync(); place(); watchFree();
+    onScroll({target: doc});
+    return true;
+  }
+  var api = {
+    open: open, close: close, toggle: toggle, get: get, set: set, speak: speak, stop: stop, up: toTop, refit: function () { place(); },
+    reset: function () { stop(); S = fresh(); saved = true; commit(); return get(); },
+    show: function () { wanted = true; if (eligible()) { if (mount()) root.hidden = false; applyState(true); place(); } },
+    hide: function () { wanted = false; close(true); if (root) root.hidden = true; de.classList.remove('fff-hc', 'fff-rm', 'fff-rf', 'fff-ul', 'fff-fsz', 'fff-apad'); keepWatch(false); if (doc.body) doc.body.style.removeProperty('zoom'); de.style.removeProperty('font-size'); },
+    mount: function (opt) { if (opt && opt.force) forced = true; wanted = true; if (!eligible()) return false; load(); applyState(true); skipLink(); return mount(); },
+    element: function () { return root; }
+  };
+  F.a11y = api;
+
+  function init() {
+    if (inited) return; inited = true;
+    var m = (meta('fff-a11y') || '').toLowerCase();
+    TXTVAR = /\btextvar\b/.test(m);
+    if (m === 'off' || m === '0' || m === 'false' || /[?&]noa11y=(1|true)\b/.test(location.search)) {
+      OFF = true; de.setAttribute('data-fff-a11y', 'off');
+      de.classList.remove('fff-hc', 'fff-rm', 'fff-rf', 'fff-ul', 'fff-fsz'); return;
+    }
+    if (!eligible()) return;
+    load(); applyState(true); skipLink(); mount();
+  }
+  /* aplicare timpurie (fără clipire): clasele de mod se pun înainte de a se termina parsarea; <meta name="fff-a11y" content="off"> le retrage la init */
+  (function early() {
+    try {
+      if (!eligible()) return;
+      load();
+      KEYS.forEach(function (k) { de.classList.toggle('fff-' + k, !!S[k]); });
+    } catch (e) { /* ignorat */ }
+  })();
+  F.onLang && F.onLang(labels);
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init); else init();
+})();
+/* ---- fff-kit/share ---- */
+/* fff-kit · FFF.share — bară verticală de distribuire pe rețele sociale, pe marginea din STÂNGA, centrată pe verticală.
+ * Fără scripturi sau pixeli de la rețele: fiecare buton e un simplu link către adresa oficială de „share”, deschis doar la clic (target=_blank, rel=noopener noreferrer);
+ * pe telefon apare și „Distribuie…” din sistem (navigator.share). Nu trimite nimic înainte de clic și nu reține nimic în afară de starea strânsă/desfăcută (fff.<slug>.share).
+ * Distribuie adresa canonică a aplicației (<link rel=canonical> / og:url, altfel adresa paginii, altfel https://chiuta.ro/) și titlul paginii.
+ * Elementul stă sub <html> (ca FFF.a11y) și compensează zoom-ul paginii (FFF.view) prin --fff-zinv. Nu apare în iframe, în modul chioșc/încorporat (?kiosk=1, ?embed=1, ?noshare=1),
+ * la tipărire și în browsere automatizate (navigator.webdriver; se forțează cu ?fffshare=1). Se oprește cu <meta name="fff-share" content="off">.
+ * API: FFF.share.{show, hide, toggle, collapse, expand, url, element}. */
+(function () {
+  'use strict';
+  var F = window.FFF;
+  if (!F || F.share) return;
+  var doc = document, de = doc.documentElement;
+  var root = null, list = null, tog = null, live = null, idleT = 0, copyT = 0, OFF = false, wanted = true, forced = false, collapsed = false, moZ = null;
+  function T(k) { return F.t('share', k); }
+  function meta(n) { var m = doc.querySelector('meta[name="' + n + '"]'); return m ? (m.getAttribute('content') || '') : ''; }
+  function RAW() { return F.store && F.store.raw ? F.store.raw : null; }
+  function KEY() { return ((F.store && F.store.prefix) || ('fff.' + (F.slug || 'app') + '.')) + 'share'; }
+
+  function eligible() {
+    if (OFF) return false;
+    if (forced) return true;
+    if (!wanted) return false;
+    if (window.top !== window.self) return false;
+    if (navigator.webdriver && !/[?&]fffshare=1\b/.test(location.search)) return false;
+    if (/[?&](kiosk|embed|noshare)=(1|true)\b/.test(location.search) || de.classList.contains('kiosk') || (doc.body && doc.body.classList.contains('kiosk'))) return false;
+    return true;
+  }
+  function pageUrl() {
+    var c = doc.querySelector('link[rel="canonical"]'), u = c && c.getAttribute('href') || meta('og:url') || (doc.querySelector('meta[property="og:url"]') || {getAttribute: function () { return ''; }}).getAttribute('content');
+    try { if (u) return new URL(u, location.href).href; } catch (e) { /* ignorat */ }
+    if (/^https?:$/.test(location.protocol)) return location.href.split('#')[0];
+    return 'https://chiuta.ro/';
+  }
+  function pageTitle() { return (doc.title || '').trim() || 'chiuta.ro'; }
+  function enc(x) { return encodeURIComponent(x); }
+  var NETS = [
+    {id: 'wa', label: 'WA', href: function (u, t) { return 'https://wa.me/?text=' + enc(t + ' ' + u); }},
+    {id: 'tg', icon: 'M21.5 3.2 2.6 10.6c-.9.4-.9 1.1-.2 1.3l4.8 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.5l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.2-.4-1.7-1.2-1.4zM8.3 13.1l9.5-6c.4-.3.9-.1.5.2l-7.9 7.1-.3 3.3z', href: function (u, t) { return 'https://t.me/share/url?url=' + enc(u) + '&text=' + enc(t); }},
+    {id: 'fb', label: 'f', href: function (u) { return 'https://www.facebook.com/sharer/sharer.php?u=' + enc(u); }},
+    {id: 'x', label: 'X', href: function (u, t) { return 'https://x.com/intent/post?url=' + enc(u) + '&text=' + enc(t); }},
+    {id: 'in', label: 'in', href: function (u) { return 'https://www.linkedin.com/sharing/share-offsite/?url=' + enc(u); }},
+    {id: 'mail', icon: 'M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1.6 2 7.4 5.6L19.4 7zM4 9.1V17h16V9.1l-8 6.1z', href: function (u, t) { return 'mailto:?subject=' + enc(t) + '&body=' + enc(t + '\n' + u); }}
+  ];
+  function svg(d, extra) {
+    var s = doc.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', '20'); s.setAttribute('height', '20'); s.setAttribute('aria-hidden', 'true'); s.setAttribute('focusable', 'false');
+    var p = doc.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); p.setAttribute('fill', extra === 'stroke' ? 'none' : 'currentColor'); if (extra === 'stroke') { p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '2'); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round'); }
+    s.appendChild(p); return s;
+  }
+  function netName(id) { return T('n_' + id); }
+  function mkItem(tag, cls) { var e = doc.createElement(tag); e.className = 'fff-share-btn' + (cls ? ' ' + cls : ''); return e; }
+  function say(msg) { if (live) { live.textContent = ''; setTimeout(function () { if (live) live.textContent = msg; }, 30); } }
+
+  function build() {
+    root = doc.createElement('div'); root.className = 'fff-share'; root.setAttribute('data-fff-share', ''); root.setAttribute('role', 'toolbar'); root.hidden = true;
+    live = doc.createElement('span'); live.className = 'fff-share-sr'; live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite');
+    tog = mkItem('button', 'fff-share-tog'); tog.type = 'button'; tog.addEventListener('click', function () { api.toggle(); });
+    list = doc.createElement('div'); list.className = 'fff-share-list';
+    root.appendChild(tog); root.appendChild(list); root.appendChild(live);
+    ['pointerdown', 'click', 'touchstart'].forEach(function (ev) { root.addEventListener(ev, function (e) { e.stopPropagation(); }, {passive: true}); });
+    fill();
+  }
+  function fill() {
+    if (!list) return;
+    while (list.firstChild) list.removeChild(list.firstChild);
+    var u = pageUrl(), t = pageTitle();
+    if (typeof navigator.share === 'function') {
+      var n = mkItem('button', 'fff-share-native'); n.type = 'button'; n.setAttribute('data-net', 'native'); n.appendChild(svg('M18 8a3 3 0 1 0-2.8-4M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4', 'stroke'));
+      n.addEventListener('click', function () { try { navigator.share({title: pageTitle(), text: pageTitle(), url: pageUrl()}).catch(function () { /* anulat */ }); } catch (e) { /* ignorat */ } });
+      list.appendChild(n);
+    }
+    NETS.forEach(function (net) {
+      var a = mkItem('a'); a.setAttribute('data-net', net.id); a.target = '_blank'; a.rel = 'noopener noreferrer'; a.href = net.href(u, t);
+      if (net.icon) a.appendChild(svg(net.icon)); else { var sp = doc.createElement('span'); sp.className = 'fff-share-txt'; sp.textContent = net.label; a.appendChild(sp); }
+      list.appendChild(a);
+    });
+    var c = mkItem('button'); c.type = 'button'; c.setAttribute('data-net', 'copy'); c.appendChild(svg('M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1', 'stroke'));
+    c.addEventListener('click', function () { copy(c); });
+    list.appendChild(c);
+    labels();
+  }
+  function copy(btn) {
+    var u = pageUrl(), done = function (ok) { say(ok ? T('copied') : T('copyfail')); btn.classList.add(ok ? 'fff-share-ok' : 'fff-share-no'); clearTimeout(copyT); copyT = setTimeout(function () { btn.classList.remove('fff-share-ok', 'fff-share-no'); }, 1600); };
+    var fallback = function () { try { var ta = doc.createElement('textarea'); ta.value = u; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0'; doc.body.appendChild(ta); ta.select(); var ok = doc.execCommand && doc.execCommand('copy'); doc.body.removeChild(ta); done(!!ok); } catch (e) { done(false); } };
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(function () { done(true); }, fallback); else fallback(); } catch (e) { fallback(); }
+  }
+  function labels() {
+    if (!root) return;
+    root.setAttribute('aria-label', T('bar'));
+    var items = list.querySelectorAll('[data-net]');
+    for (var i = 0; i < items.length; i++) {
+      var id = items[i].getAttribute('data-net'), nm = id === 'native' ? T('native') : id === 'copy' ? T('copy') : id === 'mail' ? T('n_mail') : T('share').replace('{n}', netName(id));
+      if (id === 'mail') nm = T('share').replace('{n}', T('n_mail'));
+      items[i].setAttribute('aria-label', nm); items[i].title = nm;
+    }
+    if (tog) { tog.setAttribute('aria-expanded', collapsed ? 'false' : 'true'); tog.setAttribute('aria-label', collapsed ? T('open') : T('close')); tog.title = collapsed ? T('open') : T('close'); }
+  }
+  function paintTog() {
+    if (!tog) return; while (tog.firstChild) tog.removeChild(tog.firstChild);
+    tog.appendChild(collapsed ? svg('M18 8a3 3 0 1 0-2.8-4M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4', 'stroke') : svg('M15 6l-6 6 6 6', 'stroke'));
+    root.classList.toggle('fff-share-closed', collapsed); labels();
+  }
+  function load() { try { var R = RAW(), v = R ? R.get(KEY()) : null; if (v === '1') collapsed = true; else if (v === '0') collapsed = false; else collapsed = (innerHeight || 800) < 520; } catch (e) { /* ignorat */ } }
+  function save() { try { var R = RAW(); if (R) R.set(KEY(), collapsed ? '1' : '0'); } catch (e) { /* ignorat */ } }
+  function zoomFix() { if (!root) return; var z = parseFloat(de.style.zoom); root.style.zoom = (z && Math.abs(z - 1) > 0.005) ? String(Math.round(1e4 / z) / 1e4) : ''; }
+  function wake() { if (!root) return; root.classList.remove('fff-share-idle'); clearTimeout(idleT); idleT = setTimeout(function () { if (root) root.classList.add('fff-share-idle'); }, 5000); }
+  function mount() {
+    if (!root) { build(); load(); }
+    if (!root.isConnected) de.appendChild(root);
+    paintTog(); zoomFix(); root.hidden = false; wake();
+    if (!moZ && typeof MutationObserver === 'function') { try { moZ = new MutationObserver(zoomFix); moZ.observe(de, {attributes: true, attributeFilter: ['style']}); } catch (e) { /* ignorat */ } }
+    return true;
+  }
+  var api = {
+    show: function () { wanted = true; if (eligible()) mount(); },
+    hide: function () { wanted = false; if (root) root.hidden = true; },
+    toggle: function () { collapsed = !collapsed; save(); paintTog(); wake(); },
+    collapse: function () { collapsed = true; save(); paintTog(); },
+    expand: function () { collapsed = false; save(); paintTog(); },
+    url: pageUrl,
+    element: function () { return root; }
+  };
+  F.share = api;
+  function init() {
+    if (meta('fff-share').toLowerCase() === 'off' || /[?&]noshare=(1|true)\b/.test(location.search)) { OFF = true; return; }
+    if (eligible()) mount();
+  }
+  F.onLang && F.onLang(function () { if (root) { fill(); paintTog(); } });
+  ['pointerdown', 'touchstart', 'scroll', 'mousemove'].forEach(function (ev) { doc.addEventListener(ev, wake, {passive: true, capture: true}); });
+  window.addEventListener('load', function () { if (root && !root.hidden) { fill(); paintTog(); } });
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script type="application/json" id="fff-i18n">{"view":{"ro":{"bar":"Zoom și dimensiunea textului","in":"Mărește","out":"Micșorează","fit":"Zoom automat","zoom":"Zoom"},"en":{"bar":"Zoom and text size","in":"Zoom in","out":"Zoom out","fit":"Automatic zoom","zoom":"Zoom"},"fr":{"bar":"Zoom et taille du texte","in":"Agrandir","out":"Réduire","fit":"Zoom automatique","zoom":"Zoom"},"it":{"bar":"Zoom e dimensione del testo","in":"Ingrandisci","out":"Riduci","fit":"Zoom automatico","zoom":"Zoom"},"es":{"bar":"Zoom y tamaño del texto","in":"Ampliar","out":"Reducir","fit":"Zoom automático","zoom":"Zoom"},"pt":{"bar":"Zoom e tamanho do texto","in":"Ampliar","out":"Reduzir","fit":"Zoom automático","zoom":"Zoom"},"de":{"bar":"Zoom und Textgröße","in":"Vergrößern","out":"Verkleinern","fit":"Automatischer Zoom","zoom":"Zoom"},"hu":{"bar":"Nagyítás és szövegméret","in":"Nagyítás","out":"Kicsinyítés","fit":"Automatikus nagyítás","zoom":"Nagyítás"}},"a11y":{"ro":{"skip":"Sari la conținut","btn":"Accesibilitate","up":"Înapoi sus","t":"Opțiuni de accesibilitate","sz":"Mărimea textului","sm":"Mai mic","lg":"Mai mare","pc":"{n}%","hc":"Contrast ridicat","rm":"Fără animații","rf":"Text lizibil (spațiere mărită)","ul":"Linkuri subliniate, focus accentuat","tts":"🔊 Citește textul","tts2":"■ Oprește citirea","tth":"Citește textul selectat sau pe cel vizibil pe ecran.","tt0":"Citirea cu voce nu e disponibilă în acest browser.","ttn":"Nu am găsit text de citit pe ecran.","rs":"Resetează tot","cl":"Închide"},"en":{"skip":"Skip to content","btn":"Accessibility","up":"Back to top","t":"Accessibility options","sz":"Text size","sm":"Smaller","lg":"Larger","pc":"{n}%","hc":"High contrast","rm":"No animations","rf":"Readable text (wider spacing)","ul":"Underlined links, strong focus","tts":"🔊 Read the text","tts2":"■ Stop reading","tth":"Reads the selected text, or the text visible on screen.","tt0":"Speech is not available in this browser.","ttn":"No text to read on screen.","rs":"Reset all","cl":"Close"},"fr":{"skip":"Aller au contenu","btn":"Accessibilité","up":"Retour en haut","t":"Options d’accessibilité","sz":"Taille du texte","sm":"Plus petit","lg":"Plus grand","pc":"{n}%","hc":"Contraste élevé","rm":"Sans animations","rf":"Texte lisible (espacement élargi)","ul":"Liens soulignés, focus renforcé","tts":"🔊 Lire le texte","tts2":"■ Arrêter la lecture","tth":"Lit le texte sélectionné ou celui visible à l’écran.","tt0":"La lecture vocale n’est pas disponible dans ce navigateur.","ttn":"Aucun texte à lire à l’écran.","rs":"Tout réinitialiser","cl":"Fermer"},"it":{"skip":"Vai al contenuto","btn":"Accessibilità","up":"Torna su","t":"Opzioni di accessibilità","sz":"Dimensione del testo","sm":"Più piccolo","lg":"Più grande","pc":"{n}%","hc":"Contrasto elevato","rm":"Senza animazioni","rf":"Testo leggibile (spaziatura ampia)","ul":"Link sottolineati, focus marcato","tts":"🔊 Leggi il testo","tts2":"■ Ferma la lettura","tth":"Legge il testo selezionato o quello visibile sullo schermo.","tt0":"La lettura vocale non è disponibile in questo browser.","ttn":"Nessun testo da leggere sullo schermo.","rs":"Ripristina tutto","cl":"Chiudi"},"es":{"skip":"Saltar al contenido","btn":"Accesibilidad","up":"Volver arriba","t":"Opciones de accesibilidad","sz":"Tamaño del texto","sm":"Más pequeño","lg":"Más grande","pc":"{n}%","hc":"Contraste alto","rm":"Sin animaciones","rf":"Texto legible (espaciado amplio)","ul":"Enlaces subrayados, foco marcado","tts":"🔊 Leer el texto","tts2":"■ Detener la lectura","tth":"Lee el texto seleccionado o el visible en pantalla.","tt0":"La lectura en voz alta no está disponible en este navegador.","ttn":"No hay texto que leer en pantalla.","rs":"Restablecer todo","cl":"Cerrar"},"pt":{"skip":"Saltar para o conteúdo","btn":"Acessibilidade","up":"Voltar ao topo","t":"Opções de acessibilidade","sz":"Tamanho do texto","sm":"Mais pequeno","lg":"Maior","pc":"{n}%","hc":"Contraste elevado","rm":"Sem animações","rf":"Texto legível (espaçamento maior)","ul":"Ligações sublinhadas, foco reforçado","tts":"🔊 Ler o texto","tts2":"■ Parar a leitura","tth":"Lê o texto selecionado ou o visível no ecrã.","tt0":"A leitura em voz alta não está disponível neste navegador.","ttn":"Não há texto para ler no ecrã.","rs":"Repor tudo","cl":"Fechar"},"de":{"skip":"Zum Inhalt springen","btn":"Barrierefreiheit","up":"Nach oben","t":"Barrierefreiheits-Optionen","sz":"Textgröße","sm":"Kleiner","lg":"Größer","pc":"{n} %","hc":"Hoher Kontrast","rm":"Keine Animationen","rf":"Gut lesbarer Text (weiter Abstand)","ul":"Unterstrichene Links, starker Fokus","tts":"🔊 Text vorlesen","tts2":"■ Vorlesen beenden","tth":"Liest den markierten oder den sichtbaren Text vor.","tt0":"Sprachausgabe ist in diesem Browser nicht verfügbar.","ttn":"Kein Text zum Vorlesen auf dem Bildschirm.","rs":"Alles zurücksetzen","cl":"Schließen"},"hu":{"skip":"Ugrás a tartalomra","btn":"Hozzáférhetőség","up":"Vissza a tetejére","t":"Hozzáférhetőségi beállítások","sz":"Szövegméret","sm":"Kisebb","lg":"Nagyobb","pc":"{n}%","hc":"Magas kontraszt","rm":"Animációk nélkül","rf":"Olvasható szöveg (tágabb térköz)","ul":"Aláhúzott linkek, erős fókusz","tts":"🔊 Szöveg felolvasása","tts2":"■ Felolvasás leállítása","tth":"Felolvassa a kijelölt vagy a képernyőn látható szöveget.","tt0":"A hangfelolvasás nem érhető el ebben a böngészőben.","ttn":"Nincs felolvasható szöveg a képernyőn.","rs":"Minden visszaállítása","cl":"Bezárás"}},"share":{"ro":{"bar":"Distribuie pe rețele","share":"Distribuie pe {n}","native":"Distribuie…","copy":"Copiază linkul","copied":"Link copiat","copyfail":"Nu am putut copia linkul","close":"Ascunde butoanele de distribuire","open":"Arată butoanele de distribuire","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"en":{"bar":"Share on social networks","share":"Share on {n}","native":"Share…","copy":"Copy link","copied":"Link copied","copyfail":"Could not copy the link","close":"Hide share buttons","open":"Show share buttons","n_mail":"Email","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"fr":{"bar":"Partager sur les réseaux","share":"Partager sur {n}","native":"Partager…","copy":"Copier le lien","copied":"Lien copié","copyfail":"Impossible de copier le lien","close":"Masquer les boutons de partage","open":"Afficher les boutons de partage","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"it":{"bar":"Condividi sui social","share":"Condividi su {n}","native":"Condividi…","copy":"Copia il link","copied":"Link copiato","copyfail":"Impossibile copiare il link","close":"Nascondi i pulsanti di condivisione","open":"Mostra i pulsanti di condivisione","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"es":{"bar":"Compartir en redes","share":"Compartir en {n}","native":"Compartir…","copy":"Copiar el enlace","copied":"Enlace copiado","copyfail":"No se pudo copiar el enlace","close":"Ocultar los botones de compartir","open":"Mostrar los botones de compartir","n_mail":"Correo electrónico","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"pt":{"bar":"Partilhar nas redes","share":"Partilhar no {n}","native":"Partilhar…","copy":"Copiar a ligação","copied":"Ligação copiada","copyfail":"Não foi possível copiar a ligação","close":"Ocultar os botões de partilha","open":"Mostrar os botões de partilha","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"de":{"bar":"In sozialen Netzwerken teilen","share":"Auf {n} teilen","native":"Teilen…","copy":"Link kopieren","copied":"Link kopiert","copyfail":"Link konnte nicht kopiert werden","close":"Teilen-Schaltflächen ausblenden","open":"Teilen-Schaltflächen anzeigen","n_mail":"E-Mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"},"hu":{"bar":"Megosztás a közösségi oldalakon","share":"Megosztás: {n}","native":"Megosztás…","copy":"Hivatkozás másolása","copied":"Hivatkozás másolva","copyfail":"A hivatkozás másolása nem sikerült","close":"Megosztó gombok elrejtése","open":"Megosztó gombok megjelenítése","n_mail":"E-mail","n_wa":"WhatsApp","n_tg":"Telegram","n_fb":"Facebook","n_x":"X","n_in":"LinkedIn"}}}</script>
+<!--fff:kit:end-->
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OSATURA — 2D vector rigging and animation in Rust</title>
 <meta name="description" content="OSATURA: a 2D vector rigging and animation engine in Rust. Bones, IK, skinning, deformers, state-machine runtime, CLI, browser studio and libraries.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-RgODV8DRxdNOJRfkoYkTtCdyzzm4lV7rbOft9JWXzDU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-HCzt/jCBXELb/HdvTudfZ0FnTwUYxRlfhJyx03/+A8U=' 'sha256-QrjB1MbPYLmnffTbp57xa6SwKTdVSUGUyaLDtOnyJ+k=' 'sha256-jbKWqIpQp2eTNtovl54tI1IB1HZOZSr5LNlCG4UBmP0=' 'sha256-RgODV8DRxdNOJRfkoYkTtCdyzzm4lV7rbOft9JWXzDU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <link rel="alternate" hreflang="en" href="https://osatura.chiuta.ro/">
 <link rel="alternate" hreflang="de" href="https://osatura.chiuta.ro/de/">
 <link rel="alternate" hreflang="es" href="https://osatura.chiuta.ro/es/">
@@ -467,7 +2978,7 @@ body.rd{overflow:hidden}
 <header id="top">
   <canvas id="hero" aria-hidden="true"></canvas>
   <div class="wrap">
-    <div class="pill"><i></i><span data-i="pill">alpha · v0.1.0-alpha.4 prerelease · Rust · open formats</span></div>
+    <div class="pill"><i></i><span data-i="pill">alpha · v0.1.0-alpha.5 prerelease · Rust · open formats</span></div>
     <h1>OSA<span class="grad">TURA</span></h1>
     <p class="sub" data-i="sub">2D vector rigging and animation as code: bones, IK, skinning, deformers, a runtime and a browser studio — deterministic and scriptable.</p>
     <div class="btns">
@@ -639,7 +3150,7 @@ body.rd{overflow:hidden}
     <div class="stat"><b data-n="1338">1,338</b><span data-i="k1">tests in cargo test --workspace without the GPU and window crates (plus 19 doc-tests), 24 Oct 2026, Linux x86-64; CI also passes on macOS and Windows</span></div>
     <div class="stat"><b data-n="78">78</b><span data-i="k2">numbered limitations, with severity and workaround</span></div>
     <div class="stat"><b data-n="363">363</b><span data-i="k3">third-party crates in the 24 Oct 2026 inventory (all platforms together)</span></div>
-    <div class="stat"><b data-n="1">1</b><span data-i="k4">published release so far: v0.1.0-alpha.4, a prerelease; “0.7” is a feature level, not a version</span></div>
+    <div class="stat"><b data-n="1">1</b><span data-i="k4">published release so far: v0.1.0-alpha.5, a prerelease; “0.7” is a feature level, not a version</span></div>
   </div>
   <div class="vs rv">
     <div class="card y"><h3 data-i="vyh">Verified</h3><ul id="vy"><li>1338 tests plus 19 doc-tests pass locally (24 Oct 2026, Linux x86-64); the same suite and clippy pass on GitHub Actions for Linux, macOS and Windows</li><li>The WebAssembly module builds in CI and the wrapper’s test passes against it under Node; cargo-deny and REUSE pass</li><li>4 headless-Chromium smoke tests of the studio pass (124, 60, 89 and 35 checks)</li><li>CLI, Rust facade and C ABI run with the documented examples, also under ASan/UBSan</li></ul></div>
@@ -728,6 +3239,6 @@ body.rd{overflow:hidden}
 <div id="lmenu"></div>
 <div id="lb" role="dialog" aria-label="Image" data-al="alImage"></div>
 <script>window.OSA_ROOT=''</script>
-<script src="site/data/app.js?v=a19ba38fb9" defer></script>
+<script src="site/data/app.js?v=d2deb0618a" defer></script>
 </body>
 </html>

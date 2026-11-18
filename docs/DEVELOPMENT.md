@@ -4,7 +4,7 @@
 
 *For people who build, change, test and release OSATURA. Documentation CC-BY-4.0. Everything here is taken from the source tree, `ROADMAP.md` section 9, [CI.md](CI.md), [CLEANROOM.md](../CLEANROOM.md), [CONTRIBUTING.md](../CONTRIBUTING.md) and [LICENSING.md](../LICENSING.md); commands marked "run" were run while writing this page (Linux x86-64, rustc 1.97.0, offline registry).*
 
-Contents: [Environment](#1-environment) - [Build and test commands](#2-build-and-test-commands) - [The test suites](#3-the-test-suites) - [Coding conventions](#4-coding-conventions) - [Checklist for a new module or command](#5-checklist-for-a-new-module-or-command) - [Clean-room rules and DCO](#6-clean-room-rules-and-dco) - [Release checklist](#7-release-checklist) - [Continuous integration](#8-continuous-integration) - [Debugging](#9-debugging) - [Profiling](#10-profiling)
+Contents: [Environment](#1-environment) - [Build and test commands](#2-build-and-test-commands) - [The test suites](#3-the-test-suites) - [Coding conventions](#4-coding-conventions) - [Checklist for a new module or command](#5-checklist-for-a-new-module-or-command) - [Independent-implementation rules and DCO](#6-independent-implementation-rules-and-dco) - [Release checklist](#7-release-checklist) - [Continuous integration](#8-continuous-integration) - [Debugging](#9-debugging) - [Profiling](#10-profiling)
 
 ## 1. Environment
 
@@ -127,7 +127,7 @@ Adding tests: put engine tests next to the code (`#[cfg(test)]`), CLI behaviour 
 7. **End-to-end**: add the command to the e2e pipeline if it belongs to the production path; add a smoke check to the studio scripts if it has UI.
 8. **Run**: `cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `scripts/licence-audit.sh` (when dependencies or headers changed).
 
-## 6. Clean-room rules and DCO
+## 6. Independent-implementation rules and DCO
 
 The project is an independent implementation. In short (the binding text is [CLEANROOM.md](../CLEANROOM.md) and [CONTRIBUTING.md](../CONTRIBUTING.md)):
 
@@ -140,7 +140,7 @@ The project is an independent implementation. In short (the binding text is [CLE
 
 ## 7. Release checklist
 
-The latest published pre-release is `v0.1.0-alpha.4`; the next one is prepared as `v0.1.0-alpha.5` (all crates are still 0.1.0; the version labels "v0.5/v0.6/v0.7" in README, FEATURES and ROADMAP are feature levels, not crate versions; see [CHANGELOG.md](../CHANGELOG.md)). To cut one:
+The latest published pre-release is `v0.1.0-alpha.5` (all crates are still 0.1.0; the version labels "v0.5/v0.6/v0.7" in README, FEATURES and ROADMAP are feature levels, not crate versions; see [CHANGELOG.md](../CHANGELOG.md)). To cut one:
 
 1. **Version.** Decide the version of each crate. The facade has its own version (`API_VERSION`, 1.4.0 today: major on removal or change of a surface line, minor on addition) and `OSATURA_ABI_VERSION` / `arm_abi_version()` (both 1) change only on a breaking change of the C or wasm ABI. Align `Cargo.toml` versions, `osatura --version` output, README status box and CHANGELOG.
 2. **Green gates.** `cargo test --workspace`, `cargo test --doc -p osatura-core`, `cargo test -p osatura-cli --test spdx_audit`, `cargo clippy --workspace --all-targets -- -D warnings`, the five Chromium smoke tests, `scripts/e2e.sh` (release), `cargo test -p osatura-gpu` if the GPU code changed.

@@ -462,7 +462,7 @@ wrote recovered.json
 
 ### `render`
 
-**Sinopsis:** `osatura render <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N]`
+**Sinopsis:** `osatura render <project.json> <frame> <out.svg|out.png> [--bones] [--scale N] [--clamp] [--proxy N] [--shutter DEG] [--samples N] [--shutter-phase SEC]`
 
 `--proxy N` randează un proxy de derulare (N = 1..4): un `.png` este un bitmap la rezoluția 1/2^N, un `.svg` este format din vectori simplificați; ambele renunță la contururile fine, gradiente și blend-uri.
 
@@ -473,6 +473,11 @@ Randează un cadru. Un `<frame>` egal sau mai mare decât lungimea proiectului e
 | `--bones` | oprit | Desenează suprapunerea scheletului (capetele ca puncte, oasele ca linii). |
 | `--scale N` | 1 | Scara ieșirii, un număr în (0, 16]. Pentru `.png` înmulțește dimensiunea în pixeli; pentru `.svg` documentul își păstrează viewBox-ul. |
 | `--proxy N` | oprit | Proxy de derulare, N = 1..4: `.png` = bitmap la rezoluția 1/2^N, `.svg` = vectori simplificați; ambele renunță la contururile fine, gradiente și moduri de blend. Gândit pentru derulare interactivă, nu pentru livrabile. |
+| `--shutter DEG` | oprit | Motion blur (doar ieșire `.png`, nu cu `--proxy`): imaginea este media a `--samples` randări ale scenei, la momente distribuite uniform pe timpul de expunere `DEG / 360 / fps` secunde (unghi de obturator `0..360`; 180 este expunerea obișnuită de jumătate de cadru; 0 este o randare simplă). Alfa este mediată premultiplicat și rotunjită o singură dată, la final. Costă `--samples` randări. |
+| `--samples N` | 8 | Numărul de randări mediate pentru `--shutter` (1..256). Fiecare eșantion se află la mijlocul uneia dintre cele N părți egale ale expunerii. |
+| `--shutter-phase SEC` | 0 | Începutul expunerii relativ la momentul cadrului, în secunde (negativ = centrat sau înaintea cadrului). Momentele sunt limitate la durata proiectului. |
+
+Aceleași trei opțiuni sunt acceptate de `frames --png` (fiecare cadru estompat) și de `export` către `.gif`, `.apng`, `.mp4` și `.webm` (fiecare cadru al animației estompat; un GIF peste 50 fps estompează doar cadrele pe care le păstrează). Sunt refuzate pentru celelalte formate și pentru cadrele `.svg` (`--shutter works with ...`). O secvență poate avea cel mult 100000 de randări (cadre x eșantioane); `--shutter 0` scrie randările simple. Nu sunt conectate: `render-hdr`, studioul și celelalte exporturi.
 
 ```
 $ osatura render demo.json 12 f12.png --bones --scale 2
@@ -491,7 +496,7 @@ wrote px.png
 
 ### `frames`
 
-**Sinopsis:** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N]`
+**Sinopsis:** `osatura frames <project.json> <out_dir> [--png] [--bones] [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]`
 
 Randează **fiecare** cadru într-un director (creat dacă lipsește) ca `frame_0000.svg` ... (sau `.png` cu `--png`). Mai întâi se verifică dacă toate cadrele au poziții finite.
 
@@ -508,14 +513,14 @@ frame_0001.png
 
 **Sinopsis:**
 ```
-osatura export <project.json> <out.gif> [--scale N] [--report r.json]
+osatura export <project.json> <out.gif> [--scale N] [--report r.json] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.html|out.htm>
 osatura export <project.json> <out.json|out.lottie> [--report r.json]
-osatura export <project.json> <out.mp4> [--scale N]
-osatura export <project.json> <out.apng> [--scale N]
-osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1]
+osatura export <project.json> <out.mp4> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.apng> [--scale N] [--shutter DEG] [--samples N] [--shutter-phase SEC]
+osatura export <project.json> <out.webm> [--scale N] [--codec vp9|av1] [--shutter DEG] [--samples N] [--shutter-phase SEC]
 osatura export <project.json> <out.png> [--scale N] [--columns N]
-osatura export <project.json> <out.glb> [--report r.json]
+osatura export <project.json> <out.glb> [--report r.json] [--layer-anim]
 ```
 (o formă pentru fiecare format; extensia ieșirii, insensibilă la majuscule, alege forma. O opțiune pe care forma nu o listează este refuzată: `unknown option --scale for 'export .json' (applies to: export .gif, export .mp4, ...)`. Cu o extensie necunoscută sau lipsă se raportează în schimb eroarea de format.)
 
@@ -539,6 +544,7 @@ Opțiuni:
 |---|---|
 | `--scale N` | Scara rasterului (0, 16] pentru `.gif .mp4 .apng .webm .png`. La celelalte formate este refuzată (`unknown option --scale for 'export .json'`); înainte de wave 7 era doar un avertisment. |
 | `--report FILE` | Scrie ca JSON lista lucrurilor pe care formatul nu le-a putut transporta (`.gif .json .lottie .glb`): `{"format","count","warnings":[{"code","layer","message"}]}`. Aceleași avertismente se afișează întotdeauna pe stderr. Fișierul nu poate fi proiectul de intrare. |
+| `--layer-anim` | doar `.glb`: animă și poziția, rotația și scala straturilor de formă rigide (nu cele cu skin). Fiecare strat în mișcare primește un nod părinte cu canale LINEAR eșantionate de translație, rotație și scală, relative la plasarea sa din cadrul 0, în spațiul osului pe care îl urmează (sau al scenei), deci grupurile animate și scena compensată de cameră sunt incluse; straturile care nu se mișcă sunt scrise exact ca fără opțiune. Skew, opacitatea, switch-urile, wobble și deformatoarele tot nu sunt animate (raportate ca `[glb-limit]`). |
 | `--codec vp9\|av1` | Doar `.webm` (implicit `vp9`); orice altă valoare: `unknown --codec 'foo' (vp9 or av1)`. |
 | `--columns N` | Doar sprite sheet `.png`: plăci pe rând (implicit: o grilă aproape pătrată, ceil(sqrt(frames)): 3 coloane pentru 8 cadre). |
 
@@ -871,6 +877,7 @@ osatura keys shift <project.json> <out.json> --by N [--from F --to F --target NA
 osatura keys scale <project.json> <out.json> --factor X [--pivot F --from F --to F --target NAME --prop PROP]
 osatura keys ease <project.json> <out.json> --ease linear|step|ease_in|ease_out|ease_in_out|smooth [--from F --to F --target NAME --prop PROP]
 osatura keys reverse <project.json> <out.json> [--from F --to F --target NAME --prop PROP]
+osatura keys curve <project.json> <out.json> --curve piecewise:STOP,STOP,...|steps:N[:position] [--from F --to F --target NAME --prop PROP]
 ```
 Fiecare operație acceptă doar propriile opțiuni (`keys shift --factor 2` este refuzat); `--by`, `--factor` și `--ease` sunt obligatorii pentru operația lor (un `--by` sau `--factor` omis era înainte o operație nulă tăcută).
 
@@ -882,6 +889,9 @@ Operații în bloc asupra **tuturor canalelor cu chei** (filtrate prin `--target
 | `scale` | `--pivot F --factor X` | Scalează timpii cheilor în jurul cadrului pivot. |
 | `ease` | `--ease E` | Setează easing-ul cheilor (easing-uri cu nume; folosește `keyedit ease` pentru `bezier:`). |
 | `reverse` | - | Inversează ordinea cheilor din interval. |
+| `curve` | `--curve C` | Coace o curbă de easing liniară pe porțiuni sau în trepte în fiecare segment care **începe** la o cheie din interval. |
+
+**`keys curve`.** `--curve piecewise:STOP,STOP,...` primește opriri scrise `output [input [input]]` (intrările ca fracții sau procente, deci `piecewise:0,0.25 75%,1` urcă la un sfert la trei sferturi din segment, apoi până la valoarea finală); `--curve steps:N[:position]` primește `jump-end` (implicit) sau `jump-none`. Regulile pentru opriri și intrări (intrările lipsă se distribuie uniform, o intrare mai mică decât una anterioară este ridicată la aceasta, două intrări pe o oprire, cel puțin 2 opriri) urmează proiectul public CSS Easing Functions Level 2. Curba este **coaptă**: cheia de start își păstrează valoarea, primește primul easing (liniar, sau în trepte pentru o curbă în trepte), iar cheile sunt inserate astfel încât interpolarea obișnuită a cheilor să reproducă exact curba; curba în sine nu este stocată, formatul proiectului nu se schimbă, iar proiectele vechi se încarcă ca înainte. Cheia de final a unui segment nu este niciodată modificată, deci o curbă trebuie să înceapă la 0 și să se termine la 1: o curbă care nu o face (pași `jump-start` și `jump-both`, o curbă pe porțiuni care începe peste 0) și o curbă pe porțiuni cu salt vertical (două opriri cu aceeași intrare și ieșiri diferite) sunt refuzate cu motivul și nu se scrie nimic. Cel mult 200000 de chei pe pistă.
 
 ```
 $ osatura keys shift small.json k1.json --target arm_up --prop bone_angle --by 2
@@ -890,6 +900,7 @@ $ osatura keys scale small.json k2.json --pivot 0 --factor 0.5 --from 0 --to 48
 wrote k2.json (37 key(s) changed)
 $ osatura keys reverse small.json k4.json
 wrote k4.json (37 key(s) changed)
+$ osatura keys curve small.json k5.json --curve steps:4 --target arm_up --prop bone_angle --from 0 --to 12
 ```
 Cheile mutate în afara `0..frames-1` rămân în fișier (lint raportează `L007`); această comandă nu extinde lungimea proiectului. **Conexe:** `keyedit` (precis, bazat pe selecție), `loop-solve`.
 
@@ -1190,7 +1201,7 @@ Ele primesc `<project.json> <out.json>` și cuvinte `key=value` (fără `--`).
 osatura physics <project.json> <out.json> <bone,bone,...> [gravity=900] [wind=x,y] [gust=0.5] [damping=0.985]
     [circle=x,y,r[@bone];...] [capsule=x1,y1,x2,y2,r[@bone];...] [follow=bone] [--allow-empty]
     [drive=bone:gain;...] [vortex=bone|x,y:swirl[:radial[:radius]];...] [preset=hair|tail|rope|antenna|cape]
-    [merge=keep|replace] [lateral=0..1]
+    [merge=keep|replace] [lateral=0..1] [selfcollide=R]
 ```
 Coace o **simulare de lanț** Verlet (păr, coadă, frânghie, antenă, pelerină) pe oasele listate (rădăcina lanțului prima) ca chei `bone_angle`, câte una pe cadru.
 
@@ -1206,6 +1217,7 @@ Coace o **simulare de lanț** Verlet (păr, coadă, frânghie, antenă, pelerin�
 | `preset=` | Valori de pornire pentru `hair tail rope antenna cape`; cuvintele scrise **după** `preset=` îl suprascriu. |
 | `merge=keep\|replace` | `keep` (implicit) lasă neatinse oasele care au deja animație; `replace` le suprascrie. |
 | `lateral=0..1` | Cu mai multe lanțuri (`bone,bone/bone,bone`) leagă între ele șuvițele vecine. |
+| `selfcollide=R` | Auto-coliziune opțională a fiecărui lanț: fiecare segment este o capsulă 2D de rază `R`, iar segmentele care nu sunt vecine se îndepărtează reciproc (astfel încât o coadă care se încolăcește peste ea însăși nu trece prin ea însăși). `R` trebuie să fie finit, > 0 și mai mic decât jumătate din cel mai scurt os al lanțului; cel mult 128 de oase pe lanț; firele nu se ciocnesc între ele. Fără acest cuvânt, simularea este exact ca înainte. |
 | `--allow-empty` | Acceptă o rulare care nu a copt nimic. |
 
 ```
@@ -1474,8 +1486,11 @@ osatura sound edit   <project.json> <out.json> <name> [--start F] [--gain G] [tr
 osatura sound remove <project.json> <out.json> <name>
 osatura sound mix    <project.json> <out.wav|out.ogg|out.mp3>
     trim/fade options (seconds, or frames with an f suffix such as 36f): --trim-in T --trim-out T --fade-in T --fade-out T
+    audio options: --pan P (-1 left .. 1 right, equal power) --filter kind:freq[:q[:gain_db]][,...] (biquad; kinds lowpass highpass bandpass notch allpass peaking lowshelf highshelf); edit: none clears
 ```
 Pistele de sunet sunt **referințe** (cale de fișier relativă la proiect, cadru de start, gain 0..4, fereastră de trim în interiorul fișierului, fade-uri). Nimic nu este încorporat în proiect; fișierul audio trebuie să-l însoțească și trebuie să se afle în directorul proiectului, dacă nu se dă `--allow-external-assets`. `edit` schimbă doar câmpurile date (`0` șterge un trim). `--trim-out 0` înseamnă „până la sfârșit”. `sound mix` randează doar sunetul mixat pentru **lungimea proiectului** (prin ffmpeg: wav = PCM 44,1 kHz pe 16 biți, ogg = Vorbis q4, mp3 = 96 kb/s).
+**Pan și filtre (opțional).** `--pan P` (-1 = stânga, 0 = centru, 1 = dreapta) stochează pe pistă un pan constant cu putere egală (un fișier mono devine stereo; un fișier stereo folosește legea de balans a panner-ului stereo; mai mult de două canale sunt refuzate). O pistă fără niciuna dintre ele este mixată exact ca înainte, prin graful ffmpeg neschimbat. O pistă cu pan este mai întâi decodată în float pe 32 de biți, panoramată în domeniul eșantioanelor, iar rezultatul înlocuiește fișierul ca intrare ffmpeg; start, trim, fade-urile și gain se aplică apoi sunetului panoramat. `sound edit ... --pan none` îl elimină. `--filter` stochează o listă de filtre de ordinul doi (biquad) aplicate în ordine, înaintea panului, întregului fișier decodat: `kind:freq[:q[:gain_db]]`, tipuri `lowpass`, `highpass`, `bandpass`, `notch`, `allpass`, `peaking`, `lowshelf`, `highshelf`; `q` are implicit 0.7071 (0 < q <= 1000), `gain_db` contează pentru peaking și shelf-uri; mai multe filtre se separă prin virgule (`--filter lowpass:8000,peaking:1000:2:6`); `--filter none` le șterge. Frecvența trebuie să fie sub jumătate din rata de eșantionare a fișierului (verificat la rularea mixului; peste 0,45 ori rata se afișează un avertisment de stabilitate numerică), fiecare canal este filtrat separat, cu stare inițială zero, iar ieșirea este limitată la -1..1. Formulele filtrelor sunt formele publice din Audio EQ Cookbook; lista este stocată ca `filters` pe pistă (absentă când e goală). Pistele cu pan sau filtre urmează calea în domeniul eșantioanelor descrisă mai sus; ordinea este filtre, apoi pan, apoi trim, fade-uri, start și gain. Previzualizarea formei de undă din studio nu arată niciunul dintre ele.
+
 Sunetul mixat este multiplexat și în `.mp4` (AAC), `.webm` (Opus) și încorporat în `.html`; `.gif`/`.apng` nu îl pot transporta.
 
 ```
@@ -1903,11 +1918,11 @@ osatura container solve  <project.json> [--size WxH --data out.json]
 
 Un **container** este o casetă de layout de tip flexbox: `id`, `members`, `axis` (`row`|`column`), `gap`, `cross_gap`, `padding`
 (`[left,top,right,bottom]`), `justify` (`start|center|end|space_between|space_around`), `align`
-(`start|center|end|stretch`), `wrap` (`none|wrap`) și `rect`, o regulă pentru propriul dreptunghi pe canvas:
+(`start|center|end|stretch|baseline`), `wrap` (`none|wrap`) și `rect`, o regulă pentru propriul dreptunghi pe canvas:
 `{"kind":"fixed",...}`, `{"kind":"pin","left","right","top","bottom","width","height"}` (distanțe față de marginile canvasului; oricare două
 pentru fiecare axă), `{"kind":"aspect",...}` sau `{"kind":"hug"}`. Un **membru** este exact unul dintre `{"layer":PATH}`,
 `{"container":ID}` sau `{"spacer":true}`, cu `grow`, `shrink`, `width`, `height`, `min_w/max_w/min_h/max_h` și
-o suprascriere `align`; `"resize":true` permite solverului să scaleze stratul la slotul său.
+o suprascriere `align` și un `baseline` opțional (distanța de la marginea de sus a membrului până la linia sa de bază, folosită de `align: baseline` în containerele de tip rând; vezi PROJECT_FORMAT.md secțiunea 11.5); `"resize":true` permite solverului să scaleze stratul la slotul său.
 
 ```
 $ cat cont.json
@@ -1992,6 +2007,13 @@ Randează un cadru și rulează peste el un **lanț de post-efecte**. `chain.jso
 `posterize {levels}`, `pixelate {size}`, `levels {in_black,in_white,gamma,out_black?,out_white?}`, `fade {amount}` și
 `relight {ambient,bevel,height,lights:[{x,y,z,color?,intensity?,radius?,cast_shadow?,spot?,falloff?}],ground_shadow?,
 normal_map?,ambient_color?}`. Fără `normal_map`, relight umbrește un bevel obținut din canalul alfa estompat.
+O lumină poate purta obiectul opțional `shading` `{attenuation?:[kc,kl,kq], cutoff?, direction?:[x,y,z], exponent?, specular?, shininess?}`
+pentru a folosi alt model de iluminare: atenuare `1/(kc + kl d + kq d^2)` (implicit `[1,0,0]`, fiecare >= 0, nu toate zero), un con strict de
+semiunghi `cutoff` grade (0..90; absent = fără con, fără margine moale) în jurul lui `direction` (de la lumină spre imagine, implicit
+`[0,0,-1]`) cu intensitatea `cos(angle)^exponent` (0..128, implicit 0) și o strălucire Blinn pentru un observator aflat direct deasupra imaginii
+(`specular` >= 0, implicit 0 = nimic; `shininess` >= 0, implicit 32). Strălucirea este culoarea luminii înmulțită cu intensitatea ei, adăugată după ce
+culoarea suprafeței este înmulțită cu lumina difuză. Pentru o lumină cu `shading`, `spot`, `radius` și `falloff` ale acelei lumini sunt ignorate;
+`color`, `intensity` și `cast_shadow` se aplică în continuare. Luminile fără `shading` și lanțurile scrise înainte să existe se randează exact ca înainte.
 
 ```
 $ cat chain.json
@@ -2178,6 +2200,23 @@ $ osatura lod-pick small.json --screen-px 64x48 --max-px 2 --out chosen2.json
 screen 64x48 -> scale 0.1000 px/unit; budget 2 px -> level L4 (declared 0.5310 px, 62 anchors, 0 mesh vertices, 37 keys)
 ```
 
+### `update-check`
+
+**Sinopsis:** `osatura update-check [--proxy-preset tor|tor-browser|warp | --proxy-url URL] [--list-proxy-presets] [--json]`
+
+Întreabă GitHub dacă există o versiune OSATURA mai nouă. Rulează doar când o tastezi: nimic nu verifică în fundal, nimic nu se descarcă sau instalează, iar singurul lucru trimis este o cerere anonimă pentru lista publică de versiuni (făcută de `curl` din sistem, doar HTTPS, 30 s, cel mult 2 MB). Răspunsul compară versiunea ta cu cea mai nouă versiune publicată după regulile SemVer: `0.1.0-alpha.5` este mai nouă decât `0.1.0-alpha.4`, iar `0.1.0` este mai nouă decât `0.1.0-rc.1`.
+
+`--proxy-preset` trimite cererea printr-un proxy gratuit care rulează pe propriul tău calculator: `tor` (serviciul Tor pe `127.0.0.1:9050`), `tor-browser` (un Tor Browser pornit, `127.0.0.1:9150`) sau `warp` (Cloudflare WARP în modul proxy, `127.0.0.1:40000`). Toate trei folosesc `socks5h://`, deci numele `api.github.com` este rezolvat de proxy, nu de sistemul tău. Tor este alegerea recomandată (rețea de voluntari, fără profit, cod deschis); WARP este gratuit, dar e un serviciu comercial cu client închis. Listele de proxy-uri publice deschise nu sunt oferite intenționat: sunt adesea compromise sau interceptează traficul. `--proxy-url` primește propriul tău proxy `http://`, `https://`, `socks5://` sau `socks5h://`; cele două opțiuni nu se pot combina. `--list-proxy-presets` afișează presetările și iese. (`--proxy` este o altă opțiune: nivelul proxy de detaliu al studioului.)
+
+```
+$ osatura update-check --proxy-preset tor
+update-check: going through socks5h://127.0.0.1:9050
+You are up to date: 0.1.0-alpha.4 (newest published release: v0.1.0-alpha.4).
+$ osatura update-check --json
+{"current":"0.1.0-alpha.4","latest":"v0.1.0-alpha.5","prerelease":true,"update_available":true,"url":"https://github.com/chiuta/osatura/releases/tag/v0.1.0-alpha.5"}
+```
+**Capcană:** doar build-urile făcute de fluxul de lansare își cunosc versiunea; un build din surse (versiunea `0.1.0`) afișează cea mai nouă versiune, dar nu poate spune dacă e mai nouă, iar `--json` are atunci `"current": null` și `"update_available": null`. Cod de ieșire 1 cu un motiv pe o linie când `curl` lipsește sau GitHub nu poate fi atins (ieșirile Tor sunt uneori blocate sau limitate). Adresa de descărcare afișată este mereu un link `github.com/chiuta/osatura`.
+
 ### `export-fit`
 
 **Sinopsis:** `osatura export-fit <project.json> <out> --max-size 500KB [--format lottie|html|gif|apng|webm|project] [--min-ssim X] [--max-seconds 60] [--measure raw|gzip] [--frames N] [--search ladder|descent|grid] [--report out.json] [--pareto out.csv] [--audit] [--no-baseline]`
@@ -2229,6 +2268,17 @@ Info L007 [:CameraX] key at frame 24 lies outside the 0..8 timeline
 Info L007 [arm_low:BoneAngle] key at frame 12 lies outside the 0..8 timeline
 ```
 `L007` este o cheie aflată în afara timeline-ului (aici pentru că `small.json` este demo-ul tăiat la 8 cadre).
+
+### `schema`
+
+**Sinopsis:** `osatura schema [out.json] [--strict]`
+
+Publică JSON Schema (dialectul 2020-12) al fișierelor de proiect, astfel încât editoarele și uneltele externe să poată valida un proiect înainte de a-l încărca și să ofere completare. Rădăcina, `camera`, `bones` și `ik` sunt descrise câmp cu câmp (tipuri, câmpuri obligatorii, valori implicite, versiunea formatului ca `const`, `color_space` ca enumerare); celelalte liste sunt acceptate ca tablouri de obiecte. Ieșirea este deterministă (chei sortate, aceiași octeți de fiecare dată) și merge la ieșirea standard când nu este numit niciun fișier. Implicit, proprietățile necunoscute sunt permise, ca la încărcător (le raportează, nu le refuză); `--strict` adaugă `additionalProperties: false` obiectelor descrise.
+```
+$ osatura schema project.schema.json
+wrote project.schema.json
+```
+**Coduri de ieșire:** 0 la succes, 1 când fișierul nu poate fi scris. **Conexe:** `check`, `lint`.
 
 ### `contracts`
 
@@ -2885,6 +2935,7 @@ Fiecare comandă, cu un rezumat de o linie și secțiunea care o documentează. 
 | `trail` | urma de mișcare a unui os, strat sau punct | [12](#12-efecte-profunzime-de-câmp-onion-skin-urme-și-cameră) |
 | `trim` | coace un trim path într-un strat vectorial | [5](#5-rigging-skin-uri-ik-și-ajutoare-de-layout) |
 | `ui` | registrul de comenzi, scurtăturile, layout-urile și căutarea studioului | [16](#16-studio-colaborare-serverul-agent-mcp-și-registrul-ui) |
+| `update-check` | întreabă GitHub dacă există o versiune mai nouă; proxy gratuit opțional | [13](#13-nivel-de-detaliu-rapoarte-de-dimensiune-și-export-fit) |
 | `vcs` | control al versiunilor cu îmbinare semantică pentru un singur fișier de proiect | [15](#15-controlul-versiunilor-vcs) |
 | `view-swap` | comandă un strat switch dintr-o proprietate de os (funcție în trepte) | [5](#5-rigging-skin-uri-ik-și-ajutoare-de-layout) |
 | `walk` | generează un ciclu de mers | [6](#6-animație-chei-timeline-și-generatoare) |

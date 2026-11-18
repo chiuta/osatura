@@ -452,6 +452,7 @@ pub(crate) fn run(a: &Args, raw: &[String], pos: &[&str]) -> Option<Result<(), S
         ["size-report", path] => fit_cmd::size_report(path, &a.opts, &a.flags),
         ["lod", path] => lod_cmd::lod(path, a.scale, &a.opts, &a.flags),
         ["lod-pick", path] => lod_cmd::pick(path, &a.opts),
+        ["update-check"] => update_cmd::run(&a.opts, &a.flags),
         ["face-train"] => face_cmd::train(&a.opts),
         ["face-eval"] => face_cmd::eval(&a.opts, &a.flags),
         ["face-detect", image] => face_cmd::detect(image, &a.opts, &a.flags),

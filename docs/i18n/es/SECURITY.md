@@ -21,6 +21,8 @@ Lo que procesa OSATURA: **archivos de proyecto** (JSON), imágenes, audio, archi
 | Un colaborador con el token | editar la sesión compartida | dañar el proyecto | historial de deshacer, el registro encadenado por hashes; se confía en los colaboradores respecto al proyecto, no hay cuentas ni roles |
 | Llamador hostil de las bibliotecas | pasar argumentos incorrectos a la fachada, a la ABI de C o a la de WASM | corrupción de memoria, pánicos a través de la frontera | validación de argumentos, comprobaciones de tamaño antes de reservar memoria, pánicos capturados (donde el destino hace unwinding) |
 
+La única petición saliente que OSATURA puede hacer es `osatura update-check`, y solo cuando la ejecutas (un único GET HTTPS anónimo de la lista pública de versiones, mediante el `curl` del sistema: solo HTTPS, TLS 1.2+, 30 s, 2 MB, se comprueba que el enlace mostrado esté en `github.com/chiuta/osatura`). Puede pasar por Tor, Tor Browser, Cloudflare WARP o tu propio proxy; los preajustes son puntos locales `socks5h://`, así que el DNS no se resuelve fuera del proxy. Las pruebas están en `update_cmd.rs`.
+
 Fuera del alcance: la protección frente a un administrador local malintencionado, una cadena de herramientas de compilación o una dependencia comprometidas (véase [THIRD_PARTY.md](THIRD_PARTY.md) para lo que se distribuye; `cargo deny` vigila licencias, prohibiciones y fuentes, no vulnerabilidades), los canales laterales y la seguridad del propio ffmpeg.
 
 ## 2. Servidor HTTP del studio
@@ -137,7 +139,7 @@ Lista honesta; véase [LIMITATIONS.md](LIMITATIONS.md) para la lista más amplia
 * **No abras un issue público** para una vulnerabilidad. Envía un informe privado al mantenedor: **`alexio@trom.tf`** (la dirección que aparece en el aviso de `--version` del programa y en los documentos de licencia), o usa los informes privados de vulnerabilidades de GitHub en la pestaña *Security* del repositorio cuando estén activados.
 * Incluye: la versión (`osatura --version`) y la plataforma, el proyecto o la petición que provoca el problema (lo mejor es un archivo mínimo), lo que esperabas y lo que ocurrió, y si quieres que se te reconozca la autoría.
 * Qué esperar *(intención, no un contrato: este es un proyecto de una sola persona)*: un acuse de recibo en un plazo razonable, una corrección desarrollada en privado, una prueba de regresión añadida a la suite, una nota en [CHANGELOG.md](CHANGELOG.md) y el reconocimiento si lo deseas. Concede tiempo para una corrección antes de publicar los detalles.
-* Versiones admitidas: solo la última versión preliminar (actualmente `v0.1.0-alpha.4`) y el árbol actual en `main`.
+* Versiones admitidas: solo la última versión preliminar (actualmente `v0.1.0-alpha.5`) y el árbol actual en `main`.
 * Los informes sobre la exposición de red del studio cuando se enlaza deliberadamente a una dirección pública sin proxy inverso son, en primer lugar, cuestiones de documentación: véase la sección 11.
 
 ## 11. Lista de refuerzo para quien despliega

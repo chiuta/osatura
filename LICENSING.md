@@ -42,7 +42,7 @@ Strongest anti-hijack position and closest to trade-free ethos. Cost: companies 
 Maximum reach and zero friction; patent grant included. Cost: anyone — including a large company — may close and sell it with no obligation. Donations then depend purely on goodwill. Choose only if you want to be a public utility.
 
 ### Variant D: Source-available (BUSL-1.1 or Polyform Shield/NC with delayed open date)
-Prevents commercial competition for N years. Cost: **not open source**; conflicts with the clean-room/open-format story, with contributions from the community and with trade-free values; many users and distributions will refuse it. **Not recommended.**
+Prevents commercial competition for N years. Cost: **not open source**; conflicts with the independent-implementation/open-format story, with contributions from the community and with trade-free values; many users and distributions will refuse it. **Not recommended.**
 
 | | Reach | Anti-hijack | Patent grant | Dual-licence income | Fits trade-free |
 |---|---|---|---|---|---|
