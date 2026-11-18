@@ -1,0 +1,36 @@
+# GitHub Pages serves the `landing-page` branch. Keep it equal to main on every push, so the
+# published page cannot fall behind the release (it was left on v0.1.0-alpha.4 once).
+# The tree of main is committed on top of landing-page: history is never rewritten.
+name: pages-sync
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Sync landing-page to the tree of main
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          git fetch origin landing-page
+          want=$(git rev-parse "$SHA^{tree}")
+          have=$(git rev-parse origin/landing-page^{tree})
+          [ "$want" = "$have" ] && { echo "landing-page already equal to main"; exit 0; }
+          git config user.name "pages-sync (CI)"
+          git config user.email "alexio@trom.tf"
+          c=$(git commit-tree "$want" -p origin/landing-page -m "site: sync with main ${SHA:0:7} [skip ci]")
+          git push origin "$c:refs/heads/landing-page"
